@@ -1,0 +1,7 @@
+node_modules/
+mongodata/
+__pycache__
+env
+venv
+.env
+*.map

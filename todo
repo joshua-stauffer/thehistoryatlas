@@ -1,0 +1,140 @@
+
+
+The History Atlas - overview and task tracker
+
+
+______________________________________________________________________________
+
+
+
+guideline #1:
+    model the messiness of real life
+guideline #2:
+    create a beautiful story anyways
+
+
+______________________________________________________________________________
+
+
+
+PROGRESS            | ..... |
+- React Client      |       |
+- Apollo Server     |       |
+- Read Model        | ..    |
+- Write Model       | ..    |
+- Event Store       | ...   |
+- History Player    | ...   |
+- NGINX             |       |
+- RabbitMQ Broker   | ..    |
+- Logger            |       |
+- spaCy service     |       |
+- geo service       |       |
+- user service      |       |
+- email service     |       |
+
+
+
+______________________________________________________________________________
+
+
+
+Current todo list
+- ALL: create overview/api docs
+- ALL: design/setup application wide logging
+- ALL: create async rabbitmq template for python services
+- RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
+- WRITEMODEL: create replay history method
+- WRITEMODEL: setup alembic migrations? 
+- READMODEL: finish replay history
+- API: create apollo server
+- API: add redis queue
+- API: add broker integration
+- ALL: run services with docker compose
+- ALL: setup .env files for docker
+- SPACY: create NER parser
+- SPACY: add broker integration
+- GEO: create geo database
+- GEO: add broker integration
+- GEO: get kaggle cities
+- GEO: find countries/states geo data
+- CLIENT: cra & project setup
+- CLIENT: redux
+- CLIENT: apollo integration
+- CLIENT: event feed
+- CLIENT: quickview event window
+- CLIENT: leaflet integration
+- CLIENT: add drawing for cities and events
+- USER: setup database
+- USER: add broker integration
+- USER: create login/validation/edit logic
+- EMAIL: create email service with sendgrid?
+- NGINX: setup client & api behind nginx
+- TEST: test scalability and load bearing
+- SOFT DEPLOY: push to DO
+
+
+______________________________________________________________________________
+
+
+
+Questions
+- EVENT STORE: should the publisher check for acks?
+- EVENT STORE: how should we handle event store write failures?
+                currently requeueing..
+- EVENT STORE: how should we detect sqlalchemy write failures?
+- ALL: I'm currently loading env variables once and passing them in a config 
+        object. any reason to have each module load their own?
+- HISTORY: how do i make sure that i don't send the next event until receiving
+            an ack from the previous?
+- HISTORY: at what point will i overflow the memory when i pull the entire
+            database out at once, and what is a a better solution?
+- WRITE MODEL: when i wrote the first version, i put the broker init into the
+                run_forever method, so that i could provide for ways to 
+                restart the broker on failure. should i do that everywhere else?
+- READMODEL: should I create an event object which holds references to citations?
+
+
+______________________________________________________________________________
+
+
+
+Bug list
+... surely they're among us
+
+
+______________________________________________________________________________
+
+
+
+
+NOTES:
+- WRITEMODEL: i could allow for async writes by having an instance check out
+              an aggregate, then return it once it's done. As long as two
+              instances don't work on the same aggregate, state is maintained.
+
+
+
+______________________________________________________________________________
+
+
+
+COMPLETED TODOS!
+- (  done  ) WRITEMODEL: finish schema
+- (  done  ) WRITEMODEL: add db for validation
+- (  done  ) WRITEMODEL: add db client
+- (  done  ) WRITEMODEL: complete validator/manager package
+- (  done  ) WRITEMODEL: add tests to db
+- (  done  ) WRITEMODEL: add config
+- (  done  ) EVENTSTORE: create persistent db
+- (  done  ) EVENTSTORE: add tests to db
+- (  done  ) HISTORY: add tests to db
+- (  done  ) READMODEL: setup mongodb docker instance
+- (  done  ) READMODEL: create sqlalchemy connection
+- (  done  ) READMODEL: create rabbitmq broker interface
+- (  done  ) READMODEL: create broker
+- (  done  ) READMODEL: create main object
+- (  done  ) READMODEL: expose database functionality
+
+
+
+______________________________________________________________________________

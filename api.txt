@@ -1,0 +1,44 @@
+
+
+The History Atlas - a quick reference for APIs across the project
+
+
+______________________________________________________________________________
+
+
+
+RabbitMQ - broker for interservice communication
+  vhosts:
+
+  exchanges:
+
+  queues:
+
+
+______________________________________________________________________________
+
+
+
+Commands - json objects capturing user intent in the UI, eventually translated 
+              into Emitted Events by the Write Model.
+
+
+______________________________________________________________________________
+
+
+
+Events - json objects capturing canonized user intent. Considered emitted (and 
+          provisional) upon creation in the Write Model, and become persisted 
+          (and permanent) in the Event Store. Serve as the single source of
+          truth across the application, and are generally accessible through
+          the History Player service for building/rebuilding local state.
+
+
+______________________________________________________________________________
+
+
+
+Requests - json objects from the apollo server representing a query.
+
+
+______________________________________________________________________________
