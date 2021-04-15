@@ -1,0 +1,20 @@
+{
+  "name": "tha-read-model",
+  "author": "Joshua Stauffer",
+  "description": "Docker instance of the primary query database for the History Atlas",
+  "main": "dest/readModel.js",
+  "scripts": {
+    "start": "node dest/readModel.js"
+  },
+  "devDependencies": {
+    "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "@types/amqplib": "^0.5.17",
+    "@types/mongoose": "^5.10.4",
+    "@types/uuid": "^8.3.0",
+    "amqplib": "^0.7.1",
+    "mongoose": "^5.12.3",
+    "uuid": "^8.3.2"
+  }
+}
