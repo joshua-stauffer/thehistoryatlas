@@ -52,6 +52,7 @@ class Broker {
         };
         this.openChannel = (conn) => {
             // open a new channel
+            console.log('Opening a new primary channel.');
             conn.createChannel()
                 .then(channel => {
                 // save channel for later
@@ -104,6 +105,7 @@ class Broker {
             channel.consume(queueName, callBack, consumeOptions)
                 .then((ok) => {
                 exchConf.consumerTag = ok.consumerTag;
+                console.log('Ready to receive messages at queue ', queueName);
             });
         };
         this.connect = this.connect.bind(this);
@@ -150,7 +152,17 @@ class Broker {
             console.warn('Broker is closing the connection');
             return; // add some sort of a restart logic here?
         }
-        this.apiHandler(msg.content)
+        if (!this.channel) {
+            console.error('Broker.handleAPICallBack: channel is nonexistent');
+            return;
+        }
+        const { content } = msg;
+        const body = this.decode(content);
+        if (!body) {
+            console.warn('Broker.handleAPICallBack: discarding poorly formed message');
+            return;
+        }
+        this.apiHandler(body)
             .then((res) => {
             // double check that the channel is there
             if (!this.channel) {
@@ -173,11 +185,23 @@ class Broker {
             console.warn('Broker is closing the connection');
             return; // add some sort of a restart logic here?
         }
-        this.eventHandler(msg.content)
+        // double check that the channel is there
+        if (!this.channel) {
+            console.error('Broker.handleEventCallBack: channel is nonexistent');
+            return;
+        }
+        const { content } = msg;
+        const body = this.decode(content);
+        if (!body) {
+            console.warn('Broker.handleEventCallBack: discarding poorly formed message');
+            this.channel.ack(msg);
+            return;
+        }
+        this.eventHandler(body)
             .then((res) => {
             // double check that the channel is there
             if (!this.channel) {
-                console.error('Channel was non-existent in handleEventCallBack');
+                console.error('Broker.handleEventCallBack: channel is nonexistent');
                 return;
             }
             if (res) {
@@ -192,6 +216,7 @@ class Broker {
     }
     async connect() {
         // establish connection to rabbitmq
+        console.log('Opening new connection to RabbitMQ.');
         Amqp.connect(this.conf)
             .then(async (conn) => {
             // save connection for later
@@ -218,6 +243,7 @@ class Broker {
         come in while it is replaying, it should perform an additional check at the
         end of its replay and send the additional events through before closing.
         */
+        console.log('Requesting a history play back.');
         const tmpChannel = await conn.createChannel();
         this.tmpChannel = tmpChannel;
         // set channel event listeners
@@ -262,12 +288,18 @@ class Broker {
             return;
         }
         if (msg.properties.correlationId !== this.tmpCorrId) {
-            console.log('Received an unrelated message from the History stream.');
+            console.log('Broker.historyStreamConsumer received an offtopic message.');
+            this.tmpChannel.ack(msg);
             return;
         }
         const { content } = msg;
-        const message = JSON.parse(msg.toString());
-        if (message?.payload === 'end') {
+        const body = this.decode(content);
+        if (!body) {
+            console.warn('Broker.historyStreamConsumer discarding poorly formed message');
+            this.tmpChannel.ack(msg);
+            return;
+        }
+        if (body?.payload === 'end') {
             // stream is over, close this channel and restart standard listening
             this.tmpChannel.ack(msg);
             this.tmpChannel.cancel(this.tmpConsumerTag);
@@ -279,12 +311,21 @@ class Broker {
         }
         else {
             // send this message to application for processing
-            if (await this.eventHandler(content)) {
+            if (await this.eventHandler(body)) {
                 this.tmpChannel.ack(msg);
             }
             else {
                 this.tmpChannel.nack(msg);
             }
+        }
+    }
+    decode(msg) {
+        try {
+            return JSON.parse(msg.toString());
+        }
+        catch (err) {
+            console.error(`Broker.decode was likely passed a poorly formed message: ${err}`);
+            return null;
         }
     }
 }

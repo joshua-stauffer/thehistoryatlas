@@ -12,10 +12,27 @@ type QueryResponse =
   INameTag | null;
 
 export type QueryFunc = (param: string) => Promise<QueryResponse>;
+export type MutatorFunc = (payload: MutatorPayload) => Promise<void>;
+
+// mutator payload types
+type MutatorPayload = 
+  CreateNameTagPayload
+  | AddToNameTagPayload;
+
+interface CreateNameTagPayload {
+  name: string;
+  guid: string
+}
+interface AddToNameTagPayload {
+  name: string;
+  guid: string
+}
+
 
 export class Database {
 
   queryMap: Map<string, QueryFunc>
+  mutatorMap: Map<string, MutatorFunc>
 
   private DB_OPTIONS: DB_OPTIONS;
   private DB_URI: string;
@@ -35,7 +52,10 @@ export class Database {
 
     // create query map and bind the methods to this object
     this.queryMap = new Map([
-      ['getNameTag', this.getNameTag.bind(this)]
+      ['GET_NAME_TAG', this.getNameTag.bind(this)] // () => this.get
+    ])
+    this.mutatorMap = new Map([
+      ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
     ])
 
     // try to reconnect if we lose connection
@@ -105,9 +125,13 @@ export class Database {
 
   // Mutations: to be used by persistedEvent-handlers only
 
-  async createNameTag(name: string, guid: string): Promise<void> {
+
+
+  async createNameTag(payload: CreateNameTagPayload): Promise<void> {
     // create a new instance of a NameTag
     
+    const { name, guid } = payload;
+
     NameTag.create({
       name: name,
       guid: [guid]
@@ -120,8 +144,10 @@ export class Database {
     })
   }
 
-  async addToNameTag(name: string, guid: string): Promise<void> {
+  async addToNameTag(payload: AddToNameTagPayload): Promise<void> {
     // add a guid to an existing NameTag entry
+
+    const { name, guid } = payload;
 
     NameTag.updateOne(
       { name: name },

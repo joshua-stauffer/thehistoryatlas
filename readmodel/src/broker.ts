@@ -7,7 +7,7 @@ April 14th 2021
 import * as Amqp from 'amqplib';
 import { v4 } from 'uuid'
 import { Config } from './config';
-import { APIHandler, EventHandler } from './readModel';
+import { APIHandler, EventHandler, APIRequest } from './readModel';
 
 interface BrokerConfig {
   protocol: string;
@@ -99,7 +99,19 @@ export class Broker {
       return // add some sort of a restart logic here?
     }
 
-    this.apiHandler(msg.content)
+    if (!this.channel) {
+      console.error('Broker.handleAPICallBack: channel is nonexistent')
+      return
+    }
+
+    const { content } = msg;
+    const body = this.decode(content)
+    if (!body) {
+      console.warn('Broker.handleAPICallBack: discarding poorly formed message')
+      return
+    }
+
+    this.apiHandler(body)
       .then((res) => {
 
         // double check that the channel is there
@@ -118,8 +130,6 @@ export class Broker {
         )
         
       }) // not catching errors here
-
-
   }
 
   async handleEventCallBack(msg: Amqp.ConsumeMessage | null): Promise<void>   {
@@ -131,12 +141,26 @@ export class Broker {
       return // add some sort of a restart logic here?
     }
 
-    this.eventHandler(msg.content)
+    // double check that the channel is there
+    if (!this.channel) {
+      console.error('Broker.handleEventCallBack: channel is nonexistent')
+      return
+    }
+
+    const { content } = msg;
+    const body = this.decode(content)
+    if (!body) {
+      console.warn('Broker.handleEventCallBack: discarding poorly formed message')
+      this.channel.ack(msg)
+      return
+    }
+
+    this.eventHandler(body)
       .then((res) => {
 
         // double check that the channel is there
         if (!this.channel) {
-          console.error('Channel was non-existent in handleEventCallBack')
+          console.error('Broker.handleEventCallBack: channel is nonexistent')
           return
         }
 
@@ -155,6 +179,7 @@ export class Broker {
   async connect(): Promise<void> {
     // establish connection to rabbitmq
 
+    console.log('Opening new connection to RabbitMQ.')
 
     Amqp.connect(this.conf)
       .then(async conn => {
@@ -206,6 +231,8 @@ export class Broker {
 
   private openChannel = (conn: Amqp.Connection) => {
     // open a new channel
+
+    console.log('Opening a new primary channel.')
 
     conn.createChannel()
       .then(channel => {
@@ -268,10 +295,13 @@ export class Broker {
   private startListening = (channel: Amqp.Channel, exchConf: ExchangeDetails) => {
     // start consuming on an exchange
 
+
     const { queueName, callBack, consumeOptions } = exchConf;
+
     channel.consume(queueName, callBack, consumeOptions)
       .then((ok) => {
         exchConf.consumerTag = ok.consumerTag;
+        console.log('Ready to receive messages at queue ', queueName)
       })
   }
 
@@ -286,6 +316,7 @@ export class Broker {
     come in while it is replaying, it should perform an additional check at the
     end of its replay and send the additional events through before closing.
     */
+   console.log('Requesting a history play back.')
 
     const tmpChannel = await conn.createChannel()
     this.tmpChannel = tmpChannel;
@@ -342,14 +373,20 @@ export class Broker {
     }
     
     if (msg.properties.correlationId !== this.tmpCorrId) {
-      console.log('Received an unrelated message from the History stream.')
+      console.log('Broker.historyStreamConsumer received an offtopic message.')
+      this.tmpChannel.ack(msg)
       return
     }
 
     const { content } = msg;
-    const message = JSON.parse(msg.toString())
+    const body = this.decode(content)
+    if (!body) {
+      console.warn('Broker.historyStreamConsumer discarding poorly formed message')
+      this.tmpChannel.ack(msg)
+      return
+    }
 
-    if (message?.payload === 'end') {
+    if (body?.payload === 'end') {
       // stream is over, close this channel and restart standard listening
       this.tmpChannel.ack(msg)
       this.tmpChannel.cancel(this.tmpConsumerTag)
@@ -360,12 +397,22 @@ export class Broker {
 
     } else {
       // send this message to application for processing
-      if (await this.eventHandler(content)) {
+      if (await this.eventHandler(body)) {
         this.tmpChannel.ack(msg)
       } else {
         this.tmpChannel.nack(msg)
       }
       
+    }
+    
+  }
+
+  private decode(msg: Buffer): APIRequest | null {
+    try {
+      return JSON.parse(msg.toString())
+    } catch (err) {
+      console.error(`Broker.decode was likely passed a poorly formed message: ${err}`)
+      return null
     }
     
   }
