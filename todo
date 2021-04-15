@@ -1,5 +1,6 @@
 
 
+
 The History Atlas - overview and task tracker
 
 
@@ -43,26 +44,12 @@ Current todo list
 - ALL: design/setup application wide logging
 - ALL: create async rabbitmq template for python services
 - ALL: compile stock starter input for testing/initialization
-- RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
-- WRITEMODEL: create replay history method
-- WRITEMODEL: setup alembic migrations?
-- WRITEMODEL: add event count stat to double check synch with event store
-- READMODEL: finish replay history
-- READMODEL: add event count stat to double check synch with event store
-- READMODEL: add event handlers
-- READMODEL: add api request handlers
-- API: create apollo server
-- API: add redis queue
-- API: add broker integration
 - ALL: run services with docker compose
 - ALL: setup .env files for docker
 - ALL: look into using poetry/creating packages?
-- SPACY: create NER parser
-- SPACY: add broker integration
-- GEO: create geo database
-- GEO: add broker integration
-- GEO: get kaggle cities
-- GEO: find countries/states geo data
+- API: create apollo server
+- API: add redis queue
+- API: add broker integration
 - CLIENT: cra & project setup
 - CLIENT: redux
 - CLIENT: apollo integration
@@ -70,13 +57,27 @@ Current todo list
 - CLIENT: quickview event window
 - CLIENT: leaflet integration
 - CLIENT: add drawing for cities and events
-- USER: setup database
-- USER: add broker integration
-- USER: create login/validation/edit logic
 - EMAIL: create email service with sendgrid?
+- GEO: create geo database
+- GEO: add broker integration
+- GEO: get kaggle cities
+- GEO: find countries/states geo data
 - NGINX: setup client & api behind nginx
-- TEST: test scalability and load bearing
+- RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
+- READMODEL: add event count stat to double check sync with event store
+- READMODEL: test replay history
+- READMODEL: make sure all promises have catch statements
+- SPACY: create NER parser
+- SPACY: add broker integration
 - SOFT DEPLOY: push to DO
+- TEST: test scalability and load bearing
+- USER: setup database
+- USER: create login/validation/edit logic
+- USER: add broker integration
+- WRITEMODEL: create replay history method
+- WRITEMODEL: setup alembic migrations?
+- WRITEMODEL: add event count stat to double check synch with event store
+
 
 
 ______________________________________________________________________________
@@ -100,12 +101,17 @@ Questions
 - READMODEL: should I create an event object which holds references to citations?
 - READMODEL: what happens if the broker or History player crash while replaying?
 
+
+
 ______________________________________________________________________________
 
 
 
 Bug list
-... surely they're among us
+- READMODEL: UnhandledPromiseRejectionWarning on startup (likely because some
+              RabbitMQ message is getting passed accidentally to one of our
+              message handlers?)
+- READMODEL: poorly formed messages get rejected and requeued for infinity.
 
 
 ______________________________________________________________________________
@@ -114,6 +120,8 @@ ______________________________________________________________________________
 
 
 NOTES:
+- ALL: let's use all caps as a convention for any type field in a json message.
+        ...after hitting a bug because of a capitalization issue.
 - WRITEMODEL: i could allow for async writes by having an instance check out
               an aggregate, then return it once it's done. As long as two
               instances don't work on the same aggregate, state is maintained.
@@ -125,12 +133,6 @@ ______________________________________________________________________________
 
 
 COMPLETED TODOS!
-- (  done  ) WRITEMODEL: finish schema
-- (  done  ) WRITEMODEL: add db for validation
-- (  done  ) WRITEMODEL: add db client
-- (  done  ) WRITEMODEL: complete validator/manager package
-- (  done  ) WRITEMODEL: add tests to db
-- (  done  ) WRITEMODEL: add config
 - (  done  ) EVENTSTORE: create persistent db
 - (  done  ) EVENTSTORE: add tests to db
 - (  done  ) HISTORY: add tests to db
@@ -140,6 +142,15 @@ COMPLETED TODOS!
 - (  done  ) READMODEL: create broker
 - (  done  ) READMODEL: create main object
 - (  done  ) READMODEL: expose database functionality
+- (  done  ) READMODEL: finish replay history
+- (  done  ) READMODEL: add event handlers
+- (  done  ) READMODEL: add api request handlers
+- (  done  ) WRITEMODEL: finish schema
+- (  done  ) WRITEMODEL: add db for validation
+- (  done  ) WRITEMODEL: add db client
+- (  done  ) WRITEMODEL: complete validator/manager package
+- (  done  ) WRITEMODEL: add tests to db
+- (  done  ) WRITEMODEL: add config
 
 
 

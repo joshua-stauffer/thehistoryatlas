@@ -25,7 +25,10 @@ class Database {
         // this.DB_RETRY = DB_RETRY;
         // create query map and bind the methods to this object
         this.queryMap = new Map([
-            ['getNameTag', this.getNameTag.bind(this)]
+            ['GET_NAME_TAG', this.getNameTag.bind(this)] // () => this.get
+        ]);
+        this.mutatorMap = new Map([
+            ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
         ]);
         // try to reconnect if we lose connection
         //mongoose.connection.on('disconnected', this.connect)
@@ -87,8 +90,9 @@ class Database {
         });
     }
     // Mutations: to be used by persistedEvent-handlers only
-    async createNameTag(name, guid) {
+    async createNameTag(payload) {
         // create a new instance of a NameTag
+        const { name, guid } = payload;
         nameTag_1.default.create({
             name: name,
             guid: [guid]
@@ -101,8 +105,9 @@ class Database {
             }
         });
     }
-    async addToNameTag(name, guid) {
+    async addToNameTag(payload) {
         // add a guid to an existing NameTag entry
+        const { name, guid } = payload;
         nameTag_1.default.updateOne({ name: name }, { $push: { guid: guid } });
     }
     async delNameTag(name) {

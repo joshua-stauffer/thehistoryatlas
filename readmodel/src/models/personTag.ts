@@ -5,8 +5,9 @@ Model definition for document PersonTag
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPersonTag extends Document {
-  name: string;
-  guid: string[];
+  guid: string;
+  names: string[];
+  orderedTimeTags: string[]
 }
   
 const PersonTag: Schema = new Schema({
