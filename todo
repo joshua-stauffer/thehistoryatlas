@@ -42,15 +42,19 @@ Current todo list
 - ALL: create overview/api docs
 - ALL: design/setup application wide logging
 - ALL: create async rabbitmq template for python services
+- ALL: compile stock starter input for testing/initialization
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - WRITEMODEL: create replay history method
-- WRITEMODEL: setup alembic migrations? 
+- WRITEMODEL: setup alembic migrations?
+- WRITEMODEL: add event count stat to double check synch with event store
 - READMODEL: finish replay history
+- READMODEL: add event count stat to double check synch with event store
 - API: create apollo server
 - API: add redis queue
 - API: add broker integration
 - ALL: run services with docker compose
 - ALL: setup .env files for docker
+- ALL: look into using poetry/creating packages?
 - SPACY: create NER parser
 - SPACY: add broker integration
 - GEO: create geo database
@@ -92,7 +96,7 @@ Questions
                 run_forever method, so that i could provide for ways to 
                 restart the broker on failure. should i do that everywhere else?
 - READMODEL: should I create an event object which holds references to citations?
-
+- READMODEL: what happens if the broker or History player crash while replaying?
 
 ______________________________________________________________________________
 

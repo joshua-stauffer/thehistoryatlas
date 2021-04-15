@@ -77,7 +77,7 @@ export class Database {
     }
   }
 
-  private async setDBStatus(): Promise<void> {
+  async setDBStatus(): Promise<void> {
     /* 
     Sets the database InitTable.
 
@@ -99,9 +99,7 @@ export class Database {
       } else {
         console.log('got doc in getNameTag! ', doc)
       }
-
     })
-
   }
 
 

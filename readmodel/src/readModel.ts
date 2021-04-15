@@ -33,9 +33,26 @@ class ReadModel {
     this.db = new Database(this.conf)
   }
 
+  async runForever(): Promise<void> {
+    /* 
+    Initializes database and connects to RabbitMQ.
+    Will continue listening for messages until an error or stopped.  
+    */
+
+    await this.db.connect();
+    await this.startBroker();
+  }
+
   private async startBroker(): Promise<void> {
+    // Essentially an asynchronous constructor method for the broker
+
     const isDBInitialized = await this.db.getDBStatus();
-    this.broker = new Broker(this.conf, this.apiCallBack, this.eventCallBack, isDBInitialized)
+    this.broker = new Broker(this.conf, this.apiCallBack, this.eventCallBack, isDBInitialized);
+    await this.broker.connect();
+    if (!isDBInitialized) {
+      // what are we doing if for some reason the history replay fails?
+      await this.db.setDBStatus()
+    }
   }
 
   private async apiCallBack(msg: Buffer): Promise<APIReturn> {
@@ -68,5 +85,4 @@ class ReadModel {
 }
 
 const rm = new ReadModel();
-rm.db.connect()
-rm.broker.connect()
+rm.runForever()
