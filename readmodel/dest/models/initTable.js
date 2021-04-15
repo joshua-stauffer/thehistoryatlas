@@ -1,6 +1,6 @@
 "use strict";
 /*
-Model definition for document PersonTag
+Model definition for initTable -- a special table which serves as a flag to rebuild the database.
 */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -23,13 +23,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const PersonTag = new mongoose_1.Schema({
-    // lookup a person:
-    // what names are associated with them?
-    // which timetags are associated with them?
-    guid: { type: String, index: true, required: true },
-    names: [{ type: String }],
-    orderedTimeTags: [{ type: String }] // a list of time tag GUIDS representing chronological events
+const InitTable = new mongoose_1.Schema({
+    isInitialized: { type: Boolean, required: true, default: false }
 });
-exports.default = mongoose_1.default.model('PersonTag', PersonTag);
-//# sourceMappingURL=personTag.js.map
+exports.default = mongoose_1.default.model('InitTable', InitTable);
+//# sourceMappingURL=initTable.js.map

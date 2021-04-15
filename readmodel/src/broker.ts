@@ -1,11 +1,13 @@
 /*
 RabbitMQ broker for the History Atlas Read Side.
+
+April 14th 2021
 */
 
 import * as Amqp from 'amqplib';
 import { v4 } from 'uuid'
 import { Config } from './config';
-import { APIHandler, EventHandler } from './readModel';
+import { APIHandler, EventHandler, APIRequest } from './readModel';
 
 interface BrokerConfig {
   protocol: string;
@@ -36,12 +38,11 @@ export class Broker {
 
   private conf: BrokerConfig;
   private exchanges: ExchangeDetails[];
-  //private conn?: Amqp.Connection;
+  private conn?: Amqp.Connection;
   private channel?: Amqp.Channel;
   private apiHandler: APIHandler;
   private eventHandler: EventHandler;
 
-  private replayingHistory: boolean;
   private tmpChannel?: Amqp.Channel;
   private tmpConsumerTag?: string;
   private tmpCorrId?: string;
@@ -49,7 +50,6 @@ export class Broker {
 
   constructor(conf: Config, apiCallBack: APIHandler, eventCallBack: EventHandler, isDBInitialized: boolean) {
 
-    this.replayingHistory = false;
     this.connect = this.connect.bind(this);
     this.callPlayHistory = this.callPlayHistory.bind(this);
 
@@ -99,7 +99,19 @@ export class Broker {
       return // add some sort of a restart logic here?
     }
 
-    this.apiHandler(msg.content)
+    if (!this.channel) {
+      console.error('Broker.handleAPICallBack: channel is nonexistent')
+      return
+    }
+
+    const { content } = msg;
+    const body = this.decode(content)
+    if (!body) {
+      console.warn('Broker.handleAPICallBack: discarding poorly formed message')
+      return
+    }
+
+    this.apiHandler(body)
       .then((res) => {
 
         // double check that the channel is there
@@ -118,8 +130,6 @@ export class Broker {
         )
         
       }) // not catching errors here
-
-
   }
 
   async handleEventCallBack(msg: Amqp.ConsumeMessage | null): Promise<void>   {
@@ -131,12 +141,26 @@ export class Broker {
       return // add some sort of a restart logic here?
     }
 
-    this.eventHandler(msg.content)
+    // double check that the channel is there
+    if (!this.channel) {
+      console.error('Broker.handleEventCallBack: channel is nonexistent')
+      return
+    }
+
+    const { content } = msg;
+    const body = this.decode(content)
+    if (!body) {
+      console.warn('Broker.handleEventCallBack: discarding poorly formed message')
+      this.channel.ack(msg)
+      return
+    }
+
+    this.eventHandler(body)
       .then((res) => {
 
         // double check that the channel is there
         if (!this.channel) {
-          console.error('Channel was non-existent in handleEventCallBack')
+          console.error('Broker.handleEventCallBack: channel is nonexistent')
           return
         }
 
@@ -155,15 +179,19 @@ export class Broker {
   async connect(): Promise<void> {
     // establish connection to rabbitmq
 
+    console.log('Opening new connection to RabbitMQ.')
 
     Amqp.connect(this.conf)
       .then(async conn => {
+
+        // save connection for later
+        this.conn = conn;
 
         // do we need to initialize the database?
         if (!this.conf.isDBInitialized) {
           // block the thread until db is ready
           await this.callPlayHistory(conn)
-          this.conf.isDBInitialized = true;
+          return
         }
 
         this.openChannel(conn)
@@ -172,6 +200,7 @@ export class Broker {
         console.log('error in connection: ', err);
       })
   }
+
 
   private onConnectionClosed = () => {
     // handle the connection being closed unexpected, and try to reconnect.
@@ -202,6 +231,8 @@ export class Broker {
 
   private openChannel = (conn: Amqp.Connection) => {
     // open a new channel
+
+    console.log('Opening a new primary channel.')
 
     conn.createChannel()
       .then(channel => {
@@ -264,10 +295,13 @@ export class Broker {
   private startListening = (channel: Amqp.Channel, exchConf: ExchangeDetails) => {
     // start consuming on an exchange
 
+
     const { queueName, callBack, consumeOptions } = exchConf;
+
     channel.consume(queueName, callBack, consumeOptions)
       .then((ok) => {
         exchConf.consumerTag = ok.consumerTag;
+        console.log('Ready to receive messages at queue ', queueName)
       })
   }
 
@@ -282,7 +316,7 @@ export class Broker {
     come in while it is replaying, it should perform an additional check at the
     end of its replay and send the additional events through before closing.
     */
-    this.replayingHistory = true;
+   console.log('Requesting a history play back.')
 
     const tmpChannel = await conn.createChannel()
     this.tmpChannel = tmpChannel;
@@ -323,21 +357,64 @@ export class Broker {
 
   async historyStreamConsumer(msg: Amqp.ConsumeMessage | null): Promise<void> {
     // callback  function for handling incoming events
+
+    // we need these to be set to continue
+    if (!this.tmpChannel) throw new Error('Temporary channel is undefined')
+    if (!this.tmpConsumerTag) throw new Error('Temporary consumer tag is undefined')
+
     if (!msg) {
       // consumer was cancelled
-      if (!this.tmpChannel) throw new Error('Temporary channel is undefined')
-      if (!this.tmpConsumerTag) throw new Error('Temporary consumer tag is undefined')
+      // will this happen if the broker crashes while replaying?
+      console.log('History stream was closed.')
       this.tmpChannel.cancel(this.tmpConsumerTag)
       await this.tmpChannel.close();
+      this.conf.isDBInitialized = true;
       return
     }
+    
     if (msg.properties.correlationId !== this.tmpCorrId) {
-      console.log('got an unrelated message')
+      console.log('Broker.historyStreamConsumer received an offtopic message.')
+      this.tmpChannel.ack(msg)
       return
     }
+
     const { content } = msg;
-    const message = JSON.parse(msg.toString())
-    if (message.)
-    const res = await this.eventHandler(content)
+    const body = this.decode(content)
+    if (!body) {
+      console.warn('Broker.historyStreamConsumer discarding poorly formed message')
+      this.tmpChannel.ack(msg)
+      return
+    }
+
+    if (body?.payload === 'end') {
+      // stream is over, close this channel and restart standard listening
+      this.tmpChannel.ack(msg)
+      this.tmpChannel.cancel(this.tmpConsumerTag)
+      await this.tmpChannel.close()
+      this.conf.isDBInitialized = true;
+      if (!this.conn) throw new Error('Connection is missing in History stream consumer')
+      return this.openChannel(this.conn)
+
+    } else {
+      // send this message to application for processing
+      if (await this.eventHandler(body)) {
+        this.tmpChannel.ack(msg)
+      } else {
+        this.tmpChannel.nack(msg)
+      }
+      
+    }
+    
   }
+
+  private decode(msg: Buffer): APIRequest | null {
+    try {
+      return JSON.parse(msg.toString())
+    } catch (err) {
+      console.error(`Broker.decode was likely passed a poorly formed message: ${err}`)
+      return null
+    }
+    
+  }
+
 }

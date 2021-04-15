@@ -1,6 +1,8 @@
 "use strict";
 /*
 RabbitMQ broker for the History Atlas Read Side.
+
+April 14th 2021
 */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -24,8 +26,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Broker = void 0;
 const Amqp = __importStar(require("amqplib"));
+const uuid_1 = require("uuid");
 class Broker {
-    constructor(conf, apiCallBack, eventCallBack) {
+    constructor(conf, apiCallBack, eventCallBack, isDBInitialized) {
         this.onConnectionClosed = () => {
             // handle the connection being closed unexpected, and try to reconnect.
             console.log('connection was closed');
@@ -35,12 +38,12 @@ class Broker {
             // error is called if the server emits 'error': an operation failed due to a failed
             // precondition, or an admin closed the channel manually.
             // this won't be called if the connection closes with an error.
-            console.log(`error in connection ${err}`);
+            console.error(`error in connection ${err}`);
         };
         this.onConnectionReturn = (msg) => {
             // this gets called if a message is published as mandatory and the recipient
             // can't be found. 
-            console.log(`message was returned: ${msg}`);
+            console.warn(`message was returned: ${msg}`);
         };
         this.onConnectionDrain = () => {
             // if a connection has returned false from .publish or .sendToQueue, it will emit
@@ -49,6 +52,7 @@ class Broker {
         };
         this.openChannel = (conn) => {
             // open a new channel
+            console.log('Opening a new primary channel.');
             conn.createChannel()
                 .then(channel => {
                 // save channel for later
@@ -101,8 +105,11 @@ class Broker {
             channel.consume(queueName, callBack, consumeOptions)
                 .then((ok) => {
                 exchConf.consumerTag = ok.consumerTag;
+                console.log('Ready to receive messages at queue ', queueName);
             });
         };
+        this.connect = this.connect.bind(this);
+        this.callPlayHistory = this.callPlayHistory.bind(this);
         this.apiHandler = apiCallBack;
         this.eventHandler = eventCallBack;
         const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = conf;
@@ -112,7 +119,8 @@ class Broker {
             port: 5672,
             username: BROKER_USERNAME,
             password: BROKER_PASS,
-            vhost: '/'
+            vhost: '/',
+            isDBInitialized: isDBInitialized
         };
         this.exchanges = [
             {
@@ -133,7 +141,7 @@ class Broker {
                 type: 'direct',
                 queueName: 'readModel-eventlistener',
                 pattern: '',
-                callBack: this.handleEventCallBack.bind(this)
+                callBack: this.handleEventCallBack.bind(this) // callbacks must be bound
             }
         ];
     }
@@ -144,7 +152,17 @@ class Broker {
             console.warn('Broker is closing the connection');
             return; // add some sort of a restart logic here?
         }
-        this.apiHandler(msg.content)
+        if (!this.channel) {
+            console.error('Broker.handleAPICallBack: channel is nonexistent');
+            return;
+        }
+        const { content } = msg;
+        const body = this.decode(content);
+        if (!body) {
+            console.warn('Broker.handleAPICallBack: discarding poorly formed message');
+            return;
+        }
+        this.apiHandler(body)
             .then((res) => {
             // double check that the channel is there
             if (!this.channel) {
@@ -167,11 +185,23 @@ class Broker {
             console.warn('Broker is closing the connection');
             return; // add some sort of a restart logic here?
         }
-        this.eventHandler(msg.content)
+        // double check that the channel is there
+        if (!this.channel) {
+            console.error('Broker.handleEventCallBack: channel is nonexistent');
+            return;
+        }
+        const { content } = msg;
+        const body = this.decode(content);
+        if (!body) {
+            console.warn('Broker.handleEventCallBack: discarding poorly formed message');
+            this.channel.ack(msg);
+            return;
+        }
+        this.eventHandler(body)
             .then((res) => {
             // double check that the channel is there
             if (!this.channel) {
-                console.error('Channel was non-existent in handleEventCallBack');
+                console.error('Broker.handleEventCallBack: channel is nonexistent');
                 return;
             }
             if (res) {
@@ -186,14 +216,117 @@ class Broker {
     }
     async connect() {
         // establish connection to rabbitmq
+        console.log('Opening new connection to RabbitMQ.');
         Amqp.connect(this.conf)
-            .then(conn => {
-            // save conn for later then open a channel?
-            // this.conn = conn;
+            .then(async (conn) => {
+            // save connection for later
+            this.conn = conn;
+            // do we need to initialize the database?
+            if (!this.conf.isDBInitialized) {
+                // block the thread until db is ready
+                await this.callPlayHistory(conn);
+                return;
+            }
             this.openChannel(conn);
         }).catch((err) => {
             console.log('error in connection: ', err);
         });
+    }
+    async callPlayHistory(conn) {
+        /*
+        Creates a replay request to the History component, then listens until
+        replay is complete. This method should be awaited directly, since it is
+        responsible for populating the database with initial values -- no queries
+        should be accepted until this call is complete. The History component
+        should not close the connection until it's sure that the most up to date
+        representation of it's state has been transferred -- i.e. if new events
+        come in while it is replaying, it should perform an additional check at the
+        end of its replay and send the additional events through before closing.
+        */
+        console.log('Requesting a history play back.');
+        const tmpChannel = await conn.createChannel();
+        this.tmpChannel = tmpChannel;
+        // set channel event listeners
+        tmpChannel.on('close', () => console.error('Channel closed while replaying event stream.'));
+        tmpChannel.on('error', (err) => console.error(`Channel encountered error while replaying event stream: ${err}.`));
+        tmpChannel.on('return', () => console.log('Connection is back in replay event stream.'));
+        tmpChannel.on('drain', () => console.log('Connection must drain in replaying event stream.'));
+        // make sure exchange exists
+        const exchangeName = 'history';
+        await tmpChannel.assertExchange(exchangeName, 'direct');
+        // create a temporary queue
+        const { queue } = await tmpChannel.assertQueue('', {
+            autoDelete: true,
+            durable: true,
+            exclusive: true
+        });
+        // bind the queue to our history exchange
+        await tmpChannel.bindQueue(queue, exchangeName, '');
+        // create a message, an id, and send it to the History player
+        const msg = Buffer.from(JSON.stringify({ replay_history: 'start', start_from: 0 }));
+        const corrId = uuid_1.v4();
+        this.tmpCorrId = corrId;
+        tmpChannel.publish(exchangeName, '', msg, { replyTo: queue, correlationId: corrId });
+        // listen for incoming events until receiving a stop message
+        const { consumerTag } = await tmpChannel.consume(queue, this.historyStreamConsumer);
+        this.tmpConsumerTag = consumerTag;
+    }
+    async historyStreamConsumer(msg) {
+        // callback  function for handling incoming events
+        // we need these to be set to continue
+        if (!this.tmpChannel)
+            throw new Error('Temporary channel is undefined');
+        if (!this.tmpConsumerTag)
+            throw new Error('Temporary consumer tag is undefined');
+        if (!msg) {
+            // consumer was cancelled
+            // will this happen if the broker crashes while replaying?
+            console.log('History stream was closed.');
+            this.tmpChannel.cancel(this.tmpConsumerTag);
+            await this.tmpChannel.close();
+            this.conf.isDBInitialized = true;
+            return;
+        }
+        if (msg.properties.correlationId !== this.tmpCorrId) {
+            console.log('Broker.historyStreamConsumer received an offtopic message.');
+            this.tmpChannel.ack(msg);
+            return;
+        }
+        const { content } = msg;
+        const body = this.decode(content);
+        if (!body) {
+            console.warn('Broker.historyStreamConsumer discarding poorly formed message');
+            this.tmpChannel.ack(msg);
+            return;
+        }
+        if (body?.payload === 'end') {
+            // stream is over, close this channel and restart standard listening
+            this.tmpChannel.ack(msg);
+            this.tmpChannel.cancel(this.tmpConsumerTag);
+            await this.tmpChannel.close();
+            this.conf.isDBInitialized = true;
+            if (!this.conn)
+                throw new Error('Connection is missing in History stream consumer');
+            return this.openChannel(this.conn);
+        }
+        else {
+            // send this message to application for processing
+            if (await this.eventHandler(body)) {
+                this.tmpChannel.ack(msg);
+            }
+            else {
+                this.tmpChannel.nack(msg);
+            }
+        }
+    }
+    decode(msg) {
+        try {
+            return JSON.parse(msg.toString());
+        }
+        catch (err) {
+            console.error(`Broker.decode was likely passed a poorly formed message: ${err}`);
+            return null;
+        }
     }
 }
 exports.Broker = Broker;
