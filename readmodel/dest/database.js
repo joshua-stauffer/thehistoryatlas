@@ -9,11 +9,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Database = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
+const initTable_1 = __importDefault(require("./models/initTable"));
 const nameTag_1 = __importDefault(require("./models/nameTag"));
 class Database {
     // private DB_TIMEOUT: number;
     // private DB_RETRY: number | null;
     constructor(conf) {
+        // bindings
+        this.getDBStatus = this.getDBStatus.bind(this);
+        this.setDBStatus = this.setDBStatus.bind(this);
         const { DB_URI } = conf;
         this.DB_URI = DB_URI;
         this.DB_OPTIONS = { useUnifiedTopology: true, useNewUrlParser: true };
@@ -39,6 +43,36 @@ class Database {
         }
     }
     // Queries: for API use
+    async getDBStatus() {
+        /*
+        Checks database for the InitTable.
+    
+        Returns true if it finds it, else drops all collections from the database
+        and returns false.
+        */
+        const flag = initTable_1.default.findOne();
+        if (flag) {
+            // yay database already exists!
+            return true;
+        }
+        else {
+            // gotta rebuild it - but first, make sure it's empty
+            const collections = await mongoose_1.default.connection.db.collections();
+            for (const c of collections) {
+                await c.drop();
+            }
+            return false;
+        }
+    }
+    async setDBStatus() {
+        /*
+        Sets the database InitTable.
+    
+        After database is (re)built, call this method to ensure that next time the
+        application restarts the data will be preserved.
+        */
+        await initTable_1.default.create({ isInitialized: true });
+    }
     async getNameTag(name) {
         // returns all GUIDs associated with a given name
         return await nameTag_1.default.findOne({
@@ -79,35 +113,4 @@ class Database {
     }
 }
 exports.Database = Database;
-/*
-    if (!this.DB_RETRY) {
-
-      while (true) {
-        try {
-          await mongoose.connect(this.DB_URI, this.DB_OPTIONS)
-          console.log('successfully connected to mongo!')
-          break
-        } catch (error) {
-          console.log(`Can't connect to Mongo: ${error} Trying again infinitely.`)
-          const setTimeoutPromise = util.promisify(setTimeout);
-          await setTimeoutPromise(this.DB_TIMEOUT);
-          break
-        }
-      }
-
-    } else { // try conf.DB_RETRY amount of times
-      let tries = this.DB_RETRY;
-      while (tries > 0) {
-        try {
-          await mongoose.connect(this.DB_URI, this.DB_OPTIONS)
-        } catch (error) {
-          tries--;
-          console.log(`Can't connect to Mongo: ${error} Trying ${tries} more times.`)
-          const setTimeoutPromise = util.promisify(setTimeout);
-          await setTimeoutPromise(this.DB_TIMEOUT);
-        }
-      }
-    }
-  }
-*/ 
 //# sourceMappingURL=database.js.map

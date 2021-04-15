@@ -4,4 +4,4 @@ __pycache__
 env
 venv
 .env
-*.map
+*.js.map

@@ -1,10 +1,22 @@
-import { Schema, Document } from 'mongoose';
+/*
+Model definition for document PersonTag
+*/
 
+import mongoose, { Schema, Document } from 'mongoose';
 
-const PersonTag: Schema = new Schema({
-    // lookup a person by guid
+export interface IPersonTag extends Document {
+  name: string;
+  guid: string[];
+}
   
-    guid: { type: String, index: true, required: true },
-    names: [{ type: String }],
-    orderedTimeTags: [{ type: String }]   // a list of time tag GUIDS representing chronological events
-  })
+const PersonTag: Schema = new Schema({
+  // lookup a person:
+  // what names are associated with them?
+  // which timetags are associated with them?
+
+  guid: { type: String, index: true, required: true },
+  names: [{ type: String }],
+  orderedTimeTags: [{ type: String }]   // a list of time tag GUIDS representing chronological events
+})
+
+export default mongoose.model<IPersonTag>('PersonTag', PersonTag)

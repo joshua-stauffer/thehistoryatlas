@@ -49,6 +49,8 @@ Current todo list
 - WRITEMODEL: add event count stat to double check synch with event store
 - READMODEL: finish replay history
 - READMODEL: add event count stat to double check synch with event store
+- READMODEL: add event handlers
+- READMODEL: add api request handlers
 - API: create apollo server
 - API: add redis queue
 - API: add broker integration
