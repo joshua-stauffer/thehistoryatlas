@@ -7,6 +7,17 @@ April 16th 2021
 import * as Amqp from 'amqplib';
 import { v4 } from 'uuid'
 import { Config } from './config';
+import {
+  BoundingBox,
+  Location,
+  Point,
+  PlaceSummaryByTimeTag,
+  Person,
+  MetaData,
+  Tag,
+  TimeTagByFocus,
+  FocusType
+} from './types';
 
 interface BrokerConfig {
   protocol: string;
@@ -22,8 +33,26 @@ export interface Message {
   payload: any;
 }
 
-type QueryMap = Map<string, {resolve: PromiseResolution, reject: PromiseResolution}>
-type PromiseResolution = (msg: any) => Promise<any>;
+export interface ReadModelQuery {
+  type: 'GET_PLACE_SUMMARY_BY_TIME_TAG'
+    | 'GET_TIME_TAG_BY_FOCUS';
+  payload: {
+      boundingBox?: BoundingBox;
+      location?: Location;
+      point?: Point;
+      placeSummaryByTimeTag: PlaceSummaryByTimeTag;
+      person: Person;
+      metaData: MetaData;
+      tag: Tag;
+      timeTagByFocus: TimeTagByFocus;
+      focusType: FocusType;
+    }
+}
+
+type RPCRecipient = 'request.readmodel';
+type ExchangeName = 'api';
+
+type QueryMap = Map<string, { resolve: (value: unknown) => void, reject: (reason?: any) => void }>
 type callBackFunc = (msg: Amqp.ConsumeMessage | null) => Promise<void>;
 
 interface ExchangeDetails {
@@ -45,10 +74,11 @@ export class Broker {
   private conn?: Amqp.Connection;
   private channel?: Amqp.Channel;
   private queryMap: QueryMap;
-
+  
 
   constructor(config: Config) {
     this.connect = this.connect.bind(this);
+    this.queryReadModel = this.queryReadModel.bind(this)
     this.queryMap = new Map()
     const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = config;
     this.config = {
@@ -60,24 +90,51 @@ export class Broker {
       vhost: '/',
     }
     this.exchanges = [{
-        name: 'api',
-        type: 'topic',
-        queueName: 'amq.rabbitmq',
-        pattern: 'request.readmodel',
-        callBack: this.handleRPCCallback.bind(this),
-        consumeOptions: {
-          noAck: true
-        },
-        exchangeOptions: {
-          durable: false
-        }
+      // This exchange can be used for any non-essential query
+      // RPC operations. Anything requiring delivery confirmation
+      // (like Commands) should probably a more reliable exchange.
+      name: 'api',
+      type: 'topic',
+      queueName: 'amq.rabbitmq.reply-to',
+      pattern: 'request.readmodel',
+      callBack: this.handleRPCCallback.bind(this),
+      consumeOptions: {
+        noAck: true
       },
+      exchangeOptions: {
+        durable: false
+      }
+    },
       // we can add additional exchanges here, if need be
     ]
   }
 
-  public publish(msg: Message): void {
-    this.channel?.publish() // april 16th 11:33pm Pick back up here tomorrow.
+  private publishRPC(
+    msg: Message,
+    recipient: RPCRecipient,
+    exchangeName: ExchangeName
+  ): Promise<unknown> {
+    if (!this.channel) throw new Error('Channel doesn\'t exist');
+    const exchange = this.exchanges.find(ex => ex.name === exchangeName) as ExchangeDetails;
+    const queryID = v4();
+    if (!this.channel.publish(
+      exchange.name,
+      recipient,
+      Buffer.from(JSON.stringify(msg)),
+      {
+        replyTo: 'amq.rabbitmq.reply-to',
+        correlationId: queryID
+      }
+    )) throw new Error('Stream is full. Try again after receiving "drain" event.')
+    return new Promise((resolve, reject) => {
+      this.queryMap.set(queryID, {
+        resolve: resolve, reject: reject
+      })
+    })
+  }
+
+  public async queryReadModel(msg: ReadModelQuery): Promise<unknown> {
+    return this.publishRPC(msg, 'request.readmodel', 'api');
   }
 
   private async handleRPCCallback(msg: Amqp.ConsumeMessage | null): Promise<void> {
@@ -89,6 +146,7 @@ export class Broker {
     const promise = this.queryMap.get(correlationId);
     if (!promise) return;
     const { resolve } = promise;
+    this.queryMap.delete(correlationId)
     // Decode the Buffer object and pass it to the stored resolve function,
     // which will return it to the correct Apollo resolver.
     return resolve(this.decode(content))
@@ -167,7 +225,7 @@ export class Broker {
           this.createQueue(channel, exchConf);
         }).catch((err) => {
           console.log(`Caught error ${err} while declaring exchange ${exchConf.name}.`)
-      })
+        })
     }
   }
 
@@ -190,9 +248,9 @@ export class Broker {
     channel.bindQueue(queueName, name, pattern)
       .then(() => {
         this.startListening(channel, exchConf)
-    }).catch((err) => {
-      console.log(`Got error ${err} while binding queue ${queueName} to ${name}`)
-    })
+      }).catch((err) => {
+        console.log(`Got error ${err} while binding queue ${queueName} to ${name}`)
+      })
   }
 
   private startListening = (channel: Amqp.Channel, exchConf: ExchangeDetails) => {
@@ -201,9 +259,9 @@ export class Broker {
     const { queueName, callBack, consumeOptions } = exchConf;
     channel.consume(
       queueName,
-      callBack, 
+      callBack,
       consumeOptions
-      )
+    )
       .then((ok) => {
         exchConf.consumerTag = ok.consumerTag;
         console.log('Ready to receive messages at queue ', queueName)
@@ -217,7 +275,7 @@ export class Broker {
       console.error(`Broker.decode was likely passed a poorly formed message: ${err}`)
       return null
     }
-    
+
   }
 
 }
