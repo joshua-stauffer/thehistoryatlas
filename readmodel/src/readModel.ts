@@ -102,7 +102,7 @@ class ReadModel {
     } else {
       return {
         type: "QUERY_RESPONSE",
-        payload: {result: result}
+        payload: result
       }
     }
   }
@@ -128,5 +128,7 @@ class ReadModel {
   }
 }
 
+console.log('running read model')
 const rm = new ReadModel();
 rm.runForever()
+console.log('should be running')

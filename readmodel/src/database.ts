@@ -6,13 +6,23 @@ April 12, 2021
 import mongoose from 'mongoose';
 import InitTable from './models/initTable';
 import NameTag, { INameTag } from './models/nameTag';
+import FocusSummary, { IFocusSummary } from './models/focusSummary';
 import { Config, DB_OPTIONS } from './config';
 
-type QueryResponse = 
-  INameTag | null;
 
-export type QueryFunc = (param: string) => Promise<QueryResponse>;
+
+export type QueryFunc = (payload: QueryPayload) => Promise<QueryResponse | null>;
 export type MutatorFunc = (payload: MutatorPayload) => Promise<void>;
+
+type FocusType = "PERSON" | "PLACE" | "TIME";
+
+interface QueryPayload {
+  focusType?: FocusType;
+  GUID?: string;
+  name?: string; // deprecate this?
+}
+type QueryResponse = 
+  INameTag | IFocusSummary;
 
 // mutator payload types
 type MutatorPayload = 
@@ -52,7 +62,8 @@ export class Database {
 
     // create query map and bind the methods to this object
     this.queryMap = new Map([
-      ['GET_NAME_TAG', this.getNameTag.bind(this)] // () => this.get
+      //['GET_NAME_TAG', this.getNameTag.bind(this)], // including this causes the compiler to crash?!
+      ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)]
     ])
     this.mutatorMap = new Map([
       ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
@@ -108,7 +119,7 @@ export class Database {
     await InitTable.create({ isInitialized: true })
   }
 
-  private async getNameTag(name: string): Promise<INameTag | null> {
+  private async getNameTag({ name }: QueryPayload): Promise<INameTag | null> {
     // returns all GUIDs associated with a given name
     
     return await NameTag.findOne({
@@ -120,6 +131,82 @@ export class Database {
         console.log('got doc in getNameTag! ', doc)
       }
     })
+  }
+
+  private async getFocusSummary({ focusType, GUID }: QueryPayload): Promise<IFocusSummary | null> {
+    // Primary way to obtain overview of a given focus.
+    // Contains enough data to find all other data linked to this entity.
+    if (!(focusType && GUID)) throw new Error('Incorrect arguments passed to getFocusSummary')
+    switch (focusType) {
+
+      case "PERSON":
+        return {
+          GUID: 'bach-some-guid',
+          timeTagSummaries: [
+            {
+              timeTag: '1685',
+              GUID: '1685-guid-1234',
+              citationCount: 1
+            },
+            {
+              timeTag: '1703',
+              GUID: '1703-guid-1234',
+              citationCount: 3
+            },
+            {
+              timeTag: '1750:3:7:28',
+              GUID: '1750-guid-1234',
+              citationCount: 2
+            }
+          ]
+        } as IFocusSummary;
+      case "PLACE":
+        return {
+          GUID: 'bach-some-guid',
+          timeTagSummaries: [
+            {
+              timeTag: '1685',
+              GUID: '1685-guid-1234',
+              citationCount: 1
+            },
+            {
+              timeTag: '1703',
+              GUID: '1703-guid-1234',
+              citationCount: 3
+            },
+            {
+              timeTag: '1750:3:7:28',
+              GUID: '1750-guid-1234',
+              citationCount: 2
+            }
+          ]
+        } as IFocusSummary;
+
+      case "TIME":
+        return {
+          GUID: 'bach-some-guid',
+          timeTagSummaries: [
+            {
+              timeTag: '1685',
+              GUID: '1685-guid-1234',
+              citationCount: 1
+            },
+            {
+              timeTag: '1703',
+              GUID: '1703-guid-1234',
+              citationCount: 3
+            },
+            {
+              timeTag: '1750:3:7:28',
+              GUID: '1750-guid-1234',
+              citationCount: 2
+            }
+          ]
+        } as IFocusSummary;
+
+      default:
+        throw new Error('Unknown focusType passed to getFocusSummary')
+    }
   }
 
 

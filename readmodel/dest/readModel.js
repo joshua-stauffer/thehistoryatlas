@@ -69,7 +69,7 @@ class ReadModel {
         else {
             return {
                 type: "QUERY_RESPONSE",
-                payload: { result: result }
+                payload: result
             };
         }
     }
@@ -90,6 +90,8 @@ class ReadModel {
         return true;
     }
 }
+console.log('running read model');
 const rm = new ReadModel();
 rm.runForever();
+console.log('should be running');
 //# sourceMappingURL=readModel.js.map

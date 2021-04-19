@@ -147,7 +147,7 @@ class Broker {
     }
     async handleAPICallBack(msg) {
         // passes incoming API read requests off to main application, then
-        // acks or nacks the message on completion.
+        // responds with the requested data. No acknowledgements neccessary.
         if (!msg) {
             console.warn('Broker is closing the connection');
             return; // add some sort of a restart logic here?
@@ -171,8 +171,10 @@ class Broker {
             }
             console.log('sending ', res);
             // send response
-            this.channel.sendToQueue(msg.properties.replyTo, // queue we're sending to
-            Buffer.from(res.toString()), // response from database
+            this.channel.sendToQueue(// does this work with the direct RPC pattern? https://www.rabbitmq.com/direct-reply-to.html
+            // yes, as per http://www.squaremobius.net/amqp.node/channel_api.html#connect
+            msg.properties.replyTo, // queue we're sending to
+            Buffer.from(JSON.stringify(res)), // response from database
             {
                 correlationId: msg.properties.correlationId // id so the API knows which question this answers
             });
@@ -180,7 +182,7 @@ class Broker {
     }
     async handleEventCallBack(msg) {
         // passes incoming Event read requests off to main application, then
-        // responds with the requested data. No acknowledgements neccessary.
+        // acks or nacks the message on completion. 
         if (!msg) {
             console.warn('Broker is closing the connection');
             return; // add some sort of a restart logic here?

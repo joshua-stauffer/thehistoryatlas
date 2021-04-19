@@ -25,7 +25,8 @@ class Database {
         // this.DB_RETRY = DB_RETRY;
         // create query map and bind the methods to this object
         this.queryMap = new Map([
-            ['GET_NAME_TAG', this.getNameTag.bind(this)] // () => this.get
+            //['GET_NAME_TAG', this.getNameTag.bind(this)], // including this causes the compiler to crash?!
+            ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)]
         ]);
         this.mutatorMap = new Map([
             ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
@@ -76,7 +77,7 @@ class Database {
         */
         await initTable_1.default.create({ isInitialized: true });
     }
-    async getNameTag(name) {
+    async getNameTag({ name }) {
         // returns all GUIDs associated with a given name
         return await nameTag_1.default.findOne({
             name: name
@@ -88,6 +89,79 @@ class Database {
                 console.log('got doc in getNameTag! ', doc);
             }
         });
+    }
+    async getFocusSummary({ focusType, GUID }) {
+        // Primary way to obtain overview of a given focus.
+        // Contains enough data to find all other data linked to this entity.
+        if (!(focusType && GUID))
+            throw new Error('Incorrect arguments passed to getFocusSummary');
+        switch (focusType) {
+            case "PERSON":
+                return {
+                    GUID: 'bach-some-guid',
+                    timeTagSummaries: [
+                        {
+                            timeTag: '1685',
+                            GUID: '1685-guid-1234',
+                            citationCount: 1
+                        },
+                        {
+                            timeTag: '1703',
+                            GUID: '1703-guid-1234',
+                            citationCount: 3
+                        },
+                        {
+                            timeTag: '1750:3:7:28',
+                            GUID: '1750-guid-1234',
+                            citationCount: 2
+                        }
+                    ]
+                };
+            case "PLACE":
+                return {
+                    GUID: 'bach-some-guid',
+                    timeTagSummaries: [
+                        {
+                            timeTag: '1685',
+                            GUID: '1685-guid-1234',
+                            citationCount: 1
+                        },
+                        {
+                            timeTag: '1703',
+                            GUID: '1703-guid-1234',
+                            citationCount: 3
+                        },
+                        {
+                            timeTag: '1750:3:7:28',
+                            GUID: '1750-guid-1234',
+                            citationCount: 2
+                        }
+                    ]
+                };
+            case "TIME":
+                return {
+                    GUID: 'bach-some-guid',
+                    timeTagSummaries: [
+                        {
+                            timeTag: '1685',
+                            GUID: '1685-guid-1234',
+                            citationCount: 1
+                        },
+                        {
+                            timeTag: '1703',
+                            GUID: '1703-guid-1234',
+                            citationCount: 3
+                        },
+                        {
+                            timeTag: '1750:3:7:28',
+                            GUID: '1750-guid-1234',
+                            citationCount: 2
+                        }
+                    ]
+                };
+            default:
+                throw new Error('Unknown focusType passed to getFocusSummary');
+        }
     }
     // Mutations: to be used by persistedEvent-handlers only
     async createNameTag(payload) {

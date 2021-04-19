@@ -125,7 +125,7 @@ export class Broker {
         this.channel.sendToQueue(                         // does this work with the direct RPC pattern? https://www.rabbitmq.com/direct-reply-to.html
                                                           // yes, as per http://www.squaremobius.net/amqp.node/channel_api.html#connect
           msg.properties.replyTo,                         // queue we're sending to
-          Buffer.from(res.toString()),                    // response from database
+          Buffer.from(JSON.stringify(res)),                    // response from database
           {
             correlationId: msg.properties.correlationId   // id so the API knows which question this answers
           }
