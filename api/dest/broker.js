@@ -26,8 +26,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Broker = void 0;
 const Amqp = __importStar(require("amqplib"));
+const uuid_1 = require("uuid");
 class Broker {
-    constructor(conf) {
+    constructor(config) {
         this.onConnectionClosed = () => {
             // handle the connection being closed unexpected, and try to reconnect.
             console.log('connection was closed');
@@ -101,15 +102,20 @@ class Broker {
         this.startListening = (channel, exchConf) => {
             // start consuming on an exchange
             const { queueName, callBack, consumeOptions } = exchConf;
-            channel.consume(queueName, callBack, consumeOptions)
+            channel.consume('amq.rabbitmq.reply-to', // setting this manually for now
+            callBack, consumeOptions)
                 .then((ok) => {
                 exchConf.consumerTag = ok.consumerTag;
                 console.log('Ready to receive messages at queue ', queueName);
             });
         };
         this.connect = this.connect.bind(this);
-        const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = conf;
-        this.conf = {
+        this.queryReadModel = this.queryReadModel.bind(this);
+        this.connect.bind(this);
+        this.openChannel.bind(this);
+        this.queryMap = new Map();
+        const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = config;
+        this.config = {
             protocol: 'amqp',
             hostname: NETWORK_HOST_NAME,
             port: 5672,
@@ -117,15 +123,19 @@ class Broker {
             password: BROKER_PASS,
             vhost: '/',
         };
-        this.exchanges = [
-            {
+        this.exchanges = [{
+                // This exchange can be used for any non-essential query
+                // RPC operations. Anything requiring delivery confirmation
+                // (like Commands) should probably a more reliable exchange.
                 name: 'api',
                 type: 'topic',
-                queueName: 'amq.rabbitmq',
+                queueName: '',
                 pattern: 'request.readmodel',
-                callBack: async () => console.log('callback!'),
+                callBack: this.handleRPCCallback.bind(this),
                 consumeOptions: {
-                    noAck: true
+                    noAck: true,
+                    exclusive: true,
+                    durable: false,
                 },
                 exchangeOptions: {
                     durable: false
@@ -134,10 +144,48 @@ class Broker {
             // we can add additional exchanges here, if need be
         ];
     }
+    publishRPC(msg, recipient, exchangeName) {
+        if (!this.channel)
+            throw new Error('Channel doesn\'t exist');
+        const exchange = this.exchanges.find(ex => ex.name === exchangeName);
+        const queryID = uuid_1.v4();
+        if (!this.channel.publish(exchange.name, recipient, Buffer.from(JSON.stringify(msg)), {
+            replyTo: 'amq.rabbitmq.reply-to',
+            correlationId: queryID
+        }))
+            throw new Error('Stream is full. Try again after receiving "drain" event.');
+        return new Promise((resolve, reject) => {
+            this.queryMap.set(queryID, {
+                resolve: resolve, reject: reject
+            });
+        });
+    }
+    async queryReadModel(msg) {
+        // accepts a json message and publishes it.
+        return this.publishRPC(msg, 'request.readmodel', 'api');
+    }
+    async handleRPCCallback(msg) {
+        // This callback is passed to the Amqp.consume method, and will be invoked
+        // whenever a message is received.
+        console.log('received RPC callback');
+        if (!msg)
+            return;
+        const { content, properties } = msg;
+        const { correlationId } = properties;
+        const promise = this.queryMap.get(correlationId);
+        if (!promise)
+            return;
+        const { resolve } = promise;
+        this.queryMap.delete(correlationId);
+        console.log('it resolved!');
+        // Decode the Buffer object and pass it to the stored resolve function,
+        // which will return it to the correct Apollo resolver.
+        return resolve(this.decode(content));
+    }
     async connect() {
         // establish connection to rabbitmq
         console.log('Opening new connection to RabbitMQ.');
-        Amqp.connect(this.conf)
+        Amqp.connect(this.config)
             .then(async (conn) => {
             // save connection for later
             this.conn = conn;

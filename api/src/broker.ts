@@ -16,9 +16,12 @@ import {
   MetaData,
   Tag,
   TimeTagByFocus,
-  FocusType
+  FocusType,
+  ReadModelQuery
 } from './types';
 
+
+// Local types
 interface BrokerConfig {
   protocol: string;
   hostname: string;
@@ -33,22 +36,6 @@ export interface Message {
   payload: any;
 }
 
-export interface ReadModelQuery {
-  type: 'GET_PLACE_SUMMARY_BY_TIME_TAG'
-    | 'GET_TIME_TAG_BY_FOCUS';
-  payload: {
-      boundingBox?: BoundingBox;
-      location?: Location;
-      point?: Point;
-      placeSummaryByTimeTag: PlaceSummaryByTimeTag;
-      person: Person;
-      metaData: MetaData;
-      tag: Tag;
-      timeTagByFocus: TimeTagByFocus;
-      focusType: FocusType;
-    }
-}
-
 type RPCRecipient = 'request.readmodel';
 type ExchangeName = 'api';
 
@@ -60,7 +47,7 @@ interface ExchangeDetails {
   type: string;
   queueName: string;
   pattern: string;
-  queueOptions?: Amqp.Options.AssertQueue;
+  queueOptions: Amqp.Options.AssertQueue;
   callBack: callBackFunc;
   consumeOptions?: Amqp.Options.Consume;
   publishOptions?: Amqp.Options.Publish;
@@ -79,6 +66,8 @@ export class Broker {
   constructor(config: Config) {
     this.connect = this.connect.bind(this);
     this.queryReadModel = this.queryReadModel.bind(this)
+    this.connect.bind(this);
+    this.openChannel.bind(this);
     this.queryMap = new Map()
     const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = config;
     this.config = {
@@ -95,11 +84,13 @@ export class Broker {
       // (like Commands) should probably a more reliable exchange.
       name: 'api',
       type: 'topic',
-      queueName: 'amq.rabbitmq.reply-to',
+      queueName: '',
       pattern: 'request.readmodel',
       callBack: this.handleRPCCallback.bind(this),
       consumeOptions: {
-        noAck: true
+        noAck: true,
+        exclusive: true,
+        durable: false,
       },
       exchangeOptions: {
         durable: false
@@ -134,12 +125,14 @@ export class Broker {
   }
 
   public async queryReadModel(msg: ReadModelQuery): Promise<unknown> {
+    // accepts a json message and publishes it.
     return this.publishRPC(msg, 'request.readmodel', 'api');
   }
 
   private async handleRPCCallback(msg: Amqp.ConsumeMessage | null): Promise<void> {
     // This callback is passed to the Amqp.consume method, and will be invoked
     // whenever a message is received.
+    console.log('received RPC callback')
     if (!msg) return;
     const { content, properties } = msg;
     const { correlationId } = properties;
@@ -147,6 +140,7 @@ export class Broker {
     if (!promise) return;
     const { resolve } = promise;
     this.queryMap.delete(correlationId)
+    console.log('it resolved!')
     // Decode the Buffer object and pass it to the stored resolve function,
     // which will return it to the correct Apollo resolver.
     return resolve(this.decode(content))
@@ -258,7 +252,7 @@ export class Broker {
 
     const { queueName, callBack, consumeOptions } = exchConf;
     channel.consume(
-      queueName,
+      'amq.rabbitmq.reply-to', // setting this manually for now
       callBack,
       consumeOptions
     )

@@ -3,15 +3,10 @@
 */
 import { Context } from '../index';
 import {
-  PlaceSummaryByTimeTag,
-  TimeTagByFocus,
-  Point,
-  Location,
-  BoundingBox,
-  Citation,
-  Tag,
-  MetaData,
-  Person
+  FocusSummary,
+  FocusSummaryArgs,
+  TimeTagDetailsArgs,
+  Message
 } from '../types'
 
 
@@ -21,90 +16,39 @@ interface ResolverMap {
 }
 interface Resolvers {
   Query: ResolverMap;
-  TimeTagByFocus: ResolverMap;
-  PlaceSummaryByTimeTag: ResolverMap;
-  Location: ResolverMap;
-  Point: ResolverMap;
-  BoundingBox: ResolverMap;
-  Citation: ResolverMap;
-  Tag: ResolverMap;
-  MetaData: ResolverMap;
 }
+
+
+import { timeTagDetails, personSummaryData } from './fakeData';
 
 export const resolvers: Resolvers = {
   Query: {
 
-    getPlaceSummaryByTimeTag: (root, args: {
-      boundingBox: BoundingBox,
-      timeTagGUID: string
-    }, ctx: Context) => {
-      return [placeSummary];
+    FocusSummary: async (_,
+      { focusGUID, focusType }: FocusSummaryArgs,
+      { queryReadModel }: Context) => {
+
+        const msg = {
+          type: "GET_FOCUS_SUMMARY",
+          payload: {
+            focusType: focusType,
+            GUID: focusGUID
+          }
+        }
+        const result = await queryReadModel(msg) as Message;
+        console.log('received result: ', result)
+        return result.payload.timeTagSummaries as FocusSummary
+
+      // fake local data:
+      // return personSummaryData.find(s => s.GUID === focusGUID)?.timeTagSummaries
     },
 
-    getEventFeed: (root, args: { 
-      direction: "FUTURE" | "PAST",
-      mode: "TIME" | "PERSON" | "PLACE",
-      currentFocusGUID: string
-     }, ctx: Context) => {
-
+    TimeTagDetails: (_, { focusGUID, timeTagGUID }, ___) => {
+      const combinedGUID = timeTagGUID + focusGUID
+      return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
     },
 
-    getTimeTagSummary: (root, args: {
-      mode: "TIME" | "PERSON" | "PLACE",
-      focusGUID: string
-    }, ctx: Context) => {
-
-    }
-
   },
 
-
-  TimeTagByFocus: {
-
-    citations: (ttbf: TimeTagByFocus, args, ctx) => {
-
-    },
-
-    adjacentPeople: (ttbf: TimeTagByFocus, args, ctx) => {
-      
-    }
-
-  },
-
-  PlaceSummaryByTimeTag: {
-
-  },
-  Location: {
-    
-  },
-  Point: {
-
-  },
-  BoundingBox: {
-
-  },
-  Citation: {
-
-  },
-  Tag: {
-
-  },
-  MetaData: {
-
-  }
 
 }
-
-
-const placeSummary: PlaceSummaryByTimeTag = {
-  placeName: ['Rome', 'Roma'],
-  placeLocation: {
-    point: {
-      latitude: 100,
-      longitude: 100
-    }
-  },
-  citationCount: 35,
-  personCount: 12
-}
-

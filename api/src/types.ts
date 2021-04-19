@@ -3,6 +3,11 @@ Collection of application-wide types
 April 16th, 2021
 */
 
+export interface Message {
+  type: string;
+  payload: unknown;
+}
+
 export interface BoundingBox {
   upperLeft: number;
   bottomRight: number;
@@ -38,7 +43,7 @@ export interface Citation {
 
 export interface Tag {
   type: FocusType;
-  guid: string;
+  GUID: string;
   start: number;
   end: number;
 }
@@ -46,13 +51,59 @@ export interface Tag {
 export interface MetaData {
   author: string;
   publisher: string;
-  pubDate: string;
-  pageNum: number;
+  pubDate?: string;
+  pageNum?: number;
 }
 
 export interface Person {
-  guid: string;
+  GUID: string;
   names: string[];
 }
 
+// starting over April 19th 2021
+// anything above here is not necessarily used
+
 export type FocusType = "TIME" | "PERSON" | "PLACE";
+
+
+export interface FocusSummary {
+  GUID: string;
+  timeTagSummaries: TimeTagSummary[]
+}
+
+export interface TimeTagSummary {
+  timeTag: string;
+  GUID: string;
+  citationCount: number;   // how many citations does this focus have in this time tag?
+}
+
+export interface TimeTagDetail {
+  GUID: string;
+  citations: Citation[]
+}
+
+export interface FocusSummaryArgs {
+  focusType: FocusType;
+  focusGUID: string;
+}
+
+export interface TimeTagDetailsArgs {
+  focusGUID: string;
+  timeTagGUID: string;
+}
+
+export interface ReadModelQuery {
+  type: "GET_FOCUS_SUMMARY";
+  payload: {
+      boundingBox?: BoundingBox;
+      location?: Location;
+      point?: Point;
+      placeSummaryByTimeTag?: PlaceSummaryByTimeTag;
+      person?: Person;
+      metaData?: MetaData;
+      tag?: Tag;
+      timeTagByFocus?: TimeTagByFocus;
+      focusType?: FocusType;
+      GUID?: string; // testing purposes
+    }
+}
