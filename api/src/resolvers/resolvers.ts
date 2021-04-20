@@ -5,8 +5,8 @@ import { Context } from '../index';
 import {
   FocusSummary,
   FocusSummaryArgs,
-  TimeTagDetailsArgs,
-  Message
+  Message,
+  ReadModelResponse
 } from '../types'
 
 
@@ -19,7 +19,7 @@ interface Resolvers {
 }
 
 
-import { timeTagDetails, personSummaryData } from './fakeData';
+// import { timeTagDetails, personSummaryData } from './fakeData';
 
 export const resolvers: Resolvers = {
   Query: {
@@ -35,17 +35,32 @@ export const resolvers: Resolvers = {
             GUID: focusGUID
           }
         }
-        const result = await queryReadModel(msg) as Message;
-        console.log('received result: ', result)
-        return result.payload.timeTagSummaries as FocusSummary
+        const { payload } = await queryReadModel(msg) as ReadModelResponse;
+        console.log('received result: ', payload)
+        return payload.timeTagSummaries as FocusSummary
 
-      // fake local data:
+      // local data for testing
       // return personSummaryData.find(s => s.GUID === focusGUID)?.timeTagSummaries
     },
 
-    TimeTagDetails: (_, { focusGUID, timeTagGUID }, ___) => {
-      const combinedGUID = timeTagGUID + focusGUID
-      return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
+    TimeTagDetails: async (_, 
+      { focusGUID, timeTagGUID },
+      { queryReadModel }: Context) => {
+        // combines the two GUIDs to create a new value and looks up citations 
+        // associated with that particular value
+
+      const msg = {
+        type: "GET_TIME_TAG_DETAILS",
+        payload: {
+          focusGUID: focusGUID,
+          timeTagGUID: timeTagGUID
+        }
+      }
+      const { payload } = await queryReadModel(msg);
+      console.log('received results from timeTagDetails: ', payload)
+      return payload.citations
+      // local data for testing
+      // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
     },
 
   },

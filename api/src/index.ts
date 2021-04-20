@@ -4,14 +4,12 @@ Point of entry for the GraphQL API component of the History Atlas.
 April 16th, 2021
 */
 
-import { ReadModelQuery } from "./broker";
-
 const { ApolloServer } = require('apollo-server');// consider switching to apollo-server-express ?
-const { Broker, ReadModelQuery } = require('./broker') ;
+const { Broker } = require('./broker') ;
 const { typeDefs } = require('./schema') ;
 const { resolvers } = require('./resolvers/resolvers') 
 const { Config } = require('./config') ;
-
+import { ReadModelQuery } from './types';
 
 
 const config = new Config()

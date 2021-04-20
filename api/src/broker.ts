@@ -8,15 +8,6 @@ import * as Amqp from 'amqplib';
 import { v4 } from 'uuid'
 import { Config } from './config';
 import {
-  BoundingBox,
-  Location,
-  Point,
-  PlaceSummaryByTimeTag,
-  Person,
-  MetaData,
-  Tag,
-  TimeTagByFocus,
-  FocusType,
   ReadModelQuery
 } from './types';
 

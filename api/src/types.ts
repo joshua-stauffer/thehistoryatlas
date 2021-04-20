@@ -93,7 +93,7 @@ export interface TimeTagDetailsArgs {
 }
 
 export interface ReadModelQuery {
-  type: "GET_FOCUS_SUMMARY";
+  type: string;
   payload: {
       boundingBox?: BoundingBox;
       location?: Location;
@@ -106,4 +106,18 @@ export interface ReadModelQuery {
       focusType?: FocusType;
       GUID?: string; // testing purposes
     }
+}
+
+export type ReadModelResponse = FailedReadModelResponse | SuccessfulReadModelResponse;
+
+interface FailedReadModelResponse {
+  type: "ERROR";
+  payload: {
+    message: string;
+  }
+}
+
+interface SuccessfulReadModelResponse {
+  type: "QUERY_RESPONSE";
+  payload: FocusSummary | TimeTagDetail;
 }

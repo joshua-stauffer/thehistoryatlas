@@ -6,7 +6,7 @@ April 16th, 2021
 */
 Object.defineProperty(exports, "__esModule", { value: true });
 const { ApolloServer } = require('apollo-server'); // consider switching to apollo-server-express ?
-const { Broker, ReadModelQuery } = require('./broker');
+const { Broker } = require('./broker');
 const { typeDefs } = require('./schema');
 const { resolvers } = require('./resolvers/resolvers');
 const { Config } = require('./config');

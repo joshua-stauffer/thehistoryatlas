@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = void 0;
-const fakeData_1 = require("./fakeData");
+// import { timeTagDetails, personSummaryData } from './fakeData';
 exports.resolvers = {
     Query: {
         FocusSummary: async (_, { focusGUID, focusType }, { queryReadModel }) => {
@@ -12,15 +12,27 @@ exports.resolvers = {
                     GUID: focusGUID
                 }
             };
-            const result = await queryReadModel(msg);
-            console.log('received result: ', result);
-            return result.payload.timeTagSummaries;
-            // fake local data:
+            const { payload } = await queryReadModel(msg);
+            console.log('received result: ', payload);
+            return payload.timeTagSummaries;
+            // local data for testing
             // return personSummaryData.find(s => s.GUID === focusGUID)?.timeTagSummaries
         },
-        TimeTagDetails: (_, { focusGUID, timeTagGUID }, ___) => {
-            const combinedGUID = timeTagGUID + focusGUID;
-            return fakeData_1.timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations;
+        TimeTagDetails: async (_, { focusGUID, timeTagGUID }, { queryReadModel }) => {
+            // combines the two GUIDs to create a new value and looks up citations 
+            // associated with that particular value
+            const msg = {
+                type: "GET_TIME_TAG_DETAILS",
+                payload: {
+                    focusGUID: focusGUID,
+                    timeTagGUID: timeTagGUID
+                }
+            };
+            const { payload } = await queryReadModel(msg);
+            console.log('received results from timeTagDetails: ', payload);
+            return payload.citations;
+            // local data for testing
+            // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
         },
     },
 };
