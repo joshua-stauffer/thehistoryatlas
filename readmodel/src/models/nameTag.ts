@@ -4,10 +4,9 @@ Model definition for document NameTag
 
 import mongoose, { Schema, Document } from 'mongoose';
 
-
 export interface INameTag extends Document {
   name: string;
-  guid: string[];
+  GUIDs: string[];
 }
   
 const NameTag: Schema = new Schema({
@@ -15,7 +14,7 @@ const NameTag: Schema = new Schema({
   // should i include places here or break it out into its own?
 
   name: { type: String, required: true, index: true },
-  guid: [{ type: String }],   // each name might have many people
+  GUIDs: [{ type: String }],   // each name might have many people
 })
 
 

@@ -6,9 +6,10 @@ April 12, 2021
 import mongoose from 'mongoose';
 import InitTable from './models/initTable';
 import NameTag, { INameTag } from './models/nameTag';
+import Tag, { ITag } from './models/tags';
 import FocusSummary, { IFocusSummary } from './models/focusSummary';
 import { Config, DB_OPTIONS } from './config';
-import { APITypes } from './types';
+import { APITypes, DB } from './types';
 import { v4 } from 'uuid';
 
 
@@ -54,7 +55,8 @@ export class Database {
     this.queryMap = new Map([
       //['GET_NAME_TAG', this.getNameTag.bind(this)], // including this causes the compiler to crash?!
       ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)],
-      ['GET_TIME_TAG_DETAILS', this.getTimeTagDetails.bind(this)]
+      ['GET_TIME_TAG_DETAILS', this.getTimeTagDetails.bind(this)],
+      ['SEARCH_FOCUS_BY_NAME', this.searchFocusByName.bind(this)]
     ])
     this.mutatorMap = new Map([
       ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
@@ -244,11 +246,37 @@ export class Database {
         ]
       }
     }
-
   }
+
+  async searchFocusByName(
+    { focusType, searchTerm }: APITypes.SearchFocusByNameQuery
+  ): Promise<APITypes.SearchFocusByNameResponse> {
+    if (!(focusType && searchTerm)) throw new Error('Incorrect arguments passed to searchFocusByName')
+    const results = await NameTag.findOne({ name: searchTerm }, 'GUIDs').exec() as unknown as string[]; // this is stupid..
+    if (!results) return {
+      type: 'SEARCH_FOCUS_BY_NAME',
+      payload: {
+        focuses: []
+      }
+    }
+    const tags = results.map(async (GUID: string) => await Tag.findOne({GUID: GUID}));
+    if (!tags) return {
+      type: 'SEARCH_FOCUS_BY_NAME',
+      payload: {
+        focuses: []
+      }
+    }
+    const r = {
+      type: 'SEARCH_FOCUS_BY_NAME',
+      payload: {
+        focuses: tags
+      }
+    }
+    console.log('searchFocusByName is returning ', r)
+    return r
+  }
+
   // Mutations: to be used by persistedEvent-handlers only
-
-
 
   async createNameTag(payload: CreateNameTagPayload): Promise<void> {
     // create a new instance of a NameTag

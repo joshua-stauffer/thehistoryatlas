@@ -47,6 +47,21 @@ export namespace APITypes {
     }
   }
 
+  // SEARCH_FOCUS_BY_NAME
+  export interface SearchFocusByNameQuery {
+    focusType: string;
+    searchTerm: string;
+  }
+  export interface SearchFocusByNameResponse {
+    type: string;
+    payload: {
+      focuses: {
+        GUID: string;
+        names: string[];
+      }[]
+    }
+  }
+
   // NAME_TAG
   export interface NameTagQuery {
     name: string;
@@ -82,6 +97,11 @@ export namespace DB {
     timeTag: string;
     GUID: string;
     citationCount: number;
+  }
+
+  export interface TagsByName {
+    GUID: string;
+    names: string[];
   }
   
 }
