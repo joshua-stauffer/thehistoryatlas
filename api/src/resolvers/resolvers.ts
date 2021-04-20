@@ -46,9 +46,6 @@ export const resolvers: Resolvers = {
     TimeTagDetails: async (_, 
       { focusGUID, timeTagGUID },
       { queryReadModel }: Context) => {
-        // combines the two GUIDs to create a new value and looks up citations 
-        // associated with that particular value
-
       const msg = {
         type: "GET_TIME_TAG_DETAILS",
         payload: {
@@ -63,7 +60,19 @@ export const resolvers: Resolvers = {
       // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
     },
 
-  },
-
-
-}
+    searchFocusByName: async (_,
+      { focusType, searchTerm },
+      { queryReadModel }: Context) => {
+        const msg = {
+          type: "SEARCH_FOCUS_BY_NAME",
+          payload: {
+            focusType: focusType,
+            searchTerm: searchTerm
+          }
+        }
+        const { payload } = await queryReadModel(msg);
+        console.log('received results from searchFocusByName: ', payload)
+        return payload // double check that this is correct
+      }
+  } // end of Query
+} // end of Resolvers

@@ -14,7 +14,12 @@ export const typeDefs = gql`
     TimeTagDetails(
       focusGUID: String!
       timeTagGUID: String!
-    ): [Citation]!
+    ): [Citation]
+
+    searchFocusByName(
+      focusType: FocusType!
+      searchTerm: String!
+    ): [Focus]
 
   }
 
@@ -42,6 +47,11 @@ export const typeDefs = gql`
     publisher: String!
     pubDate: String
     pageNum: Int
+  }
+
+  type Focus {
+    names: [String!]!
+    GUID: String!
   }
 
   enum FocusType {
