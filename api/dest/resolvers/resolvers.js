@@ -19,8 +19,6 @@ exports.resolvers = {
             // return personSummaryData.find(s => s.GUID === focusGUID)?.timeTagSummaries
         },
         TimeTagDetails: async (_, { focusGUID, timeTagGUID }, { queryReadModel }) => {
-            // combines the two GUIDs to create a new value and looks up citations 
-            // associated with that particular value
             const msg = {
                 type: "GET_TIME_TAG_DETAILS",
                 payload: {
@@ -34,6 +32,31 @@ exports.resolvers = {
             // local data for testing
             // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
         },
+        SearchFocusByName: async (_, { focusType, searchTerm }, { queryReadModel }) => {
+            const msg = {
+                type: "SEARCH_FOCUS_BY_NAME",
+                payload: {
+                    focusType: focusType,
+                    searchTerm: searchTerm
+                }
+            };
+            const { payload } = await queryReadModel(msg);
+            console.log('received results from searchFocusByName: ', payload);
+            return payload; // double check that this is correct
+        }
     },
-};
+    Mutation: {
+        AddAnnotatedCitation: async (_, { annotatedCitation }, { publishToWriteModel }) => {
+            publishToWriteModel({
+                type: 'PUBLISH_NEW_CITATION',
+                payload: annotatedCitation
+            });
+            return {
+                code: '200',
+                success: true,
+                message: 'Your command has been submitted for processing (oops not really)'
+            };
+        }
+    }
+}; // end of Resolvers
 //# sourceMappingURL=resolvers.js.map

@@ -14,7 +14,8 @@ const config = new Config();
 const broker = new Broker(config);
 broker.connect().then(() => console.log('Broker is ready'));
 const context = {
-    queryReadModel: broker.queryReadModel
+    queryReadModel: broker.queryReadModel,
+    publishToWriteModel: console.log
 };
 const server = new ApolloServer({ typeDefs, resolvers, context });
 server.listen().then(({ url }) => {

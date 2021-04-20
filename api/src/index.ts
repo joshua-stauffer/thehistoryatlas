@@ -9,7 +9,7 @@ const { Broker } = require('./broker') ;
 const { typeDefs } = require('./schema') ;
 const { resolvers } = require('./resolvers/resolvers') 
 const { Config } = require('./config') ;
-import { ReadModelQuery } from './types';
+import { ReadModelQuery, WriteModelCommand } from './types';
 
 
 const config = new Config()
@@ -18,10 +18,12 @@ broker.connect().then(() => console.log('Broker is ready'))
 
 export interface Context {
   queryReadModel: (query: ReadModelQuery) => Promise<unknown>;
+  publishToWriteModel: (command: WriteModelCommand) => void;
 }
 
 const context: Context = {
-  queryReadModel: broker.queryReadModel
+  queryReadModel: broker.queryReadModel,
+  publishToWriteModel: console.log
 }
 
 const server = new ApolloServer({ typeDefs, resolvers, context });

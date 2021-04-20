@@ -108,6 +108,11 @@ export interface ReadModelQuery {
     }
 }
 
+export interface WriteModelCommand {
+  type: string;
+  payload: any
+}
+
 export type ReadModelResponse = FailedReadModelResponse | SuccessfulReadModelResponse;
 
 interface FailedReadModelResponse {
@@ -120,4 +125,16 @@ interface FailedReadModelResponse {
 interface SuccessfulReadModelResponse {
   type: "QUERY_RESPONSE";
   payload: FocusSummary | TimeTagDetail;
+}
+
+export namespace Schema {
+  // migrate to using this namespace for any type defined inside the GraphQL Schema
+
+  export interface AnnotatedCitationArgs {
+    annotatedCitation: {
+      text: string;
+      tags: Tag[];
+      meta: MetaData;
+    }
+  }
 }

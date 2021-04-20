@@ -6,7 +6,8 @@ import {
   FocusSummary,
   FocusSummaryArgs,
   Message,
-  ReadModelResponse
+  ReadModelResponse,
+  Schema
 } from '../types'
 
 
@@ -16,6 +17,7 @@ interface ResolverMap {
 }
 interface Resolvers {
   Query: ResolverMap;
+  Mutation: ResolverMap;
 }
 
 
@@ -60,7 +62,7 @@ export const resolvers: Resolvers = {
       // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
     },
 
-    searchFocusByName: async (_,
+    SearchFocusByName: async (_,
       { focusType, searchTerm },
       { queryReadModel }: Context) => {
         const msg = {
@@ -74,5 +76,23 @@ export const resolvers: Resolvers = {
         console.log('received results from searchFocusByName: ', payload)
         return payload // double check that this is correct
       }
-  } // end of Query
+  }, // end of Query
+
+  Mutation: {
+
+    AddAnnotatedCitation: async (_,
+      { annotatedCitation }: Schema.AnnotatedCitationArgs,
+      { publishToWriteModel }: Context) => {
+        publishToWriteModel({
+          type: 'PUBLISH_NEW_CITATION',
+          payload: annotatedCitation
+        })
+        return {
+          code: '200',
+          success: true,
+          message: 'Your command has been submitted for processing (oops not really)'
+        }
+      }
+
+  }
 } // end of Resolvers

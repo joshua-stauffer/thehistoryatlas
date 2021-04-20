@@ -16,13 +16,12 @@ export const typeDefs = gql`
       timeTagGUID: String!
     ): [Citation]
 
-    searchFocusByName(
+    SearchFocusByName(
       focusType: FocusType!
       searchTerm: String!
     ): [Focus]
 
   }
-
   type TimeTagSummary {
     timeTag: String!
     GUID: String!
@@ -59,6 +58,48 @@ export const typeDefs = gql`
     PERSON
     PLACE
   }
+
+  type Mutation {
+    AddAnnotatedCitation(annotatedCitation: AnnotateCitation): AnnotateCitationResponse
+  }
+
+  input AnnotateCitation {
+    "The citation text"
+    text: String!
+    "Tags of who, where, and when"
+    tags: [TagInput!]!
+    "Source information"
+    meta: MetaDataInput!
+  }
+
+  input TagInput {
+    type: FocusType!
+    start: Int!
+    end: Int!
+    GUID: String!
+  }
+
+  input MetaDataInput {
+    author: String!
+    publisher: String!
+    pubDate: String
+    pageNum: Int
+  }
+
+  interface MutationResponse {
+    code: String!
+    success: Boolean!
+    message: String!
+  }
+
+  type AnnotateCitationResponse implements MutationResponse {
+    code: String!
+    success: Boolean!
+    message: String!
+  }
+
+
+
 
 `
 

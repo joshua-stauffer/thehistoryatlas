@@ -44,6 +44,7 @@ interface ExchangeDetails {
   publishOptions?: Amqp.Options.Publish;
   exchangeOptions?: Amqp.Options.AssertExchange;
   consumerTag?: string;
+  listen: boolean;
 }
 
 export class Broker {
@@ -85,7 +86,25 @@ export class Broker {
       },
       exchangeOptions: {
         durable: false
-      }
+      },
+      listen: true
+    },
+    {
+      name: 'commands',
+      type: 'direct',
+      queueName: '',
+      pattern: '',
+      callBack: this.handleEmitCommand.bind(this),
+      consumeOptions: {
+        noAck: false,
+      },
+      exchangeOptions: {
+        durable: true
+      },
+      queueOptions: {
+        durable: false,
+      },
+      listen: false
     },
       // we can add additional exchanges here, if need be
     ]
@@ -122,7 +141,7 @@ export class Broker {
 
   private async handleRPCCallback(msg: Amqp.ConsumeMessage | null): Promise<void> {
     // This callback is passed to the Amqp.consume method, and will be invoked
-    // whenever a message is received.
+    // whenever our application wants to query the ReadModel.
     console.log('received RPC callback')
     if (!msg) return;
     const { content, properties } = msg;
@@ -136,6 +155,15 @@ export class Broker {
     // which will return it to the correct Apollo resolver.
     return resolve(this.decode(content))
   }
+
+  private async handleEmitCommand(msg: Amqp.ConsumeMessage | null): Promise<void> {
+    // This callback is passed to the Amqp.consume method, and is invoked
+    // whenever our application wants to listen after publishing
+    // a command to the WriteModel.
+    // this is currently not doing anything.
+  }
+
+  // standard amqp methods for creating and maintaining the connection
 
   async connect(): Promise<void> {
     // establish connection to rabbitmq
@@ -240,6 +268,10 @@ export class Broker {
 
   private startListening = (channel: Amqp.Channel, exchConf: ExchangeDetails) => {
     // start consuming on an exchange
+    if (!exchConf.listen) {
+      console.log('Not receiving messages on queue ', exchConf.queueName)
+      return
+    }
 
     const { queueName, callBack, consumeOptions } = exchConf;
     channel.consume(
