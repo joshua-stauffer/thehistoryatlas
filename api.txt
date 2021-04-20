@@ -11,7 +11,7 @@ RabbitMQ - broker for interservice communication
   vhosts:
 
   exchanges:
-
+    api -- communications to and from the Apollo server
   queues:
 
 
@@ -39,6 +39,7 @@ ______________________________________________________________________________
 
 
 Requests - json objects from the apollo server representing a query.
-
+      "GET_FOCUS_SUMMARY"
+      "GET_TIME_TAG_DETAILS"
 
 ______________________________________________________________________________

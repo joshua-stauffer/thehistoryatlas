@@ -20,7 +20,7 @@ ______________________________________________________________________________
 
 PROGRESS            | ..... |
 - React Client      |       |
-- Apollo Server     |       |
+- Apollo Server     | ..    |
 - Read Model        | ..    |
 - Write Model       | ..    |
 - Event Store       | ...   |
@@ -47,9 +47,10 @@ Current todo list
 - ALL: run services with docker compose
 - ALL: setup .env files for docker
 - ALL: look into using poetry/creating packages?
-- API: create apollo server
+- ALL: create standard config and broker files and move to inheriting them for specific use cases
 - API: add redis queue
-- API: add broker integration
+- API: add timeout to response queue
+- API: break ReadModelQuery types into subtypes and combine them with a union
 - CLIENT: cra & project setup
 - CLIENT: redux
 - CLIENT: apollo integration
@@ -67,6 +68,10 @@ Current todo list
 - READMODEL: add event count stat to double check sync with event store
 - READMODEL: test replay history
 - READMODEL: make sure all promises have catch statements
+- READMODEL: upgrade database methods to actually use the database :)
+- READMODEL: update types to fully use types.ts
+                => especially look out for QueryPayload, which currently has two definitions
+- READMODEL: fix typing for database's QueryMap
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO
@@ -112,6 +117,8 @@ Bug list
               RabbitMQ message is getting passed accidentally to one of our
               message handlers?)
 - READMODEL: poorly formed messages get rejected and requeued for infinity.
+- API: queues don't autodelete when closed
+- READMODEL:  queues don't autodelete when closed
 
 
 ______________________________________________________________________________
@@ -133,6 +140,8 @@ ______________________________________________________________________________
 
 
 COMPLETED TODOS!
+- (  done  ) API: create apollo server
+- (  done  ) API: add broker integration
 - (  done  ) EVENTSTORE: create persistent db
 - (  done  ) EVENTSTORE: add tests to db
 - (  done  ) HISTORY: add tests to db
