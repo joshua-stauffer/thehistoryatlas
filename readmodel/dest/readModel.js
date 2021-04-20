@@ -62,15 +62,14 @@ class ReadModel {
         if (!result) {
             console.warn(`ReadModel.apiCallBack: payload ${payload} returned no results. Discarding and doing nothing.`);
             return {
-                type: "QUERY_RESPONSE",
+                type: "EMPTY_QUERY_RESPONSE",
                 payload: { result: null }
             };
         }
         else {
-            return {
-                type: "QUERY_RESPONSE",
-                payload: result
-            };
+            // database methods are responsible for packing up the message themselves,
+            // since we'd like to include information about the package in the type
+            return result;
         }
     }
     async eventCallBack(msg) {

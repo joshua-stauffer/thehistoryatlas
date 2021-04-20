@@ -8,21 +8,12 @@ import InitTable from './models/initTable';
 import NameTag, { INameTag } from './models/nameTag';
 import FocusSummary, { IFocusSummary } from './models/focusSummary';
 import { Config, DB_OPTIONS } from './config';
+import { APITypes } from './types';
+import { v4 } from 'uuid';
 
 
-
-export type QueryFunc = (payload: QueryPayload) => Promise<QueryResponse | null>;
+export type QueryFunc = (payload: any) => Promise<any>;
 export type MutatorFunc = (payload: MutatorPayload) => Promise<void>;
-
-type FocusType = "PERSON" | "PLACE" | "TIME";
-
-interface QueryPayload {
-  focusType?: FocusType;
-  GUID?: string;
-  name?: string; // deprecate this?
-}
-type QueryResponse = 
-  INameTag | IFocusSummary;
 
 // mutator payload types
 type MutatorPayload = 
@@ -37,7 +28,6 @@ interface AddToNameTagPayload {
   name: string;
   guid: string
 }
-
 
 export class Database {
 
@@ -63,7 +53,8 @@ export class Database {
     // create query map and bind the methods to this object
     this.queryMap = new Map([
       //['GET_NAME_TAG', this.getNameTag.bind(this)], // including this causes the compiler to crash?!
-      ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)]
+      ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)],
+      ['GET_TIME_TAG_DETAILS', this.getTimeTagDetails.bind(this)]
     ])
     this.mutatorMap = new Map([
       ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
@@ -119,7 +110,7 @@ export class Database {
     await InitTable.create({ isInitialized: true })
   }
 
-  private async getNameTag({ name }: QueryPayload): Promise<INameTag | null> {
+  private async getNameTag({ name }: APITypes.NameTagQuery): Promise<INameTag | null> {
     // returns all GUIDs associated with a given name
     
     return await NameTag.findOne({
@@ -133,14 +124,18 @@ export class Database {
     })
   }
 
-  private async getFocusSummary({ focusType, GUID }: QueryPayload): Promise<IFocusSummary | null> {
+  private async getFocusSummary(
+    { focusType, GUID }: APITypes.FocusSummaryQuery
+    ): Promise<APITypes.FocusSummaryResponse> {
     // Primary way to obtain overview of a given focus.
     // Contains enough data to find all other data linked to this entity.
     if (!(focusType && GUID)) throw new Error('Incorrect arguments passed to getFocusSummary')
+    let payload = null;
+
     switch (focusType) {
 
       case "PERSON":
-        return {
+        payload = {
           GUID: 'bach-some-guid',
           timeTagSummaries: [
             {
@@ -160,8 +155,10 @@ export class Database {
             }
           ]
         } as IFocusSummary;
+        break;
+
       case "PLACE":
-        return {
+        payload = {
           GUID: 'bach-some-guid',
           timeTagSummaries: [
             {
@@ -181,9 +178,10 @@ export class Database {
             }
           ]
         } as IFocusSummary;
+        break;
 
       case "TIME":
-        return {
+        payload = {
           GUID: 'bach-some-guid',
           timeTagSummaries: [
             {
@@ -203,13 +201,51 @@ export class Database {
             }
           ]
         } as IFocusSummary;
-
+        break;
+        
       default:
         throw new Error('Unknown focusType passed to getFocusSummary')
     }
+
+    return {
+      type: 'FOCUS_SUMMARY',
+      payload: payload
+    }
   }
 
+  private async getTimeTagDetails(
+    { focusGUID, timeTagGUID }: APITypes.TimeTagDetailsQuery
+    ): Promise<APITypes.TimeTagDetailsResponse> {
+    // Primary way to obtain overview of a given focus.
+    // Contains enough data to find all other data linked to this entity.
+    if (!( focusGUID && timeTagGUID )) throw new Error('Incorrect arguments passed to getFocusSummary')
+    let payload = {};
+    
+    return {
+      type: 'TIME_TAG_DETAILS',
+      payload:   {
+        citations: [
+          {
+            GUID: 'citation-guid-2844',
+            text: 'Sometime around here buxtehude was born',
+            tags: [
+              {
+                type: 'PERSON',
+                GUID: v4(),
+                start: 23,
+                end: 29
+              }
+            ],
+            meta: {
+              author: "someone",
+              publisher: "a publisher"
+            }
+          }
+        ]
+      }
+    }
 
+  }
   // Mutations: to be used by persistedEvent-handlers only
 
 

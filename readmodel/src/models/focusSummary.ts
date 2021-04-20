@@ -2,16 +2,11 @@
 // Stores references to a single entity
 
 import mongoose, { Schema, Document } from 'mongoose';
+import { DB } from '../types';
 
 export interface IFocusSummary extends Document {
   GUID: string;
-  timeTagSummaries: timeTagSummary[];
-}
-
-interface timeTagSummary {
-  timeTag: string;
-  GUID: string;
-  citationCount: number;
+  timeTagSummaries: DB.TimeTagSummary[];
 }
 
 const FocusSummary: Schema = new Schema({

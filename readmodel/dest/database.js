@@ -11,6 +11,7 @@ exports.Database = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const initTable_1 = __importDefault(require("./models/initTable"));
 const nameTag_1 = __importDefault(require("./models/nameTag"));
+const uuid_1 = require("uuid");
 class Database {
     // private DB_TIMEOUT: number;
     // private DB_RETRY: number | null;
@@ -26,7 +27,8 @@ class Database {
         // create query map and bind the methods to this object
         this.queryMap = new Map([
             //['GET_NAME_TAG', this.getNameTag.bind(this)], // including this causes the compiler to crash?!
-            ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)]
+            ['GET_FOCUS_SUMMARY', this.getFocusSummary.bind(this)],
+            ['GET_TIME_TAG_DETAILS', this.getTimeTagDetails.bind(this)]
         ]);
         this.mutatorMap = new Map([
             ['CREATE_NAME_TAG', this.createNameTag.bind(this)]
@@ -95,9 +97,10 @@ class Database {
         // Contains enough data to find all other data linked to this entity.
         if (!(focusType && GUID))
             throw new Error('Incorrect arguments passed to getFocusSummary');
+        let payload = null;
         switch (focusType) {
             case "PERSON":
-                return {
+                payload = {
                     GUID: 'bach-some-guid',
                     timeTagSummaries: [
                         {
@@ -117,8 +120,9 @@ class Database {
                         }
                     ]
                 };
+                break;
             case "PLACE":
-                return {
+                payload = {
                     GUID: 'bach-some-guid',
                     timeTagSummaries: [
                         {
@@ -138,8 +142,9 @@ class Database {
                         }
                     ]
                 };
+                break;
             case "TIME":
-                return {
+                payload = {
                     GUID: 'bach-some-guid',
                     timeTagSummaries: [
                         {
@@ -159,9 +164,44 @@ class Database {
                         }
                     ]
                 };
+                break;
             default:
                 throw new Error('Unknown focusType passed to getFocusSummary');
         }
+        return {
+            type: 'FOCUS_SUMMARY',
+            payload: payload
+        };
+    }
+    async getTimeTagDetails({ focusGUID, timeTagGUID }) {
+        // Primary way to obtain overview of a given focus.
+        // Contains enough data to find all other data linked to this entity.
+        if (!(focusGUID && timeTagGUID))
+            throw new Error('Incorrect arguments passed to getFocusSummary');
+        let payload = {};
+        return {
+            type: 'TIME_TAG_DETAILS',
+            payload: {
+                citations: [
+                    {
+                        GUID: 'citation-guid-2844',
+                        text: 'Sometime around here buxtehude was born',
+                        tags: [
+                            {
+                                type: 'PERSON',
+                                GUID: uuid_1.v4(),
+                                start: 23,
+                                end: 29
+                            }
+                        ],
+                        meta: {
+                            author: "someone",
+                            publisher: "a publisher"
+                        }
+                    }
+                ]
+            }
+        };
     }
     // Mutations: to be used by persistedEvent-handlers only
     async createNameTag(payload) {
