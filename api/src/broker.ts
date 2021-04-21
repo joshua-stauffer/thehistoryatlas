@@ -29,7 +29,7 @@ export interface Message {
 }
 
 type RPCRecipient = 'query.readmodel' | 'command.writemodel';
-type ExchangeName = 'api';
+type ExchangeName = string;
 
 type QueryMap = Map<string, { resolve: (value: unknown) => void, reject: (reason?: any) => void }>
 type callBackFunc = (msg: Amqp.ConsumeMessage | null) => Promise<void>;
@@ -82,7 +82,7 @@ export class Broker {
       // (and will eventually cancel with a timeout on long requests),
       // and so doesn't need acks. Other services will use the same 
       // topic exchange but with acknowledgements if not an RPC pattern.
-      name: 'api',
+      name: 'main',
       type: 'topic',
       queueName: '',
       pattern: 'query.readmodel',

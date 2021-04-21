@@ -66,7 +66,6 @@ export const resolvers: Resolvers = {
           message: err
         }
       }
-
     },
 
     SearchFocusByName: async (_,
