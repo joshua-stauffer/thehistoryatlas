@@ -9,6 +9,14 @@ services:
             - "15672:15672"
         volumes: 
             - broker:/var/lib/rabbitmq
+    mongodb:
+        image: "mongo"
+        networks:
+            - tha-connect
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongodata:/data/db
     api:
         depends_on:
             - broker
@@ -17,8 +25,15 @@ services:
             - "4000:4000"
         networks:
             - tha-connect
-
+    readmodel:
+        depends_on:
+            - broker
+            - mongodb
+        build: ./readmodel
+        networks:
+            - tha-connect
 volumes:
     broker:
+    mongodata:
 networks:
     tha-connect:

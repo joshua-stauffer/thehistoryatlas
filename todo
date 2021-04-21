@@ -53,6 +53,10 @@ Current todo list
 - (  done  ) API: add timeout to response queue
 - (  done  ) API: elegantly handle backend timeouts
 - API: break ReadModelQuery types into subtypes and combine them with a union
+- BROKER-JS: build
+- BROKER-JS: handle broker disconnect/restart gracefully
+- BROKER-PY: build
+- BROKER-PY: handle broker disconnect/restart gracefully
 - CLIENT: cra & project setup
 - CLIENT: redux
 - CLIENT: apollo integration
@@ -86,6 +90,8 @@ Current todo list
 - WRITEMODEL: setup alembic migrations?
 - WRITEMODEL: add event count stat to double check synch with event store
 - WRITEMODEL: migrate to topic rabbitmq
+- WRITEMODEL: create command to event handler
+- WRITEMODEL: create hashing mechanism to validate citations as unique
 
 
 

@@ -5,3 +5,5 @@ env
 venv
 .env
 *.js.map
+*.egg-info
+bits-and-pieces/
