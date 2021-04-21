@@ -1,11 +1,9 @@
-/*
+// Resolver for the History Atlas Apollo GraphQL API
 
-*/
 import { Context } from '../index';
 import {
   FocusSummary,
   FocusSummaryArgs,
-  Message,
   ReadModelResponse,
   Schema
 } from '../types'
@@ -19,9 +17,6 @@ interface Resolvers {
   Query: ResolverMap;
   Mutation: ResolverMap;
 }
-
-
-// import { timeTagDetails, personSummaryData } from './fakeData';
 
 export const resolvers: Resolvers = {
   Query: {
@@ -37,12 +32,17 @@ export const resolvers: Resolvers = {
             GUID: focusGUID
           }
         }
-        const { payload } = await queryReadModel(msg) as ReadModelResponse;
-        console.log('received result: ', payload)
-        return payload.timeTagSummaries as FocusSummary
-
-      // local data for testing
-      // return personSummaryData.find(s => s.GUID === focusGUID)?.timeTagSummaries
+        try {
+          const { payload } = await queryReadModel(msg) as ReadModelResponse;
+          console.log('received result: ', payload)
+          return payload.timeTagSummaries as FocusSummary  
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
     },
 
     TimeTagDetails: async (_, 
@@ -55,11 +55,18 @@ export const resolvers: Resolvers = {
           timeTagGUID: timeTagGUID
         }
       }
-      const { payload } = await queryReadModel(msg);
-      console.log('received results from timeTagDetails: ', payload)
-      return payload.citations
-      // local data for testing
-      // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
+      try {
+        const { payload } = await queryReadModel(msg);
+        console.log('received results from timeTagDetails: ', payload)
+        return payload.citations
+      } catch (err) {
+        return {
+          code: 'Error',
+          success: false,
+          message: err
+        }
+      }
+
     },
 
     SearchFocusByName: async (_,
@@ -109,8 +116,6 @@ export const resolvers: Resolvers = {
             message: err
           }
         }
- 
       }
-
   }
 } // end of Resolvers

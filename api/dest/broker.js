@@ -32,6 +32,7 @@ class Broker {
         this.onConnectionClosed = () => {
             // handle the connection being closed unexpected, and try to reconnect.
             console.log('connection was closed');
+            this.reconnect();
         };
         this.onConnectionError = (err) => {
             // handle an error on the connection.
@@ -219,6 +220,7 @@ class Broker {
             this.openChannel(conn);
         }).catch((err) => {
             console.log('error in connection: ', err);
+            this.reconnect();
         });
     }
     decode(msg) {
@@ -229,6 +231,12 @@ class Broker {
             console.error(`Broker.decode was likely passed a poorly formed message: ${err}`);
             return null;
         }
+    }
+    async reconnect() {
+        // called on connection failure
+        // waits for restart timeout and then calls connect.
+        console.log('preparing to reconnect in 0.5 seconds');
+        setTimeout(this.connect, 500);
     }
 }
 exports.Broker = Broker;

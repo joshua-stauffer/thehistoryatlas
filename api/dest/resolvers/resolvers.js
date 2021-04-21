@@ -1,7 +1,7 @@
 "use strict";
+// Resolver for the History Atlas Apollo GraphQL API
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = void 0;
-// import { timeTagDetails, personSummaryData } from './fakeData';
 exports.resolvers = {
     Query: {
         FocusSummary: async (_, { focusGUID, focusType }, { queryReadModel }) => {
@@ -12,11 +12,18 @@ exports.resolvers = {
                     GUID: focusGUID
                 }
             };
-            const { payload } = await queryReadModel(msg);
-            console.log('received result: ', payload);
-            return payload.timeTagSummaries;
-            // local data for testing
-            // return personSummaryData.find(s => s.GUID === focusGUID)?.timeTagSummaries
+            try {
+                const { payload } = await queryReadModel(msg);
+                console.log('received result: ', payload);
+                return payload.timeTagSummaries;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
         },
         TimeTagDetails: async (_, { focusGUID, timeTagGUID }, { queryReadModel }) => {
             const msg = {
@@ -26,11 +33,18 @@ exports.resolvers = {
                     timeTagGUID: timeTagGUID
                 }
             };
-            const { payload } = await queryReadModel(msg);
-            console.log('received results from timeTagDetails: ', payload);
-            return payload.citations;
-            // local data for testing
-            // return timeTagDetails.find(tt => tt.GUID === combinedGUID)?.citations
+            try {
+                const { payload } = await queryReadModel(msg);
+                console.log('received results from timeTagDetails: ', payload);
+                return payload.citations;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
         },
         SearchFocusByName: async (_, { focusType, searchTerm }, { queryReadModel }) => {
             const msg = {

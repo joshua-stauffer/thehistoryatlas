@@ -181,12 +181,14 @@ export class Broker {
         this.openChannel(conn)
       }).catch((err) => {
         console.log('error in connection: ', err);
+        this.reconnect();
       })
   }
 
   private onConnectionClosed = () => {
     // handle the connection being closed unexpected, and try to reconnect.
     console.log('connection was closed');
+    this.reconnect()
   }
 
   private onConnectionError = (err: Amqp.Message) => {
@@ -195,7 +197,6 @@ export class Broker {
     // precondition, or an admin closed the channel manually.
     // this won't be called if the connection closes with an error.
     console.error(`error in connection ${err}`);
-
   }
 
   private onConnectionReturn = (msg: any) => {
@@ -293,6 +294,13 @@ export class Broker {
       return null
     }
 
+  }
+
+  private async reconnect(): Promise<void> {
+    // called on connection failure
+    // waits for restart timeout and then calls connect.
+    console.log('preparing to reconnect in 0.5 seconds')
+    setTimeout(this.connect, 500)
   }
 
 }

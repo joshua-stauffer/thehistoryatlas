@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm install 
 # RUN npm ci --only=production <- for production use!
 COPY dest/ .
-ENV HOST_NAME=tha-test-broker
+ENV HOST_NAME=broker
 ARG test=True
 ENV TESTING=$test
 ENV DEBUG=True
