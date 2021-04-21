@@ -40,6 +40,7 @@ ______________________________________________________________________________
 
 
 Current todo list
+- ALL: setup docker compose
 - ALL: create overview/api docs
 - ALL: design/setup application wide logging
 - ALL: create async rabbitmq template for python services
@@ -48,8 +49,9 @@ Current todo list
 - ALL: setup .env files for docker
 - ALL: look into using poetry/creating packages?
 - ALL: create standard config and broker files and move to inheriting them for specific use cases
-- API: add redis queue
-- API: add timeout to response queue
+- API: add redis queue // map is working fine for now?
+- (  done  ) API: add timeout to response queue
+- (  done  ) API: elegantly handle backend timeouts
 - API: break ReadModelQuery types into subtypes and combine them with a union
 - CLIENT: cra & project setup
 - CLIENT: redux
@@ -72,6 +74,7 @@ Current todo list
 - READMODEL: update types to fully use types.ts
                 => especially look out for QueryPayload, which currently has two definitions
 - READMODEL: fix typing for database's QueryMap
+- READMODEL: migrate to topic rabbitmq
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO
@@ -82,6 +85,7 @@ Current todo list
 - WRITEMODEL: create replay history method
 - WRITEMODEL: setup alembic migrations?
 - WRITEMODEL: add event count stat to double check synch with event store
+- WRITEMODEL: migrate to topic rabbitmq
 
 
 

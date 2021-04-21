@@ -18,12 +18,12 @@ broker.connect().then(() => console.log('Broker is ready'))
 
 export interface Context {
   queryReadModel: (query: ReadModelQuery) => Promise<unknown>;
-  publishToWriteModel: (command: WriteModelCommand) => void;
+  emitCommand: (command: WriteModelCommand) => Promise<unknown>;
 }
 
 const context: Context = {
   queryReadModel: broker.queryReadModel,
-  publishToWriteModel: console.log
+  emitCommand: broker.emitCommand
 }
 
 const server = new ApolloServer({ typeDefs, resolvers, context });

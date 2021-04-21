@@ -111,8 +111,10 @@ class Broker {
         };
         this.connect = this.connect.bind(this);
         this.queryReadModel = this.queryReadModel.bind(this);
+        this.emitCommand = this.emitCommand.bind(this);
         this.connect.bind(this);
         this.openChannel.bind(this);
+        this.publishRPC.bind(this);
         this.queryMap = new Map();
         const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = config;
         this.config = {
@@ -122,23 +124,32 @@ class Broker {
             username: BROKER_USERNAME,
             password: BROKER_PASS,
             vhost: '/',
+            timeout: 5000
         };
         this.exchanges = [{
                 // This exchange can be used for any non-essential query
                 // RPC operations. Anything requiring delivery confirmation
                 // (like Commands) should probably a more reliable exchange.
+                // EDIT 4.21.21: I'm moving towards using a topic exchange
+                // across the board. The api will always wait for a callback,
+                // (and will eventually cancel with a timeout on long requests),
+                // and so doesn't need acks. Other services will use the same 
+                // topic exchange but with acknowledgements if not an RPC pattern.
                 name: 'api',
                 type: 'topic',
                 queueName: '',
-                pattern: 'request.readmodel',
+                pattern: 'query.readmodel',
                 callBack: this.handleRPCCallback.bind(this),
                 consumeOptions: {
                     noAck: true,
                     exclusive: true,
+                },
+                queueOptions: {
                     durable: false,
                 },
                 exchangeOptions: {
-                    durable: false
+                    // should the exchange survive a broker restart?
+                    durable: true
                 }
             },
             // we can add additional exchanges here, if need be
@@ -155,18 +166,31 @@ class Broker {
         }))
             throw new Error('Stream is full. Try again after receiving "drain" event.');
         return new Promise((resolve, reject) => {
+            // set a timeout here which will reject the request and delete it
+            // from the queryMap.
+            // TODO: emit message to affected service to cancel the task.
             this.queryMap.set(queryID, {
                 resolve: resolve, reject: reject
             });
+            // call reject in TIMEOUT milliseconds.
+            setTimeout(() => {
+                // calling reject is idempotent if it has already resolved
+                reject('Response timed out.');
+                this.queryMap.delete(queryID);
+            }, this.config.timeout);
         });
     }
     async queryReadModel(msg) {
         // accepts a json message and publishes it.
-        return this.publishRPC(msg, 'request.readmodel', 'api');
+        return this.publishRPC(msg, 'query.readmodel', 'api');
+    }
+    async emitCommand(msg) {
+        // accepts a json message and publishes it.
+        return this.publishRPC(msg, 'command.writemodel', 'api');
     }
     async handleRPCCallback(msg) {
         // This callback is passed to the Amqp.consume method, and will be invoked
-        // whenever a message is received.
+        // whenever our application wants to query the ReadModel.
         console.log('received RPC callback');
         if (!msg)
             return;
@@ -176,12 +200,15 @@ class Broker {
         if (!promise)
             return;
         const { resolve } = promise;
-        this.queryMap.delete(correlationId);
+        // 4.21.21: now deleting on timeout to avoid duplication
+        // this may become a memory issue if the request volume gets high
+        //this.queryMap.delete(correlationId)
         console.log('it resolved!');
         // Decode the Buffer object and pass it to the stored resolve function,
         // which will return it to the correct Apollo resolver.
         return resolve(this.decode(content));
     }
+    // standard amqp methods for creating and maintaining the connection
     async connect() {
         // establish connection to rabbitmq
         console.log('Opening new connection to RabbitMQ.');

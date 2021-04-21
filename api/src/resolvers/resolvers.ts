@@ -72,9 +72,17 @@ export const resolvers: Resolvers = {
             searchTerm: searchTerm
           }
         }
-        const { payload } = await queryReadModel(msg);
-        console.log('received results from searchFocusByName: ', payload)
-        return payload // double check that this is correct
+        try {
+          const { payload } = await queryReadModel(msg);
+          console.log('received results from searchFocusByName: ', payload)
+          return payload // double check that this is correct
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
       }
   }, // end of Query
 
@@ -82,16 +90,26 @@ export const resolvers: Resolvers = {
 
     AddAnnotatedCitation: async (_,
       { annotatedCitation }: Schema.AnnotatedCitationArgs,
-      { publishToWriteModel }: Context) => {
-        publishToWriteModel({
-          type: 'PUBLISH_NEW_CITATION',
-          payload: annotatedCitation
-        })
-        return {
-          code: '200',
-          success: true,
-          message: 'Your command has been submitted for processing (oops not really)'
+      { emitCommand }: Context) => {
+        try {
+          const result = await emitCommand({
+            type: 'PUBLISH_NEW_CITATION',
+            payload: annotatedCitation
+          })
+          console.log('received result from emitting command ', result)
+          return {
+            code: 'Success',
+            success: true,
+            message: 'Your command has been submitted for processing (oops not really)'
+          }
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
         }
+ 
       }
 
   }
