@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+    broker:
+        image: "rabbitmq:3-management"
+        networks:
+            - tha-connect
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        volumes: 
+            - broker:/var/lib/rabbitmq
+    api:
+        depends_on:
+            - broker
+        build: ./api
+        ports:
+            - "4000:4000"
+        networks:
+            - tha-connect
+
+volumes:
+    broker:
+networks:
+    tha-connect:
