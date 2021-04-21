@@ -76,6 +76,8 @@ export class Database {
         )
     } catch (error) {
       console.log('got error: ', error)
+      console.log('retrying MongoDB connection in 0.5 seconds')
+      setTimeout(this.connect, 500)
     }
   }
   // Queries: for API use

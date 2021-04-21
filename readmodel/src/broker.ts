@@ -42,7 +42,6 @@ export class Broker {
   private channel?: Amqp.Channel;
   private apiHandler: APIHandler;
   private eventHandler: EventHandler;
-
   private tmpChannel?: Amqp.Channel;
   private tmpConsumerTag?: string;
   private tmpCorrId?: string;
@@ -52,9 +51,7 @@ export class Broker {
 
     this.connect = this.connect.bind(this);
     this.callPlayHistory = this.callPlayHistory.bind(this);
-
-
-
+    this.reconnect = this.reconnect.bind(this);
     this.apiHandler = apiCallBack;
     this.eventHandler = eventCallBack;
     const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = conf;
@@ -69,10 +66,10 @@ export class Broker {
     }
     this.exchanges = [
       {
-        name: 'api',
+        name: 'main',
         type: 'topic',
         queueName: '',
-        pattern: 'request.readmodel',
+        pattern: 'query.readmodel',
         callBack: this.handleAPICallBack.bind(this),      // callbacks must be bound
         consumeOptions: {
           noAck: true
@@ -82,10 +79,10 @@ export class Broker {
         }
       },
       {
-        name: 'persisted_events',
-        type: 'direct',
-        queueName: 'readModel-eventlistener',
-        pattern: '',
+        name: 'main',
+        type: 'topic',
+        queueName: '',
+        pattern: 'event.persisted',
         callBack: this.handleEventCallBack.bind(this)     // callbacks must be bound
       }
     ]
@@ -173,9 +170,9 @@ export class Broker {
           // nack
           this.channel.nack(msg)
         }
+      }).catch((err) => {
+        console.error('Broker.handleEventCallBack Error when calling eventHandler: ', err)
       })
-
-    
   }
 
   async connect(): Promise<void> {
@@ -200,14 +197,15 @@ export class Broker {
 
       }).catch((err) => {
         console.log('error in connection: ', err);
+        this.reconnect()
       })
   }
 
 
   private onConnectionClosed = () => {
     // handle the connection being closed unexpected, and try to reconnect.
-
     console.log('connection was closed');
+    this.reconnect()
   }
 
   private onConnectionError = (err: Amqp.Message) => {
@@ -216,7 +214,6 @@ export class Broker {
     // precondition, or an admin closed the channel manually.
     // this won't be called if the connection closes with an error.
     console.error(`error in connection ${err}`);
-
   }
 
   private onConnectionReturn = (msg: any) => {
@@ -417,6 +414,11 @@ export class Broker {
       return null
     }
     
+  }
+
+  private async reconnect(): Promise<void> {
+    console.log('ReadModel broker waiting to reconnect in 0.5 seconds.')
+    setTimeout(this.connect, 500)
   }
 
 }

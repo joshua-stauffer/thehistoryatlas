@@ -1,7 +1,5 @@
 "use strict";
-/*
-Model definition for document NameTag
-*/
+// Model definition for associating tags with names
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -23,11 +21,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const NameTag = new mongoose_1.Schema({
-    // lookup a name: who is it associated with?
-    // should i include places here or break it out into its own?
-    name: { type: String, required: true, index: true },
-    GUIDs: [{ type: String }], // each name might have many people
+const Tag = new mongoose_1.Schema({
+    GUID: { type: String, required: true, index: true },
+    names: [String],
 });
-exports.default = mongoose_1.default.model('NameTag', NameTag);
-//# sourceMappingURL=nameTag.js.map
+exports.default = mongoose_1.default.model('Tag', Tag);
+//# sourceMappingURL=tags.js.map

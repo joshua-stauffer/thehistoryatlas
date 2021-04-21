@@ -32,6 +32,7 @@ class Broker {
         this.onConnectionClosed = () => {
             // handle the connection being closed unexpected, and try to reconnect.
             console.log('connection was closed');
+            this.reconnect();
         };
         this.onConnectionError = (err) => {
             // handle an error on the connection.
@@ -110,6 +111,7 @@ class Broker {
         };
         this.connect = this.connect.bind(this);
         this.callPlayHistory = this.callPlayHistory.bind(this);
+        this.reconnect = this.reconnect.bind(this);
         this.apiHandler = apiCallBack;
         this.eventHandler = eventCallBack;
         const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = conf;
@@ -124,10 +126,10 @@ class Broker {
         };
         this.exchanges = [
             {
-                name: 'api',
+                name: 'main',
                 type: 'topic',
                 queueName: '',
-                pattern: 'request.readmodel',
+                pattern: 'query.readmodel',
                 callBack: this.handleAPICallBack.bind(this),
                 consumeOptions: {
                     noAck: true
@@ -137,10 +139,10 @@ class Broker {
                 }
             },
             {
-                name: 'persisted_events',
-                type: 'direct',
-                queueName: 'readModel-eventlistener',
-                pattern: '',
+                name: 'main',
+                type: 'topic',
+                queueName: '',
+                pattern: 'event.persisted',
                 callBack: this.handleEventCallBack.bind(this) // callbacks must be bound
             }
         ];
@@ -214,6 +216,8 @@ class Broker {
                 // nack
                 this.channel.nack(msg);
             }
+        }).catch((err) => {
+            console.error('Broker.handleEventCallBack Error when calling eventHandler: ', err);
         });
     }
     async connect() {
@@ -232,6 +236,7 @@ class Broker {
             this.openChannel(conn);
         }).catch((err) => {
             console.log('error in connection: ', err);
+            this.reconnect();
         });
     }
     async callPlayHistory(conn) {
@@ -329,6 +334,10 @@ class Broker {
             console.error(`Broker.decode was likely passed a poorly formed message: ${err}`);
             return null;
         }
+    }
+    async reconnect() {
+        console.log('ReadModel broker waiting to reconnect in 0.5 seconds.');
+        setTimeout(this.connect, 500);
     }
 }
 exports.Broker = Broker;
