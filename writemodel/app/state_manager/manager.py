@@ -7,6 +7,7 @@ Friday, April 9th 2021
 from .database import Database
 from .command_handler import CommandHandler
 from .event_handler import EventHandler
+from .text_processor import TextHasher
 
 class Manager:
     """A class to share the database resource between command handlers
@@ -14,5 +15,6 @@ class Manager:
 
     def __init__(self, config):
         self.db = Database(config)
-        self.command_handler = CommandHandler(self.db)
-        self.event_handler = EventHandler(self.db)
+        self.hasher = TextHasher()
+        self.command_handler = CommandHandler(self.db, self.hasher)
+        self.event_handler = EventHandler(self.db, self.hasher.get_hash)

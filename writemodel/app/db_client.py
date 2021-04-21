@@ -4,9 +4,9 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from write_model import WriteModel
-from state_manager.schema import PersonAggregate, PersonName, PlaceAggregate, PlaceName
+from state_manager.schema import CitationHash
 
-enjoy = "Yay!"
+enjoy = 'wait, what?'
 
 if __name__ == '__main__':
     wm = WriteModel()
@@ -16,9 +16,9 @@ if __name__ == '__main__':
     print('\nWelcome to the EventStore interactive client.\n')
     print('The following objects are available in the local namespace:')
     for obj in ('wm: WriteModel()', 'db: Database()', 'engine: Database._engine()',
-                'PersonAggregate', 'PersonName', 'PlaceAggregate', 'PlaceName',
+                'CitationHash',
                 'select', 'Session'
                 ):
         print(obj)
-    print('\nenjoy !\n')
+    print('\nenjoy!\n')
     print('.' * 79)

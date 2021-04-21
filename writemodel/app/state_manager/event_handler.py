@@ -8,9 +8,10 @@ import json
 
 class EventHandler:
 
-    def __init__(self, database_instance):
+    def __init__(self, database_instance, hash_text):
         self._event_handlers = self._map_event_handlers()
         self._db = database_instance
+        self._hashfunc = hash_text
 
     def handle_event(self, event):
         """Receives a json string event, processes it, and updates

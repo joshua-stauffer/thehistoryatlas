@@ -5,9 +5,11 @@ Provides read and write access to the Command Validator database.
 """
 
 import json
+from typing import Union
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from .schema import Base, PersonAggregate, PersonName, PlaceAggregate, PlaceName
+from sqlalchemy.sql.expression import text
+from .schema import Base, CitationHash
 
 class Database:
 
@@ -20,53 +22,17 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
 
-    # methods for interacting with the PersonAggregate
-
-    def add_person(self, name: str, guid: str):
-        """Adds a person to the write database.
+    def check_citation_for_uniqueness(self, text_hash) -> Union[str, None]:
+        """Looks for hash in table CitationHash and returns GUID if found"""
         
-        params:
-            name: str
-            guid: str
-        """
-
-        person = PersonAggregate(guid=guid)
-        name = PersonName(name=name, person=person)
-
-        with Session(self._engine, future=True) as sess, sess.begin():
-            sess.add(person)
-            sess.add(name)
-
-        return        
-
-    def add_name_to_person(self, name: str, guid: str):
-        """Add a new moniker to existing person.
-        
-        params:
-            name: str
-            guid: str
-        """
-
-        with Session(self._engine, future=True) as sess, sess.begin():
-            
-            person = sess.execute(
-                select(PersonAggregate).filter_by(guid=guid)
-            ).scalar_one()
-            person_name = PersonName(name=name, person=person)
-            sess.add(person_name)
-
-    def get_names_of_person(self, person_guid):
-        """returns a list of all names associated with person.
-        """
-
         with Session(self._engine, future=True) as sess:
-            
-            person = sess.execute(
-                select(PersonAggregate).filter_by(guid=person_guid)
+            result = sess.execute(
+                select(CitationHash).filter_by(hash=text)
             ).scalar_one()
-            names = person.names
+            return result
 
-        return names
-
-    # methods for interacting with the PlaceAggregate
-
+    def add_citation_hash(self, hash, GUID):
+        """Adds a new record to the citation hash table"""
+        record = CitationHash(hash=hash, GUID=GUID)
+        with Session(self._engine, future=True) as sess, sess.begin():
+            sess.add(record)
