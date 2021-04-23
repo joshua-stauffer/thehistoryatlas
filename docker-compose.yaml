@@ -29,7 +29,19 @@ services:
         depends_on:
             - broker
             - mongodb
-        build: ./readmodel
+        build:
+            context: ./readmodel
+            args:
+                test: "true"
+        networks:
+            - tha-connect
+    writemodel:
+        depends_on:
+            - broker
+        build: 
+            context: ./writemodel
+            args:
+                test: "True"
         networks:
             - tha-connect
 volumes:

@@ -1,45 +1,171 @@
 
 
-The History Atlas - a quick reference for APIs across the project
+The History Atlas - a quick reference for public APIs across the project
 
 
 ______________________________________________________________________________
+OVERVIEW
+Communication across the History Atlas happens through messages passed using
+the AMQP protocol. 
 
+______________________________________________________________________________
+RabbitMQ config details
 
-
-RabbitMQ - broker for interservice communication
   vhosts:
+    /
 
   exchanges:
-    api -- communications to and from the Apollo server
-  queues:
+    main (topic)
+
+  Generic message shape:
+    type: string
+    payload: {}
+
+  Topics are organized as:
+    <message_type>.<message_qualifier?>.<specific_message_recipient?>
 
 
 ______________________________________________________________________________
+Message Types
+
+
+  Command - JSON object capturing a users intent. It's collected in the client,
+            assembled in the API, and processed in the WriteModel.
+
+
+..............................................................................
 
 
 
-Commands - json objects capturing user intent in the UI, eventually translated 
-              into Emitted Events by the Write Model.
-
-
-______________________________________________________________________________
-
-
-
-Events - json objects capturing canonized user intent. Considered emitted (and 
+  Event - JSON object created from a validated Command. Considered emitted (and 
           provisional) upon creation in the Write Model, and become persisted 
           (and permanent) in the Event Store. Serve as the single source of
           truth across the application, and are generally accessible through
           the History Player service for building/rebuilding local state.
 
 
+..............................................................................
+
+
+
+  Query - JSON objects requesting information from another service - an 
+          asynchronous RPC. These messages must include a correlation_id
+          and a reply_to, and any responses should be directed to the
+          queue reply_to and include the correlation_id.
+
 ______________________________________________________________________________
+Topics and the message shapes they expect
 
 
+    command.writemodel
+      publishers:
+        API
+      consumers:
+        WriteModel
 
-Requests - json objects from the apollo server representing a query.
-      "GET_FOCUS_SUMMARY"
-      "GET_TIME_TAG_DETAILS"
+      {
+        type: PUBLISH_NEW_CITATION
+        user: string
+        timestamp: string
+        payload: {
+          text: string
+          tags: {}[]
+          meta: {}
+        }
+      }
+      EX:
+        {"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "definitely right now", "payload": {"text": "oh hi there, some very interesting! sample! text!"}}
+        // the following should fail if the first CITATION_PUBLISHED message is received first
+        {"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "whoknows", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
 
-______________________________________________________________________________
+..............................................................................
+
+    event.emitted
+      publishers:
+        WriteModel
+      consumers:
+        EventStore
+..............................................................................
+
+    event.persisted
+      publishers:
+        EventStore
+      consumers:
+        ReadModel
+        WriteModel
+        GeoService?
+
+      {
+        type: CITATION_PUBLISHED
+        payload: {
+          text: string
+        }
+      }
+      EX:
+      {"type": "CITATION_PUBLISHED", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
+
+..............................................................................
+
+    event.replay.request
+      publishers:
+        ReadModel
+        WriteModel
+      consumers:
+        History
+
+..............................................................................
+
+    event.replay.*  
+      writemodel | readmodel
+      // note: each consumer should describe their own namespace and pass it to 
+      // History when requesting a replay.
+      publishers:
+        History
+      consumers:
+        WriteModel
+        ReadModel
+
+        {
+          type: HISTORY_REPLAY
+          payload: {event}
+        }
+        {
+          type: HISTORY_REPLAY_END
+        }
+
+..............................................................................
+
+    event.replay.readmodel
+      publishers:
+        History
+      consumers:
+
+..............................................................................
+
+    query.readmodel
+      publishers:
+        API
+      consumers:
+        ReadModel
+
+..............................................................................
+  # direct queues
+
+    (api)
+      // api creates its own queues on the fly and passes them to recipients
+      // as the reply_to field in the AMQP message properties.
+      publishers:
+        any
+      consumers:
+        api
+
+    {
+      type: COMMAND_SUCCESS
+    }
+    {
+      type: COMMAND_FAILED
+      payload: {
+        reason: string
+        existing_event_guid: string
+      }
+    }
