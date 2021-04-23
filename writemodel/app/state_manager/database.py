@@ -1,10 +1,10 @@
 """
 SQLAlchemy integration for the History Atlas WriteModel service.
 Provides read and write access to the Command Validator database.
-
 """
 
 import json
+import logging
 from typing import Union
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
@@ -27,8 +27,9 @@ class Database:
         
         with Session(self._engine, future=True) as sess:
             result = sess.execute(
-                select(CitationHash).filter_by(hash=text)
-            ).scalar_one()
+                select(CitationHash).where(CitationHash.hash==text_hash)
+            ).scalar_one_or_none()
+            logging.debug(f'Database: searching for citation and found {result}')
             return result
 
     def add_citation_hash(self, hash, GUID):

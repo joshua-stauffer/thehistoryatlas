@@ -1,3 +1,2 @@
-pika
 sqlalchemy
-aiormq
+aio_pika

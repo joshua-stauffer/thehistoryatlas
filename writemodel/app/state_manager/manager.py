@@ -16,5 +16,5 @@ class Manager:
     def __init__(self, config):
         self.db = Database(config)
         self.hasher = TextHasher()
-        self.command_handler = CommandHandler(self.db, self.hasher)
+        self.command_handler = CommandHandler(self.db, self.hasher.get_hash)
         self.event_handler = EventHandler(self.db, self.hasher.get_hash)

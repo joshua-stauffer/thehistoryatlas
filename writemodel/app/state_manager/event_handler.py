@@ -5,6 +5,8 @@ Friday, April 9th 2021
 """
 
 import json
+import logging
+from .handler_errors import PersistedEventError, UnknownEventTypeError
 
 class EventHandler:
 
@@ -14,49 +16,32 @@ class EventHandler:
         self._hashfunc = hash_text
 
     def handle_event(self, event):
-        """Receives a json string event, processes it, and updates
+        """Receives a dict, processes it, and updates
         the WriteModel database accordingly"""
 
-        evt = json.loads(event)
-        evt_type = evt.get('type')
-
+        evt_type = event.get('type')
+        logging.info(f'EventHandler: processing event {event}')
         handler = self._event_handlers.get(evt_type)
         if not handler:
-            raise ValueError(f'Unknown event {evt_type}')
-        handler(evt)
-
+            raise UnknownEventTypeError
+        handler(event)
 
     def _map_event_handlers(self):
         """Returns a dict of known events mapping to their handle method."""
         return {
-            'PersonAdded': self._handle_person_added,
-            'PersonNameAdded': self._handle_person_name_added,
+            'CITATION_PUBLISHED': self._handle_citation_published
         }
         
     # event handlers
-    def _handle_person_added(self, evt):
-        """Handles the PersonAdded event.
-        
-        Should succeed provided the data is present.
-        """
+    def _handle_citation_published(self, body):
+        """Receives a newly published citation and saves a hash of it in
+        order to validate incoming citation texts as unique"""
 
-        name = evt['payload']['name']
-        guid = evt['payload']['guid']
-        if not name and guid:
-            raise ValueError()
-
-        self._db.add_person(name, guid)
-
-
-    def _handle_person_name_added(self, evt):
-        """Handles the PersonNameAdded event.
-
-        Should succeed if the name is not yet associated with that person.
-        """
-
-        name = evt['payload']['name']
-        guid = evt['payload']['guid']
-        if not name and guid:
-            raise ValueError()
-
-        self._db.add_name_to_person(name, guid)
+        GUID = body['payload']['GUID']
+        text = body['payload']['text']
+        if not GUID and text:
+            logging.critical(f'EventHandler: malformed Persisted Event was received. GUID: {GUID} text: {text}')
+            raise PersistedEventError(f'EventHandler: malformed Persisted Event was received. GUID: {GUID} text: {text}')
+        hashed_text = self._hashfunc(text)
+        self._db.add_citation_hash(hashed_text, GUID)
+        logging.info(f'EventHandler: successfully added new citation hash for GUID {GUID}.')

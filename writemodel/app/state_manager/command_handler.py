@@ -4,6 +4,8 @@ Friday, April 9th 2021
 """
 
 import json
+import logging
+from .handler_errors import CitationExistsError, UnknownCommandTypeError
 
 class CommandHandler:
     """Class encapsulating logic to transform Commands from the user
@@ -14,17 +16,15 @@ class CommandHandler:
         self._db = database_instance
         self._hashfunc = hash_text
  
-    def handle_command(self, command):
-        """Receives a json command, processes it, and returns an Event
+    def handle_command(self, command: dict):
+        """Receives a dict, processes it, and returns an Event
         or raises an Exception"""
 
-        cmd = json.loads(command)
-        cmd_type = cmd.get('type')
-
+        cmd_type = command.get('type')
         handler = self._command_handlers.get(cmd_type)
         if not handler:
-            raise ValueError(f'Unknown command {cmd_type}')
-        event = handler(cmd)
+            raise UnknownCommandTypeError
+        event = handler(command)
         return event
 
     def _map_command_handlers(self):
@@ -37,26 +37,21 @@ class CommandHandler:
     def _handle_publish_new_citation(self, cmd):
         """Handles the PUBLISH_NEW_CITATION command.
         Raises a KeyError if a field of the command is not present.
-        Raises a CommandFailed error if 
+        Raises a CommandFailed error if text is not unique.
         """
+        
+        logging.info(f'CommandHandler: received a new citation: {cmd}')
         # validate that this text is unique
         text = cmd['payload']['text']
         hashed_text = self._hashfunc(text)
-        if GUID := self.db.check_citation_for_uniqueness(hashed_text):
-            raise CitationExistsError(GUID)
+        logging.debug(f'Text hash is {hashed_text}')
+        if result := self._db.check_citation_for_uniqueness(hashed_text):
+            logging.info('CommandHandler: tried (and failed) to publish duplicate citation')
+            raise CitationExistsError(result.GUID)
+        logging.debug('CommandHandler: successfully validated new citation')
         return {
             'type': 'CITATION_PUBLISHED',
             'timestamp': cmd['timestamp'],
             'user': cmd['user'],
             'payload': cmd['payload']
         }
-
-class CommandFailedError(Exception):
-    """Base class for CommandHandler exceptions"""
-    pass
-
-class CitationExistsError(CommandFailedError):
-    """Raised when attempting to add a citation that already exists in the
-    database. Returns the GUID of the existing citation."""
-    def __init__(self, GUID):
-        self.GUID = GUID

@@ -3,7 +3,7 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 COPY . .
-ENV HOST_NAME=tha-test-broker
+ENV HOST_NAME=broker
 ARG test=True
 ENV TESTING=$test
 ENV DEBUG=True
