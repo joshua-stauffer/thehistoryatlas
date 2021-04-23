@@ -67,14 +67,14 @@ class HistoryPlayer:
         
         # first get priority sort val
         #TODO: fix this to account for non True python values (i.e. typescript bools)
-        priority_sort = params.get('PRIORITY_SORT', '')
+        priority_sort = params.get('priority_sort', '')
         if priority_sort:
             priority_sort = True
         else:
             priority_sort = False
 
         # figure out the event id, if any
-        last_event_id = params.get('LAST_EVENT_ID', 0)
+        last_event_id = params.get('last_event_id', 0)
         if last_event_id:
             try:
                 last_event_id = int(last_event_id)
