@@ -258,7 +258,7 @@ export class Broker {
     // the channel will be closed.
 
     for (let exchConf of this.exchanges) {
-      channel.assertExchange(exchConf.name, exchConf.type)
+      channel.assertExchange(exchConf.name, exchConf.type,  { durable: true })
         .then(() => {
           this.createQueue(channel, exchConf);
         }).catch((err) => {

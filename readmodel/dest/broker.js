@@ -72,7 +72,7 @@ class Broker {
             // Ensure that the exchange exists. if it does and we supply different arguments,
             // the channel will be closed.
             for (let exchConf of this.exchanges) {
-                channel.assertExchange(exchConf.name, exchConf.type)
+                channel.assertExchange(exchConf.name, exchConf.type, { durable: true })
                     .then(() => {
                     this.createQueue(channel, exchConf);
                 }).catch((err) => {
