@@ -20,13 +20,13 @@ ______________________________________________________________________________
 
 PROGRESS            | ..... |
 - React Client      |       |
-- Apollo Server     | ..    |
-- Read Model        | ..    |
-- Write Model       | ..    |
+- Apollo Server     | ...   |
+- Read Model        | ...   |
+- Write Model       | ...   |
 - Event Store       | ...   |
 - History Player    | ...   |
 - NGINX             |       |
-- RabbitMQ Broker   | ..    |
+- RabbitMQ Broker   | ...   |
 - Logger            |       |
 - spaCy service     |       |
 - geo service       |       |
@@ -55,6 +55,9 @@ Current todo list
 - API: add redis queue // map is working fine for now?
 
 - API: break ReadModelQuery types into subtypes and combine them with a union
+- API: add tests
+- API: add logging
+- API: incorporate testing into the docker build
 - BROKER-JS: build
 - BROKER-JS: handle broker disconnect/restart gracefully
 - BROKER-PY: build
@@ -75,6 +78,9 @@ Current todo list
 - HISTORY: make sure that History is accounting for message content arriving in a payload
 - HISTORY: create event number query (which event is the latest?)
             <+ maybe this could just be done by requesting a replay from the last knowon event
+- HISTORY: add tests
+- HISTORY: add logging
+- HISTORY: incorporate testing into the docker build
 - NGINX: setup client & api behind nginx
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: add event count stat to double check sync with event store
@@ -86,6 +92,9 @@ Current todo list
 - READMODEL: fix typing for database's QueryMap
 - READMODEL: migrate to topic rabbitmq
 - READMODEL: double check that replay history includes priority_sort and last_event_id fields
+- READMODEL: add tests
+- READMODEL: add logging
+- READMODEL: incorporate testing into the docker build
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO
@@ -95,8 +104,8 @@ Current todo list
 - USER: add broker integration
 - WRITEMODEL: add event count stat to double check synch with event store
 - WRITEMODEL: check if db is initialized on startup and call History replay if not
-- WRITEMODEL: add resilience to broker in the case that RabbitMQ isn't immediately available
-
+- WRITEMODEL: add tests
+- WRITEMODEL: incorporate testing into the docker build
 
 
 ______________________________________________________________________________
@@ -131,12 +140,19 @@ Bug list
               RabbitMQ message is getting passed accidentally to one of our
               message handlers?)
 - READMODEL: poorly formed messages get rejected and requeued for infinity.
+
+
+
+______________________________________________________________________________
+
+
+
+Squashed!
 - API: queues don't autodelete when closed
 - READMODEL:  queues don't autodelete when closed
 
 
 ______________________________________________________________________________
-
 
 
 
@@ -185,6 +201,7 @@ COMPLETED TODOS!
 - (  nope  ) WRITEMODEL: setup alembic migrations?
 - (  done  ) WRITEMODEL: create replay history method
 - (  done  ) WRITEMODEL: debug transition to asyncio
+- (  done  ) WRITEMODEL: add resilience to broker in the case that RabbitMQ isn't immediately available
 
 
 ______________________________________________________________________________
