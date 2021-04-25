@@ -68,12 +68,19 @@ class Broker:
         logging.info('Starting broker')
         loop = asyncio.get_event_loop()
         logging.debug('getting connection')
-        self._conn = await connect_robust(self._AMQP_URI, loop=loop)
+        try:
+            self._conn = await connect_robust(self._AMQP_URI, loop=loop)
+        except Exception as e:
+            logging.error('WriteModel is unable to connect with exception:')
+            logging.error(e)
+            await asyncio.sleep(0.5)
+            logging.error('trying to establish connection with broker now.')
+            return await self._connect()
         logging.debug(f'got connection: {self._conn}')
         self._channel = await self._conn.channel()
         await self._channel.set_qos(prefetch_count=1)
         self._exchange = await self._channel.declare_exchange(
-            self._EXCHANGE_NAME, ExchangeType.TOPIC)
+            self._EXCHANGE_NAME, ExchangeType.TOPIC, durable=True)
         self._queue = await self._channel.declare_queue(
             self._QUEUE_NAME, durable=True)
         for routing_key in self._message_handlers.keys():

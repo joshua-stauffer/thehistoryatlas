@@ -41,11 +41,8 @@ class WriteModel:
         try:
             await self.broker.start(is_initialized=True)
         except Exception as e:
-            logging.error(f'caught exception {e}')
-            logging.info('Connection to RabbitMQ was refused. Trying again in 0.5 seconds')
+            logging.critical(f'WriteModel caught unknown exception {e} and is shutting down without restart.')
             await self.shutdown()
-            await asyncio.sleep(0.5)
-            await self.start_broker()
 
     async def shutdown(self, signal=None):
         """Gracefully close all open connections and cancel tasks"""
