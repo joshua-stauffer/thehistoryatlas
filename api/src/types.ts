@@ -110,7 +110,9 @@ export interface ReadModelQuery {
 
 export interface WriteModelCommand {
   type: string;
-  payload: any
+  payload: any;
+  timestamp?: string;
+  user?: string;
 }
 
 export type ReadModelResponse = FailedReadModelResponse | SuccessfulReadModelResponse;

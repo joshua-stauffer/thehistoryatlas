@@ -100,6 +100,9 @@ export const resolvers: Resolvers = {
         try {
           const result = await emitCommand({
             type: 'PUBLISH_NEW_CITATION',
+            timestamp: new Date().toJSON(),
+            // TODO: update this to reflect the current user
+            user: 'test-user',
             payload: annotatedCitation
           })
           console.log('received result from emitting command ', result)
