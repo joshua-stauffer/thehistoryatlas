@@ -4,8 +4,10 @@ April 25th, 2021
 """
 
 import asyncio
+from collections.abc import Callable
 import json
 import logging
+import aio_pika
 from aio_pika import (connect_robust, IncomingMessage, Message, 
     DeliveryMode, ExchangeType)
 
@@ -47,7 +49,9 @@ class BrokerBase:
         # Exchange settings
         self._exchange_settings = {
             "NAME": exchange_name,
-            "TYPE": ExchangeType.Topic,
+            "TYPE": 'topic', # using the enum ExchangeType.Topic throws an error here:
+                             # defined at:
+                             # https://github.com/mosquito/aio-pika/blob/94066fa900d9c08624d936f9b94037640267ac37/aio_pika/exchange.py
             "DURABLE": True,
             "AUTO_DELETE": False,   # delete queue when channel gets closed
             "TIMEOUT": None         # execution timeout
@@ -57,7 +61,7 @@ class BrokerBase:
             "NAME": queue_name,
             "DURABLE": True,
             "EXCLUSIVE": False,
-            "AUTODELETE": False,
+            "AUTO_DELETE": False,
             "TIMEOUT": None
         }
         # internal values used throughout class lifecycle
@@ -72,7 +76,7 @@ class BrokerBase:
 
     async def add_message_handler(self,
         routing_key: str,
-        callback: function,
+        callback: Callable,
         ack: bool,
         timeout=None
         ) -> None:
@@ -95,7 +99,7 @@ class BrokerBase:
             routing_key=routing_key, timeout=timeout)
         handler_dict[routing_key] = callback
 
-    def get_publisher(self, routing_key: str) -> function:
+    def get_publisher(self, routing_key: str) -> Callable:
         """Returns an asynchronous function which will publish to param routing_key"""
 
         async def publish_func(message: Message):
@@ -140,7 +144,7 @@ class BrokerBase:
             conf = self._connection_settings
             loop = asyncio.get_event_loop()
 
-            self._conn = await connect_robust(
+            self.__conn = await aio_pika.connect_robust(
                 url=conf.get('URL'),
                 virtualhost=conf.get('VHOST'),
                 timeout=conf.get('TIMEOUT'),
@@ -149,7 +153,7 @@ class BrokerBase:
                 loop=loop)
         except Exception as e:
             log.error(f'PyBroker is unable to connect to AMQP broker ' + \
-                      f'{self._AMQP_URI} with exception {e}')
+                      f'{conf.get("URL")} with exception {e}')
             if retry:
                 await asyncio.sleep(retry_timeout)
                 log.info('PyBroker is retrying connection to AMQP broker.')
@@ -212,12 +216,12 @@ class BrokerBase:
 
 
     def _no_ack_consumer(self, message):
-        """Adds a consumer for incoming messages that don't need acknowledgement"""
+        """direct incoming no ack messages to the proper handling function"""
         if handler := self.__no_ack_msg_handlers.get(message.routing_key):
             handler(message)
 
     def _ack_consumer(self, message):
-        """Adds a consumer for incoming messages that need acknowledgement"""
+        """direct incoming ack messages to the proper handling function"""
         if handler := self.__ack_msg_handlers.get(message.routing_key):
             with message.process():
                 handler(message)
