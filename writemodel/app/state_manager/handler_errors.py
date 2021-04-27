@@ -20,6 +20,10 @@ class CitationExistsError(CommandHandlerError):
     def __init__(self, GUID):
         self.GUID = GUID
 
+class CitationMissingFieldsError(CommandHandlerError):
+    """Raised when a citation is missing a field on its payload"""
+    pass
+
 # Event Exceptions
 
 class PersistedEventError(EventHandlerError):

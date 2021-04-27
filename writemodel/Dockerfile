@@ -1,14 +1,15 @@
 FROM python:3.9-slim-buster
 WORKDIR /app
 
-# get pybroker lib
-COPY --from=pybroker /pybroker /pybroker
+# get local python packages
+COPY --from=pylib /lib /lib
 
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
-RUN pip3 install /pybroker
+RUN pip3 install /lib/pybroker
+RUN pip3 install /lib/tha-config
 COPY . .
-ENV HOST_NAME=tha-test-broker
+ENV HOST_NAME=broker
 ARG test=True
 ENV TESTING=$test
 ENV DEBUG=True

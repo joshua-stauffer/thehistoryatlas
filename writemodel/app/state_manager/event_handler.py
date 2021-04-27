@@ -8,6 +8,8 @@ import json
 import logging
 from .handler_errors import PersistedEventError, UnknownEventTypeError
 
+log = logging.getLogger(__name__)
+
 class EventHandler:
 
     def __init__(self, database_instance, hash_text):
@@ -19,8 +21,8 @@ class EventHandler:
         """Receives a dict, processes it, and updates
         the WriteModel database accordingly"""
 
-        evt_type = event.get('type')
         logging.info(f'EventHandler: processing event {event}')
+        evt_type = event.get('type')
         handler = self._event_handlers.get(evt_type)
         if not handler:
             raise UnknownEventTypeError
@@ -37,6 +39,7 @@ class EventHandler:
         """Receives a newly published citation and saves a hash of it in
         order to validate incoming citation texts as unique"""
 
+        log.debug(f'Handling a new published citation {body}')
         GUID = body['payload']['GUID']
         text = body['payload']['text']
         if not GUID and text:

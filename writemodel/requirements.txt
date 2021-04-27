@@ -1,2 +1,1 @@
 sqlalchemy
-aio_pika

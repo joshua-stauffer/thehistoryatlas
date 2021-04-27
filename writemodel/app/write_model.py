@@ -12,10 +12,11 @@ import json
 import logging
 import signal
 from broker import Broker
-from config import Config
+from tha_config import Config
 from state_manager.manager import Manager
 
 logging.basicConfig(level='DEBUG')
+log = logging.getLogger(__name__)
 
 class WriteModel:
     """Primary class to serve the Write Model. Starts database connection on
@@ -31,7 +32,7 @@ class WriteModel:
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
-        logging.info('WriteModel: starting broker')
+        log.info('WriteModel: starting broker')
         self.broker = Broker(
             self.config,
             self.handle_command,
@@ -41,25 +42,25 @@ class WriteModel:
         try:
             await self.broker.start(is_initialized=True)
         except Exception as e:
-            logging.critical(f'WriteModel caught unknown exception {e} and is shutting down without restart.')
+            log.critical(f'WriteModel caught unknown exception {e} and is shutting down without restart.')
             await self.shutdown()
 
     async def shutdown(self, signal=None):
         """Gracefully close all open connections and cancel tasks"""
         if signal:
-            logging.info(f'Received shutdown signal: {signal}')
-        # await self.broker.cancel()
+            log.info(f'Received shutdown signal: {signal}')
+        await self.broker.cancel()
         loop = asyncio.get_event_loop()
         tasks = [t for t in asyncio.all_tasks() if t is not
              asyncio.current_task()]
         [task.cancel() for task in tasks]
         await asyncio.gather(*tasks, return_exceptions=True)
         loop.stop()
-        logging.info('Asyncio loop has been stopped')
+        log.info('Asyncio loop has been stopped')
 
 if __name__ == '__main__':
     wm = WriteModel()
-    logging.info('WriteModel initialized')
+    log.info('WriteModel initialized')
     loop = asyncio.get_event_loop()
     loop.create_task(wm.start_broker())
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
@@ -67,8 +68,8 @@ if __name__ == '__main__':
         loop.add_signal_handler(
             s, lambda s=s: asyncio.create_task(wm.shutdown(s)))
     try:
-        logging.info('Asyncio loop now running')
+        log.info('Asyncio loop now running')
         loop.run_forever()
     finally:
         loop.close()
-        logging.info('WriteModel shut down successfully.') 
+        log.info('WriteModel shut down successfully.') 
