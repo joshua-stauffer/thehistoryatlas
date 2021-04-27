@@ -7,3 +7,4 @@ venv
 *.js.map
 *.egg-info
 bits-and-pieces/
+.pytest_cache
