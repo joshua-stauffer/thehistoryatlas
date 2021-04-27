@@ -111,6 +111,12 @@ class BrokerBase:
         """Publish a single message to param routing key"""
         await self.__exchange.publish(message, routing_key=routing_key)
 
+    def create_message(self, body: dict, correlation_id=None) -> Message:
+        """Accepts a dict and correlation ID and returns a ready-for-the-wire message"""
+        return Message(
+            self.encode_message(body),
+            correlation_id=correlation_id)
+
     @staticmethod
     def decode_message(message: Message):
         """Receives a aio-pika Message and returns a dict"""
@@ -162,7 +168,7 @@ class BrokerBase:
                 log.info('PyBroker was unable to connect and is exiting.')
         else:
             log.info('PyBroker successfully connected to AMQP server.')
-            return await self._get_exchange()
+            return await self._get_channel()
 
     async def _get_channel(self):
         """Declares a channel. Requires that a connection has already been established.
@@ -209,19 +215,19 @@ class BrokerBase:
             exclusive=conf.get('EXCLUSIVE'),
             timeout=conf.get('TIMEOUT')
         )
-        self.__no_ack_consumer_tag = self.__queue.consume(
+        self.__no_ack_consumer_tag = await self.__queue.consume(
                 self._no_ack_consumer, no_ack=True, timeout=None)
-        self.__ack_consumer_tag = self.__queue.consume(
+        self.__ack_consumer_tag = await self.__queue.consume(
                 self._ack_consumer, no_ack=False, timeout=None)
 
 
-    def _no_ack_consumer(self, message):
+    async def _no_ack_consumer(self, message):
         """direct incoming no ack messages to the proper handling function"""
         if handler := self.__no_ack_msg_handlers.get(message.routing_key):
-            handler(message)
+            await handler(message)
 
-    def _ack_consumer(self, message):
+    async def _ack_consumer(self, message):
         """direct incoming ack messages to the proper handling function"""
         if handler := self.__ack_msg_handlers.get(message.routing_key):
             with message.process():
-                handler(message)
+                await handler(message)
