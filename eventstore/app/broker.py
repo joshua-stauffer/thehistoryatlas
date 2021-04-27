@@ -1,93 +1,51 @@
-"""
-RabbitMQ integration layer for the History Atlas Event Store service.
-"""
-import pika
+"""Broker implementation for the EventStore. Built on top of PyBroker.
 
-class Broker:
+April 27th, 2021"""
 
-    def __init__(self, config, recv_func):
-        self.config = config
-        self.recv_func = recv_func
+import logging
+from pybroker import BrokerBase
 
-        # get connection and channel
-        credentials = pika.PlainCredentials(
-            self.config.BROKER_USERNAME,
-            self.config.BROKER_PASS
-        )
-        conn_params = pika.ConnectionParameters(
-            host=self.config.NETWORK_HOST_NAME,
-            credentials=credentials
-        )
-        self.connection = pika.BlockingConnection(conn_params)
-        self.channel = self.connection.channel()
 
-        # declare exchanges
-        self.channel.exchange_declare(
-            exchange='emitted_events',
-            exchange_type='direct'
-        )
-        self.channel.exchange_declare(
-            exchange='persisted_events',
-            exchange_type='fanout'
-        )
+log = logging.getLogger(__name__)
+log.setLevel('DEBUG')
 
-        # declare and bind queues
-        self.recv_queue = self.channel.queue_declare(
-            queue=config.RECV_QUEUE,
-            durable=True,
-            auto_delete=False
-        )
-        self.channel.queue_bind(
-            exchange='emitted_events',
-            queue=self.config.RECV_QUEUE
-        )
-        self.send_queue = self.channel.queue_declare(
-            queue=self.config.SEND_QUEUE,
-            durable=True,
-            auto_delete=False
-        )
-        self.channel.queue_bind(
-            exchange='persisted_events',
-            queue=self.config.SEND_QUEUE
-        )
+class Broker(BrokerBase):
 
-    def publish(self, msg):
-        """Publishes param msg to the persisted_events fanout exchange"""
+    def __init__(self, config, event_handler) -> None:
+        super().__init__(
+            broker_username   = config.BROKER_USERNAME,
+            broker_password   = config.BROKER_PASS,
+            network_host_name = config.NETWORK_HOST_NAME,
+            exchange_name     = config.EXCHANGE_NAME,
+            queue_name        = config.QUEUE_NAME)
+
+        # save main application callbacks
+        self._event_handler = event_handler
+
+    async def start(self):
+        """Start the broker."""
         
-        self.channel.basic_publish(
-            exchange='persisted_events',
-            routing_key='',     # fanout exchanges don't use a routing key
-            body=msg
-        )
+        await self.connect()
 
-    def listen(self):
-        self.channel.basic_consume(
-            self.config.RECV_QUEUE,
-            on_message_callback=self.on_message    
-        )
-        try:
-            print('EventStore is ready for messages')
-            self.channel.start_consuming()
-        except KeyboardInterrupt:
-            self.channel.stop_consuming()
-            raise KeyboardInterrupt()
-        finally:
-            self.connection.close()
+        # register handlers
+        await self.add_message_handler(
+            routing_key='event.emitted',
+            callback=self._handle_event)
 
-    def on_message(self, channel, method_frame, header_frame, body):
-        # transform message
-        try:
-            msg = self.recv_func(body)
-            # acknowledge that this message has been handled
-            channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-    
-        except ValueError:      # this needs to reflect the exception that 
-                                # the database will throw on failure
+        # get publish methods
+        self._publish_persisted_event = self.get_publisher(
+            routing_key='event.persisted')
 
-            channel.basic_nack(
-                requeue=True    # we should try again
-            )
-            return              # but we'll return first so that the event isn't published 
+    # on message callbacks
 
-        # publish the persisted event
-        self.publish(msg)
+    async def _handle_event(self, message):
+        """Wrapper for handling emitted events and forwarding them to the 
+        persisted events, if successful."""
+
+        log.info(f'processing incoming event {message}')
+        body = self.decode_message(message)
+        # any exceptions raised while processing will nack the incoming message
+        persisted_event = self._event_handler(body)
+        log.info(f'successfully processed the incoming event.')
+        msg = self.create_message(persisted_event)
+        await self._publish_persisted_event(msg)

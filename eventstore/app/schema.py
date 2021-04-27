@@ -29,14 +29,13 @@ class Event(Base):
             + f"user: {self.user!r}, payload: {self.payload!r}" \
             + f"timestamp: {self.timestamp!r} priority: {self.priority!r})"
 
-    def to_json(self):
-        """returns a json string representation of this Event"""
-
-        return json.dumps({
+    def to_dict(self):
+        """returns a dict representation of this Event"""
+        return {
             "id": self.id,
             "type": self.type,
             "timestamp": self.timestamp,
             "user": self.user,
-            "payload": self.payload,
+            "payload": json.loads(self.payload),
             "priority": self.priority
-        })
+        }
