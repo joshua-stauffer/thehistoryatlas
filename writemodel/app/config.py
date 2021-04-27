@@ -53,8 +53,8 @@ class Config:
         self.NETWORK_HOST_NAME = os.environ.get('HOST_NAME', 'localhost')
         self.BROKER_USERNAME = os.environ.get('BROKER_USERNAME', 'guest')
         self.BROKER_PASS = os.environ.get('BROKER_PASS', 'guest')
-        self.RECV_QUEUE = os.environ.get('RECV_QUEUE', '')
-        self.SEND_QUEUE = os.environ.get('SEND_QUEUE', '')
+        self.QUEUE_NAME = os.environ.get('QUEUE_NAME', '')
+        self.EXCHANGE_NAME = os.environ.get('EXCHANGE_NAME', '')
 
     @staticmethod
     def test_for_truthiness(val):
