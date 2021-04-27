@@ -168,7 +168,7 @@ export class Broker {
           this.channel.ack(msg)
         } else {
           // nack
-          this.channel.nack(msg)
+          this.channel.nack(msg, false, false )
         }
       }).catch((err) => {
         console.error('Broker.handleEventCallBack Error when calling eventHandler: ', err)
