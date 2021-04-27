@@ -73,10 +73,12 @@ Topics and the message shapes they expect
           meta: {}
         }
       }
-      EX:
-        {"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "definitely right now", "payload": {"text": "oh hi there, some very interesting! sample! text!"}}
-        // the following should fail if the first CITATION_PUBLISHED message is received first
-        {"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "whoknows", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
+
+EXAMPLES:
+{"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "definitely right now", "payload": {"text": "oh hi there, some very interesting! sample! text!", "GUID": "fake-citation-3599", "tags": [], "meta": {}}}
+
+// the following should fail if the first CITATION_PUBLISHED message is received first
+{"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "whoknows", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524",  "tags": [], "meta": {}}}
 
 ..............................................................................
 
@@ -97,12 +99,16 @@ Topics and the message shapes they expect
 
       {
         type: CITATION_PUBLISHED
+        user: string
+        timestamp: string
+        priority: int (0 or 1)
         payload: {
           text: string
         }
       }
-      EX:
-      {"type": "CITATION_PUBLISHED", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
+
+EXAMPLES:
+{"type": "CITATION_PUBLISHED", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
 
 ..............................................................................
 

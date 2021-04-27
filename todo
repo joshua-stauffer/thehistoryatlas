@@ -40,28 +40,21 @@ ______________________________________________________________________________
 
 
 Current todo list
-- ALL: setup docker compose
-- ALL: create overview/api docs
+
 - ALL: design/setup application wide logging
-- ALL: create async rabbitmq template for python services
 - ALL: compile stock starter input for testing/initialization
-- ALL: run services with docker compose
 - ALL: setup .env files for docker
-- ALL: look into using poetry/creating packages?
-- ALL: create standard config and broker files and move to inheriting them for specific use cases
 - ALL: When adding a clarification of an earlier event (i.e. cancelling it) make sure anyone who
             needs it replays the history from the last affected event.
             ( this seems hugely inefficient.. )
 - API: add redis queue // map is working fine for now?
-
 - API: break ReadModelQuery types into subtypes and combine them with a union
 - API: add tests
 - API: add logging
 - API: incorporate testing into the docker build
-- BROKER-JS: build
-- BROKER-JS: handle broker disconnect/restart gracefully
-- BROKER-PY: build
-- BROKER-PY: handle broker disconnect/restart gracefully
+- BROKER-TS: build
+- BROKER-TS: handle broker disconnect/restart gracefully
+- CONFIG-TS: build
 - CLIENT: cra & project setup
 - CLIENT: redux
 - CLIENT: apollo integration
@@ -70,17 +63,17 @@ Current todo list
 - CLIENT: leaflet integration
 - CLIENT: add drawing for cities and events
 - EMAIL: create email service with sendgrid?
+- EVENTSTORE: integrate with real database instead of memory
 - GEO: create geo database
 - GEO: add broker integration
 - GEO: get kaggle cities
 - GEO: find countries/states geo data
-- HISTORY: rebuild broker
 - HISTORY: make sure that History is accounting for message content arriving in a payload
 - HISTORY: create event number query (which event is the latest?)
             <+ maybe this could just be done by requesting a replay from the last knowon event
 - HISTORY: add tests
-- HISTORY: add logging
 - HISTORY: incorporate testing into the docker build
+- HISTORY: change replay to use generator
 - NGINX: setup client & api behind nginx
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: add event count stat to double check sync with event store
@@ -95,6 +88,7 @@ Current todo list
 - READMODEL: add tests
 - READMODEL: add logging
 - READMODEL: incorporate testing into the docker build
+- READMODEL: add logic to handle CITATION_PUBLISHED
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO
@@ -139,8 +133,6 @@ Bug list
 - READMODEL: UnhandledPromiseRejectionWarning on startup (likely because some
               RabbitMQ message is getting passed accidentally to one of our
               message handlers?)
-- READMODEL: poorly formed messages get rejected and requeued for infinity.
-
 
 
 ______________________________________________________________________________
@@ -150,6 +142,8 @@ ______________________________________________________________________________
 Squashed!
 - API: queues don't autodelete when closed
 - READMODEL:  queues don't autodelete when closed
+- READMODEL: poorly formed messages get rejected and requeued for infinity.
+- WRITEMODEL: throwing error when receiving command
 
 
 ______________________________________________________________________________
@@ -170,13 +164,27 @@ ______________________________________________________________________________
 
 
 COMPLETED TODOS!
+- (  done  ) ALL: setup docker compose
+- (  done  ) ALL: create overview/api docs
+- (  done  ) ALL: create async rabbitmq template for python services
+- (  done  ) ALL: run services with docker compose
+- (  done  ) ALL: look into using poetry/creating packages?
+- (  done  ) ALL: create standard config and broker files and move to inheriting them for specific use cases
 - (  done  ) API: create apollo server
 - (  done  ) API: add broker integration
 - (  done  ) API: add timeout to response queue
 - (  done  ) API: elegantly handle backend timeouts
+- (  done  ) BROKER-PY: build
+- (  done  ) BROKER-PY: handle broker disconnect/restart gracefully
+- (  done  ) CONFIG-PY: build
 - (  done  ) EVENTSTORE: create persistent db
 - (  done  ) EVENTSTORE: add tests to db
 - (  done  ) HISTORY: add tests to db
+- (  done  ) HISTORY: add logging
+- (  done  ) HISTORY: rebuild Broker
+- (  done  ) HISTORY: add lib in build
+- (  done  ) EVENTSTORE: incorporate lib in build
+- (  done  ) EVENTSTORE: move db logic into db
 - (  done  ) READMODEL: setup mongodb docker instance
 - (  done  ) READMODEL: create sqlalchemy connection
 - (  done  ) READMODEL: create rabbitmq broker interface

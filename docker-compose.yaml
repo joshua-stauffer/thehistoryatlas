@@ -44,8 +44,31 @@ services:
                 test: "True"
         networks:
             - tha-connect
+    eventstore:
+        depends_on:
+            - broker
+        build:
+            context: ./eventstore
+            args:
+                test: "True"
+        networks:
+            - tha-connect
+        volumes:
+            - store:/data/db
+    history:
+        depends_on: 
+            - broker
+        build:
+            context: ./history
+            args:
+                test: "True"
+        networks: 
+            - tha-connect
+        volumes:
+            - store:/data/db
 volumes:
     broker:
     mongodata:
+    store:
 networks:
     tha-connect:
