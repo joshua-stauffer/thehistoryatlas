@@ -1,16 +1,23 @@
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 WORKDIR /app
+
+# get local python packages
+COPY --from=pylib /lib /lib
+
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
+RUN pip3 install /lib/pybroker
+RUN pip3 install /lib/tha-config
 COPY . .
-ENV HOST_NAME=tha-test-broker
+ENV HOST_NAME=broker
+
 ENV TESTING=True
 ENV CONFIG=DEV
 ENV PROD_DB_URI=
-ENV DEV_DB_URI=
-ENV TEST_DB_URI=sqlite:////etc/db/tha-test.db
+ENV DEV_DB_URI=sqlite:////data/db/tha-store-dev.db
+ENV TEST_DB_URI=sqlite:////data/db/tha-test-dev.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
-ENV RECV_QUEUE=history_queue
-ENV SEND_QUEUE=
+ENV EXCHANGE_NAME=main
+ENV QUEUE_NAME=history
 CMD ["python3", "app/history.py"]

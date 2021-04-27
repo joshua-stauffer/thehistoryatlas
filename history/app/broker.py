@@ -1,82 +1,59 @@
-"""
-RabbitMQ integration layer for the History Atlas History Player service.
-"""
-import pika
+"""Broker implementation for the History application of the History Atlas.
+Built on top of PyBroker.
 
-class Broker:
+April 27th, 2021"""
 
-    def __init__(self, config, recv_func):
-            self.EXCHANGE_NAME = 'history'
-            self.reply_to = None
-            self.config = config
-            self.recv_func = recv_func
+import logging
+from pybroker import BrokerBase
+from broker_errors import MissingReplyFieldError
 
-            # get connection and channel
-            credentials = pika.PlainCredentials(
-                self.config.BROKER_USERNAME,
-                self.config.BROKER_PASS
-            )
-            conn_params = pika.ConnectionParameters(
-                host=self.config.NETWORK_HOST_NAME,
-                credentials=credentials
-            )
-            self.connection = pika.BlockingConnection(conn_params)
-            self.channel = self.connection.channel()
 
-            # declare exchange
-            self.channel.exchange_declare(
-                exchange=self.EXCHANGE_NAME,
-                exchange_type='direct'
-            )
+log = logging.getLogger(__name__)
+log.setLevel('DEBUG')
 
-            # declare and bind queue
-            self.recv_queue = self.channel.queue_declare(
-                queue=config.RECV_QUEUE,
-                durable=True,
-                auto_delete=False
-            )
-            self.channel.queue_bind(
-                exchange=self.EXCHANGE_NAME,
-                queue=self.config.RECV_QUEUE
-            )
+class Broker(BrokerBase):
 
-    def publish(self, msg):
-        """Publishes param msg to the requested queue"""
+    def __init__(self, config, request_handler) -> None:
+        super().__init__(
+            broker_username   = config.BROKER_USERNAME,
+            broker_password   = config.BROKER_PASS,
+            network_host_name = config.NETWORK_HOST_NAME,
+            exchange_name     = config.EXCHANGE_NAME,
+            queue_name        = config.QUEUE_NAME)
+
+        # save main application callbacks
+        self._request_handler = request_handler
+
+    async def start(self):
+        """Start the broker."""
         
-        self.channel.basic_publish(
-            exchange=self.EXCHANGE_NAME,
-            routing_key=self.reply_to,
-            body=msg
-        )
+        log.info('Getting broker connection')
+        await self.connect(retry=True, retry_timeout=0.5)
 
-    def listen(self):
-        self.channel.basic_consume(
-            self.config.RECV_QUEUE,
-            on_message_callback=self.on_message    
-        )
-        try:
-            print('History Player is ready for messages')
-            self.channel.start_consuming()
-        except KeyboardInterrupt:
-            self.channel.stop_consuming()
-            raise KeyboardInterrupt()
-        finally:
-            self.connection.close()
+        # register handlers
+        await self.add_message_handler(
+            routing_key='event.replay.request',
+            callback=self._handle_request)
 
-    def on_message(self, channel, method_frame, header_frame, body):
-        """Handles incoming messages and directs playback stream to
-        the requesting client."""
-        # transform message
-        try:
-            self.reply_to = header_frame.reply_to
-            self.recv_func(body, self.publish)
-            # acknowledge that this message has been handled
-            channel.basic_ack(delivery_tag=method_frame.delivery_tag)
-            self.reply_to = None
-    
-        except ValueError:
+        # get publish methods
+        self._publish_persisted_event = self.get_publisher(
+            routing_key='event.persisted')
 
-            channel.basic_nack(
-                requeue=False # uh.. not sure for this case
-            )
-            return
+    # on message callbacks
+
+    async def _handle_request(self, message):
+        """Wrapper for receiving replay requests and forwarding them to 
+        the main application for processing."""
+
+        log.info(f'received replay request {message}')
+        body = self.decode_message(message)
+        reply_to = message.reply_to
+        if not reply_to:
+            raise MissingReplyFieldError
+        publisher = self.get_publisher(routing_key=reply_to)
+        async def send_func(body):
+            message = self.create_message(body)
+            await publisher(message)
+        send_func.__doc__ = 'A utility method created on the fly for publishing' + \
+                            f'to routing_key {reply_to}.'
+        await self._request_handler(body, send_func)

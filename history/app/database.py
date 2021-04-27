@@ -7,13 +7,17 @@ Better solution in the works!
 """
 
 import json
+import logging
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from schema import Event, Base
 
+log = logging.getLogger(__name__)
+
 class Database:
 
     def __init__(self, config):
+        log.info('Making database connection.')
         self._engine = create_engine(
             config.DB_URI,
             echo=config.DEBUG,
@@ -30,6 +34,7 @@ class Database:
         
         Sorts based on event id."""
         
+        log.info('Querying for events in chronological order')
         stmt = select(Event) \
             .where(Event.id > start_id) \
             .order_by(Event.id)
@@ -49,6 +54,7 @@ class Database:
         to float to the top, and second on event id.
         """
 
+        log.info('Querying for events in priority order')
         stmt = select(Event) \
             .where(Event.id > start_id) \
             .order_by(Event.priority, Event.id)
@@ -68,6 +74,6 @@ class Database:
             "type": event.type,
             "timestamp": event.timestamp,
             "user": event.user,
-            "payload": event.payload,
+            "payload": json.loads(event.payload),
             "priority": event.priority
         })
