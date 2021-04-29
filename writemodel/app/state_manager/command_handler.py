@@ -4,8 +4,10 @@ Friday, April 9th 2021
 """
 
 import logging
+from uuid import uuid4
 from .handler_errors import (CitationExistsError, UnknownCommandTypeError,
-    CitationMissingFieldsError)
+    CitationMissingFieldsError, GUIDError, UnknownTagTypeError)
+from .event_composer import EventComposer
 
 log = logging.getLogger(__name__)
 
@@ -37,31 +39,160 @@ class CommandHandler:
         }
         
     # command handlers
+
     def _handle_publish_new_citation(self, cmd):
         """Handles the PUBLISH_NEW_CITATION command.
-        Raises a KeyError if a field of the command is not present.
-        Raises a CommandFailed error if text is not unique.
+
+        Validates the command's contents and returns a synthetic event 
+        or raises an error.
+
+        Raises a CitationMissingFieldsError if a field of the command 
+            is not present.
+        Raises a CitationExistsError error if text is not unique.
+        Raises a GUIDError if any of the new GUIDs are not unique,
+            or if any of the existing GUIDs don't match type.
+        Raises a UnknownTagTypeError if an unknown tag is passed.
         """
+        # a wrapper for handling new citations
+        # provides a useful error if the command dict is missing fields
+        try:
+            return self.__handle_publish_new_citation(cmd)
+        except KeyError:
+            raise CitationMissingFieldsError
+
+    
+    # utility methods
+
+    def __handle_publish_new_citation(self, cmd):
+        """logic for handle_publish_new_citations"""
         
         log.info(f'CommandHandler: received a new citation: {cmd}')
+        # extract fields from command
+        user = cmd['user']
+        timestamp = cmd['timestamp']
+        app_version = cmd['app_version']
+        citation_GUID = cmd['payload']['GUID']
+        tags = cmd['payload']['tags']
+        meta = cmd['payload']['meta']
+
+        composer = EventComposer(
+            transaction_guid=uuid4(),
+            app_version=app_version,
+            user=user,
+            timestamp=timestamp)
+
         # validate that this text is unique
         text = cmd['payload']['text']
         hashed_text = self._hashfunc(text)
         log.debug(f'Text hash is {hashed_text}')
-        if result := self._db.check_citation_for_uniqueness(hashed_text):
-            log.info('CommandHandler: tried (and failed) to publish duplicate citation')
-            raise CitationExistsError(result.GUID)
-        try:
-            cmd['payload']['GUID']
-            cmd['payload']['tags']
-            cmd['payload']['meta']
-        except KeyError:
-            raise CitationMissingFieldsError
-        log.debug('CommandHandler: successfully validated new citation')
-        return {
-            'type': 'CITATION_PUBLISHED',
-            'timestamp': cmd['timestamp'],
-            'user': cmd['user'],
-            'payload': cmd['payload'],
-            'priority': 1   # All new events are 1, edits are 0
-        }
+        if hash_result := self._db.check_citation_for_uniqueness(hashed_text):
+            log.info('tried (and failed) to publish duplicate citation')
+            raise CitationExistsError(hash_result.GUID)
+
+        # check citation GUID
+        if cit_res := self._db.check_guid_for_uniqueness(citation_GUID):
+            raise GUIDError('Citation GUID was not unique. ' + \
+                            f'Collided with GUID of type {cit_res}')
+
+        # check tag GUIDs. if they match, ensure that they are labeled correctly
+        # tags will be added to composer by type during validation
+        tag_guids = self.__parse_tags(tags, citation_GUID, composer)
+
+        # check meta GUID
+        meta_guid = meta['GUID']
+        if m_res := self._db.check_guid_for_uniqueness(meta_guid):
+            if m_res != 'meta':
+                raise GUIDError(f'Meta GUID collided with GUID of type {m_res}')
+        composer.make_META_ADDED(
+            citation_guid=citation_GUID,
+            meta_guid=meta_guid,
+            author=meta['author'],
+            publisher=meta['publisher'],
+            title=meta['title']
+            # unpack remaining values after filtering for the ones we already have
+            **{k:v for k, v in meta.values()
+                if k not in ('author', 'title', 'publisher', 'GUID')})
+
+        composer.make_CITATION_ADDED(
+            text=text,
+            tags=tag_guids,
+            meta=meta_guid)
+
+        return composer.events
+
+
+    def __parse_tags(self,
+        tags,
+        citation_guid: str,
+        composer: EventComposer
+    ) -> list[str]:
+        """Validates each tag's GUID and adds it to composer according to type."""
+
+        tag_guids = []
+        for tag in tags:
+            t_guid = tag['GUID']
+
+            # check if tag already exists in the database
+            if t_res := self._db.check_guid_for_uniqueness(t_guid):
+                # and if it does, it must be the same type as this tag
+                t_type = tag['type']
+                if t_type != t_res:
+                    raise GUIDError(f'Tag GUID of type {t_type} doesn\'t match database type of {t_res}.')
+                
+                # make a tag of the correct type
+                if t_type == 'PERSON':
+                    composer.make_PERSON_TAGGED(
+                        citation_guid=citation_guid,
+                        person_guid=t_guid,
+                        person_name=tag['person_name'],
+                        citation_start=tag['citation_start'],
+                        citation_end=tag['citation_end'])
+                elif t_type == 'PLACE':
+                    composer.make_PLACE_TAGGED(
+                        citation_guid=citation_guid,
+                        place_guid=t_guid,
+                        place_name=tag['place_name'],
+                        citation_start=tag['citation_start'],
+                        citation_end=tag['citation_end'])
+                elif t_type == 'TIME':
+                    composer.make_TIME_TAGGED(
+                        citation_guid=citation_guid,
+                        time_guid=t_guid,
+                        time_name=tag['time_name'],
+                        citation_start=tag['citation_start'],
+                        citation_end=tag['citation_end'])                            
+                else:
+                    raise UnknownTagTypeError(f'Tag of unknown type {t_type} was encountered')
+            
+            # now we know our GUID is unique, so we need to construct a new tag
+            else:
+                # make a tag of the correct type
+                if t_type == 'PERSON':
+                    composer.make_PERSON_ADDED(
+                        citation_guid=citation_guid,
+                        person_guid=t_guid,
+                        person_name=tag['person_name'],
+                        citation_start=tag['citation_start'],
+                        citation_end=tag['citation_end'])
+                elif t_type == 'PLACE':
+                    composer.make_PLACE_ADDED(
+                        citation_guid=citation_guid,
+                        place_guid=t_guid,
+                        place_name=tag['place_name'],
+                        citation_start=tag['citation_start'],
+                        citation_end=tag['citation_end'],
+                        latitude=tag['latitude'],
+                        longitude=tag['longitude'])
+                elif t_type == 'TIME':
+                    composer.make_TIME_ADDED(
+                        citation_guid=citation_guid,
+                        time_guid=t_guid,
+                        time_name=tag['time_name'],
+                        citation_start=tag['citation_start'],
+                        citation_end=tag['citation_end'])                            
+                else:
+                    raise UnknownTagTypeError(f'Tag of unknown type {t_type} was encountered')        
+
+            log.debug(f'Successfully validated tag {tag}')
+            tag_guids.append(t_guid)
+        return tag_guids
