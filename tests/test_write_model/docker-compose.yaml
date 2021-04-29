@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+    broker:
+        image: "rabbitmq:3-management"
+        networks:
+            - tha-test
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        volumes: 
+            - broker:/var/lib/rabbitmq
+    writemodel:
+        image: "writemodel"
+        networks:
+            - tha-test
+        depends_on: 
+            - broker
+    tester:
+        build:
+            context: ./
+        networks:
+            - tha-test
+        depends_on: 
+            - broker
+            - writemodel
+volumes:
+    broker:
+networks:
+    tha-test:

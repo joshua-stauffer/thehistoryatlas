@@ -1,7 +1,13 @@
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 WORKDIR /app
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+
+# get local python packages
+COPY --from=testlib /lib /lib
+RUN pip3 install /lib/tackle
+RUN pip3 install /lib/pybroker
 COPY . .
-ENV HOST_NAME=tha-test-broker
-CMD ["pytest"]
+ENV HOST_NAME=broker
+ARG test=True
+ENV TESTING=$test
+
+CMD ["python3", "wm_test.py"]
