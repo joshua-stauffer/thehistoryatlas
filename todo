@@ -64,9 +64,11 @@ Current todo list
 - CLIENT: add drawing for cities and events
 - EMAIL: create email service with sendgrid?
 - EVENTSTORE: integrate with real database instead of memory
+- EVENTSTORE: add Tackle testing
+- EVENTSTORE: double check atomic events enter correctly
 - GEO: create geo database
 - GEO: add broker integration
-- GEO: get kaggle cities
+- GEO: get kaggle cities <= geonames!!
 - GEO: find countries/states geo data
 - HISTORY: make sure that History is accounting for message content arriving in a payload
 - HISTORY: create event number query (which event is the latest?)
@@ -88,7 +90,7 @@ Current todo list
 - READMODEL: add tests
 - READMODEL: add logging
 - READMODEL: incorporate testing into the docker build
-- READMODEL: add logic to handle CITATION_PUBLISHED
+- READMODEL: add logic to handle atomic events
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO
@@ -100,6 +102,9 @@ Current todo list
 - WRITEMODEL: check if db is initialized on startup and call History replay if not
 - WRITEMODEL: add tests
 - WRITEMODEL: incorporate testing into the docker build
+- WRITEMODEL: move to emitting atomic events
+- WRITEMODEL: move to receiving atomic events
+- WRITEMODEL: track known GUIDs and their type
 
 
 ______________________________________________________________________________

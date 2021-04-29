@@ -31,7 +31,8 @@ Message Types
 
   Command - JSON object capturing a users intent. It's collected in the client,
             assembled in the API, and processed in the WriteModel.
-
+  valid types:
+      PUBLISH_NEW_CITATION
 
 ..............................................................................
 
@@ -42,7 +43,15 @@ Message Types
           (and permanent) in the Event Store. Serve as the single source of
           truth across the application, and are generally accessible through
           the History Player service for building/rebuilding local state.
-
+  valid types:
+      CITATION_ADDED
+      META_ADDED
+      PERSON_ADDED
+      PLACE_ADDED
+      TIME_ADDED
+      PERSON_TAGGED
+      PLACE_TAGGED
+      TIME_TAGGED
 
 ..............................................................................
 
@@ -87,6 +96,17 @@ EXAMPLES:
         WriteModel
       consumers:
         EventStore
+
+      {
+        type: EVENT_TRANSACTION
+        user: string
+        timestamp: string
+        app_version: string
+        payload: [
+          <chron-ordered list of synthetic events>
+        ]
+      }
+
 ..............................................................................
 
     event.persisted
@@ -98,15 +118,126 @@ EXAMPLES:
         GeoService?
 
       {
-        type: CITATION_PUBLISHED
-        user: string
-        timestamp: string
-        priority: int (0 or 1)
+        type: CITATION_ADDED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+      timestamp:            string
         payload: {
-          text: string
+          text:             string
+          tags:             string[]
+          meta:             string
         }
       }
 
+      {
+        type: META_ADDED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+          citation_guid:    string
+          author:           string
+          publisher:        string
+          pub_date?:        string
+          page_num?:        int
+          url?:             string
+        }
+      }
+
+      {
+        type: PERSON_ADDED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+        citation_guid:      string
+          person_guid:      string
+          person_name:      string
+        citation_start:     int
+          citation_end:     int
+        }
+      }
+
+      {
+        type: PLACE_ADDED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+          citation_guid:    string
+          place_guid:       string
+          place_name:       string
+          citation_start:   int
+          citation_end:     int
+          latitude:         float
+          longitude:        float
+        }
+      }
+
+      {
+        type: TIME_ADDED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+          citation_guid:    string
+          time_guid:        string
+          time_name:        string
+          citation_start:   int
+          citation_end:     int         
+        }
+      }
+
+      {
+        type: PERSON_ADDED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+          citation_guid:    string
+          person_guid:      string
+          person_name:      string
+          citation_start:   int
+          citation_end:     int
+        }
+      }
+
+      {
+        type: PLACE_TAGGED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+          citation_guid:    string
+          place_guid:       string
+          place_name:       string
+          citation_start:   int
+          citation_end:     int
+        }
+      }
+
+      {
+        type: TIME_TAGGED
+        transaction_guid:   string
+        app_version:        string
+        user:               string
+        timestamp:          string
+        payload: {
+          citation_guid:    string
+          time_guid:        string
+          time_name:        string
+          citation_start:   int
+          citation_end:     int         
+        }
+      }
+      
 EXAMPLES:
 {"type": "CITATION_PUBLISHED", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
 
