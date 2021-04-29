@@ -48,7 +48,7 @@ class BrokerBase:
         # AMQP settings that we want to set globally across all applications
         # Connection settings
         self._connection_settings = {
-            # NOTE: Never this URL, or you will expose application secrets!
+            # NOTE: Never log this URL, or you will expose application secrets!
             # instead, use the SAFE_URL below
             "URL": f'amqp://{broker_username}' + \
                          f':{broker_password}@{network_host_name}/',
@@ -66,8 +66,8 @@ class BrokerBase:
         # Exchange settings
         self._exchange_settings = {
             "NAME": exchange_name,
-            "TYPE": 'topic', # using the enum ExchangeType.Topic throws an error here:
-                             # defined at:
+            "TYPE": 'topic', # using the enum ExchangeType.Topic throws an error.
+                             # This string equivalent to the enum defined at:
                              # https://github.com/mosquito/aio-pika/blob/94066fa900d9c08624d936f9b94037640267ac37/aio_pika/exchange.py
             "DURABLE": True,
             "AUTO_DELETE": False,   # delete queue when channel gets closed
@@ -137,7 +137,8 @@ class BrokerBase:
         timestamp: Union[int, datetime.datetime, float, datetime.timedelta, None] =None,
         headers: dict=None
         ) -> Message:
-        """Accepts a dict and correlation ID and returns a ready-for-the-wire message"""
+        """Accepts a dict as message body and message properties and returns
+        a ready-for-the-wire message."""
         return Message(
             self.encode_message(body),
             correlation_id=correlation_id,
@@ -159,21 +160,27 @@ class BrokerBase:
 
     # methods for managing AMQP connection, channel, exchange, and queues.
 
-    async def connect(self, retry=True, retry_timeout=0.5):
+    async def connect(self,
+        retry=True,
+        retry_timeout=0.5,
+        max_attempts: Union[int, None]=None):
         """Create a connection to the AMQP broker.
         params:
-            retry: 
-            retry_timeout: wait time in ms between retry attempts
+            retry:          try again if broker is unavailable
+            retry_timeout:  wait time in ms between retry attempts
+            max_attempts:   how many times to try to connect to an
+                            unavailable broker. None = infinite retries.
 
-        Connection properties (set in BrokerBase.__init__)
-            url (or use the following explicitly)
-                host
-                port
-                login
-                password
+        Connection properties (passed as params to BrokerBase | defined in BrokerBase.__init__)
+            url
             virtualhost = '/'
-            ssl: bool
+            ssl: bool = False
         """
+        if max_attempts == 0:
+            log.info('PyBroker has exceeded max retries, and won\'t reconnect')
+            return
+        elif max_attempts > 0:
+            max_attempts -= 1
         try:
             log.debug('Getting connection')
             log.debug(f'Retry setting is {retry} and timeout is {retry_timeout}')
@@ -194,7 +201,10 @@ class BrokerBase:
             if retry:
                 await asyncio.sleep(retry_timeout)
                 log.info('PyBroker is retrying connection to AMQP broker.')
-                return await self.connect()
+                return await self.connect(
+                    retry=retry,
+                    retry_timeout=retry_timeout,
+                    max_attempts=max_attempts)
             else:
                 log.info('PyBroker was unable to connect and is exiting.')
         else:
@@ -250,8 +260,18 @@ class BrokerBase:
         log.debug('Queue established and message handlers can now be bound.')
 
     async def _consumer(self, message):
+        """Asynchronous callback invoked when queue receives a message.
+        If the user has registered a handler function with the message's
+        routing key, passes the message to that function, else discards.
+        """
+
         if handler := self.__msg_handlers.get(message.routing_key):
             log.debug(f'Handling a message with routing key {message.routing_key}')
+            # NOTE: message.process will catch any exceptions bubbling up through
+            #       from application code and nack the message as a result. Client
+            #       code should raise errors to alert the original publisher of
+            #       processing failure. On no error, message will be acked after
+            #       leaving the context manager.
             with message.process():
                 await handler(message)
         else:
