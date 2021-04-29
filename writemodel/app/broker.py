@@ -63,14 +63,14 @@ class Broker(BrokerBase):
         # nack the message
         try:
             event = self._command_handler(body)
-            msg = self.create_message(event)
+            msg = self.create_message(event, headers=message.headers)
             log.debug(f'Broker is publishing to emitted.event: {event}')
             await self._publish_emitted_event(msg)
             # check if the publisher wants to hear a reply
             if message.reply_to:
                 body = self.create_message({
                     "type": "COMMAND_SUCCESS"
-                }, correlation_id=message.correlation_id,)
+                }, correlation_id=message.correlation_id, headers=message.headers)
                 await self.publish_one(body, message.reply_to)
         except CitationExistsError as e:
             log.info(f'Broker caught error from a duplicate event. ' + \
@@ -83,7 +83,7 @@ class Broker(BrokerBase):
                         "reason": "Citation already exists in database.",
                         "existing_event_guid": e.GUID
                     }
-                }, correlation_id=message.correlation_id)
+                }, correlation_id=message.correlation_id, headers=message.headers)
                 await self.publish_one(body, message.reply_to)
         except CitationMissingFieldsError:
             log.info(f'Broker caught an error from a citation missing fields. ' + \
@@ -95,7 +95,7 @@ class Broker(BrokerBase):
                     "payload": {
                         "reason": "Citation was missing fields (text, GUID, tags, or meta)."
                     }
-                }, correlation_id=message.correlation_id)
+                }, correlation_id=message.correlation_id, headers=message.headers)
                 await self.publish_one(body, message.reply_to)        
 
     async def _handle_persisted_event(self, message):
