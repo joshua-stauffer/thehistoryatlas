@@ -105,7 +105,8 @@ Current todo list
 - WRITEMODEL: move to emitting atomic events
 - WRITEMODEL: move to receiving atomic events
 - WRITEMODEL: track known GUIDs and their type
-
+- WRITEMODEL: keep short-term record of emitted event transactions (internal to database)
+- WRITEMODEL: validate time tag names?
 
 ______________________________________________________________________________
 

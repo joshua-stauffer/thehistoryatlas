@@ -122,7 +122,7 @@ EXAMPLES:
         transaction_guid:   string
         app_version:        string
         user:               string
-      timestamp:            string
+        timestamp:          string
         payload: {
           text:             string
           tags:             string[]
@@ -137,9 +137,11 @@ EXAMPLES:
         user:               string
         timestamp:          string
         payload: {
+          meta_guid:        string
           citation_guid:    string
           author:           string
           publisher:        string
+          title:            string
           pub_date?:        string
           page_num?:        int
           url?:             string
@@ -153,10 +155,10 @@ EXAMPLES:
         user:               string
         timestamp:          string
         payload: {
-        citation_guid:      string
+          citation_guid:    string
           person_guid:      string
           person_name:      string
-        citation_start:     int
+          citation_start:   int
           citation_end:     int
         }
       }
@@ -194,7 +196,7 @@ EXAMPLES:
       }
 
       {
-        type: PERSON_ADDED
+        type: PERSON_TAGGED
         transaction_guid:   string
         app_version:        string
         user:               string
@@ -237,7 +239,9 @@ EXAMPLES:
           citation_end:     int         
         }
       }
-      
+
+  
+
 EXAMPLES:
 {"type": "CITATION_PUBLISHED", "payload": {"text": "a quote about someone important or not important doing something else important or not important someplace in the world at some point in time", "GUID": "fake-citation-3524"}}
 
