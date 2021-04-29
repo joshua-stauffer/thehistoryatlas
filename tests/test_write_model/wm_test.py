@@ -8,7 +8,7 @@ from tackle import Tackle
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
-t = Tackle('any.txt')
+t = Tackle(output_path='any.txt')
 
 input = json.loads('{"type": "PUBLISH_NEW_CITATION", "user": "joshki", "timestamp": "definitely right now", "payload": {"text": "oh hi there, some very interesting! sample! text!", "GUID": "fake-citation-3599", "tags": [], "meta": {}}}')
 output = json.loads('{"type": "CITATION_PUBLISHED", "user": "joshki", "timestamp": "definitely right now", "priority": 1, "payload": {"text": "oh hi there, some very interesting! sample! text!", "GUID": "fake-citation-3599", "tags": [], "meta": {}}}')
