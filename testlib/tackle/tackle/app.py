@@ -22,8 +22,8 @@ class Tackle:
         down?"
     """
 
-    def __init__(self, output_filename):
-        self.output_filename = output_filename
+    def __init__(self, output_path):
+        self.output_filename = output_path
         self._tests = deque()
         self._results = dict()
 
