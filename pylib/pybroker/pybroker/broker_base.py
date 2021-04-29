@@ -135,6 +135,7 @@ class BrokerBase:
         reply_to: str=None,
         expiration:  Union[int, datetime.datetime, float, datetime.timedelta, None] =None,
         timestamp: Union[int, datetime.datetime, float, datetime.timedelta, None] =None,
+        headers: dict=None
         ) -> Message:
         """Accepts a dict and correlation ID and returns a ready-for-the-wire message"""
         return Message(
@@ -143,7 +144,8 @@ class BrokerBase:
             content_type=content_type,
             reply_to=reply_to,
             expiration=expiration,
-            timestamp=timestamp)
+            timestamp=timestamp,
+            headers=headers)
 
     @staticmethod
     def decode_message(message: Message):
