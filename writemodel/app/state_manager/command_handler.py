@@ -6,7 +6,6 @@ Friday, April 9th 2021
 import logging
 from uuid import uuid4
 
-from tests.test_database import value
 from .handler_errors import (CitationExistsError, UnknownCommandTypeError,
     CitationMissingFieldsError, GUIDError, UnknownTagTypeError)
 from .event_composer import EventComposer
