@@ -5,11 +5,15 @@ Friday, April 9th 2021
 
 import logging
 from uuid import uuid4
+
+from tests.test_database import value
 from .handler_errors import (CitationExistsError, UnknownCommandTypeError,
     CitationMissingFieldsError, GUIDError, UnknownTagTypeError)
 from .event_composer import EventComposer
 
 log = logging.getLogger(__name__)
+
+TAG_TYPES = set(["PERSON", "PLACE", "TIME"])
 
 class CommandHandler:
     """Class encapsulating logic to transform Commands from the user
@@ -85,14 +89,18 @@ class CommandHandler:
         text = cmd['payload']['text']
         hashed_text = self._hashfunc(text)
         log.debug(f'Text hash is {hashed_text}')
-        if hash_result := self._db.check_citation_for_uniqueness(hashed_text):
+        if hash_guid := self._db.check_citation_for_uniqueness(hashed_text):
             log.info('tried (and failed) to publish duplicate citation')
-            raise CitationExistsError(hash_result.GUID)
+            raise CitationExistsError(hash_guid)
+        # add this to short term memory for preventing immediate duplication
+        self._db.add_to_stm(key=hashed_text, value=citation_GUID)
 
         # check citation GUID
         if cit_res := self._db.check_guid_for_uniqueness(citation_GUID):
             raise GUIDError('Citation GUID was not unique. ' + \
                             f'Collided with GUID of type {cit_res}')
+        # add this to short term memory for preventing immediate duplication
+        self._db.add_to_stm(key=citation_GUID, value='CITATION')
 
         # check tag GUIDs. if they match, ensure that they are labeled correctly
         # tags will be added to composer by type during validation
@@ -101,16 +109,21 @@ class CommandHandler:
         # check meta GUID
         meta_guid = meta['GUID']
         if m_res := self._db.check_guid_for_uniqueness(meta_guid):
-            if m_res != 'meta':
+            if m_res != 'META':
                 raise GUIDError(f'Meta GUID collided with GUID of type {m_res}')
+
+        # add this to short term memory for preventing immediate duplication
+        self._db.add_to_stm(key=meta_guid, value='META')        
+
         composer.make_META_ADDED(
             citation_guid=citation_GUID,
             meta_guid=meta_guid,
             author=meta['author'],
             publisher=meta['publisher'],
-            title=meta['title']
+            title=meta['title'],
             # unpack remaining values after filtering for the ones we already have
-            **{k:v for k, v in meta.values()
+            **{k:v 
+                for k, v in meta.items()
                 if k not in ('author', 'title', 'publisher', 'GUID')})
 
         composer.make_CITATION_ADDED(
@@ -131,11 +144,13 @@ class CommandHandler:
         tag_guids = []
         for tag in tags:
             t_guid = tag['GUID']
+            t_type = tag['type']
+            if t_type not in TAG_TYPES:
+                raise UnknownTagTypeError(f'Tag of unknown type {t_type} was encountered')
 
             # check if tag already exists in the database
             if t_res := self._db.check_guid_for_uniqueness(t_guid):
                 # and if it does, it must be the same type as this tag
-                t_type = tag['type']
                 if t_type != t_res:
                     raise GUIDError(f'Tag GUID of type {t_type} doesn\'t match database type of {t_res}.')
                 
@@ -161,11 +176,13 @@ class CommandHandler:
                         time_name=tag['time_name'],
                         citation_start=tag['citation_start'],
                         citation_end=tag['citation_end'])                            
-                else:
-                    raise UnknownTagTypeError(f'Tag of unknown type {t_type} was encountered')
-            
+               
             # now we know our GUID is unique, so we need to construct a new tag
             else:
+
+                # first add it to short term memory
+                self._db.add_to_stm(key=t_guid, value=t_type)
+
                 # make a tag of the correct type
                 if t_type == 'PERSON':
                     composer.make_PERSON_ADDED(
@@ -190,9 +207,7 @@ class CommandHandler:
                         time_name=tag['time_name'],
                         citation_start=tag['citation_start'],
                         citation_end=tag['citation_end'])                            
-                else:
-                    raise UnknownTagTypeError(f'Tag of unknown type {t_type} was encountered')        
-
+  
             log.debug(f'Successfully validated tag {tag}')
             tag_guids.append(t_guid)
         return tag_guids

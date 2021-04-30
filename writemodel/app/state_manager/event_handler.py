@@ -4,7 +4,6 @@ upon receiving Persisted Events.
 Friday, April 9th 2021
 """
 
-import json
 import logging
 from .handler_errors import MalformedEventError, UnknownEventTypeError
 
