@@ -66,16 +66,14 @@ Current todo list
 - EVENTSTORE: integrate with real database instead of memory
 - EVENTSTORE: add Tackle testing
 - EVENTSTORE: double check atomic events enter correctly
+- EVENTSTORE: add tests
 - GEO: create geo database
 - GEO: add broker integration
 - GEO: get kaggle cities <= geonames!!
 - GEO: find countries/states geo data
-- HISTORY: make sure that History is accounting for message content arriving in a payload
 - HISTORY: create event number query (which event is the latest?)
             <+ maybe this could just be done by requesting a replay from the last knowon event
-- HISTORY: add tests
 - HISTORY: incorporate testing into the docker build
-- HISTORY: change replay to use generator
 - NGINX: setup client & api behind nginx
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: add event count stat to double check sync with event store
@@ -184,6 +182,9 @@ COMPLETED TODOS!
 - (  done  ) HISTORY: add logging
 - (  done  ) HISTORY: rebuild Broker
 - (  done  ) HISTORY: add lib in build
+- (  done  ) HISTORY: add tests
+- (  done  ) HISTORY: change replay to use generator
+- (  done  ) HISTORY: make sure that History is accounting for message content arriving in a payload
 - (  done  ) EVENTSTORE: incorporate lib in build
 - (  done  ) EVENTSTORE: move db logic into db
 - (  done  ) READMODEL: setup mongodb docker instance

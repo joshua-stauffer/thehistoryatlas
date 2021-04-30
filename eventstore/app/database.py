@@ -7,7 +7,7 @@ import json
 import logging
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from schema import Event, Base
+from event_schema.EventSchema import Event, Base
 
 log = logging.getLogger(__name__)
 
@@ -26,10 +26,11 @@ class Database:
         log.info(f'Committing event {event} to the event store database.')
         event = Event(
             type=event.get('type'),                         # string representing EventType
+            transaction_guid=event.get('transaction_guid'), # group atomic events together by command
+            app_version=event.get('app_version'),           # future proof(ish)
             timestamp=event.get('timestamp'),               # string timestamp
             user=event.get('user'),                         # string user GUID
             payload=json.dumps(event.get('payload')),       # arbitrary json string
-            priority=event.get('priority')                  # 0 or 1
         )
 
         with Session(self._engine, future=True) as session:

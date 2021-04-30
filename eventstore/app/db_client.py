@@ -1,7 +1,7 @@
 from event_store import EventStore
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from schema import Event
+from event_schema.EventSchema import Event
 
 enjoy = "Yay!"
 

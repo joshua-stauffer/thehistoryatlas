@@ -8,6 +8,7 @@ COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
+RUN pip3 install /lib/event-schema
 COPY . .
 ENV HOST_NAME=broker
 
