@@ -22,7 +22,7 @@ PROGRESS            | ..... |
 - React Client      |       |
 - Apollo Server     | ...   |
 - Read Model        | ...   |
-- Write Model       | ...   |
+- Write Model       | ....  |
 - Event Store       | ...   |
 - History Player    | ...   |
 - NGINX             |       |
@@ -100,12 +100,7 @@ Current todo list
 - USER: add broker integration
 - WRITEMODEL: add event count stat to double check synch with event store
 - WRITEMODEL: check if db is initialized on startup and call History replay if not
-- WRITEMODEL: add tests
 - WRITEMODEL: incorporate testing into the docker build
-- WRITEMODEL: move to emitting atomic events
-- WRITEMODEL: move to receiving atomic events
-- WRITEMODEL: track known GUIDs and their type
-- WRITEMODEL: keep short-term record of emitted event transactions (internal to database)
 - WRITEMODEL: validate time tag names?
 
 ______________________________________________________________________________
@@ -216,6 +211,10 @@ COMPLETED TODOS!
 - (  done  ) WRITEMODEL: create replay history method
 - (  done  ) WRITEMODEL: debug transition to asyncio
 - (  done  ) WRITEMODEL: add resilience to broker in the case that RabbitMQ isn't immediately available
-
+- (  done  ) WRITEMODEL: add tests
+- (  done  ) WRITEMODEL: move to emitting atomic events
+- (  done  ) WRITEMODEL: move to receiving atomic events
+- (  done  ) WRITEMODEL: track known GUIDs and their type
+- (  done  ) WRITEMODEL: keep short-term record of emitted event transactions (internal to database)
 
 ______________________________________________________________________________
