@@ -1,11 +1,12 @@
 import asyncio
 import json
 import pytest
+import random
 from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
-from app.state_manager.schema import Citation, Time, Person, Place
+from app.state_manager.schema import Citation, Time, Person, Place, Name
 
 
 class Config:
@@ -757,3 +758,169 @@ async def test_add_meta_to_citation_with_extra_args(db, citation_data_1, transac
             select(Citation).where(Citation.guid==citation_guid)
         ).scalar_one()
         assert res.meta == json.dumps(meta_data_more)
+
+@pytest.mark.asyncio
+async def test_handle_name_only_new(db, citation_data_1, transaction_guid):
+    citation_guid, text = citation_data_1
+    db.create_citation(
+        transaction_guid=transaction_guid,
+        citation_guid=citation_guid,
+        text=text)
+    db.handle_person_update(
+        transaction_guid=transaction_guid,
+        person_guid='test-guid-1',
+        citation_guid=citation_guid,
+        person_name='test-name-1',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+    db.handle_place_update(
+        transaction_guid=transaction_guid,
+        place_guid='test-guid-2',
+        citation_guid=citation_guid,
+        place_name='test-name-2',
+        start_char=1,
+        stop_char=5,
+        latitude=random.random(),
+        longitude=random.random(),
+        is_new=True)
+    db.handle_time_update(
+        transaction_guid=transaction_guid,
+        time_guid='test-guid-3',
+        citation_guid=citation_guid,
+        time_name='test-name-3',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+    with Session(db._engine, future=True) as session:
+        names = ['test-name-1', 'test-name-2', 'test-name-3']
+        guids = ['test-guid-1', 'test-guid-2', 'test-guid-3']
+        for name, guid in zip(names, guids):
+            res = session.execute(
+                select(Name).where(Name.name==name)
+            ).scalar_one()
+            assert res != None
+            assert guid in res.guids
+
+@pytest.mark.asyncio
+async def test_handle_name_with_repeats(db, citation_data_1,
+    citation_data_2):
+    transaction_guid_1 = str(uuid4())
+    transaction_guid_2 = str(uuid4())
+    citation_guid, text = citation_data_1
+    db.create_citation(
+        transaction_guid=transaction_guid_1,
+        citation_guid=citation_guid,
+        text=text)
+    db.handle_person_update(
+        transaction_guid=transaction_guid_1,
+        person_guid='test-guid-1',
+        citation_guid=citation_guid,
+        person_name='test-name-1',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+    db.handle_place_update(
+        transaction_guid=transaction_guid_1,
+        place_guid='test-guid-2',
+        citation_guid=citation_guid,
+        place_name='test-name-2',
+        start_char=1,
+        stop_char=5,
+        latitude=random.random(),
+        longitude=random.random(),
+        is_new=True)
+    db.handle_time_update(
+        transaction_guid=transaction_guid_1,
+        time_guid='test-guid-3',
+        citation_guid=citation_guid,
+        time_name='test-name-3',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+
+    # add a second citation
+    cit_guid_2, text_2 = citation_data_2
+    db.create_citation(
+        transaction_guid=transaction_guid_2,
+        citation_guid=cit_guid_2,
+        text=text)
+    db.handle_person_update(
+        transaction_guid=transaction_guid_2,
+        person_guid='test-guid-4',
+        citation_guid=cit_guid_2,
+        person_name='test-name-1',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+    db.handle_place_update(
+        transaction_guid=transaction_guid_2,
+        place_guid='test-guid-5',
+        citation_guid=cit_guid_2,
+        place_name='test-name-2',
+        start_char=1,
+        stop_char=5,
+        latitude=random.random(),
+        longitude=random.random(),
+        is_new=True)
+    db.handle_time_update(
+        transaction_guid=transaction_guid_2,
+        time_guid='test-guid-6',
+        citation_guid=cit_guid_2,
+        time_name='test-name-3',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+    with Session(db._engine, future=True) as session:
+        names = ['test-name-1', 'test-name-2', 'test-name-3']
+        guids = [('test-guid-1', 'test-guid-4'),
+                 ('test-guid-2', 'test-guid-5'),
+                 ('test-guid-3', 'test-guid-6')]
+        for name, (guid1, guid2) in zip(names, guids):
+
+            res = session.execute(
+                select(Name).where(Name.name==name)
+            ).scalar_one()
+            assert res != None
+            assert guid1 in res.guids
+            assert guid2 in res.guids
+        
+        # double check that there are no extra names floating around
+        res = session.execute(
+            select(Name)
+        ).scalars()
+        res_list = [r.name for r in res]
+        assert len(res_list) == 3
+
+@pytest.mark.asyncio
+async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, transaction_guid):
+    citation_guid, text = citation_data_1
+    db.create_citation(
+        transaction_guid=transaction_guid,
+        citation_guid=citation_guid,
+        text=text)
+    db.handle_person_update(
+        transaction_guid=transaction_guid,
+        person_guid='test-guid-1',
+        citation_guid=citation_guid,
+        person_name='test-name-1',
+        start_char=1,
+        stop_char=5,
+        is_new=True)
+    # now add exactly the same name and GUID
+    db.handle_person_update(
+        transaction_guid=transaction_guid,
+        person_guid='test-guid-1',
+        citation_guid=citation_guid,
+        person_name='test-name-1',
+        start_char=1,
+        stop_char=5,
+        is_new=False)
+    with Session(db._engine, future=True) as session:
+        res = session.execute(
+            select(Name)
+        ).scalars()
+        res_list = [r for r in res]
+        assert len(res_list) == 1
+        name = res_list[0]
+        assert len(name.guids) == 1

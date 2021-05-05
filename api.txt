@@ -300,28 +300,65 @@ EXAMPLES:
         {
           type: CITATIONS_BY_GUID
           payload: {
-            citations: {
-              text: str
-              meta: {
-                title: str
-                author: str
-                publisher: str
-                other fields?
+            citations: 
+              citation_guid: {
+                text: str
+                meta: {
+                  title: str
+                  author: str
+                  publisher: str
+                  other fields?
+                }
+                tags: {
+                  star_char: int
+                  stop_char: int
+                  tag_type: enum PERSON | PLACE | TIME
+                  tag_guid: str
+                  name?: str          # TIME only
+                  names?: str[]       # PLACE and PERSON
+                  coords?: {          # PLACE only
+                    latitude: float
+                    longitude: float
+                    geoshape?: str
+                    }
+                }[]
               }
-              tags: {
-                star_char: int
-                stop_char: int
-                tag_type: enum PERSON | PLACE | TIME
-                tag_guid: str
-                name?: str          # TIME only
-                names?: str[]       # PLACE and PERSON
-                coords?: {          # PLACE only
-                  latitude: float
-                  longitude: float
-                  geoshape?: str
-                  }
-              }[]
-            }[]
+            
+              ||
+
+              {
+                error: citation guid does not exist
+              }
+            }
+        }
+
+        {
+          type: GET_MANIFEST
+          payload: {
+            type: enum PERSON | PLACE | TIME,
+            guid: str
+          }
+        }
+        =>
+        {
+          type: MANIFEST
+          payload: {
+            guid: str
+            citation_guids: str[]
+          }
+        }
+
+        {
+          type: GET_GUIDS_BY_NAME
+          payload: {
+            name: str
+          }
+        }
+        =>
+        {
+          type: GUID_BY_NAME
+          payload: {
+            guids: str[]
           }
         }
 

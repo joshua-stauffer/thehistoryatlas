@@ -9,7 +9,7 @@ import json
 from typing import Union
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from .schema import Base, Citation, TagInstance, Time, Person, Place
+from .schema import Base, Citation, TagInstance, Time, Person, Place, Name
 
 log = logging.getLogger(__name__)
 
@@ -25,9 +25,12 @@ class Database:
         self.__short_term_memory = dict()
         self.__stm_timeout = stm_timeout
 
+    # QUERIES
+
     def get_citations(self, citation_guids: list[str]) -> dict:
         """Expects a list of citation guids and returns their data in a dict 
         keyed by guid"""
+        log.info(f'Received request to return {len(citation_guids)} Citations.')
         result = dict()
         with Session(self._engine, future=True) as session:
             for guid in citation_guids:
@@ -43,16 +46,64 @@ class Database:
                     }
                 else:
                     result[guid] = {'error': 'citation guid does not exist'}
+        log.info(f'Returning {len(result.keys())} Citations')
         return result
 
-    def get_manifest_by_person(self, person_guid: str) -> list[str]:
+    def get_manifest_by_person(self,
+        person_guid: str
+        ) -> list[str]:
         """Returns a list of given person's citations"""
-        # should this include time tag as well?
-        with Session(self._engine, future=True) as session:
-            tags = session.execute(
-                select(Person.tags).where(Person.guid == person_guid)
-            )
+        return self.__get_manifest_util(
+            entity_base=Person,
+            guid=person_guid)
 
+    def get_manifest_by_place(self,
+        place_guid: str
+        ) -> list[str]:
+        """Returns a list of given place's citations"""
+        return self.__get_manifest_util(
+            entity_base=Place,
+            guid=place_guid)
+
+    def get_manifest_by_time(self,
+        time_guid: str
+        ) -> list[str]:
+        """Returns a list of given place's citations"""
+        return self.__get_manifest_util(
+            entity_base=Time,
+            guid=time_guid)
+
+    def __get_manifest_util(self, entity_base, guid):
+        """Utility to query db for manifest"""
+        with Session(self._engine, future=True) as session:
+            entity = session.execute(
+                select(entity_base).where(entity_base.guid==guid)
+            ).scalar_one_or_none()
+            if not entity:
+                return list()
+            tag_instances = session.execute(
+                select(TagInstance)
+                .join(TagInstance.citation)
+                .where(TagInstance.tag_id==entity.id)
+                #.order_by(TagInstance.citation.time_tag)
+            ).scalars()
+            # this can't be performant..
+            tag_list = [t for t in tag_instances]
+            tag_list.sort(key=lambda a: a.citation.time_tag)
+            result = [t.citation.guid for t in tag_instances]
+        return result
+
+    def get_guids_by_name(self, name) -> list[str]:
+        """Allows searching on known names. Returns list of GUIDs, if any."""
+        with Session(self._engine, future=True) as session:
+            res = session.execute(
+                select(Name).where(Name.name==name)
+            ).scalar_one_or_none()
+            if not res:
+                return list()
+            return res.guids
+
+    # MUTATIONS
 
     def create_citation(self,
         transaction_guid: str,
@@ -97,6 +148,8 @@ class Database:
                 cur_names = self.split_names(person.names)
                 if person_name not in cur_names:
                     person.names += f'|{person_name}'
+            # add name to Name registry
+            self._handle_name(person_name, person_guid, session)
             self._create_tag_instance(
                 tag=person,
                 transaction_guid=transaction_guid,
@@ -136,6 +189,7 @@ class Database:
                 cur_names = self.split_names(place.names)
                 if place_name not in cur_names:
                     place.names += f'|{place_name}'
+            self._handle_name(place_name, place_guid, session)
             self._create_tag_instance(
                 tag=place,
                 transaction_guid=transaction_guid,
@@ -166,6 +220,13 @@ class Database:
                 time = session.execute(
                     select(Time).where(Time.guid == time_guid)
                 ).scalar_one()
+            # cache timetag name on citation
+            citation = session.execute(
+                select(Citation).where(Citation.guid==citation_guid)
+            ).scalar_one()
+            citation.time_tag = time_name
+            session.add(citation)
+            self._handle_name(time_name, time_guid, session)
             self._create_tag_instance(
                 tag=time,
                 transaction_guid=transaction_guid,
@@ -190,6 +251,7 @@ class Database:
             tag=tag,
             start_char=start_char,
             stop_char=stop_char)
+        
         session.add_all([tag, tag_instance])
         session.commit()
 
@@ -208,6 +270,24 @@ class Database:
             ).scalar_one()
             citation.meta = meta
             session.commit()
+
+    def _handle_name(self, name, guid, session):
+        """Accepts a name and GUID and links the two in the Name table"""
+        res = session.execute(
+            select(Name).where(Name.name==name)
+        ).scalar_one_or_none()
+        if not res:
+            res = Name(
+                name=name,
+                guids=guid)
+        else:
+            # check if guid is already represented
+            if guid in res.guids:
+                return
+            res.add_guid(guid)
+        session.add(res)
+
+    # UTILITY
 
     def add_to_stm(self, key, value):
         """Adds a value from an emitted event to the short term memory"""

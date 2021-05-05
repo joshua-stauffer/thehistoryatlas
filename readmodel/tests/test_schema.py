@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import text
 
 from app.state_manager.schema import (Base, Citation, TagInstance, Tag,
-    Time, Person, Place)
+    Time, Person, Place, Name)
+from app.state_manager.errors import EmptyNameError
 
 @pytest.fixture
 def engine():
@@ -153,3 +154,35 @@ def test_tag_inheritance(engine, citation_data_1, citation_data_2):
     data = [time, person, place, cit_1, cit_2, *tags]
     with Session(engine, future=True) as sess, sess.begin():
         sess.add_all(data)
+
+def test_name_returns_list():
+    n = Name(
+        name='Ocean',
+        guids='some-guid')
+    assert isinstance(n.guids, list)
+    assert n.guids[0] == 'some-guid'
+    print(n.guids)
+    assert len(n.guids) == 1
+
+def test_name_on_set():
+    n = Name(
+        name='Ocean',
+        guids='some-guid')
+    n.add_guid('Frank')
+    assert n.guids[1] == 'Frank'
+    assert len(n.guids) == 2
+
+def test_name_on_del():
+    n = Name(
+        name='Ocean',
+        guids='some-guid')
+    with pytest.raises(ValueError):
+        n.del_guid('Frank')
+    assert len(n.guids) == 1
+    with pytest.raises(IndexError):
+        assert n.guids[1]
+    with pytest.raises(EmptyNameError):
+        n.del_guid('some-guid')
+    n.add_guid('Frank')
+    n.del_guid('Frank')
+    assert len(n.guids) == 1
