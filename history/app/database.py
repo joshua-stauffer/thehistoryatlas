@@ -56,43 +56,6 @@ class Database:
             yield jsonified
             id += 1
 
-    def get_events_in_chron_order(self, start_id: int=0):
-        """Acts as a generator for events in database, and streams them to 
-
-        When optional param: start_id is provided events will only be
-        included which have ids higher than start_id
-        
-        Sorts based on event id."""
-        
-        log.info('Querying for events in chronological order')
-        stmt = select(Event) \
-            .where(Event.id > start_id) \
-            .order_by(Event.id)
-
-        with Session(self._engine, future=True) as session, session.begin():
-            results = session.execute(stmt)
-            jsonified_results = [self.to_json(r) for r in results.scalars()]
-        return jsonified_results
-
-    def get_events_in_priority_order(self, start_id: int=0):        
-        """Returns an iterable of events in the database.
-
-        When optional param: start_id is provided events will only be
-        included which have ids higher than start_id
-
-        Sorts first based on priority to allow annulling events (0)
-        to float to the top, and second on event id.
-        """
-
-        log.info('Querying for events in priority order')
-        stmt = select(Event) \
-            .where(Event.id > start_id) \
-            .order_by(Event.priority, Event.id)
-
-        with Session(self._engine, future=True) as session, session.begin():
-            results = session.execute(stmt)
-            jsonified_results = [self.to_json(r) for r in results.scalars()]
-        return jsonified_results
 
     @staticmethod
     def to_json(event):
