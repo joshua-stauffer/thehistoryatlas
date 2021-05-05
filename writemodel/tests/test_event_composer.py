@@ -19,6 +19,7 @@ def basic_meta():
 @pytest.fixture
 def citation_args():
     return {
+        'citation_guid': str(uuid4()),
         'text': 'some nice text',
         'tags': ['a-guid', 'b-guid', 'c-guid'],
         'meta': 'meta data guid'
