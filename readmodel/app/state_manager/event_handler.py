@@ -20,7 +20,7 @@ class EventHandler:
         handler = self._event_handlers.get(evt_type)
         if not handler:
             raise UnknownEventError(evt_type)
-        handler(event['payload'])
+        handler(event)
 
     def _map_event_handlers(self):
         """A dict of known event types and the methods which process them"""
@@ -36,8 +36,8 @@ class EventHandler:
         }
 
     def _handle_citation_added(self, event):
-        transaction_guid = event['guid']
-        citation_guid = event['payload']['guid']
+        transaction_guid = event['transaction_guid']
+        citation_guid = event['payload']['citation_guid']
         text = event['payload']['text']
         self._db.create_citation(
             transaction_guid=transaction_guid,
@@ -45,29 +45,89 @@ class EventHandler:
             text=text)
 
     def _handle_person_added(self, event):
-        transaction_guid = event['guid']
-        payload = event['payload']
-        citation_guid = payload['citation_guid']
-        person_guid = payload['person_guid']
-        person_name = payload['person_name']
-        start_char = payload['citation_start']
-        stop_char = payload['citation_end']
-        
+        self.__handle_person_util(
+            event=event,
+            is_new=True)        
 
     def _handle_person_tagged(self, event):
-        pass
+        self.__handle_person_util(
+            event=event,
+            is_new=False)   
+
+    def __handle_person_util(self, event, is_new):
+        """Merges person added and person tagged functionality"""
+        payload = event['payload']
+        self._db.handle_person_update(
+            transaction_guid=event['transaction_guid'],
+            person_guid=payload['person_guid'],
+            citation_guid=payload['citation_guid'],
+            person_name=payload['person_name'],
+            start_char=payload['citation_start'],
+            stop_char=payload['citation_end'],
+            is_new=is_new)
 
     def _handle_place_added(self, event):
-        pass
+        payload = event['payload']
+        latitude = payload.get('latitude')
+        longitude = payload.get('longitude')
+        geoshape = payload.get('geoshape')
+        self.__handle_place_util(
+            event=event,
+            is_new=True,
+            latitude=latitude,
+            longitude=longitude,
+            geoshape=geoshape)
 
     def _handle_place_tagged(self, event):
-        pass
+        self.__handle_place_util(
+            event=event,
+            is_new=False)
+
+    def __handle_place_util(self, event, is_new, **kwargs):
+        """Merges place added and place tagged functionality"""
+        # latitude, longitude, and geoshape are passed through as keyword
+        # arguments since they are only needed by place added
+        payload = event['payload']
+        self._db.handle_place_update(
+            transaction_guid=event['transaction_guid'],
+            place_guid=payload['place_guid'],
+            citation_guid=payload['citation_guid'],
+            place_name=payload['place_name'],
+            start_char=payload['citation_start'],
+            stop_char=payload['citation_end'],
+            is_new=is_new,
+            **kwargs)
 
     def _handle_time_added(self, event):
-        pass
+        self.__handle_time_util(
+            event=event,
+            is_new=True)
 
     def _handle_time_tagged(self, event):
-        pass
+        self.__handle_time_util(
+            event=event,
+            is_new=False)
+
+    def __handle_time_util(self, event, is_new):
+        """Merges time added and time tagged functionality"""
+        payload = event['payload']
+        self._db.handle_time_update(
+            transaction_guid=event['transaction_guid'],
+            time_guid=payload['time_guid'],
+            citation_guid=payload['citation_guid'],
+            time_name=payload['time_name'],
+            start_char=payload['citation_start'],
+            stop_char=payload['citation_end'],
+            is_new=is_new)
 
     def _handle_meta_added(self, event):
-        pass
+        citation_guid = event['payload']['citation_guid']
+        
+        # we're passing arbitrary kwargs straight through,
+        # so delete the ones we don't need for the end user
+        meta_payload = dict(**event['payload'])
+        del meta_payload['citation_guid']
+        del meta_payload['meta_guid']
+        self._db.add_meta_to_citation(
+            citation_guid=citation_guid,
+            **meta_payload)

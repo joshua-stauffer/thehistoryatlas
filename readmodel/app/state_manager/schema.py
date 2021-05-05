@@ -92,6 +92,9 @@ class Place(Tag):
 
     id = Column(Integer, ForeignKey('tags.id'), primary_key=True)
     names = Column(String)
+    latitude= Column(Float)
+    longitude = Column(Float)
+    geoshape = Column(String)
 
     __mapper_args__ = {
         'polymorphic_identity': 'PLACE'
