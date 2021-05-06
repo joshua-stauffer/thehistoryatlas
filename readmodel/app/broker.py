@@ -2,11 +2,11 @@
 
 May 6th, 2021"""
 
-
+import asyncio
 from collections import deque
 import logging
 from pybroker import BrokerBase
-from broker_errors import MessageError
+from errors import MessageError
 
 
 log = logging.getLogger(__name__)
@@ -34,9 +34,8 @@ class Broker(BrokerBase):
         """Start the broker. Will request and process a event replay when
         after initialized unless flag is_initialized is True."""
         
+
         await self.connect()
-        if not is_initialized:
-            await self._request_history_replay(last_index=replay_from)
 
         # register handlers
         await self.add_message_handler(
@@ -48,6 +47,9 @@ class Broker(BrokerBase):
         await self.add_message_handler(
             routing_key='event.replay.readmodel',
             callback=self._handle_replay_history)
+
+        if not is_initialized:
+            await self._request_history_replay(last_index=replay_from)
 
     async def _handle_query(self, message):
         """Primary handler for making ReadModel service available to the
@@ -90,17 +92,22 @@ class Broker(BrokerBase):
         
         log.info('Broker is requesting history replay')
         self.is_history_replaying = True
-        msg_body = self.encode_message({
-            "type": "HISTORY_REPLAY_REQUEST",
+        msg_body = {
+            "type": "REQUEST_HISTORY_REPLAY",
             "payload": {
                 "last_event_id": last_index,
-                "routing_key": "event.replay.readmodel"
-            }})
+            }}
         msg = self.create_message(
             msg_body,
-            delivery_mode=self.DeliveryMode.PERSISTENT,
             reply_to='event.replay.readmodel')
-        await self.publish_one(msg, routing_key='event.replay.request')
+        while True:
+            # 
+            try:
+                await self.publish_one(msg, routing_key='event.replay.request')
+                return
+            except Exception as e:
+                log.error(f'Failed to publish history replay request due to: {e}\nTrying again in one second.')
+                await asyncio.sleep(1)
 
     def _close_history_replay(self):
         """processes any new persisted events which came in while history was replaying,
