@@ -5,7 +5,7 @@ April 27th, 2021"""
 
 import logging
 from pybroker import BrokerBase
-from .broker_errors import MissingReplyFieldError
+from broker_errors import MissingReplyFieldError
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')

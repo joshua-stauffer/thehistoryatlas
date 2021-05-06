@@ -10,7 +10,7 @@ import json
 import logging
 import os
 import signal
-from .database import Database
+from database import Database
 from broker import Broker
 from history_config import HistoryConfig
 

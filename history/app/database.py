@@ -13,15 +13,21 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event, Base
 
+
+
 log = logging.getLogger(__name__)
 
 class Database:
 
     def __init__(self, config):
         log.info('Making database connection.')
+        log.info('event is as follows:')
+        log.info(Event)
+        log.info(Event.transaction_guid)
+
         self._engine = create_engine(
             config.DB_URI,
-            echo=config.DEBUG,
+            echo=True,  # config.DEBUG
             future=True
         )
         # initialize the db
@@ -42,9 +48,8 @@ class Database:
         return self.__event_generator(last_id + 1)
         
     def __event_generator(self, start_id):
-        res = True
         id = start_id
-        while res:
+        while True:
             with Session(self._engine, future=True) as sess:
                 res = sess.execute(
                     select(Event).where(Event.id == id)
