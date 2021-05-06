@@ -9,17 +9,12 @@ services:
             - "15672:15672"
         volumes: 
             - broker:/var/lib/rabbitmq
-    mongodb:
-        image: "mongo"
-        networks:
-            - tha-connect
-        ports:
-            - "27017:27017"
-        volumes:
-            - mongodata:/data/db
     api:
         depends_on:
             - broker
+            - writemodel
+            - readmodel
+            - eventstore
         build: ./api
         ports:
             - "4000:4000"
@@ -28,7 +23,7 @@ services:
     readmodel:
         depends_on:
             - broker
-            - mongodb
+            - history
         build:
             context: ./readmodel
             args:
@@ -38,6 +33,8 @@ services:
     writemodel:
         depends_on:
             - broker
+            - history
+            - eventstore
         build: 
             context: ./writemodel
             args:
@@ -54,7 +51,7 @@ services:
         networks:
             - tha-connect
         volumes:
-            - store:/data/db
+            - teststore:/data/db
     history:
         depends_on: 
             - broker
@@ -65,10 +62,9 @@ services:
         networks: 
             - tha-connect
         volumes:
-            - store:/data/db
+            - teststore:/data/db
 volumes:
     broker:
-    mongodata:
-    store:
+    teststore:
 networks:
     tha-connect:
