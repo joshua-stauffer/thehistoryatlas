@@ -15,8 +15,8 @@ ARG test=True
 ENV TESTING=$test
 ENV CONFIG=DEV
 ENV PROD_DB_URI=
-ENV DEV_DB_URI=ENV DEV_DB_URI=sqlite:///data/db/tha-store-dev.db
-ENV TEST_DB_URI=sqlite:////etc/db/tha-test.db
+ENV DEV_DB_URI=sqlite:////data/db/tha-store-dev.db
+ENV TEST_DB_URI=sqlite:////data/db/tha-store-dev.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
