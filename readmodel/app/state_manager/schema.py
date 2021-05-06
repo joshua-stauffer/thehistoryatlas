@@ -140,3 +140,10 @@ class Name(Base):
 
     def __repr__(self):
         return f'Name(id: {self.id}, name: {self.name}, guids: {self._guids})'
+
+class History(Base):
+
+    __tablename__ = 'history'
+
+    id = Column(Integer, primary_key=True)
+    latest_event_id = Column(Integer, default=0)

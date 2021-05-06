@@ -21,7 +21,9 @@ def db():
     c = Config()
     # stm timeout is an asyncio.sleep value: by setting it to 0 we defer control
     # back to the main thread but return to it as soon as possible.
-    return Database(c, stm_timeout=0)
+    db = Database(c, stm_timeout=0)
+    db.check_database_init()
+    return db
 
 @pytest.fixture
 def handler(db):
@@ -37,7 +39,8 @@ def basic_meta():
         'transaction_guid': str(uuid4()),
         'app_version': '0.0.0',
         'user': 'testy-tester',
-        'timestamp': str(datetime.utcnow())
+        'timestamp': str(datetime.utcnow()),
+        'event_id': 1
     }
 
 @pytest.fixture

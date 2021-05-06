@@ -35,9 +35,12 @@ class ReadModel:
             self.handle_query,
             self.handle_event
         )
-        # TODO: add logic to check if database exists yet
+        last_event_id = self.manager.db.check_database_init()
         try:
-            await self.broker.start(is_initialized=True)
+            # always replay history on restart to ensure data consistency
+            await self.broker.start(
+                is_initialized=False,
+                replay_from=last_event_id)
         except Exception as e:
             log.critical(f'ReadModel caught unknown exception {e} and is shutting down without restart.')
             await self.shutdown()

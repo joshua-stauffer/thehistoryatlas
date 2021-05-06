@@ -9,7 +9,7 @@ import json
 from typing import Union
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from .schema import Base, Citation, TagInstance, Time, Person, Place, Name
+from .schema import Base, Citation, TagInstance, Time, Person, Place, Name, History
 
 log = logging.getLogger(__name__)
 
@@ -286,6 +286,32 @@ class Database:
                 return
             res.add_guid(guid)
         session.add(res)
+
+    # HISTORY MANAGEMENT
+
+    def check_database_init(self) -> int:
+        """Checks database for the most recent event id. Returns None if 
+        database isn't initialized yet, otherwise most recent id."""
+        with Session(self._engine, future=True) as session:
+            res = session.execute(
+                select(History)
+            ).scalar_one_or_none()
+            if not res:
+                # initialize with default row
+                session.add(History())
+                session.commit()
+                return 0
+            return res.latest_event_id
+
+    def update_last_event_id(self, event_id: int) -> int:
+        with Session(self._engine, future=True) as session:
+            res = session.execute(
+                select(History)
+            ).scalar_one()
+            # for now, not checking if id is out of order
+            res.latest_event_id = event_id
+            session.add(res)
+            session.commit()
 
     # UTILITY
 

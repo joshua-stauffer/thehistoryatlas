@@ -21,6 +21,8 @@ class EventHandler:
         if not handler:
             raise UnknownEventError(evt_type)
         handler(event)
+        # update our record of the latest handled event
+        self._db.update_last_event_id(event['event_id'])
 
     def _map_event_handlers(self):
         """A dict of known event types and the methods which process them"""
