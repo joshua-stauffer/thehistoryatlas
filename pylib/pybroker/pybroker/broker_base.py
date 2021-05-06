@@ -176,11 +176,12 @@ class BrokerBase:
             virtualhost = '/'
             ssl: bool = False
         """
-        if max_attempts == 0:
-            log.info('PyBroker has exceeded max retries, and won\'t reconnect')
-            return
-        elif max_attempts > 0:
-            max_attempts -= 1
+        if max_attempts != None:
+            if max_attempts == 0:
+                log.info('PyBroker has exceeded max retries, and won\'t reconnect')
+                return
+            elif max_attempts > 0:
+                max_attempts -= 1
         try:
             log.debug('Getting connection')
             log.debug(f'Retry setting is {retry} and timeout is {retry_timeout}')
