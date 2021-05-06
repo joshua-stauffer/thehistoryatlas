@@ -33,7 +33,7 @@ class Event(Base):
     def to_dict(self):
         """returns a dict representation of this Event"""
         return {
-            "id": self.id,
+            "event_id": self.id,
             "type": self.type,
             "transaction_guid": self.transaction_guid,
             "app_version": self.app_version,
