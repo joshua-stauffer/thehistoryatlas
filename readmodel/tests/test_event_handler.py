@@ -3,11 +3,12 @@ from datetime import datetime
 import json
 import pytest
 from uuid import uuid4
+import random
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
 from app.state_manager.event_handler import EventHandler
-from app.state_manager.errors import UnknownEventError
+from app.state_manager.errors import UnknownEventError, DuplicateEventError
 from app.state_manager.schema import Citation, TagInstance, Time, Person, Place
 
 class Config:
@@ -218,7 +219,8 @@ def META_ADDED_more(basic_meta, meta_args_with_arbitrary_fields):
 def test_unknown_event_raises_error(handle_event):
     with pytest.raises(UnknownEventError):
         handle_event({
-            'type': 'this doesnt exist'
+            'type': 'this doesnt exist',
+            'event_id': 1
         })
 
 @pytest.mark.asyncio
@@ -236,6 +238,8 @@ async def test_citation_added(db, handle_event, CITATION_ADDED):
 
 @pytest.mark.asyncio
 async def test_person_added(db, handle_event, CITATION_ADDED, PERSON_ADDED):
+    for i, event in enumerate([CITATION_ADDED, PERSON_ADDED]):
+        event['event_id'] = i + 1
     handle_event(CITATION_ADDED)
     handle_event(PERSON_ADDED)
     payload = PERSON_ADDED['payload']
@@ -253,6 +257,8 @@ async def test_person_added(db, handle_event, CITATION_ADDED, PERSON_ADDED):
 @pytest.mark.asyncio
 async def test_person_tagged(db, handle_event, CITATION_ADDED, PERSON_ADDED,
     PERSON_TAGGED):
+    for i, event in enumerate([CITATION_ADDED, PERSON_ADDED, PERSON_TAGGED]):
+        event['event_id'] = i + 1
     handle_event(CITATION_ADDED)
     handle_event(PERSON_ADDED)
     handle_event(PERSON_TAGGED)
@@ -280,6 +286,8 @@ async def test_person_tagged(db, handle_event, CITATION_ADDED, PERSON_ADDED,
 
 @pytest.mark.asyncio
 async def test_place_added(db, handle_event, CITATION_ADDED, PLACE_ADDED):
+    for i, event in enumerate([CITATION_ADDED, PLACE_ADDED]):
+        event['event_id'] = i + 1
     handle_event(CITATION_ADDED)
     handle_event(PLACE_ADDED)
     payload = PLACE_ADDED['payload']
@@ -296,6 +304,8 @@ async def test_place_added(db, handle_event, CITATION_ADDED, PLACE_ADDED):
 @pytest.mark.asyncio
 async def test_place_tagged(db, handle_event, CITATION_ADDED, PLACE_ADDED,
     PLACE_TAGGED):
+    for i, event in enumerate([CITATION_ADDED, PLACE_ADDED, PLACE_TAGGED]):
+        event['event_id'] = i + 1
     handle_event(CITATION_ADDED)
     handle_event(PLACE_ADDED)
     handle_event(PLACE_TAGGED)
@@ -329,6 +339,8 @@ async def test_place_tagged(db, handle_event, CITATION_ADDED, PLACE_ADDED,
 
 @pytest.mark.asyncio
 async def test_time_added(db, handle_event, CITATION_ADDED, TIME_ADDED):
+    for i, event in enumerate([CITATION_ADDED, TIME_ADDED]):
+        event['event_id'] = i + 1
     handle_event(CITATION_ADDED)
     handle_event(TIME_ADDED)
     payload = TIME_ADDED['payload']
@@ -346,6 +358,8 @@ async def test_time_added(db, handle_event, CITATION_ADDED, TIME_ADDED):
 @pytest.mark.asyncio
 async def test_time_tagged(db, handle_event, CITATION_ADDED, TIME_ADDED,
     TIME_TAGGED):
+    for i, event in enumerate([CITATION_ADDED, TIME_ADDED, TIME_TAGGED]):
+        event['event_id'] = i + 1
     handle_event(CITATION_ADDED)
     handle_event(TIME_ADDED)
     handle_event(TIME_TAGGED)
@@ -372,6 +386,8 @@ async def test_time_tagged(db, handle_event, CITATION_ADDED, TIME_ADDED,
 
 @pytest.mark.asyncio
 async def test_meta_added_basic(db, handle_event, CITATION_ADDED, META_ADDED_basic):
+    for i, event in enumerate([CITATION_ADDED, META_ADDED_basic]):
+        event['event_id'] = i + 1
     citation_guid = CITATION_ADDED['payload']['citation_guid']
     meta = dict(**META_ADDED_basic['payload'])
 
@@ -396,6 +412,8 @@ async def test_meta_added_basic(db, handle_event, CITATION_ADDED, META_ADDED_bas
 @pytest.mark.asyncio
 async def test_meta_added_more(db, handle_event, CITATION_ADDED,
     META_ADDED_more):
+    for i, event in enumerate([CITATION_ADDED, META_ADDED_more]):
+        event['event_id'] = i + 1
     citation_guid = CITATION_ADDED['payload']['citation_guid']
     meta = dict(**META_ADDED_more['payload'])
 
@@ -416,3 +434,9 @@ async def test_meta_added_more(db, handle_event, CITATION_ADDED,
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
         assert res.meta == meta_string
+
+@pytest.mark.asyncio
+async def test_reject_event_with_duplicate_id(db, handle_event, CITATION_ADDED):
+    handle_event(CITATION_ADDED)
+    with pytest.raises(DuplicateEventError):
+        handle_event(CITATION_ADDED)

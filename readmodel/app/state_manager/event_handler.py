@@ -4,7 +4,10 @@ Monday, May 3rd 2021
 """
 
 import logging
-from .errors import UnknownEventError
+from .errors import (
+    UnknownEventError,
+    MissingEventFieldError,
+    DuplicateEventError)
 
 log = logging.getLogger(__name__)
 
@@ -13,16 +16,27 @@ class EventHandler:
     def __init__(self, database_instance):
         self._db = database_instance
         self._event_handlers = self._map_event_handlers()
+        # using this for now, may need to transition to a different solution
+        # if the database gets really large in production
+        self._event_id_set = set()
 
     def handle_event(self, event):
         """Process an incoming event and persist it to the database"""
         evt_type = event.get('type')
+        event_id = event.get('event_id')
+        if not event_id:
+            raise MissingEventFieldError
+        if event_id in self._event_id_set:
+            print('whoops, event_id was ', event_id)
+            log.info(f'Discarding malformed or duplicate message with event_id {event_id}.')
+            raise DuplicateEventError
         handler = self._event_handlers.get(evt_type)
         if not handler:
             raise UnknownEventError(evt_type)
         handler(event)
         # update our record of the latest handled event
         self._db.update_last_event_id(event['event_id'])
+        self._event_id_set.add(event_id)
 
     def _map_event_handlers(self):
         """A dict of known event types and the methods which process them"""
