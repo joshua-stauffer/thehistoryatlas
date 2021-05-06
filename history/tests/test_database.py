@@ -50,24 +50,24 @@ def test_database_exists(db):
         assert res != None
 
 def test_get_all_events(db):
-    gen = db.get_events()
+    gen = db.get_event_generator()
     c = 0
     for e in gen:
         c += 1
     assert c == 1000
 
 def test_get_events_from_halfway(db):
-    gen = db.get_events(500)
+    gen = db.get_event_generator(500)
     c = 0
     for e in gen:
         c += 1
     assert c == 500
 
 def test_get_events_returns_json_string(db):
-    gen = db.get_events(999)
+    gen = db.get_event_generator(999)
     for e in gen:
         e = json.loads(e)
-        e['id']
+        e['event_id']
         e['type']
         e['transaction_guid']
         e['app_version']

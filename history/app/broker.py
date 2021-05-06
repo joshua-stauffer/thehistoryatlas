@@ -5,8 +5,7 @@ April 27th, 2021"""
 
 import logging
 from pybroker import BrokerBase
-from broker_errors import MissingReplyFieldError
-
+from .broker_errors import MissingReplyFieldError
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')
@@ -34,10 +33,6 @@ class Broker(BrokerBase):
         await self.add_message_handler(
             routing_key='event.replay.request',
             callback=self._handle_request)
-
-        # get publish methods
-        self._publish_persisted_event = self.get_publisher(
-            routing_key='event.persisted')
 
     # on message callbacks
 

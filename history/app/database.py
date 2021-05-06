@@ -27,7 +27,7 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
 
-    def get_events(self, last_id: Union[int, None]=None):
+    def get_event_generator(self, last_id: Union[int, None]=None):
         """Creates a generator to return all events after the last seen.
         params:
             last_id: the last event number processed by your application
@@ -62,7 +62,7 @@ class Database:
         """returns a json string representation of this Event"""
         log.debug(f'JSONifying the event {event}')
         return json.dumps({
-            "id": event.id,
+            "event_id": event.id,
             "type": event.type,
             "transaction_guid": event.transaction_guid,
             "app_version": event.app_version,
