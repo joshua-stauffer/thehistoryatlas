@@ -8,7 +8,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const { ApolloServer } = require('apollo-server'); // consider switching to apollo-server-express ?
 const { Broker } = require('./broker');
 const { typeDefs } = require('./schema');
-const { resolvers } = require('./resolvers/resolvers');
+const { resolvers } = require('./resolvers');
 const { Config } = require('./config');
 const config = new Config();
 const broker = new Broker(config);

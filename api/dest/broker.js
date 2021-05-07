@@ -103,7 +103,7 @@ class Broker {
         this.startListening = (channel, exchConf) => {
             // start consuming on an exchange
             const { queueName, callBack, consumeOptions } = exchConf;
-            channel.consume('amq.rabbitmq.reply-to', // setting this manually for now
+            channel.consume(queueName, // setting this manually for now
             callBack, consumeOptions)
                 .then((ok) => {
                 exchConf.consumerTag = ok.consumerTag;
@@ -138,8 +138,8 @@ class Broker {
                 // topic exchange but with acknowledgements if not an RPC pattern.
                 name: 'main',
                 type: 'topic',
-                queueName: '',
-                pattern: 'query.readmodel',
+                queueName: 'api',
+                pattern: 'query.api',
                 callBack: this.handleRPCCallback.bind(this),
                 consumeOptions: {
                     noAck: true,
@@ -161,8 +161,9 @@ class Broker {
             throw new Error('Channel doesn\'t exist');
         const exchange = this.exchanges.find(ex => ex.name === exchangeName);
         const queryID = uuid_1.v4();
+        console.log('Broker is sending message with payload of ', msg.payload);
         if (!this.channel.publish(exchange.name, recipient, Buffer.from(JSON.stringify(msg)), {
-            replyTo: 'amq.rabbitmq.reply-to',
+            replyTo: 'query.api',
             correlationId: queryID
         }))
             throw new Error('Stream is full. Try again after receiving "drain" event.');
@@ -216,7 +217,7 @@ class Broker {
         Amqp.connect(this.config)
             .then(async (conn) => {
             // save connection for later
-            this.conn = conn;
+            // this.conn = conn;
             this.openChannel(conn);
         }).catch((err) => {
             console.log('error in connection: ', err);

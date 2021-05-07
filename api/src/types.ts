@@ -42,10 +42,10 @@ export interface Citation {
 }
 
 export interface Tag {
-  type: FocusType;
+  type: EntityType;
   GUID: string;
-  start: number;
-  end: number;
+  start_char: number;
+  stop_char: number;
 }
 
 export interface MetaData {
@@ -63,56 +63,57 @@ export interface Person {
 // starting over April 19th 2021
 // anything above here is not necessarily used
 
-export type FocusType = "TIME" | "PERSON" | "PLACE";
+export type EntityType = "TIME" | "PERSON" | "PLACE";
 
 
-export interface FocusSummary {
-  GUID: string;
-  timeTagSummaries: TimeTagSummary[]
+
+
+
+export interface GetCitationsByGUIDsArgs {
+  citationGUIDs: string[]
 }
 
-export interface TimeTagSummary {
-  timeTag: string;
-  GUID: string;
-  citationCount: number;   // how many citations does this focus have in this time tag?
-}
-
-export interface TimeTagDetail {
-  GUID: string;
-  citations: Citation[]
-}
-
-export interface FocusSummaryArgs {
-  focusType: FocusType;
-  focusGUID: string;
-}
-
-export interface TimeTagDetailsArgs {
-  focusGUID: string;
-  timeTagGUID: string;
-}
-
-export interface ReadModelQuery {
+export interface CitationsByGUID {
   type: string;
   payload: {
-      boundingBox?: BoundingBox;
-      location?: Location;
-      point?: Point;
-      placeSummaryByTimeTag?: PlaceSummaryByTimeTag;
-      person?: Person;
-      metaData?: MetaData;
-      tag?: Tag;
-      timeTagByFocus?: TimeTagByFocus;
-      focusType?: FocusType;
-      GUID?: string; // testing purposes
+    citations: {
+      citation_guid: {
+        text: string;
+        meta: {
+          title: string;
+          author: string;
+          publisher: string;
+          pubDate?: string;
+          pageNum?: number;
+        }
+        tags: {
+          start_char: number;
+          stop_char: number;
+          tag_type: EntityType;
+          tag_guid: string;
+          name?: string;
+          names?: string[];
+          coords?: {
+            latitude: number;
+            longitude: number;
+            geoshape?: string;
+          }
+        }[]
+      }
     }
+  }
 }
+
+
+
 
 export interface WriteModelCommand {
   type: string;
   payload: any;
   timestamp?: string;
   user?: string;
+  app_version: string;
+  citation_guid?: string;
 }
 
 export type ReadModelResponse = FailedReadModelResponse | SuccessfulReadModelResponse;
@@ -126,17 +127,92 @@ interface FailedReadModelResponse {
 
 interface SuccessfulReadModelResponse {
   type: "QUERY_RESPONSE";
-  payload: FocusSummary | TimeTagDetail;
+  payload: CitationsByGUID;
 }
 
-export namespace Schema {
-  // migrate to using this namespace for any type defined inside the GraphQL Schema
+export interface ReadModelQuery {
+  type: string;
+  payload: {
+    citation_guids?: string[];
+    entityType?: EntityType;
+    GUID?: string;
+    name?: string;
+    type?: EntityType;
+    guid?: string;
+  }
+}
 
-  export interface AnnotatedCitationArgs {
-    annotatedCitation: {
+export namespace Resolver {
+
+  export interface GetManifestArgs {
+    entityType: EntityType;
+    GUID: string;
+  }
+
+  export interface PublishNewCitationArgs {
+    AnnotatedCitation: {
       text: string;
       tags: Tag[];
       meta: MetaData;
     }
   }
+
+  export interface GetGUIDsByNameArgs {
+    name: string;
+  }
+
+  // Query results
+
+  export interface CitationsByGUID {
+    type: string;
+    payload: {
+      citations: {
+        citation_guid: {
+          text: string;
+          meta: {
+            title: string;
+            author: string;
+            publisher: string;
+            pubDate?: string;
+            pageNum?: number;
+          }
+          tags: {
+            start_char: number;
+            stop_char: number;
+            tag_type: EntityType;
+            tag_guid: string;
+            name?: string;
+            names?: string[];
+            coords?: {
+              latitude: number;
+              longitude: number;
+              geoshape?: string;
+            }
+          }[]
+        }
+      }
+    }
+  }
+
+  export interface Manifest {
+    type: string;
+    payload: {
+      guid: string;
+      citation_guids: string[];
+    }
+  }
+
+  export interface GUIDByName {
+    type: string;
+    payload: {
+      guids: string[]
+    }
+  }
+
+}
+
+export namespace Schema {
+  // migrate to using this namespace for any type defined inside the GraphQL Schema
+
+  
 }

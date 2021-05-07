@@ -7,7 +7,7 @@ April 16th, 2021
 const { ApolloServer } = require('apollo-server');// consider switching to apollo-server-express ?
 const { Broker } = require('./broker') ;
 const { typeDefs } = require('./schema') ;
-const { resolvers } = require('./resolvers/resolvers') 
+const { resolvers } = require('./resolvers') 
 const { Config } = require('./config') ;
 import { ReadModelQuery, WriteModelCommand } from './types';
 
@@ -27,6 +27,6 @@ const context: Context = {
 }
 
 const server = new ApolloServer({ typeDefs, resolvers, context });
-server.listen().then(({ url }) => {
+server.listen().then(({ url }: any) => {
   console.log(`🚀  Server ready at ${url}`);
 });
