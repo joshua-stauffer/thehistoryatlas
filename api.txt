@@ -284,9 +284,10 @@ EXAMPLES:
         ReadModel
 
         {
-          type: HISTORY_REPLAY
+          type: <event_type>
           payload: {event}
         }
+        ...
         {
           type: HISTORY_REPLAY_END
         }

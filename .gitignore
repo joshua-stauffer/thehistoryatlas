@@ -2,6 +2,7 @@ node_modules/
 mongodata/
 __pycache__
 env
+test_env
 venv
 .env
 *.js.map
