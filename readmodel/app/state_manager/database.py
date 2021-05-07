@@ -27,26 +27,26 @@ class Database:
 
     # QUERIES
 
-    def get_citations(self, citation_guids: list[str]) -> dict:
+    def get_citations(self, citation_guids: list[str]) -> list:
         """Expects a list of citation guids and returns their data in a dict 
         keyed by guid"""
         log.info(f'Received request to return {len(citation_guids)} Citations.')
-        result = dict()
+        result = list()
         with Session(self._engine, future=True) as session:
             for guid in citation_guids:
                 res = session.execute(
                     select(Citation).where(Citation.guid==guid)
                 ).scalar_one_or_none()
                 if res:
-                    result[guid] = {
+                    result.append({
+                        'guid': guid,
                         'text': res.text,
                         'meta': json.loads(res.meta),
                         'tags': [self.get_tag_instance_data(t)
                                 for t in res.tags]
-                    }
-                else:
-                    result[guid] = {'error': 'citation guid does not exist'}
-        log.info(f'Returning {len(result.keys())} Citations')
+                    })
+
+        log.info(f'Returning {len(result)} Citations')
         return result
 
     def get_manifest_by_person(self,

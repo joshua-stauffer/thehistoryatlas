@@ -27,7 +27,7 @@ class Broker(BrokerBase):
         self._history_queue = deque()
 
         # save main application callbacks
-        self._command_handler = query_handler
+        self._query_handler = query_handler
         self._event_handler = event_handler
 
     async def start(self, is_initialized=False, replay_from=0):

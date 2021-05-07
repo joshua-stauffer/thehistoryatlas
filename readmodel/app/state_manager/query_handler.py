@@ -16,6 +16,7 @@ class QueryHandler:
 
     def handle_query(self, query) -> dict:
         """Process incoming queries and return results"""
+        log.info(f'Handling a query: {query}')
         query_type = query.get('type')
         handler = self._query_handlers.get(query_type)
         if not handler:
