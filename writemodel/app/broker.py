@@ -86,10 +86,11 @@ class Broker(BrokerBase):
                     }
                 }, correlation_id=message.correlation_id, headers=message.headers)
                 await self.publish_one(body, message.reply_to)
-        except CitationMissingFieldsError:
+        except CitationMissingFieldsError as e:
             log.info(f'Broker caught an error from a citation missing fields. ' + \
                 'If sender included a reply_to value they will receive a ' + \
                 'message now.')
+            log.info(e)
             if message.reply_to:
                 body = self.create_message({
                     "type": "COMMAND_FAILED",

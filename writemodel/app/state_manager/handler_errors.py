@@ -25,7 +25,8 @@ class CitationExistsError(CommandHandlerError):
 
 class CitationMissingFieldsError(CommandHandlerError):
     """Raised when a citation is missing a field."""
-    pass
+    def __init__(self, msg):
+        self.msg = msg
 
 class GUIDError(CommandHandlerError):
     """Raised when a GUID already exists in the database."""

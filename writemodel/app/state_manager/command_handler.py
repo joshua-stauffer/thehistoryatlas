@@ -60,8 +60,8 @@ class CommandHandler:
         # provides a useful error if the command dict is missing fields
         try:
             return self.__handle_publish_new_citation(cmd)
-        except KeyError:
-            raise CitationMissingFieldsError
+        except KeyError as e:
+            raise CitationMissingFieldsError(e)
 
     
     # utility methods
@@ -159,23 +159,23 @@ class CommandHandler:
                     composer.make_PERSON_TAGGED(
                         citation_guid=citation_guid,
                         person_guid=t_guid,
-                        person_name=tag['person_name'],
-                        citation_start=tag['citation_start'],
-                        citation_end=tag['citation_end'])
+                        person_name=tag['name'],
+                        citation_start=tag['start_char'],
+                        citation_end=tag['stop_char'])
                 elif t_type == 'PLACE':
                     composer.make_PLACE_TAGGED(
                         citation_guid=citation_guid,
                         place_guid=t_guid,
-                        place_name=tag['place_name'],
-                        citation_start=tag['citation_start'],
-                        citation_end=tag['citation_end'])
+                        place_name=tag['name'],
+                        citation_start=tag['start_char'],
+                        citation_end=tag['stop_char'])
                 elif t_type == 'TIME':
                     composer.make_TIME_TAGGED(
                         citation_guid=citation_guid,
                         time_guid=t_guid,
-                        time_name=tag['time_name'],
-                        citation_start=tag['citation_start'],
-                        citation_end=tag['citation_end'])                            
+                        time_name=tag['name'],
+                        citation_start=tag['start_char'],
+                        citation_end=tag['stop_char'])                            
                
             # now we know our GUID is unique, so we need to construct a new tag
             else:
@@ -188,25 +188,25 @@ class CommandHandler:
                     composer.make_PERSON_ADDED(
                         citation_guid=citation_guid,
                         person_guid=t_guid,
-                        person_name=tag['person_name'],
-                        citation_start=tag['citation_start'],
-                        citation_end=tag['citation_end'])
+                        person_name=tag['name'],
+                        citation_start=tag['start_char'],
+                        citation_end=tag['stop_char'])
                 elif t_type == 'PLACE':
                     composer.make_PLACE_ADDED(
                         citation_guid=citation_guid,
                         place_guid=t_guid,
-                        place_name=tag['place_name'],
-                        citation_start=tag['citation_start'],
-                        citation_end=tag['citation_end'],
+                        place_name=tag['name'],
+                        citation_start=tag['start_char'],
+                        citation_end=tag['stop_char'],
                         latitude=tag['latitude'],
                         longitude=tag['longitude'])
                 elif t_type == 'TIME':
                     composer.make_TIME_ADDED(
                         citation_guid=citation_guid,
                         time_guid=t_guid,
-                        time_name=tag['time_name'],
-                        citation_start=tag['citation_start'],
-                        citation_end=tag['citation_end'])                            
+                        time_name=tag['name'],
+                        citation_start=tag['start_char'],
+                        citation_end=tag['stop_char'])                            
   
             log.debug(f'Successfully validated tag {tag}')
             tag_guids.append(t_guid)

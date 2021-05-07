@@ -14,7 +14,7 @@ class EventComposer:
     ) -> None:
         """A class to manage the composition of synthetic events while handling 
         a single event."""
-        self.events = deque()
+        self._events = deque()
         self.__meta = {
             'transaction_guid': transaction_guid,
             'app_version': app_version,
@@ -22,6 +22,10 @@ class EventComposer:
             'timestamp': timestamp
         }
         log.debug(f'Created new logger for transaction {transaction_guid} by user {user}')
+        
+    @property
+    def events(self):
+        return list(self._events)
 
     def make_CITATION_ADDED(self,
         text: str,
@@ -30,7 +34,7 @@ class EventComposer:
         citation_guid: str
     ) -> None:
         """Add a CITATION_ADDED event"""
-        self.events.appendleft({
+        self._events.appendleft({
             'type': 'CITATION_ADDED',
             **self.__meta,
             'payload': {
@@ -49,7 +53,7 @@ class EventComposer:
         citation_end: int
     ) -> None:
         """Add a PERSON_ADDED event"""
-        self.events.append({
+        self._events.append({
             'type': 'PERSON_ADDED',
             **self.__meta,
             'payload': {
@@ -72,7 +76,7 @@ class EventComposer:
         geoshape: str=None # TODO: 5.4.21 added this, double check elsewhere
     ) -> None:
         """Add a PLACE_ADDED event"""
-        self.events.append({
+        self._events.append({
             'type': 'PLACE_ADDED',
             **self.__meta,
             'payload': {
@@ -95,7 +99,7 @@ class EventComposer:
         citation_end: int
     ) -> None:
         """Add a TIME_ADDED event"""
-        self.events.append({
+        self._events.append({
             'type': 'TIME_ADDED',
             **self.__meta,
             'payload': {
@@ -115,7 +119,7 @@ class EventComposer:
         citation_end: int
     ) -> None:
         """Add a PERSON_TAGGED event"""
-        self.events.append({
+        self._events.append({
             'type': 'PERSON_TAGGED',
             **self.__meta,
             'payload': {
@@ -135,7 +139,7 @@ class EventComposer:
         citation_end: int,
     ) -> None:
         """Add a PLACE_TAGGED event"""
-        self.events.append({
+        self._events.append({
             'type': 'PLACE_TAGGED',
             **self.__meta,
             'payload': {
@@ -154,7 +158,7 @@ class EventComposer:
         citation_end: int
     ) -> None:
         """Add a TIME_TAGGED event"""
-        self.events.append({
+        self._events.append({
             'type': 'TIME_TAGGED',
             **self.__meta,
             'payload': {
@@ -176,7 +180,7 @@ class EventComposer:
     ) -> None:
         """Add a META_ADDED event. Allows for passing arbitrary fields for
         maximum flexibility in describing sources."""
-        self.events.append({
+        self._events.append({
             'type': 'META_ADDED',
             **self.__meta,
             'payload': {
