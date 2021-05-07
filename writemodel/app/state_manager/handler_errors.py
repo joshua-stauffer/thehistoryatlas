@@ -55,3 +55,10 @@ class UnknownEventTypeError(EventHandlerError):
         """Error raised when the event handler is passed a message which
         doesn't have a recognized type field."""
         msg=msg
+
+
+class MissingEventFieldError(EventHandlerError):
+    pass
+
+class DuplicateEventError(EventHandlerError):
+    pass

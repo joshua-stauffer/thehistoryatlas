@@ -27,14 +27,14 @@ class EventComposer:
         text: str,
         tags: list[str],
         meta: str,
-        guid: str
+        citation_guid: str
     ) -> None:
         """Add a CITATION_ADDED event"""
         self.events.appendleft({
             'type': 'CITATION_ADDED',
             **self.__meta,
             'payload': {
-                'citation_guid': guid, #TODO: 5.3.21 just added, test and integrate this
+                'citation_guid': citation_guid, #TODO: 5.3.21 just added, test and integrate this
                 'text': text,
                 'tags': tags, # NOTE: 5.3.21 this is not currently used in the read model
                 'meta': meta

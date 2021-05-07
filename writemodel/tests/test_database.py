@@ -9,7 +9,7 @@ class Config:
     """minimal class for setting up an in memory db for this test"""
     def __init__(self):
         self.DB_URI = 'sqlite+pysqlite:///:memory:'
-        self.DEBUG = True
+        self.DEBUG = False
 
 @pytest.fixture
 def db():

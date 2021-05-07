@@ -40,7 +40,7 @@ class WriteModel:
         )
         # TODO: add logic to check if database exists yet
         try:
-            await self.broker.start(is_initialized=True)
+            await self.broker.start(is_initialized=False)
         except Exception as e:
             log.critical(f'WriteModel caught unknown exception {e} and is shutting down without restart.')
             await self.shutdown()

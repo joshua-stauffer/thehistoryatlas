@@ -128,7 +128,8 @@ class CommandHandler:
         composer.make_CITATION_ADDED(
             text=text,
             tags=tag_guids,
-            meta=meta_guid)
+            meta=meta_guid,
+            citation_guid=citation_GUID)
 
         return composer.events
 

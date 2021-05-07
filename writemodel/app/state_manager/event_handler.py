@@ -5,7 +5,11 @@ Friday, April 9th 2021
 """
 
 import logging
-from .handler_errors import MalformedEventError, UnknownEventTypeError
+from .handler_errors import (
+    MalformedEventError,
+    UnknownEventTypeError,
+    MissingEventFieldError,
+    DuplicateEventError)
 
 log = logging.getLogger(__name__)
 
@@ -22,17 +26,26 @@ class EventHandler:
         self._event_handlers = self._map_event_handlers()
         self._db = database_instance
         self._hashfunc = hash_text
+        self._event_id_set = set()
 
     def handle_event(self, event):
         """Receives a dict, processes it, and updates
         the WriteModel database accordingly"""
 
         logging.info(f'EventHandler: processing event {event}')
+        event_id = event.get('event_id')
+        if not event_id:
+            raise MissingEventFieldError
+        if event_id in self._event_id_set:
+            print('whoops, event_id was ', event_id)
+            log.info(f'Discarding malformed or duplicate message with event_id {event_id}.')
+            raise DuplicateEventError
         evt_type = event.get('type')
         handler = self._event_handlers.get(evt_type)
         if not handler:
             raise UnknownEventTypeError
         handler(event)
+        self._event_id_set.add(event_id)
 
     def _map_event_handlers(self):
         """Returns a dict of known events mapping to their handle method."""

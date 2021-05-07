@@ -58,11 +58,16 @@ def test_handle_event(monkeypatch):
             'TIME_TAGGED': mock_time_tagged,
     }
 
-    [eh.handle_event({'type': tag, 'body': '_'}) for tag in handlers.keys()]
+    [eh.handle_event({'type': tag, 'body': '_', 'event_id': i+1})
+     for i, tag in enumerate(handlers.keys())]
+
     for val in handlers.values():
         assert val == True
 
 def test_unknown_type_raises_exception():
     eh = EventHandler(None, None)
     with pytest.raises(UnknownEventTypeError):
-        eh.handle_event({'type': 'DOESNT EXIST'})
+        eh.handle_event({
+            'type': 'DOESNT EXIST',
+            'event_id': 1
+        })

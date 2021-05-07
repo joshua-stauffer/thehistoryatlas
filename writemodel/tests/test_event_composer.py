@@ -44,7 +44,8 @@ def place_args_with_coords():
         'citation_start': 4,
         'citation_end': 10,
         'longitude': 1.9235,
-        'latitude': 7.2346
+        'latitude': 7.2346,
+        'geoshape': 'some geoshape file'
     }
 
 @pytest.fixture
