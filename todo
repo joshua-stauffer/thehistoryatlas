@@ -20,13 +20,13 @@ ______________________________________________________________________________
 
 PROGRESS            | ..... |
 - React Client      |       |
-- Apollo Server     | ...   |
-- Read Model        | ...   |
+- Apollo Server     | ....  |
+- Read Model        | ....  |
 - Write Model       | ....  |
-- Event Store       | ...   |
-- History Player    | ...   |
+- Event Store       | ....  |
+- History Player    | ....  |
 - NGINX             |       |
-- RabbitMQ Broker   | ...   |
+- RabbitMQ Broker   | ....  |
 - Logger            |       |
 - spaCy service     |       |
 - geo service       |       |
@@ -44,11 +44,6 @@ Current todo list
 - ALL: design/setup application wide logging
 - ALL: compile stock starter input for testing/initialization
 - ALL: setup .env files for docker
-- ALL: When adding a clarification of an earlier event (i.e. cancelling it) make sure anyone who
-            needs it replays the history from the last affected event.
-            ( this seems hugely inefficient.. )
-- API: add redis queue // map is working fine for now?
-- API: break ReadModelQuery types into subtypes and combine them with a union
 - API: add tests
 - API: add logging
 - API: incorporate testing into the docker build
@@ -63,7 +58,6 @@ Current todo list
 - CLIENT: leaflet integration
 - CLIENT: add drawing for cities and events
 - EMAIL: create email service with sendgrid?
-- EVENTSTORE: integrate with real database instead of memory
 - EVENTSTORE: add Tackle testing
 - EVENTSTORE: double check atomic events enter correctly
 - EVENTSTORE: add tests
@@ -71,24 +65,10 @@ Current todo list
 - GEO: add broker integration
 - GEO: get kaggle cities <= geonames!!
 - GEO: find countries/states geo data
-- HISTORY: create event number query (which event is the latest?)
-            <+ maybe this could just be done by requesting a replay from the last knowon event
 - HISTORY: incorporate testing into the docker build
 - NGINX: setup client & api behind nginx
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
-- READMODEL: add event count stat to double check sync with event store
-- READMODEL: test replay history
-- READMODEL: make sure all promises have catch statements
-- READMODEL: upgrade database methods to actually use the database :)
-- READMODEL: update types to fully use types.ts
-                => especially look out for QueryPayload, which currently has two definitions
-- READMODEL: fix typing for database's QueryMap
-- READMODEL: migrate to topic rabbitmq
-- READMODEL: double check that replay history includes priority_sort and last_event_id fields
-- READMODEL: add tests
-- READMODEL: add logging
 - READMODEL: incorporate testing into the docker build
-- READMODEL: add logic to handle atomic events
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO
@@ -97,7 +77,6 @@ Current todo list
 - USER: create login/validation/edit logic
 - USER: add broker integration
 - WRITEMODEL: add event count stat to double check synch with event store
-- WRITEMODEL: check if db is initialized on startup and call History replay if not
 - WRITEMODEL: incorporate testing into the docker build
 - WRITEMODEL: validate time tag names?
 
@@ -129,9 +108,9 @@ ______________________________________________________________________________
 
 
 Bug list
-- READMODEL: UnhandledPromiseRejectionWarning on startup (likely because some
-              RabbitMQ message is getting passed accidentally to one of our
-              message handlers?)
+- History is not acknowledging messages for some reason
+- Once in a while history requests get up and running before history is listening
+
 
 
 ______________________________________________________________________________
@@ -143,7 +122,9 @@ Squashed!
 - READMODEL:  queues don't autodelete when closed
 - READMODEL: poorly formed messages get rejected and requeued for infinity.
 - WRITEMODEL: throwing error when receiving command
-
+- READMODEL: UnhandledPromiseRejectionWarning on startup (likely because some
+              RabbitMQ message is getting passed accidentally to one of our
+              message handlers?)
 
 ______________________________________________________________________________
 
@@ -169,10 +150,15 @@ COMPLETED TODOS!
 - (  done  ) ALL: run services with docker compose
 - (  done  ) ALL: look into using poetry/creating packages?
 - (  done  ) ALL: create standard config and broker files and move to inheriting them for specific use cases
+- (  nope  ) ALL: When adding a clarification of an earlier event (i.e. cancelling it) make sure anyone who
+            needs it replays the history from the last affected event.
+            ( this seems hugely inefficient.. )
+- (  done  ) API: add redis queue // map is working fine for now?
 - (  done  ) API: create apollo server
 - (  done  ) API: add broker integration
 - (  done  ) API: add timeout to response queue
 - (  done  ) API: elegantly handle backend timeouts
+- (  nope  ) API: break ReadModelQuery types into subtypes and combine them with a union
 - (  done  ) BROKER-PY: build
 - (  done  ) BROKER-PY: handle broker disconnect/restart gracefully
 - (  done  ) CONFIG-PY: build
@@ -185,8 +171,11 @@ COMPLETED TODOS!
 - (  done  ) HISTORY: add tests
 - (  done  ) HISTORY: change replay to use generator
 - (  done  ) HISTORY: make sure that History is accounting for message content arriving in a payload
+- (  nope  ) HISTORY: create event number query (which event is the latest?)
+            <+ maybe this could just be done by requesting a replay from the last knowon event
 - (  done  ) EVENTSTORE: incorporate lib in build
 - (  done  ) EVENTSTORE: move db logic into db
+- (  done  ) EVENTSTORE: integrate with real database instead of memory
 - (  done  ) READMODEL: setup mongodb docker instance
 - (  done  ) READMODEL: create sqlalchemy connection
 - (  done  ) READMODEL: create rabbitmq broker interface
@@ -196,6 +185,19 @@ COMPLETED TODOS!
 - (  done  ) READMODEL: finish replay history
 - (  done  ) READMODEL: add event handlers
 - (  done  ) READMODEL: add api request handlers
+- (  done  ) READMODEL: add event count stat to double check sync with event store
+- (  done  ) READMODEL: test replay history
+- (  nope  ) READMODEL: make sure all promises have catch statements
+- (  done  ) READMODEL: upgrade database methods to actually use the database :)
+- (  nope  ) READMODEL: update types to fully use types.ts
+                => especially look out for QueryPayload, which currently has two definitions
+- (  nope  ) READMODEL: fix typing for database's QueryMap
+- (  done  ) READMODEL: migrate to topic rabbitmq
+- (  done  ) READMODEL: double check that replay history includes priority_sort and last_event_id fields
+- (  done  ) READMODEL: add tests
+- (  done  ) READMODEL: add logging
+- (  done  ) READMODEL: add logic to handle atomic events
+- (  done  ) WRITEMODEL: check if db is initialized on startup and call History replay if not
 - (  done  ) WRITEMODEL: finish schema
 - (  done  ) WRITEMODEL: add db for validation
 - (  done  ) WRITEMODEL: add db client
