@@ -14,6 +14,6 @@ broker_module = type(sys)('broker')
 broker_module.Broker = MockBroker
 sys.modules['broker'] = broker_module
 
-config_module = type(sys)('history_config')
-config_module.HistoryConfig = MockHistoryConfig
-sys.modules['history_config'] = config_module
+# config_module = type(sys)('history_config')
+# config_module.HistoryConfig = MockHistoryConfig
+# sys.modules['history_config'] = config_module

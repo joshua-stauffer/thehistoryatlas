@@ -2,8 +2,6 @@
 SQLAlchemy integration for the History Atlas History service.
 Provides read-only access to the database.
 
-This currently requires the database to fit in working memory.
-Better solution in the works!
 """
 
 import json
@@ -27,7 +25,7 @@ class Database:
 
         self._engine = create_engine(
             config.DB_URI,
-            echo=True,  # config.DEBUG
+            echo=config.DEBUG,
             future=True
         )
         # initialize the db

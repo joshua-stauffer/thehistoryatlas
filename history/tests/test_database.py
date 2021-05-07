@@ -4,8 +4,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.database import Database
 from event_schema.EventSchema import Event
+from app.database import Database
 
 class Config:
     """minimal class for setting up an in memory db for this test"""

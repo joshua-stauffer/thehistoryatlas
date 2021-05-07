@@ -6,9 +6,7 @@ for rebuilding or replaying history.
 """
 
 import asyncio
-import json
 import logging
-import os
 import signal
 from database import Database
 from broker import Broker
