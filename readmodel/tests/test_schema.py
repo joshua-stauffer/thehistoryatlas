@@ -12,7 +12,7 @@ from app.state_manager.errors import EmptyNameError
 @pytest.fixture
 def engine():
     engine = create_engine('sqlite+pysqlite:///:memory:',
-                            echo=True,
+                            echo=False,
                             future=True)
     Base.metadata.create_all(engine)
     return engine
