@@ -34,7 +34,6 @@ class Broker(BrokerBase):
         """Start the broker. Will request and process a event replay when
         after initialized unless flag is_initialized is True."""
         
-
         await self.connect()
 
         # register handlers

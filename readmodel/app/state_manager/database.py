@@ -7,9 +7,18 @@ import asyncio
 import logging
 import json
 from typing import Union
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .schema import Base, Citation, TagInstance, Time, Person, Place, Name, History
+from .schema import Base
+from .schema import Citation
+from .schema import History
+from .schema import Name
+from .schema import Person
+from .schema import Place
+from .schema import TagInstance
+from .schema import Time
+
 
 log = logging.getLogger(__name__)
 

@@ -27,7 +27,6 @@ class EventHandler:
         if not event_id:
             raise MissingEventFieldError
         if event_id in self._event_id_set:
-            print('whoops, event_id was ', event_id)
             log.info(f'Discarding malformed or duplicate message with event_id {event_id}.')
             raise DuplicateEventError
         handler = self._event_handlers.get(evt_type)
@@ -35,7 +34,7 @@ class EventHandler:
             raise UnknownEventError(evt_type)
         handler(event)
         # update our record of the latest handled event
-        self._db.update_last_event_id(event['event_id'])
+        self._db.update_last_event_id(event_id)
         self._event_id_set.add(event_id)
 
     def _map_event_handlers(self):

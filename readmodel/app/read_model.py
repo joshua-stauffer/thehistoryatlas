@@ -36,11 +36,12 @@ class ReadModel:
             self.handle_event
         )
         last_event_id = self.manager.db.check_database_init()
+        log.info(f'Last event id was {last_event_id}, but requesting a full replay anyways since database is currently in memory')
         try:
             # always replay history on restart to ensure data consistency
             await self.broker.start(
                 is_initialized=False,
-                replay_from=last_event_id)
+                replay_from=0)
         except Exception as e:
             log.critical(f'ReadModel caught unknown exception {e} and is shutting down without restart.')
             await self.shutdown()
