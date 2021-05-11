@@ -12,7 +12,7 @@ RUN pip3 install /lib/event-schema
 COPY . .
 ENV HOST_NAME=broker
 
-ENV TESTING=True
+ENV TESTING=False
 ENV CONFIG=DEV
 ENV PROD_DB_URI=
 ENV DEV_DB_URI=sqlite:////data/db/tha-store-dev.db

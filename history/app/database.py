@@ -62,9 +62,14 @@ class Database:
 
     @staticmethod
     def to_json(event):
-        """returns a json string representation of this Event"""
+        """returns a dict representation of this Event"""
+        # NOTE: this method used to return a json string, but it duplicated
+        # broker functionality resulting in double encoded strings. The name
+        # is currently maintained for compatability, but would be clearer to
+        # refactor it to to_dict
+
         log.debug(f'JSONifying the event {event}')
-        return json.dumps({
+        return {
             "event_id": event.id,
             "type": event.type,
             "transaction_guid": event.transaction_guid,
@@ -72,4 +77,4 @@ class Database:
             "timestamp": event.timestamp,
             "user": event.user,
             "payload": json.loads(event.payload),
-        })
+        }
