@@ -79,7 +79,7 @@ class CommandHandler:
         meta = cmd['payload']['meta']
 
         composer = EventComposer(
-            transaction_guid=uuid4(),
+            transaction_guid=str(uuid4()),
             app_version=app_version,
             user=user,
             timestamp=timestamp)

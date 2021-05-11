@@ -34,3 +34,10 @@ class GUID(Base):
 
     def __repr__(self):
         return f"GUID( value: {self.value}, type: {self.type})"
+
+class History(Base):
+
+    __tablename__ = 'history'
+
+    id = Column(Integer, primary_key=True)
+    latest_event_id = Column(Integer, default=0)

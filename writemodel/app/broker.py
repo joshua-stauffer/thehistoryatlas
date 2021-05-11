@@ -4,7 +4,9 @@ April 26th, 2021"""
 
 import asyncio
 from collections import deque
+import datetime
 import logging
+from uuid import uuid4
 from pybroker import BrokerBase
 from broker_errors import MessageError
 from state_manager.handler_errors import CitationExistsError, CitationMissingFieldsError
@@ -14,7 +16,11 @@ log.setLevel('DEBUG')
 
 class Broker(BrokerBase):
 
-    def __init__(self, config, command_handler, event_handler) -> None:
+    def __init__(self, 
+        config, 
+        command_handler, 
+        event_handler, 
+        get_latest_event_id) -> None:
         super().__init__(
             broker_username   = config.BROKER_USERNAME,
             broker_password   = config.BROKER_PASS,
@@ -28,6 +34,12 @@ class Broker(BrokerBase):
         # save main application callbacks
         self._command_handler = command_handler
         self._event_handler = event_handler
+        # save method to use when requesting history replay
+        self._get_latest_event_id = get_latest_event_id
+        self._HISTORY_TIMEOUT = 1   # seconds we wait before remaking our replay
+                                    # replay history request on no response.
+        self._history_timeout_coro = None
+        self._history_replay_corr_id = None
 
     async def start(self, is_initialized=False, replay_from=0):
         """Start the broker. Will request and process a event replay when
@@ -106,23 +118,40 @@ class Broker(BrokerBase):
         if self.is_history_replaying:
             # we'll process this message in order after completing the
             # history replay
-            return self.__history_queue.append(body)
+            return self._history_queue.append(body)
         self._event_handler(body)
 
     # history management
 
-
     async def _handle_replay_history(self, message):
         """wrapper for handling history replay"""
+        if not self.is_history_replaying:
+            return # don't need to handle this message. maybe should raise exception?
+        if message.correlation_id != self._history_replay_corr_id:
+            return
         body = self.decode_message(message)
         if body.get('type') == 'HISTORY_REPLAY_END':
             return self._close_history_replay()
         else:
+            # cancel the last callback, if any
+            self._history_timeout_coro.cancel()
+            self._history_timeout_coro = asyncio.create_task(self._schedule_new_timeout())
             return self._event_handler(body)
 
-    async def _request_history_replay(self, last_index=0):
+    async def _request_history_replay(self, last_index=None):
         """Invokes a replay of the event store and directs the ensuing messages
          to the our replay history queue binding."""
+         # when invoked from the main application, we expect a last index value,
+         # but if the history replay doesn't respond within the timeout, we
+         # get the fresh value ourselves and remake our request.
+         # TODO: this means refactoring History's service to remember who 
+         # it's replaying, and replace a previous replay request with the latest.
+         # lets do this by adding a correlation id to each request.
+
+        if not last_index:
+            last_index = self._get_latest_event_id()
+
+        self._history_replay_corr_id = str(uuid4())
         
         log.info('Broker is requesting history replay')
         self.is_history_replaying = True
@@ -133,15 +162,19 @@ class Broker(BrokerBase):
             }}
         msg = self.create_message(
             msg_body,
-            reply_to='event.replay.writemodel')
+            reply_to='event.replay.writemodel',
+            correlation_id=self._history_replay_corr_id)
         while True:
-            # 
+            # does this error actually bubble up here? so far, no.
             try:
                 await self.publish_one(msg, routing_key='event.replay.request')
-                return
             except Exception as e:
                 log.error(f'Failed to publish history replay request due to: {e}\nTrying again in one second.')
                 await asyncio.sleep(1)
+            else:
+                # once we've sent a request, set a timeout in case the History
+                # service is down.
+                self._history_timeout_coro = asyncio.create_task(self._schedule_new_timeout())
 
     def _close_history_replay(self):
         """processes any new persisted events which came in while history was replaying,
@@ -152,4 +185,22 @@ class Broker(BrokerBase):
             msg = self._history_queue.popleft()
             self._event_handler(msg)
         self.is_history_replaying = False
+        # remove the timeout so we don't trigger another replay
+        self._cancel_history_timeout()
         log.info('Finished history replay')
+
+    async def _schedule_new_timeout(self):
+        """Schedule a new timeout coroutine."""
+
+        await asyncio.sleep(self._HISTORY_TIMEOUT)
+        # ignore any history messages that come in after this point
+        # until we request a new replay.
+        self.is_history_replaying = False
+        asyncio.create_task(self._request_history_replay())
+
+    def _cancel_history_timeout(self):
+        """Cancel the history replay timeout and reset associated properties."""
+        if self._history_timeout_coro:
+            self._history_timeout_coro.cancel()
+            self._history_timeout_coro = None
+        self._history_replay_corr_id = None

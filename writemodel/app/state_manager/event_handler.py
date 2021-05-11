@@ -5,11 +5,11 @@ Friday, April 9th 2021
 """
 
 import logging
-from .handler_errors import (
-    MalformedEventError,
-    UnknownEventTypeError,
-    MissingEventFieldError,
-    DuplicateEventError)
+from .handler_errors import MalformedEventError
+from .handler_errors import UnknownEventTypeError
+from .handler_errors import MissingEventFieldError
+from .handler_errors import DuplicateEventError
+
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ class EventHandler:
         if not event_id:
             raise MissingEventFieldError
         if event_id in self._event_id_set:
-            print('whoops, event_id was ', event_id)
             log.info(f'Discarding malformed or duplicate message with event_id {event_id}.')
             raise DuplicateEventError
         evt_type = event.get('type')
@@ -50,28 +49,30 @@ class EventHandler:
     def _map_event_handlers(self):
         """Returns a dict of known events mapping to their handle method."""
         return {
-            'CITATION_ADDED': self._handle_citation_added,
-            'META_ADDED': self._handle_meta_added,
-            'PERSON_ADDED': self._handle_person_added,
-            'PLACE_ADDED': self._handle_place_added,
-            'TIME_ADDED': self._handle_time_added,
-            'PERSON_TAGGED': self._handle_person_tagged,
-            'PLACE_TAGGED': self._handle_place_added,
-            'TIME_TAGGED': self._handle_time_tagged,
+            'CITATION_ADDED':   self._handle_citation_added,
+            'META_ADDED':       self._handle_meta_added,
+            'PERSON_ADDED':     self._handle_person_added,
+            'PLACE_ADDED':      self._handle_place_added,
+            'TIME_ADDED':       self._handle_time_added,
+            'PERSON_TAGGED':    self._handle_person_tagged,
+            'PLACE_TAGGED':     self._handle_place_added,
+            'TIME_TAGGED':      self._handle_time_tagged,
         }
         
     # event handlers
 
-    def _handle_citation_added(self, body):
+    def _handle_citation_added(self, event):
         """new citation has been entered"""
 
-        log.debug(f'Handling a newly published citation {body}')
-        GUID = body['payload']['GUID']
-        text = body['payload']['text']
+        log.debug(f'Handling a newly published citation {event}')
+        GUID = event['payload']['citation_guid']
+        text = event['payload']['text']
         if not GUID and text:
             logging.critical(f'EventHandler: malformed Persisted Event was received. GUID: {GUID} text: {text}')
             raise MalformedEventError(f'EventHandler: malformed Persisted Event was received. GUID: {GUID} text: {text}')
-
+        event_id = event.get('event_id')
+        if not event_id:
+            raise MissingEventFieldError
         # persist the hashed text to db
         hashed_text = self._hashfunc(text)
         self._db.add_citation_hash(hashed_text, GUID)
@@ -81,26 +82,33 @@ class EventHandler:
         self._db.add_guid('CITATION', GUID)
         logging.info(f'Successfully persisted CITATION with GUID {GUID} to database.')
 
+        # update our record of the latest handled event
+        self._db.update_last_event_id(event['event_id'])
+        self._event_id_set.add(event_id)
 
     def _handle_meta_added(self, body):
         """a metadata instance has been entered"""
 
-        self.__add_guid('META', body)
+        GUID = body['payload']['meta_guid']
+        self._db.add_guid('META', GUID)
 
     def _handle_person_added(self, body):
         """a new person instance has been created"""
 
-        self.__add_guid('PERSON', body)
+        GUID = body['payload']['person_guid']
+        self._db.add_guid('PERSON', GUID)
 
     def _handle_place_added(self, body):
         """a new place instance has been created"""
 
-        self.__add_guid('PLACE', body)
+        GUID = body['payload']['place_guid']
+        self._db.add_guid('PLACE', GUID)
 
     def _handle_time_added(self, body):
         """a new time instance has been created"""
 
-        self.__add_guid('TIME', body)
+        GUID = body['payload']['time_guid']
+        self._db.add_guid('TIME', GUID)
 
     def _handle_person_tagged(self, body):
         """an existing person has been tagged"""
@@ -116,16 +124,3 @@ class EventHandler:
         """an existing time has been tagged"""
         # GUID already exists, no need to do anything
         pass
-
-    # utility handlers
-
-    def __add_guid(self, type, body):
-        """utility method to persist a GUID to the database."""
-
-        log.debug(f'Handling a newly published {type} {body}')
-        GUID = body['payload']['GUID']
-        if not GUID:
-            logging.critical('Malformed persisted event received: no GUID')
-            raise MalformedEventError('No GUID was found')
-        self._db.add_guid(type, GUID)
-        log.info(f'Successfully persisted {type} with GUID {GUID} to database.')
