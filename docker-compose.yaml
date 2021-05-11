@@ -27,7 +27,7 @@ services:
         build:
             context: ./readmodel
             args:
-                test: "true"
+                test: "True"
         networks:
             - tha-connect
     writemodel:
@@ -47,7 +47,7 @@ services:
         build:
             context: ./eventstore
             args:
-                test: "True"
+                test: "False"
         networks:
             - tha-connect
         volumes:
@@ -58,7 +58,7 @@ services:
         build:
             context: ./history
             args:
-                test: "True"
+                test: "False"
         networks: 
             - tha-connect
         volumes:
