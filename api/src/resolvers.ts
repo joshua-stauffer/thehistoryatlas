@@ -83,7 +83,7 @@ export const resolvers: Resolvers = {
         console.info(`Publishing query ${msg}`)
         const { payload } = await queryReadModel(msg) as Resolver.GUIDByName;
         console.log('received result: ', payload)
-        return payload.guids
+        return {guids: payload.guids}
       } catch (err) {
         return {
           code: 'Error',
@@ -131,77 +131,3 @@ export const resolvers: Resolvers = {
       }
   }
 } // end of Resolvers
-
-
-/*
-
-    FocusSummary: async (_,
-      { focusGUID, focusType }: FocusSummaryArgs,
-      { queryReadModel }: Context) => {
-
-        const msg = {
-          type: "GET_FOCUS_SUMMARY",
-          payload: {
-            focusType: focusType,
-            GUID: focusGUID
-          }
-        }
-        try {
-          const { payload } = await queryReadModel(msg) as ReadModelResponse;
-          console.log('received result: ', payload)
-          return payload.timeTagSummaries as FocusSummary  
-        } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
-        }
-    },
-
-    TimeTagDetails: async (_, 
-      { focusGUID, timeTagGUID },
-      { queryReadModel }: Context) => {
-      const msg = {
-        type: "GET_TIME_TAG_DETAILS",
-        payload: {
-          focusGUID: focusGUID,
-          timeTagGUID: timeTagGUID
-        }
-      }
-      try {
-        const { payload } = await queryReadModel(msg);
-        console.log('received results from timeTagDetails: ', payload)
-        return payload.citations
-      } catch (err) {
-        return {
-          code: 'Error',
-          success: false,
-          message: err
-        }
-      }
-    },
-
-    SearchFocusByName: async (_,
-      { focusType, searchTerm },
-      { queryReadModel }: Context) => {
-        const msg = {
-          type: "SEARCH_FOCUS_BY_NAME",
-          payload: {
-            focusType: focusType,
-            searchTerm: searchTerm
-          }
-        }
-        try {
-          const { payload } = await queryReadModel(msg);
-          console.log('received results from searchFocusByName: ', payload)
-          return payload // double check that this is correct
-        } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
-        }
-      }
-*/
