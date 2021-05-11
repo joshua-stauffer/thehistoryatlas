@@ -21,22 +21,24 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
 
-    def commit_event(self, event):
+    def commit_event(self, synthetic_event) -> list[dict]:
         """Commit an event to the database"""
-        log.info(f'Committing event {event} to the event store database.')
-        event = Event(
-            type=event.get('type'),                         # string representing EventType
-            transaction_guid=event.get('transaction_guid'), # group atomic events together by command
-            app_version=event.get('app_version'),           # future proof(ish)
-            timestamp=event.get('timestamp'),               # string timestamp
-            user=event.get('user'),                         # string user GUID
-            payload=json.dumps(event.get('payload')),       # arbitrary json string
-        )
-
+        log.info(f'Committing event {synthetic_event} to the event store database.')
+        emitted_events = list()
+        persisted_events = list()
+        for event in synthetic_event:
+            emitted_events.append(Event(
+                type=event.get('type'),                         # string representing EventType
+                transaction_guid=event.get('transaction_guid'), # group atomic events together by command
+                app_version=event.get('app_version'),           # future proof(ish)
+                timestamp=event.get('timestamp'),               # string timestamp
+                user=event.get('user'),                         # string user GUID
+                payload=json.dumps(event.get('payload')),       # arbitrary json string
+            ))
         with Session(self._engine, future=True) as session:
-            session.add(event)
+            session.add_all(emitted_events)
             session.commit()
-            persisted_event = event.to_dict()
+            persisted_events.extend([e.to_dict() for e in emitted_events])
         
-        log.debug(f'returning persisted event {persisted_event} from the database store')
-        return persisted_event
+        log.debug(f'returning persisted events {persisted_events} from the database store')
+        return persisted_events

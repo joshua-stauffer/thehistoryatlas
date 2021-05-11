@@ -30,12 +30,14 @@ class EventStore:
             log.info(f'Received shutdown signal: {signal}')
         await self.broker.cancel()
 
-    def process_event(self, event):
+    async def process_event(self, event, pub_func):
         """accepts an event and submits it to the datastore for storage.
         Returns a json string representation of the persisted event."""
         log.debug(f'processing event {event}')
-        persisted_event = self.db.commit_event(event)
-        return persisted_event
+        persisted_events = self.db.commit_event(event)
+        for e in persisted_events:
+            await pub_func(e)
+        log.info('Finished processing event')
 
 
 if __name__ == "__main__":

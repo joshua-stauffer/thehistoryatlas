@@ -11,14 +11,16 @@ RUN pip3 install /lib/tha-config
 RUN pip3 install /lib/event-schema
 COPY . .
 ENV HOST_NAME=broker
-ARG test=True
+ARG test=False
 ENV TESTING=$test
 ENV CONFIG=DEV
 ENV PROD_DB_URI=
 ENV DEV_DB_URI=sqlite:////data/db/tha-store-dev.db
-ENV TEST_DB_URI=sqlite:////data/db/tha-store-dev.db
+ENV TEST_DB_URI=sqlite:////data/db/tha-test-dev.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=eventstore
 CMD ["python3", "app/event_store.py"]
+
+# mysql+pymysql://eventstore:eventstore-123@maria/tha?charset=utf8mb4

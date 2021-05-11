@@ -45,7 +45,8 @@ class Broker(BrokerBase):
         log.info(f'processing incoming event {message}')
         body = self.decode_message(message)
         # any exceptions raised while processing will nack the incoming message
-        persisted_event = self._event_handler(body)
-        log.info(f'successfully processed the incoming event.')
-        msg = self.create_message(persisted_event)
+        await self._event_handler(body, self._pub_func)
+
+    async def _pub_func(self, message):
+        msg = self.create_message(message)
         await self._publish_persisted_event(msg)
