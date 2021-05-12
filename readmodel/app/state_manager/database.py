@@ -84,22 +84,22 @@ class Database:
 
     def __get_manifest_util(self, entity_base, guid):
         """Utility to query db for manifest"""
+        log.debug(f'Looking up manifest for GUID {guid}')
         with Session(self._engine, future=True) as session:
             entity = session.execute(
                 select(entity_base).where(entity_base.guid==guid)
             ).scalar_one_or_none()
             if not entity:
+                log.debug(f'Manifest lookup found nothing for GUID {guid}')
                 return list()
-            tag_instances = session.execute(
-                select(TagInstance)
-                .join(TagInstance.citation)
-                .where(TagInstance.tag_id==entity.id)
-                #.order_by(TagInstance.citation.time_tag)
-            ).scalars()
-            # this can't be performant..
+            # DEBUG CODE:
+
+            tag_instances = entity.tag_instances
+
             tag_list = [t for t in tag_instances]
             tag_list.sort(key=lambda a: a.citation.time_tag)
             result = [t.citation.guid for t in tag_instances]
+        log.debug(f'Manifest lookup is returning a result of length {len(result)}')
         return result
 
     def get_guids_by_name(self, name) -> list[str]:
@@ -249,11 +249,15 @@ class Database:
         """Second step of handle updates: creates a tag instance, and 
         associates it with citation and tag"""
         # resolve citation
+        log.debug('Creating a TagInstance')
         citation_id = self.__short_term_memory.get(transaction_guid)
         if not citation_id:
+            log.debug('Couldn\'t find citation id in short term memory: ' + \
+                      'looking it up')
             citation_id = session.execute(
                 select(Citation).where(Citation.guid == citation_guid)
             ).scalar_one().id
+        log.debug(f'Citation ID is {citation_id}')
         # create Tag Instance
         tag_instance = TagInstance(
             citation_id=citation_id,
@@ -263,6 +267,10 @@ class Database:
         
         session.add_all([tag, tag_instance])
         session.commit()
+        log.debug('☀️ ☀️ ☀️ Created tag instance and tag. ' + \
+                 f'TagInstance id is {tag_instance.id}, ' + \
+                 f'TagInstance Citation ID is {tag_instance.citation_id}, ' + \
+                 f'TagInstance Tag ID is {tag_instance.tag_id}')
 
     def add_meta_to_citation(self, 
         citation_guid: str,
@@ -316,7 +324,9 @@ class Database:
         with Session(self._engine, future=True) as session:
             res = session.execute(
                 select(History)
-            ).scalar_one()
+            ).scalar_one_or_none()
+            if not res:
+                res = History(latest_event_id=event_id)
             # for now, not checking if id is out of order
             res.latest_event_id = event_id
             session.add(res)

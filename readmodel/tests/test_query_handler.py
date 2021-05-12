@@ -159,7 +159,7 @@ def test_get_citations_by_guid(handle_query, db_tuple):
     assert isinstance(res, dict)
     assert res['type'] == 'CITATIONS_BY_GUID'
     assert isinstance(res['payload'], dict)
-    assert isinstance(res['payload']['citations'], dict)
+    assert isinstance(res['payload']['citations'], list)
 
 def test_get_manifest_person(handle_query, db_tuple):
     _, db_dict = db_tuple

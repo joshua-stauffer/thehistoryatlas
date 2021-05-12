@@ -188,10 +188,7 @@ def test_get_citations_returns_error_with_unknown_guid(db_tuple):
     db, db_dict = db_tuple
     guid = str(uuid4())
     res = db.get_citations([guid])
-    assert len(res.keys()) == 1
-    response = res.get(guid)
-    assert len(response.keys()) == 1
-    assert response['error'] == 'citation guid does not exist'
+    assert len(res) == 0
 
 def test_get_manifest_by_person_returns_empty_list(db_tuple):
     db, db_dict = db_tuple
@@ -219,11 +216,11 @@ def test_get_citation_fuzz_test(db_tuple):
         log.info(f'Count: {count}')
         log.info(f'GUIDs head: {guids[:10]}')
         res = db.get_citations(guids)
-        assert len(res.keys()) == len(guids)
-        for k in res.keys():
-            assert k in guids
+        assert isinstance(res, list)
+        assert len(res) == len(guids)
+        for cit in res:
+            assert cit['guid'] in guids
             # describe the shape of expected properties
-            cit = res[k]
             assert isinstance(cit, dict)
             assert cit['text'] != None
             assert isinstance(cit['text'], str)
@@ -253,6 +250,7 @@ def test_get_manifest_by_person(db_tuple):
         res = db.get_manifest_by_person(guid)
         assert isinstance(res, list)
         assert all(isinstance(e, str) for e in res)
+        assert len(res) > 0
 
 def test_get_manifest_by_place(db_tuple):
     db, db_dict = db_tuple
@@ -261,6 +259,8 @@ def test_get_manifest_by_place(db_tuple):
         res = db.get_manifest_by_place(guid)
         assert isinstance(res, list)
         assert all(isinstance(e, str) for e in res)
+        assert len(res) > 0
+
 
 def test_get_manifest_by_time(db_tuple):
     db, db_dict = db_tuple
@@ -269,6 +269,7 @@ def test_get_manifest_by_time(db_tuple):
         res = db.get_manifest_by_time(guid)
         assert isinstance(res, list)
         assert all(isinstance(e, str) for e in res)
+        assert len(res) > 0
 
 def test_get_guids_by_name(db_tuple):
     db, db_dict = db_tuple
@@ -284,3 +285,12 @@ def test_get_guids_by_name_returns_empty(db_tuple):
     res = db.get_guids_by_name('This name doesnt exist')
     assert isinstance(res, list)
     assert len(res) == 0
+
+def test_tag_instances(db_tuple):
+    db, db_dict = db_tuple
+    with Session(db._engine, future=True) as session:
+        res = session.execute(
+            select(TagInstance)
+            ).scalars()
+        count = [1 for _ in res]
+        assert len(count) == 300

@@ -36,7 +36,7 @@ class Citation(Base):
 class TagInstance(Base):
     """Model representing the connection point between a citation slice and
     a tag."""
-
+ 
     __tablename__ = 'taginstances'
     id = Column(Integer, primary_key=True)
     start_char = Column(Integer)
