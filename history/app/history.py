@@ -30,7 +30,7 @@ class HistoryPlayer:
             log.info(f'Received shutdown signal: {signal}')
         await self.broker.cancel()
 
-    async def handle_request(self, request: dict, send_func):
+    def handle_request(self, request: dict, send_func, close_func) -> asyncio.Task:
         """callback method for broker. 
         
         Parses request for parameters then passes events to
@@ -42,13 +42,23 @@ class HistoryPlayer:
             return
         last_event_id = self._parse_msg(request)
         event_gen = self.db.get_event_generator(last_event_id)
+        # move the generator operation off to another coroutine and return
+        # a reference to it for easy cancellation if something goes wrong.
+        task = asyncio.create_task(self._run_replay(event_gen, send_func, close_func))
+        return task
 
-        for event in event_gen:
+    async def _run_replay(self, gen, send_func, close_func):
+        """Manages the generator from a coroutine."""
+
+        for event in gen:
             await send_func(event)
+        # inform recipient that the stream is over
         await send_func({
             'type': 'HISTORY_REPLAY_END',
             'payload': {}
         })
+        # inform broker that the stream is over
+        close_func()
 
     def _parse_msg(self, msg: dict):
         """Utility function to get correct values from request.
