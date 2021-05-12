@@ -107,7 +107,9 @@ class Database:
         with Session(self._engine, future=True) as session:
             res = session.execute(
                 select(History)
-            ).scalar_one()
+            ).scalar_one_or_none()
+            if not res:
+                res = History(latest_event_id=event_id)
             # for now, not checking if id is out of order
             res.latest_event_id = event_id
             session.add(res)

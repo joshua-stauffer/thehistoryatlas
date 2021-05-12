@@ -134,7 +134,8 @@ class Broker(BrokerBase):
             return self._close_history_replay()
         else:
             # cancel the last callback, if any
-            self._history_timeout_coro.cancel()
+            if self._history_timeout_coro:
+                self._history_timeout_coro.cancel()
             self._history_timeout_coro = asyncio.create_task(self._schedule_new_timeout())
             return self._event_handler(body)
 
@@ -144,13 +145,11 @@ class Broker(BrokerBase):
          # when invoked from the main application, we expect a last index value,
          # but if the history replay doesn't respond within the timeout, we
          # get the fresh value ourselves and remake our request.
-         # TODO: this means refactoring History's service to remember who 
-         # it's replaying, and replace a previous replay request with the latest.
-         # lets do this by adding a correlation id to each request.
 
-        if not last_index:
+        if last_index is None:
+            # this means we're calling from Broker code (i.e. retrying after 
+            # a timeout), and we need to check the last received event
             last_index = self._get_latest_event_id()
-
         self._history_replay_corr_id = str(uuid4())
         
         log.info('Broker is requesting history replay')
