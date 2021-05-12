@@ -83,7 +83,8 @@ export const resolvers: Resolvers = {
         console.info(`Publishing query ${msg}`)
         const { payload } = await queryReadModel(msg) as Resolver.GUIDByName;
         console.log('received result: ', payload)
-        return {guids: payload.guids}
+        console.log('payload.guids is ', payload.guids)
+        return payload
       } catch (err) {
         return {
           code: 'Error',
