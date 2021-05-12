@@ -91,9 +91,9 @@ def person_tag_0():
     return {
         'GUID': str(uuid4()),
         'type': 'PERSON',
-        'person_name': 'Papscht',
-        'citation_start': 3,
-        'citation_end': 10
+        'name': 'Papscht',
+        'start_char': 3,
+        'stop_char': 10
     }
 
 @pytest.fixture
@@ -101,9 +101,9 @@ def person_tag_1(person_tag_0):
     return {
         'GUID': person_tag_0['GUID'],
         'type': 'PERSON',
-        'person_name': 'Papscht',
-        'citation_start': 4,
-        'citation_end': 11
+        'name': 'Papscht',
+        'start_char': 4,
+        'stop_char': 11
     }
 
 @pytest.fixture
@@ -111,9 +111,9 @@ def place_tag_0():
     return {
         'GUID': str(uuid4()),
         'type': 'PLACE',
-        'place_name': 'Spiez',
-        'citation_start': 19,
-        'citation_end': 24,
+        'name': 'Spiez',
+        'start_char': 19,
+        'stop_char': 24,
         'longitude': 1.5346,
         'latitude': 48.2348
     }
@@ -123,9 +123,9 @@ def place_tag_1(place_tag_0):
     return {
         'GUID': place_tag_0['GUID'],
         'type': 'PLACE',
-        'place_name': 'Spiez',
-        'citation_start': 19,
-        'citation_end': 24
+        'name': 'Spiez',
+        'start_char': 19,
+        'stop_char': 24
     }
 
 @pytest.fixture
@@ -133,9 +133,9 @@ def time_tag_0():
     return {
         'GUID': str(uuid4()),
         'type': 'TIME',
-        'time_name': '1999:1:1:1',
-        'citation_start': 19,
-        'citation_end': 24
+        'name': '1999:1:1:1',
+        'start_char': 19,
+        'stop_char': 24
     }
 
 @pytest.fixture
@@ -143,9 +143,9 @@ def time_tag_1(time_tag_0):
     return {
         'GUID': time_tag_0['GUID'],
         'type': 'TIME',
-        'time_name': '1999:1:1:1',
-        'citation_start': 19,
-        'citation_end': 24
+        'name': '1999:1:1:1',
+        'start_char': 19,
+        'stop_char': 24
     }
 # sad paths
 

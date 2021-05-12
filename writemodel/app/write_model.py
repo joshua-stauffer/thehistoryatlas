@@ -11,9 +11,9 @@ import os
 import json
 import logging
 import signal
-from broker import Broker
 from tha_config import Config
-from state_manager.manager import Manager
+from app.broker import Broker
+from app.state_manager.manager import Manager
 
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
@@ -36,9 +36,8 @@ class WriteModel:
         self.broker = Broker(
             self.config,
             self.handle_command,
-            self.handle_event
-        )
-        # TODO: add logic to check if database exists yet
+            self.handle_event,
+            self.manager.db.check_database_init)
         try:
             await self.broker.start(is_initialized=False)
         except Exception as e:

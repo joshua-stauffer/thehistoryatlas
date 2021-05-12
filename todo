@@ -65,10 +65,13 @@ Current todo list
 - GEO: add broker integration
 - GEO: get kaggle cities <= geonames!!
 - GEO: find countries/states geo data
+- HISTORY: add handling for correlation ids
+- HISTORY: keep track of clients who have requested replay by routing key
 - HISTORY: incorporate testing into the docker build
 - NGINX: setup client & api behind nginx
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: incorporate testing into the docker build
+- READMODEL: add correlation id history replay
 - SPACY: create NER parser
 - SPACY: add broker integration
 - SOFT DEPLOY: push to DO

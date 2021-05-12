@@ -8,8 +8,8 @@ import datetime
 import logging
 from uuid import uuid4
 from pybroker import BrokerBase
-from broker_errors import MessageError
-from state_manager.handler_errors import CitationExistsError, CitationMissingFieldsError
+from app.broker_errors import MessageError
+from app.state_manager.handler_errors import CitationExistsError, CitationMissingFieldsError
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')
@@ -164,17 +164,9 @@ class Broker(BrokerBase):
             msg_body,
             reply_to='event.replay.writemodel',
             correlation_id=self._history_replay_corr_id)
-        while True:
-            # does this error actually bubble up here? so far, no.
-            try:
-                await self.publish_one(msg, routing_key='event.replay.request')
-            except Exception as e:
-                log.error(f'Failed to publish history replay request due to: {e}\nTrying again in one second.')
-                await asyncio.sleep(1)
-            else:
-                # once we've sent a request, set a timeout in case the History
-                # service is down.
-                self._history_timeout_coro = asyncio.create_task(self._schedule_new_timeout())
+
+        await self.publish_one(msg, routing_key='event.replay.request')
+        self._history_timeout_coro = asyncio.create_task(self._schedule_new_timeout())
 
     def _close_history_replay(self):
         """processes any new persisted events which came in while history was replaying,

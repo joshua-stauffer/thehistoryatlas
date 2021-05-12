@@ -20,4 +20,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=writemodel
-CMD ["python3", "app/write_model.py"]
+CMD ["python3", "-m", "app.write_model"]
