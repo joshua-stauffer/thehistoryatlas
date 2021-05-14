@@ -28,7 +28,8 @@ class QueryHandler:
         return {
             'GET_CITATIONS_BY_GUID': self._handle_get_citations_by_guid,
             'GET_MANIFEST': self._handle_get_manifest, 
-            'GET_GUIDS_BY_NAME': self._handle_get_guids_by_name
+            'GET_GUIDS_BY_NAME': self._handle_get_guids_by_name,
+            'GET_GUIDS_BY_NAME_BATCH': self._handle_get_guids_by_name_batch,
         }
 
     def _handle_get_citations_by_guid(self, query):
@@ -71,5 +72,19 @@ class QueryHandler:
             'type': 'GUIDS_BY_NAME',
             'payload': {
                 'guids': res
+            }
+        }
+
+    def _handle_get_guids_by_name_batch(self, query):
+        """Fetch GUIDs for a series of names."""
+        name_list = query['payload']['names']
+        res = dict()
+        for name in name_list:
+            r = self._db.get_guids_by_name(name)
+            res[name] = r
+        return {
+            'type': 'GUIDS_BY_NAME_BATCH',
+            'payload': {
+                'names': res
             }
         }

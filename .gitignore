@@ -9,5 +9,5 @@ venv
 *.egg-info
 bits-and-pieces/
 .pytest_cache
-
 nlp/models
+.DS_STORE
