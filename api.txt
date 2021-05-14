@@ -259,6 +259,7 @@ EXAMPLES:
         History
 
         {
+          *correlation_id
           type: REQUEST_HISTORY_REPLAY
           payload:{
             last_event_id: int
@@ -279,6 +280,7 @@ EXAMPLES:
         ReadModel
 
         {
+          *correlation_id
           type: <event_type>
           payload: {event}
         }
@@ -289,16 +291,10 @@ EXAMPLES:
 
 ..............................................................................
 
-    event.replay.readmodel
-      publishers:
-        History
-      consumers:
-
-..............................................................................
-
     query.readmodel
       publishers:
         API
+        NLP
       consumers:
         ReadModel
 
@@ -373,6 +369,53 @@ EXAMPLES:
             guids: str[]
           }
         }
+
+..............................................................................
+
+  query.nlp
+    publishers:
+      API
+    consumers:
+      NLP
+
+      {
+        type: PROCESS_TEXT
+        payload: {
+          text: str
+        }
+      }
+      =>
+      {
+        type: TEXT_PROCESSED
+        payload: {
+          text:
+        }
+      }
+
+..............................................................................
+
+  query.geo
+    publishers:
+      NLP
+    consumers:
+      GEO
+
+      {
+        type: GET_COORDS_FROM_NAME_BATCH
+        payload: {
+          names: str[]
+        }
+      }
+      => 
+      {
+        type: COORDS_FROM_NAME_BATCH
+        payload: {
+          names: { 
+            name: str
+            coord: str 
+          }[]
+        }
+      }
 
 ..............................................................................
   # direct queues

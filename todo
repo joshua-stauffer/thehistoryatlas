@@ -28,7 +28,7 @@ PROGRESS            | ..... |
 - NGINX             |       |
 - RabbitMQ Broker   | ....  |
 - Logger            |       |
-- spaCy service     |       |
+- NLP service       | ..    |
 - geo service       |       |
 - user service      |       |
 - email service     |       |
@@ -41,15 +41,12 @@ ______________________________________________________________________________
 
 Current todo list
 
-- ALL: design/setup application wide logging
 - ALL: compile stock starter input for testing/initialization
 - ALL: setup .env files for docker
 - API: add tests
 - API: add logging
 - API: incorporate testing into the docker build
-- BROKER-TS: build
-- BROKER-TS: handle broker disconnect/restart gracefully
-- CONFIG-TS: build
+- BROKER-PY: add error messages
 - CLIENT: cra & project setup
 - CLIENT: redux
 - CLIENT: apollo integration
@@ -61,19 +58,22 @@ Current todo list
 - EVENTSTORE: add Tackle testing
 - EVENTSTORE: double check atomic events enter correctly
 - EVENTSTORE: add tests
+- EVENTSTORE: update imports and move to python -m ..
 - GEO: create geo database
 - GEO: add broker integration
 - GEO: get kaggle cities <= geonames!!
 - GEO: find countries/states geo data
-- HISTORY: add handling for correlation ids
-- HISTORY: keep track of clients who have requested replay by routing key
 - HISTORY: incorporate testing into the docker build
+- HISTORY: update imports and move to python -m ..
+- LOGGER: build
 - NGINX: setup client & api behind nginx
+- NLP: connect to geo service
+- NLP: test readmodel queries
+- NLP: test with api
+- NLP: consider putting timeout on queries to readmodel and geo?
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: incorporate testing into the docker build
-- READMODEL: add correlation id history replay
-- SPACY: create NER parser
-- SPACY: add broker integration
+- READMODEL: update imports and move to python -m ..
 - SOFT DEPLOY: push to DO
 - TEST: test scalability and load bearing
 - USER: setup database
@@ -111,8 +111,6 @@ ______________________________________________________________________________
 
 
 Bug list
-- History is not acknowledging messages for some reason
-- Once in a while history requests get up and running before history is listening
 
 
 
@@ -128,6 +126,8 @@ Squashed!
 - READMODEL: UnhandledPromiseRejectionWarning on startup (likely because some
               RabbitMQ message is getting passed accidentally to one of our
               message handlers?)
+- History is not acknowledging messages for some reason
+- Once in a while history requests get up and running before history is listening
 
 ______________________________________________________________________________
 
@@ -147,6 +147,7 @@ ______________________________________________________________________________
 
 
 COMPLETED TODOS!
+- (  done  ) -> moved to LOGGER: design application wide logging
 - (  done  ) ALL: setup docker compose
 - (  done  ) ALL: create overview/api docs
 - (  done  ) ALL: create async rabbitmq template for python services
@@ -164,9 +165,14 @@ COMPLETED TODOS!
 - (  nope  ) API: break ReadModelQuery types into subtypes and combine them with a union
 - (  done  ) BROKER-PY: build
 - (  done  ) BROKER-PY: handle broker disconnect/restart gracefully
+- (  nope  ) BROKER-TS: build
+- (  nope  ) BROKER-TS: handle broker disconnect/restart gracefully
+- (  nope  ) CONFIG-TS: build
 - (  done  ) CONFIG-PY: build
 - (  done  ) EVENTSTORE: create persistent db
 - (  done  ) EVENTSTORE: add tests to db
+- (  done  ) HISTORY: add handling for correlation ids
+- (  done  ) HISTORY: keep track of clients who have requested replay by routing key
 - (  done  ) HISTORY: add tests to db
 - (  done  ) HISTORY: add logging
 - (  done  ) HISTORY: rebuild Broker
@@ -179,6 +185,9 @@ COMPLETED TODOS!
 - (  done  ) EVENTSTORE: incorporate lib in build
 - (  done  ) EVENTSTORE: move db logic into db
 - (  done  ) EVENTSTORE: integrate with real database instead of memory
+- (  done  ) NLP: create NER parser
+- (  done  ) NLP: add broker integration
+- (  done  ) READMODEL: add correlation id history replay
 - (  done  ) READMODEL: setup mongodb docker instance
 - (  done  ) READMODEL: create sqlalchemy connection
 - (  done  ) READMODEL: create rabbitmq broker interface

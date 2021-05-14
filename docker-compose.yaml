@@ -63,6 +63,13 @@ services:
             - tha-connect
         volumes:
             - teststore:/data/db
+    nlp:
+        depends_on: 
+            - broker
+        build:
+            context: ./nlp
+        networks: 
+            - tha-connect
 volumes:
     broker:
     teststore:

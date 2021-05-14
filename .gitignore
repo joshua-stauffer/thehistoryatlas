@@ -9,3 +9,5 @@ venv
 *.egg-info
 bits-and-pieces/
 .pytest_cache
+
+nlp/models
