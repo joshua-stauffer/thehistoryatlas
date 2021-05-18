@@ -388,7 +388,20 @@ EXAMPLES:
       {
         type: TEXT_PROCESSED
         payload: {
-          text:
+          text: str
+          text_map: {
+            ENTITY_TYPE: {
+              text: str
+              start_char: int
+              stop_char: int
+              guids: str[]
+              coords?: {
+                latitude: float
+                longitude: float
+                geoshape: str
+              }[]
+            }
+          }
         }
       }
 

@@ -5,6 +5,7 @@ May 13th, 2021
 """
 
 import asyncio
+from functools import partial
 import logging
 from nlp.tests.test_resolver import query_readmodel
 import signal
@@ -17,15 +18,18 @@ from app.resolver import Resolver
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
 
+
 class NLPService:
 
     def __init__(self):
         self.config = Config()
         self.broker = Broker(self.config, self.process_query)
         self.processor = Processor(load_model=False)
-        self.resolver = Resolver(
+        self.resolver_factory = partial(
+            Resolver,
             query_geo=self.broker.query_geo,
             query_readmodel=self.broker.query_readmodel)
+        self._resolver_store = dict()
 
     async def start_broker(self):
         await self.broker.start()
@@ -35,18 +39,30 @@ class NLPService:
             log.info(f'Received shutdown signal: {signal}')
         await self.broker.cancel()
 
-    async def process_query(self, event):
-        """Receives request for processing and fields a response"""
+    async def process_query(self, event, corr_id, pub_func):
+        """Receives request for processing and fields a response."""
+        
         text = event['payload']['text']
         log.debug(f'Processing text {text}')
-        entities = self.processor.parse(text)
-        log.debug(f'Parsed entities: {entities}')
-        res = await self.resolver.query(entities)
-        log.debug(f'Resolved entities: {res}')
-        return {
-            'type': 'TEXT_PROCESSED',
-            'payload': { 'result': res }
-        }
+        text_map = self.processor.parse(text)
+        log.debug(f'Resolving ReadModel and Geo queries.')
+        resolver = self.resolver_factory(
+            text=text,
+            text_map=text_map,
+            corr_id=corr_id,
+            pub_func=pub_func)
+        self._resolver_store[corr_id] = resolver
+        # open sub queries
+        await resolver.open_queries()
+
+    async def process_response(self, message, corr_id):
+        """Handle subquery responses."""
+        resolver = self._resolver_store.get(corr_id)
+        if not resolver:
+            return # this reply came in too late, the query has already been rejected/resolved
+        await resolver.handle_response(message)
+        if resolver.has_resolved:
+            del self._resolver_store[corr_id]
 
 
 if __name__ == "__main__":

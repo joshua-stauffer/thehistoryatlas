@@ -2,11 +2,10 @@
 
 """
 from collections import defaultdict
-import os
 import spacy
 
 class Processor:
-
+    """Wrapper for Named Entity Recognition service powered by spaCy."""
     def __init__(self, load_model):
         # would like to programatically make this path, but for now this works:
         if load_model:

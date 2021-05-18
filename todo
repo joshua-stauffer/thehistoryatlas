@@ -47,6 +47,7 @@ Current todo list
 - API: add logging
 - API: incorporate testing into the docker build
 - BROKER-PY: add error messages
+- BROKER-PY: add typing
 - CLIENT: cra & project setup
 - CLIENT: redux
 - CLIENT: apollo integration
@@ -59,21 +60,27 @@ Current todo list
 - EVENTSTORE: double check atomic events enter correctly
 - EVENTSTORE: add tests
 - EVENTSTORE: update imports and move to python -m ..
+- EVENTSTORE: add typing
 - GEO: create geo database
 - GEO: add broker integration
 - GEO: get kaggle cities <= geonames!!
 - GEO: find countries/states geo data
+- GEO: add typing
 - HISTORY: incorporate testing into the docker build
 - HISTORY: update imports and move to python -m ..
+- HISTORY: add typing
 - LOGGER: build
 - NGINX: setup client & api behind nginx
 - NLP: connect to geo service
 - NLP: test readmodel queries
 - NLP: test with api
 - NLP: consider putting timeout on queries to readmodel and geo?
+- NLP: add typing
+- NLP: consider listing GUIDs and coords in order of popularity/use?
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: incorporate testing into the docker build
 - READMODEL: update imports and move to python -m ..
+- READMODEL: add typing
 - SOFT DEPLOY: push to DO
 - TEST: test scalability and load bearing
 - USER: setup database
@@ -82,6 +89,7 @@ Current todo list
 - WRITEMODEL: add event count stat to double check synch with event store
 - WRITEMODEL: incorporate testing into the docker build
 - WRITEMODEL: validate time tag names?
+- WRITEMODEL: add typing
 
 ______________________________________________________________________________
 

@@ -13,7 +13,7 @@ log.setLevel('DEBUG')
 
 class Broker(BrokerBase):
 
-    def __init__(self, config, request_handler) -> None:
+    def __init__(self, config, request_handler, response_handler) -> None:
         super().__init__(
             broker_username   = config.BROKER_USERNAME,
             broker_password   = config.BROKER_PASS,
@@ -22,6 +22,7 @@ class Broker(BrokerBase):
             queue_name        = config.QUEUE_NAME)
         # save main application callbacks
         self._request_handler = request_handler
+        self._response_handler = response_handler
 
     async def start(self):
         """Start the broker."""
@@ -31,8 +32,18 @@ class Broker(BrokerBase):
 
         # register handlers
         await self.add_message_handler(
-            routing_key='query.nlp',
+            routing_key='query.nlp',                # public namespace for queries
             callback=self._handle_request)
+
+        await self.add_message_handler(
+            routing_key='query.nlp.response',       # private namespace for sub queries 
+            callback=self._handle_query_response)   # made while resolving a query request
+
+        # get publish methods
+        self._publish_rm_query = self.get_publisher(
+            routing_key='query.readmodel')
+        self._publish_geo_query = self.get_publisher(
+            routing_key='query.geo')
 
     # on message callbacks
 
@@ -47,16 +58,31 @@ class Broker(BrokerBase):
         if not reply_to and correlation_id:
             raise MissingReplyFieldError
 
-        res = self._request_handler(body)
-        log.info(f'Processed result is ready: {res}')
+        async def request_response(result: dict):
+            msg = self.create_message(
+                body=result,
+                correlation_id=correlation_id)
+            log.debug(f'Sending result to {reply_to}')
+            await self.publish_one(
+                message=msg,
+                routing_key=reply_to)
 
-        msg = self.create_message(
-            body=res,
-            correlation_id=correlation_id)
-        log.debug(f'Sending result to {reply_to}')
-        await self.publish_one(
-            message=msg,
-            routing_key=reply_to)
+        log.info(f'Created new query for {reply_to} with id {correlation_id}')
+        res = self._request_handler(body, correlation_id, request_response)
 
-    async def query_readmodel(self, names):
+    async def _handle_query_response(self, message):
+        """Point of entry for responses to subqueries"""
+
+        log.info(f'received query response {message}')
+        body = self.decode_message(message)
+        correlation_id = message.correlation_id
+        if not correlation_id:
+            raise MissingReplyFieldError
+        await self._response_handler(body, correlation_id)
+
+    async def query_readmodel(self, query, corr_id):
         pass
+
+    async def query_geo(self, query, corr_id):
+        pass
+

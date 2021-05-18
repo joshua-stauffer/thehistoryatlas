@@ -2,63 +2,102 @@
 
 May 14th, 2021"""
 
-import asyncio
-from uuid import uuid4
+from collections.abc import Callable
 
 ENTITY_TYPES = ['PERSON', 'PLACE', 'TIME']
-EntityDict = dict[str, list[dict]]
+TextMap = dict[str, list[dict]]
 
 class Resolver:
+    """Class corresponding to the lifetime of an API request. 
+    Resolver.has_resolved flag indicates if component lifecycle has completed.
+    """
 
-    def __init__(self, query_geo, query_readmodel):
+    def __init__(self,
+        text: str,
+        text_map: dict,
+        corr_id: str,
+        pub_func: Callable,
+        query_geo: Callable,
+        query_readmodel: Callable
+        ) -> None:
+        """Create a session to manage the state of an API query between 
+        receipt of request and returning the response."""
+        # unique identifier for this instance of the class
+        self._corr_id = corr_id
+        # data
+        self._text = text
+        self._text_map = text_map
+        self._tag_view = list()     # utility view to work with all tags at once
+        [self._tag_view.extend(tag_list) for tag_list in text_map.values()]
+        # methods and properties for interacting with other services
+        self._pub_func = pub_func
         self._query_geo = query_geo
-        self._query_readmodel = query_readmodel
+        self._geo_complete = False
+        self._query_rm = query_readmodel
+        self._rm_complete = False
 
-    async def query(self,
-        entities: EntityDict
-        ) -> EntityDict:
-        """Accepts a dict with keys PERSON, PLACE, TIME corresponding to lists 
-        of entities. Returns the entity dict with any known GUIDs added to 
-        each entity"""
-        # Query against the ReadModel's known entities
-        names = self._get_names(entities, key=None)
+    @property
+    def has_resolved(self):
+        """Flag to alert main application that component lifecycle is over."""
+        return all([self._geo_complete, self._rm_complete])
+
+    async def open_queries(self) -> None:
+        """Call when a new query session is created. Opens query requests to
+        the ReadModel and the GeoService."""
+        all_names = self._get_names(self.text_map)
+        geo_names = self._get_names(self.text_map, key='PLACES')
         rm_query = {
-            'type': 'GET_GUIDS_BY_NAME_BATCH',
-            'payload': { 'names': names }
+            'type': 'GET_COORDS_FROM_NAME_BATCH',
+            'payload': { 'names': all_names }
         }
-        readmodel_res = await self._query_readmodel(rm_query)
-        name_map = readmodel_res['payload']['names']
-        # update our entity dict with the results
-        entities_with_guids = self._add_guids(
-                                        entities=entities,
-                                        name_map=name_map)
+        geo_query = {
+            'type': 'GET_GUIDS_BY_NAME_BATCH',
+            'payload': { 'names': geo_names }
+        }
+        await self._query_rm(
+            query=rm_query,
+            corr_id=self.corr_id)
+        await self._query_geo(
+            query=geo_query,
+            corr_id=self.corr_id)
 
-        # if any places haven't resolved to a known place, look them up
-        # with the geo service
-        place_names_to_resolve = \
-            [e['text'] for e in entities_with_guids['PLACES'] if len(e['guids']) == 0]
-        if len(place_names_to_resolve):
-            geo_query = {
-                'type': 'GET_COORDS_FROM_NAME_BATCH',
-                'payload': { 'names' : place_names_to_resolve }
-            }
-            geo_res = self._query_geo(geo_query)
-            geo_map = geo_res['payload']['names']
-            entities_with_coords = self._add_guids(
-                                        entities=entities_with_guids,
-                                        val_map=geo_map,
-                                        val_key='coords',
-                                        entity_key='PLACES')
+    async def handle_response(self,
+        response: dict
+        ) -> None:
+        """Handles an incoming query response and updates session state accordingly.
+        If incoming query response is the last we were waiting for, publishes the
+        results back to the original requester based on reply_to field they provided."""
+
+        resp_type = response.get('type')
+        if resp_type == 'COORDS_FROM_NAME_BATCH':
+            if self.geo_complete == True:
+                return  # this query has already been resolved
+            self._text_map['coords'] = response['payload']['names']
+            self._geo_complete = True
+        elif resp_type == 'GUIDS_BY_NAME_BATCH':
+            if self._rm_complete == True:
+                return  # this query has already been resolved
+            name_map = response['payload']['names']
+            self._add_guids(name_map)
+            self._rm_complete = True
         else:
-            entities_with_coords = entities_with_guids
-        return entities_with_coords
+            raise Exception(f'Unknown response type {resp_type}')
+
+        if self.has_resolved:
+            # send result back to service that requested this query
+            await self._pub_func({
+                'type': 'TEXT_PROCESSED',
+                'payload': {
+                    'text_map': self._text_map,
+                    'text': self._text
+                }})
 
     @staticmethod
     def _get_names(
-        entities: EntityDict,
+        entities: TextMap,
         key: str=None
-        ) -> EntityDict:
-        """Returns a single list of all names found within entities: EntityDict[key]['text']
+        ) -> TextMap:
+        """Returns a single list of all names found within entities: TextMap[key]['text']
         If no key is passed returns results for keys defined in ENTITY_TYPES"""
         names = list()
         if not key:
@@ -69,31 +108,21 @@ class Resolver:
             names.extend(entity['text'] for entity in entities[k])
         return names
 
-    @staticmethod
-    def _add_guids(
-        entities: EntityDict,
-        val_map: dict[str, list[str]],
-        val_key: str,
-        entity_key: str=None,
-        ) -> EntityDict:
-        """Adds values from val_map[x] to entities[entity_key][x][val_key]
+    def _add_guids(self,
+        name_map: dict
+        ) -> None:
+        """Add GUIDs received from a service to the current text_map"""
+        for tag in self._tag_view:
+            tag_name = tag['text']
+            # we need every tag to have a guids list, whether or not we found results
+            tag['guids'] = name_map.get(tag_name)
 
-        entities: EntityDict:
-            key: ENTITY_TYPE
-            val: list[dict]
-                    (dict includes the field 'text', which is the name
-                    we're interested in resolving)
-
-        val_map:
-            key: str (name)
-            val: list[str]
-        """
-        if entity_key:
-            keys = [entity_key]
-        else:
-            keys = ENTITY_TYPES
-        for k in keys:
-            for tag in entities[k]:
-                name = tag['text']
-                tag[val_key] = val_map[name]
-        return entities
+    def _add_coords(self,
+        coord_map: dict
+        ) -> None:
+        """Add coordinates received from GeoService to the current text_map.
+        If no geo name was found, the coordinate field will not be added."""
+        for tag in self._tag_view:
+            tag_name = tag['text']
+            if coords := coord_map.get(tag_name):
+                tag['coords'] = coords
