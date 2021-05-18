@@ -68,7 +68,7 @@ class Broker(BrokerBase):
                 routing_key=reply_to)
 
         log.info(f'Created new query for {reply_to} with id {correlation_id}')
-        res = self._request_handler(body, correlation_id, request_response)
+        await self._request_handler(body, correlation_id, request_response)
 
     async def _handle_query_response(self, message):
         """Point of entry for responses to subqueries"""
@@ -80,9 +80,24 @@ class Broker(BrokerBase):
             raise MissingReplyFieldError
         await self._response_handler(body, correlation_id)
 
-    async def query_readmodel(self, query, corr_id):
-        pass
+    async def query_readmodel(self,
+        query: dict,
+        corr_id: str
+        ) -> None:
+        """Publishes a query to the ReadModel service."""
+        await self.publish_one(
+            body=query,
+            correlation_id=corr_id,
+            routing_key='query.readmodel',
+            reply_to='query.nlp.response')
 
-    async def query_geo(self, query, corr_id):
-        pass
-
+    async def query_geo(self,
+        query: dict,
+        corr_id: str
+        ) -> None:
+        """Publishes a query to the Geo service."""
+        await self.publish_one(
+            body=query,
+            correlation_id=corr_id,
+            routing_key='query.geo',
+            reply_to='query.nlp.response')

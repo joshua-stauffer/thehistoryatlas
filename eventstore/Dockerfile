@@ -22,5 +22,3 @@ ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=eventstore
 CMD ["python3", "app/event_store.py"]
-
-# mysql+pymysql://eventstore:eventstore-123@maria/tha?charset=utf8mb4

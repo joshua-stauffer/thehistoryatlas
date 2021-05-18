@@ -68,6 +68,8 @@ services:
             - broker
         build:
             context: ./nlp
+        environment: 
+            - TESTING=False
         networks: 
             - tha-connect
 volumes:

@@ -405,6 +405,8 @@ EXAMPLES:
         }
       }
 
+  EXAMPLE: 
+{"type": "PROCESS_TEXT", "payload": {"text": "Thus it was that on the day following Oculi Sunday, four weeks before Easter, Sebastian Nagel and his colleague Ambrosius Bach, Together with the ducal forester Johann George Koch, arrayed themselves around the ancient baptismal font inside St. George's, Eisenach's main church."}}
 ..............................................................................
 
   query.geo
@@ -451,3 +453,4 @@ EXAMPLES:
         existing_event_guid: string
       }
     }
+

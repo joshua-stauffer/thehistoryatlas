@@ -8,8 +8,20 @@ ENTITY_TYPES = ['PERSON', 'PLACE', 'TIME']
 TextMap = dict[str, list[dict]]
 
 class Resolver:
-    """Class corresponding to the lifetime of an API request. 
+    """Class corresponding to the lifetime of an API request. A new instance
+    is created when a request is received, stored in the NLP resolver store 
+    by correlation id, and removed after the final subquery is resolved and
+    a response has been sent.
+
     Resolver.has_resolved flag indicates if component lifecycle has completed.
+                          If this is True, it's safe to remove references to
+                          the object.
+    Resolver.open_queries() asynchronously makes all necesssary subrequests
+                            in parallel. This exists in its own method due to
+                            the complexities of async code in init methods.
+    Resolver.handle_response() accepts a response dictionary and updates local
+                               state. If all queries have been resolved, it
+                               also sends the response to close the query.
     """
 
     def __init__(self,
@@ -44,8 +56,8 @@ class Resolver:
     async def open_queries(self) -> None:
         """Call when a new query session is created. Opens query requests to
         the ReadModel and the GeoService."""
-        all_names = self._get_names(self.text_map)
-        geo_names = self._get_names(self.text_map, key='PLACES')
+        all_names = self._get_names(self._text_map)
+        geo_names = self._get_names(self._text_map, key='PLACES')
         rm_query = {
             'type': 'GET_COORDS_FROM_NAME_BATCH',
             'payload': { 'names': all_names }
@@ -56,10 +68,10 @@ class Resolver:
         }
         await self._query_rm(
             query=rm_query,
-            corr_id=self.corr_id)
+            corr_id=self._corr_id)
         await self._query_geo(
             query=geo_query,
-            corr_id=self.corr_id)
+            corr_id=self._corr_id)
 
     async def handle_response(self,
         response: dict

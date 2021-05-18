@@ -7,7 +7,6 @@ May 13th, 2021
 import asyncio
 from functools import partial
 import logging
-from nlp.tests.test_resolver import query_readmodel
 import signal
 from app.broker import Broker
 from tha_config import Config
@@ -23,8 +22,12 @@ class NLPService:
 
     def __init__(self):
         self.config = Config()
-        self.broker = Broker(self.config, self.process_query)
-        self.processor = Processor(load_model=False)
+        self.broker = Broker(
+            self.config,
+            self.process_query,     # single point of entry to NLP services
+            self.process_response)  # Subqueries made while resolving a request
+                                    # will return here.
+        self.processor = Processor(load_model=True)
         self.resolver_factory = partial(
             Resolver,
             query_geo=self.broker.query_geo,
@@ -41,7 +44,6 @@ class NLPService:
 
     async def process_query(self, event, corr_id, pub_func):
         """Receives request for processing and fields a response."""
-        
         text = event['payload']['text']
         log.debug(f'Processing text {text}')
         text_map = self.processor.parse(text)

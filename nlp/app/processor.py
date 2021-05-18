@@ -6,7 +6,7 @@ import spacy
 
 class Processor:
     """Wrapper for Named Entity Recognition service powered by spaCy."""
-    def __init__(self, load_model):
+    def __init__(self, load_model: bool):
         # would like to programatically make this path, but for now this works:
         if load_model:
             self.nlp = spacy.load(R'/app/models/model-best')
