@@ -11,9 +11,9 @@ The project is built as a series of microservices which communicate asynchronous
 ## Local project setup
 - [install/setup docker](https://docs.docker.com/get-docker/)
 - fork/clone the repo, and navigate to the project root directory
-- ``` bash build.sh``` 
-- ``` docker-compose up```
-You can stop the project with ctl-C in the same terminal you started it in, or by running ```docker-compose down``` in a separate tab.
+- Build the project with ``` bash build.sh``` 
+- Run the project with ``` docker-compose up```.
+- Stop the project with ctl-C in the same terminal or with```docker-compose down``` in a separate tab.
 
 The RabbitMQ admin console is available at [localhost:15672](http://localhost:15672).
 - username: guest
