@@ -7,21 +7,25 @@ source test_env/bin/activate
 # pip install pylib/event-schema pylib/pybroker pylib/tha-config
 
 # test readmodel
-cd readmodel && python -m pytest tests
+cd readmodel && python -m pytest
 
 # test writemodel
-cd ../writemodel && python -m pytest tests
+cd ../writemodel && python -m pytest
+
+# SKIPPING THE FOLLOWING TWO TESTS DUE TO IMPORT ISSUES
 
 # test history
-# currently import issues
-#cd ../history && python -m pytest tests
+# cd ../history && python -m pytest
 
 # test eventstore
-#cd ../eventstore && python -m pytest tests
+# cd ../eventstore && python -m pytest
+
+# test nlp
+cd ../nlp && python -m pytest
 
 # test pylib
-cd ../pylib/event-schema && python -m pytest tests
-#cd ../pybroker && python -m pytest tests
-cd ../tha-config && python -m pytest tests
+cd ../pylib/event-schema && python -m pytest
+# cd ../pybroker && python -m pytest
+cd ../tha-config && python -m pytest
 
 deactivate

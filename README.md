@@ -20,4 +20,6 @@ The RabbitMQ admin console is available at [localhost:15672](http://localhost:15
 - password: guest
 The GraphQL API is available at [localhost:4000](http://localhost:4000).
 
+Tests can be run with the ```bash test.sh``` command.
+
 Ideas, suggestions, and contributions are all welcome!
