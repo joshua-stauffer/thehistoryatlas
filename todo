@@ -72,11 +72,12 @@ Current todo list
 - LOGGER: build
 - NGINX: setup client & api behind nginx
 - NLP: connect to geo service
-- NLP: test readmodel queries
+- (  done  ) NLP: test readmodel queries
 - NLP: test with api
 - NLP: consider putting timeout on queries to readmodel and geo?
 - NLP: add typing
 - NLP: consider listing GUIDs and coords in order of popularity/use?
+- NLP: add replay history
 - RABBITMQ: create config file, create two virtual hosts (one for testing/dev one for prod)
 - READMODEL: incorporate testing into the docker build
 - READMODEL: update imports and move to python -m ..

@@ -28,6 +28,7 @@ class Database:
             future=True)
         # initialize the db
         Base.metadata.create_all(self._engine)
+        self.last_event_id = 0
         if self._db_is_empty():
             self._fill_db()
 
@@ -85,3 +86,12 @@ class Database:
                             for e in citation.entities]
                 res.append(CitationEntry(text, entities))
         return res
+
+    def handle_event(self, event):
+        """Process an emitted event and save it to the database"""
+        # this isn't as strict witih messages being lost/out of order, but
+        # shouldn't be a huge deal for this particular use case.
+        id = event.get('id')
+        if id > self.last_event_id:
+            self.last_event_id = event.get('id')
+        

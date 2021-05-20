@@ -1,16 +1,12 @@
-#!/user/bin/env bash
+#!/usr/bin/env bash
 
 # This shell script builds the local docker images needed by the application.
 
-cd pylib
-docker build -t pylib .
-cd ../testlib
-docker build -t testlib .
-cd ..
+docker build -t pylib ./pylib
+docker build -t testlib ./testlib
 docker-compose build
 echo ""
 echo ""
-
 echo "Finished building the History Atlas!"
 echo ""
 echo "To start the project, run:"

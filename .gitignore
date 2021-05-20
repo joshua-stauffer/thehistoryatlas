@@ -13,3 +13,4 @@ nlp/models
 .DS_STORE
 .DS_Store
 *.DS_Store
+test_build_constraints.txt

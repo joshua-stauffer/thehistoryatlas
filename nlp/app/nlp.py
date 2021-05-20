@@ -7,6 +7,7 @@ May 13th, 2021
 import asyncio
 from functools import partial
 import logging
+import os
 import signal
 from app.broker import Broker
 from tha_config import Config
@@ -24,16 +25,24 @@ class NLPService:
 
     def __init__(self):
         self.config = Config()
-        self.config.TRAIN_DIR = '/app/train' # directory for database to find training data
-        self.config.OUT_DIR = '/app/app/models'
+        self.config.TRAIN_DIR = '/app/train'    # directory for database to find training data
+        self.config.OUT_DIR = '/app/models'     # directory for processor to find spaCy model
+        self.config.DB_URI = 'sqlite+pysqlite:///:memory:'   # for now always use in memory db
+        # setup communication with the rest of teh application
         self.broker = Broker(
             self.config,
-            self.process_query,     # single point of entry to NLP services
-            self.process_response)  # Subqueries made while resolving a request
-                                    # will return here.
+            self.process_query,                 # single point of entry to NLP services
+            self.process_response,              # Subqueries made while resolving a request
+                                                #   will return here.
+            self.train,                         # admin access to trigger model training
+            self.process_event_stream,
+            self.get_latest_event_id)
         self.db = Database(self.config)
+        # request a replay of history
+
+        # check for model, and build if none is found
+        self.ensure_model()                     
         self.processor = Processor(load_model=True)
-        self.trainer = Trainer(self.config, self.db, self.processor)
         self.resolver_factory = partial(
             Resolver,
             query_geo=self.broker.query_geo,
@@ -71,6 +80,39 @@ class NLPService:
         await resolver.handle_response(message)
         if resolver.has_resolved:
             del self._resolver_store[corr_id]
+
+    # history methods
+
+    def process_event_stream(self, message):
+        """Callback which handles events published to the emitted events stream."""
+        self.db.handle_event(message)
+
+    def get_latest_event_id(self):
+        """Returns the last event processed by the database"""
+        # Util method for the broker to know where we are in the replay
+        return self.db.last_event_id
+
+    # spaCy model management
+
+    def ensure_model(self):
+        """Checks that a model is available for the spaCy service, and builds
+        one in case it is missing."""
+        if not any(file.name == 'model-best' for file in os.scandir('/app/models')):
+            log.info('No models were found. Building one now.')
+            self.train()
+
+    def train(self):
+        """Builds a new training file based on the latest data, and then 
+        trains a series of new models."""
+
+        log.info('Starting model training. This could take a little while..')
+        trainer = Trainer(self.config, self.db)
+        trainer.build_training_file()
+        log.info('Built training file. Now training model.')
+        trainer.train()
+        log.info('Finished training model, loading it now.')
+        self.processor = Processor(load_model=True)
+
 
 
 if __name__ == "__main__":

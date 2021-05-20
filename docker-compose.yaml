@@ -72,8 +72,11 @@ services:
             - TESTING=False
         networks: 
             - tha-connect
+        volumes:
+            - models:/app/models
 volumes:
     broker:
     teststore:
+    models:
 networks:
     tha-connect:

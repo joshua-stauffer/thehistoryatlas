@@ -11,14 +11,16 @@ The project is built as a series of microservices which communicate asynchronous
 ## Local project setup
 - [install/setup docker](https://docs.docker.com/get-docker/)
 - fork/clone the repo, and navigate to the project root directory
-- Build the project with ``` bash build.sh``` 
-- Run the project with ``` docker-compose up```.
+- Build the project with ``` bash build.sh```
+- Run the project with ``` docker-compose up```
 - Stop the project with ctl-C in the same terminal or with```docker-compose down``` in a separate tab.
 
 The RabbitMQ admin console is available at [localhost:15672](http://localhost:15672).
 - username: guest
 - password: guest
 The GraphQL API is available at [localhost:4000](http://localhost:4000).
+
+On the first build, the NLP service will need to build a model from the included training data. This can take a while, as in several hours, so it might be best to leave it overnight. After the first build, the model will be stored in a docker volume, so rebuilding won't be necessary unless the docker volume is removed. Rebuilds can be requested manually by sending an message to the routing key 'signal.nlp.train'. In case you'd prefer to not wait, the rest of the application can run just fine without the NLP service with the exception of the text parser in the API service. The NLP service can consume a significant amount of memory as well, so it's recommended to increase Docker's memory allowance to around 4 gigs, if possible, to avoid 137 errors.
 
 Tests can be run with the ```bash test.sh``` command.
 
