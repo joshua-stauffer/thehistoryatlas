@@ -56,14 +56,15 @@ class Resolver:
     async def open_queries(self) -> None:
         """Call when a new query session is created. Opens query requests to
         the ReadModel and the GeoService."""
+        # TODO: if names aren't found for a service request, shouldn't send it.
         all_names = self._get_names(self._text_map)
-        geo_names = self._get_names(self._text_map, key='PLACES')
+        geo_names = self._get_names(self._text_map, key='PLACE')
         rm_query = {
-            'type': 'GET_COORDS_FROM_NAME_BATCH',
+            'type': 'GET_GUIDS_BY_NAME_BATCH',
             'payload': { 'names': all_names }
         }
         geo_query = {
-            'type': 'GET_GUIDS_BY_NAME_BATCH',
+            'type': 'GET_COORDS_BY_NAME_BATCH',
             'payload': { 'names': geo_names }
         }
         await self._query_rm(
@@ -81,8 +82,8 @@ class Resolver:
         results back to the original requester based on reply_to field they provided."""
 
         resp_type = response.get('type')
-        if resp_type == 'COORDS_FROM_NAME_BATCH':
-            if self.geo_complete == True:
+        if resp_type == 'COORDS_BY_NAME_BATCH':
+            if self._geo_complete == True:
                 return  # this query has already been resolved
             self._text_map['coords'] = response['payload']['names']
             self._geo_complete = True

@@ -85,19 +85,23 @@ class Broker(BrokerBase):
         corr_id: str
         ) -> None:
         """Publishes a query to the ReadModel service."""
-        await self.publish_one(
+        message = self.create_message(
             body=query,
             correlation_id=corr_id,
-            routing_key='query.readmodel',
             reply_to='query.nlp.response')
+        await self.publish_one(
+            message=message,
+            routing_key='query.readmodel')
 
     async def query_geo(self,
         query: dict,
         corr_id: str
         ) -> None:
         """Publishes a query to the Geo service."""
-        await self.publish_one(
+        message = self.create_message(
             body=query,
             correlation_id=corr_id,
-            routing_key='query.geo',
             reply_to='query.nlp.response')
+        await self.publish_one(
+            message=message,
+            routing_key='query.geo')

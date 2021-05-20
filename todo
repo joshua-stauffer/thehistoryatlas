@@ -119,7 +119,11 @@ ______________________________________________________________________________
 
 
 Bug list
-
+- EVENTSTORE: threw an error on startup after a fresh build:
+                sqlite3.OperationalError: table events already exists
+                * not repeatable?
+- HISTORY: not acknowledging messages?
+- API: does getCitationsByGUID still work?
 
 
 ______________________________________________________________________________

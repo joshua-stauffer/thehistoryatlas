@@ -6,6 +6,7 @@ COPY --from=pylib /lib /lib
 
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
+RUN pip3 install sqlalchemy
 COPY . .
 ENV HOST_NAME=broker
 

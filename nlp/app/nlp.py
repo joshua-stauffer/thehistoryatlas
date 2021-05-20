@@ -10,8 +10,10 @@ import logging
 import signal
 from app.broker import Broker
 from tha_config import Config
+from app.state.database import Database
 from app.processor import Processor
 from app.resolver import Resolver
+from app.trainer import Trainer
 
 
 logging.basicConfig(level='DEBUG')
@@ -22,12 +24,16 @@ class NLPService:
 
     def __init__(self):
         self.config = Config()
+        self.config.TRAIN_DIR = '/app/train' # directory for database to find training data
+        self.config.OUT_DIR = '/app/app/models'
         self.broker = Broker(
             self.config,
             self.process_query,     # single point of entry to NLP services
             self.process_response)  # Subqueries made while resolving a request
                                     # will return here.
+        self.db = Database(self.config)
         self.processor = Processor(load_model=True)
+        self.trainer = Trainer(self.config, self.db, self.processor)
         self.resolver_factory = partial(
             Resolver,
             query_geo=self.broker.query_geo,

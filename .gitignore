@@ -11,3 +11,5 @@ bits-and-pieces/
 .pytest_cache
 nlp/models
 .DS_STORE
+.DS_Store
+*.DS_Store
