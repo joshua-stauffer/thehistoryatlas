@@ -28,7 +28,7 @@ PROGRESS            | ..... |
 - NGINX             |       |
 - RabbitMQ Broker   | ....  |
 - Logger            |       |
-- NLP service       | ..    |
+- NLP service       | ...   |
 - geo service       |       |
 - user service      |       |
 - email service     |       |

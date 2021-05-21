@@ -2,7 +2,7 @@
 
 May 19th, 2021"""
 import logging
-from subprocess import run
+from subprocess import STDOUT, run
 import os
 import spacy
 from spacy.tokens import DocBin
@@ -23,7 +23,6 @@ class Trainer:
         for text, entities in annotated_text:
             doc = nlp.make_doc(text)
             ents = list()
-            print(entities)
             for start, stop, label in entities:
                 span = doc.char_span(
                             start, stop,
@@ -49,5 +48,5 @@ class Trainer:
                 '--paths.train', '/app/train/train.spacy',  # training data
                 '--paths.dev', '/app/train/train.spacy'     # validation data
         ]
-        res = run(cmd, capture_output=True)
+        res = run(cmd, stderr=STDOUT)
         log.info('training has completed: ', '\n', res)
