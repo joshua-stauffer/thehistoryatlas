@@ -41,8 +41,9 @@ class NLPService:
         # request a replay of history
 
         # check for model, and build if none is found
-        self.ensure_model()                     
-        self.processor = Processor(load_model=True)
+        # self.ensure_model()   
+        self.train()                  
+        self.processor = Processor(load_model=False)
         self.resolver_factory = partial(
             Resolver,
             query_geo=self.broker.query_geo,
@@ -109,9 +110,9 @@ class NLPService:
         trainer = Trainer(self.config, self.db)
         trainer.build_training_file()
         log.info('Built training file. Now training model.')
-        trainer.train()
-        log.info('Finished training model, loading it now.')
-        self.processor = Processor(load_model=True)
+        #trainer.train()
+        #log.info('Finished training model, loading it now.')
+        #self.processor = Processor(load_model=True)
 
 
 

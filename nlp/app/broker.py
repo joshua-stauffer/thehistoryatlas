@@ -22,7 +22,8 @@ class Broker(BrokerBase):
         train_handler,
         event_handler,
         get_latest_event_id
-        ) -> None:
+        ) -> None:        
+        # call the superclass's init method with our config properties 
         super().__init__(
             broker_username   = config.BROKER_USERNAME,
             broker_password   = config.BROKER_PASS,
@@ -64,6 +65,14 @@ class Broker(BrokerBase):
         await self.add_message_handler(
             routing_key='event.replay.nlp',
             callback=self._handle_replay_history)
+
+        await self.add_message_handler(
+            routing_key='event.persisted',
+            callback=self._handle_persisted_event)
+
+        # when event handling logic is in place, this will trigger
+        # the history replay on start up:
+        # await self._request_history_replay(last_index=0) 
 
     # on message callbacks
 
