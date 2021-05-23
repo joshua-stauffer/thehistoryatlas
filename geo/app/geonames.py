@@ -7,13 +7,10 @@ more or less present a consistent api.
 
 May 21st, 2021"""
 
-import asyncio
 from collections import namedtuple
 import logging
-from os import stat
 from zipfile import ZipFile
 import requests
-from app.errors import TooManyRetriesError
 
 log = logging.getLogger(__name__)
 

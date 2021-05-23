@@ -1,5 +1,4 @@
 import pytest
-
 from app.geonames import GeoNames
 from app.geonames import CityRow
 from requests.exceptions import ConnectionError
@@ -11,9 +10,12 @@ def test_raises_error_with_invalid_uri():
 
 # this requests real resources from the geonames server,
 # so be very sparing in actually running this test.
+@pytest.mark.skip('Pulls in resource from geonames.org -- only run if absolutely necessary')
 def test_build(tmp_path):
     geo = GeoNames('https://download.geonames.org/export/dump/cities15000.zip')
-    geo._basedir = '/Users/jds/dev/history-atlas/geo/data/'
+    geo._basedir = ''   # NOTE: add a reasonable dir for your local system here
+                        #       should probably discover the path in module anyways,
+                        #       but for now can count on docker path being predictable 
     city_rows = geo.build()
     assert isinstance(city_rows, list)
     for r in city_rows:
