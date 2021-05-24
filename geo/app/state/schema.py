@@ -40,7 +40,7 @@ class Place(Base):
     __tablename__ = 'places'
 
     id = Column(Integer, primary_key=True)
-    geonames_id = Column(Integer)
+    geoname_id = Column(Integer)
     latitude = Column(Float)
     longitude = Column(Float)
     geoshape = Column(String)

@@ -23,9 +23,15 @@ cd ../writemodel && python -m pytest
 # test nlp
 cd ../nlp && python -m pytest
 
+# test geo
+cd ../geo && python -m pytest
+
 # test pylib
 cd ../pylib/event-schema && python -m pytest
 # cd ../pybroker && python -m pytest
 cd ../tha-config && python -m pytest
+
+# test testlib
+cd ../../testlib/tackle && python -m pytest
 
 deactivate

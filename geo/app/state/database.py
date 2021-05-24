@@ -3,20 +3,16 @@ Stores geographic names and associated coordinates.
 
 May 21st, 2021
 """
-from collections import namedtuple
 from datetime import datetime
 import logging
-import json
-import os
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from app.geonames import CityRow
 from app.state.schema import Base
 from app.state.schema import UpdateTracker
 from app.state.schema import Name
 from app.state.schema import Place
-from app.geonames_data import CityRow
 
 log = logging.getLogger(__name__)
 
@@ -43,8 +39,10 @@ class Database:
             ).scalar_one_or_none()
             if not name_row:
                 return []
-            return [(place.latitude, place.longitude) 
-                    for place in name_row.places]
+            return [{
+                        'latitude': place.latitude,
+                        'longitude': place.longitude
+                    } for place in name_row.places]
     
     def get_coords_by_name_batch(self,
         names: list[str]
@@ -60,8 +58,10 @@ class Database:
                 if not name_row:
                     coords = []
                 else:
-                    coords = [(place.latitude, place.longitude) 
-                            for place in name_row.places]
+                    coords = [{
+                        'latitude': place.latitude,
+                        'longitude': place.longitude
+                    } for place in name_row.places]
                 res[name] = coords
         return res
 
@@ -92,11 +92,11 @@ class Database:
             for row in city_rows:
                 to_commit = list()
                 place = session.execute(
-                    select(Place).where(Place.geonames_id == row.geonames_id)
+                    select(Place).where(Place.geoname_id == row.geoname_id)
                 ).scalar_one_or_none()
                 if not place:
                     place = Place(
-                        geonames_id         = row.geonames_id,
+                        geoname_id         = row.geoname_id,
                         latitude            = row.latitude,
                         longitude           = row.longitude,
                         modification_date   = row.modification_date)

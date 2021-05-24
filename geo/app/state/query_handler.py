@@ -29,7 +29,7 @@ class QueryHandler:
         handler = self._query_handlers.get(query_type)
         if not handler:
             raise UnknownQueryError(query_type)
-        return handler(query)         
+        return handler(payload)         
 
     def _map_query_handlers(self):
         """Create a dict of known query types and the methods to handle them."""
@@ -60,7 +60,7 @@ class QueryHandler:
         names = payload['names']
         coords_dict = self._db.get_coords_by_name_batch(names)
         return {
-            'type': 'COORDS_BY_NAME',
+            'type': 'COORDS_BY_NAME_BATCH',
             'payload': {
                 'coords': coords_dict
             }
