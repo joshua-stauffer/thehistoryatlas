@@ -11,6 +11,8 @@ import logging
 import signal
 from tha_config import Config
 from app.broker import Broker
+from app.state.database import Database
+from app.state.query_handler import QueryHandler
 
 
 logging.basicConfig(level='DEBUG')
@@ -21,15 +23,12 @@ class GeoService:
 
     def __init__(self):
         self.config = Config()
+        self.db = Database(self.config)
+        self.query_handler =QueryHandler(self.db)
         self.broker = Broker(
             self.config,
-            self.handle_request)
-
-    async def handle_request(self, message, pub_func) -> None:
-        """Handles incoming requests and directs them to the database
-        for processing."""
-        ...
-    
+            self.query_handler.handle_query)
+   
     async def start_broker(self):
         await self.broker.start()
 

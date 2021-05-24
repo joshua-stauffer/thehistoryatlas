@@ -12,10 +12,10 @@ from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.schema import Base
-from app.schema import Name
-from app.schema import Place
-from app.schema import UpdateTracker
+from app.state.schema import Base
+from app.state.schema import UpdateTracker
+from app.state.schema import Name
+from app.state.schema import Place
 from app.geonames_data import CityRow
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,9 @@ class Database:
 
     # db query tools
 
-    def get_coords_by_name(self, name: str):
+    def get_coords_by_name(self,
+        name: str
+        ) -> list:
         """Resolve a geographic name into a list of possible coordinates."""
         with Session(self._engine, future=True) as session:
             name_row = session.execute(
@@ -44,7 +46,9 @@ class Database:
             return [(place.latitude, place.longitude) 
                     for place in name_row.places]
     
-    def get_coords_by_name_batch(self, names: list[str]):
+    def get_coords_by_name_batch(self,
+        names: list[str]
+        ) -> dict:
         """Resolve a list of place names into a dict where the keys are names 
         and the values are lists of possible coordinates."""
         res = dict()
@@ -63,7 +67,9 @@ class Database:
 
     # bulk db building tools
 
-    def build_db(self, geodata: list[CityRow]):
+    def build_db(self,
+        geodata: list[CityRow]
+        ) -> None:
         """Fill an empty database with the contents of a geonames file."""
 
         # allow for data with shape details as well, but handle differently
@@ -75,7 +81,9 @@ class Database:
             session.add(update)
             session.commit()
 
-    def _build_db_from_city_row(self, city_rows: list[CityRow]):
+    def _build_db_from_city_row(self,
+        city_rows: list[CityRow]
+        ) -> None:
         """Update database with fresh data, taking care to not duplicate
         existing information. This should be run only occasionally, and
         as such its expense is acceptable."""
