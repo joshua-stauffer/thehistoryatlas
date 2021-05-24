@@ -74,9 +74,25 @@ services:
             - tha-connect
         volumes:
             - models:/app/models
+    geo:
+        depends_on: 
+            - broker
+        build:
+            context: ./geo
+        environment:
+            - DEV_DB_URI=sqlite:////etc/db/geo.db
+            # choose between one of the following two city lists:
+            # cities500 is much more comprehensive, and also requires a much longer build.
+            - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
+            # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
+        networks: 
+            - tha-connect
+        volumes:
+            - geodb:/etc/db
 volumes:
     broker:
     teststore:
     models:
+    geodb:
 networks:
     tha-connect:

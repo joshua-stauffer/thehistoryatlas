@@ -7,7 +7,7 @@ import asyncio
 import logging
 from uuid import uuid4
 from pybroker import BrokerBase
-from app.broker_errors import MissingReplyFieldError
+from app.errors import MissingReplyFieldError
 
 
 log = logging.getLogger(__name__)
@@ -53,15 +53,12 @@ class Broker(BrokerBase):
         correlation_id = message.correlation_id
         if not reply_to and correlation_id:
             raise MissingReplyFieldError
-        
-        # create a response function for the main app to use
-        async def request_response(result: dict):
-            msg = self.create_message(
-                body=result,
+        # send to main app for processing
+        response = self._request_handler(body)
+        msg = self.create_message(
+                body=response,
                 correlation_id=correlation_id)
-            log.debug(f'Sending result to {reply_to}')
-            await self.publish_one(
+        log.debug(f'Sending result to {reply_to}')
+        await self.publish_one(
                 message=msg,
                 routing_key=reply_to)
-        # pass the message body and the publish function to the main app
-        await self._request_handler(body, request_response)

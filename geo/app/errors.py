@@ -12,3 +12,6 @@ class MessageMissingPayloadError(Exception):
 
 class UnknownQueryError(Exception):
     ...
+
+class MissingReplyFieldError(Exception):
+    ...

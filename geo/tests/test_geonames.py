@@ -11,7 +11,7 @@ def test_raises_error_with_invalid_uri():
 # this requests real resources from the geonames server,
 # so be very sparing in actually running this test.
 @pytest.mark.skip('Pulls in resource from geonames.org -- only run if absolutely necessary')
-def test_build(tmp_path):
+def test_geonames(tmp_path):
     geo = GeoNames('https://download.geonames.org/export/dump/cities15000.zip')
     geo._basedir = ''   # NOTE: add a reasonable dir for your local system here
                         #       should probably discover the path in module anyways,

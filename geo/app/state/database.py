@@ -5,8 +5,10 @@ May 21st, 2021
 """
 from datetime import datetime
 import logging
+from typing import Union
 from sqlalchemy import create_engine
 from sqlalchemy import select
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.geonames import CityRow
 from app.state.schema import Base
@@ -33,22 +35,29 @@ class Database:
         name: str
         ) -> list:
         """Resolve a geographic name into a list of possible coordinates."""
+        log.debug(f'Checking database for name: {name}')
         with Session(self._engine, future=True) as session:
             name_row = session.execute(
                 select(Name).where(Name.name == name)
             ).scalar_one_or_none()
             if not name_row:
-                return []
-            return [{
+                res = []
+            else:
+                res = [{
                         'latitude': place.latitude,
                         'longitude': place.longitude
                     } for place in name_row.places]
+        log.debug(f'Results: {res}')
+        return res
+
     
     def get_coords_by_name_batch(self,
         names: list[str]
         ) -> dict:
         """Resolve a list of place names into a dict where the keys are names 
         and the values are lists of possible coordinates."""
+
+        log.debug(f'Checking database for names: {names}')
         res = dict()
         with Session(self._engine, future=True) as session:
             for name in names:
@@ -63,6 +72,7 @@ class Database:
                         'longitude': place.longitude
                     } for place in name_row.places]
                 res[name] = coords
+        log.debug(f'Results: {res}')
         return res
 
     # bulk db building tools
@@ -72,6 +82,7 @@ class Database:
         ) -> None:
         """Fill an empty database with the contents of a geonames file."""
 
+        log.info(f'Building database with {len(geodata)} rows')
         # allow for data with shape details as well, but handle differently
         if isinstance(geodata[0], CityRow):
             self._build_db_from_city_row(geodata)
@@ -88,6 +99,7 @@ class Database:
         existing information. This should be run only occasionally, and
         as such its expense is acceptable."""
 
+        log.debug('Building rows from Geonames city file')
         with Session(self._engine, future=True) as session:
             for row in city_rows:
                 to_commit = list()
@@ -115,3 +127,18 @@ class Database:
                     to_commit.append(name)
                 session.add_all(to_commit)
                 session.commit()
+
+    def get_last_update_timestamp(self) -> Union[str, None]:
+        """Returns the timestamp of the latest update or None"""
+
+        with Session(self._engine, future=True) as session:
+            res = session.execute(
+                    func.max(UpdateTracker.timestamp)
+            ).scalar_one_or_none()
+            if res:
+                timestamp = datetime.fromisoformat(res)
+            else:
+                timestamp = None
+        log.debug(f'Got request for latest update timestamp : {timestamp}')
+        return timestamp
+    

@@ -449,6 +449,53 @@ RESPONSE
       }
 {"type": "COORDS_BY_NAME_BATCH", "payload": {"names": "test test test"}}
 ..............................................................................
+
+  query.geo
+  publishers:
+    nlp
+    api
+  consumers:
+    geo
+
+  {
+    type: GET_COORDS_BY_NAME
+    payload: {
+      name: str
+    }
+  }
+  =>
+  {
+    type: COORDS_BY_NAME
+    payload: {
+      str as name: {
+        latitude: float
+        longitude: float
+      } 
+    }
+  }
+
+  {
+    type: GET_COORDS_BY_NAME_BATCH
+    payload: {
+      names: str[]
+    }
+  }
+  =>
+  {
+    type: COORDS_BY_NAME_BATCH
+    payload: {
+      str as name: {
+        latitude: float
+        longitude: float
+      } 
+    }
+  }
+
+
+# EXAMPLES
+{"type": "GET_COORDS_BY_NAME", "payload": {"name": "Rome"}}
+..............................................................................
+
   # direct queues
 
     (api)

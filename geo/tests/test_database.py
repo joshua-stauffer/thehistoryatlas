@@ -1,3 +1,4 @@
+import datetime
 from random import random
 import pytest
 from sqlalchemy import select
@@ -134,9 +135,14 @@ def test_build_db_from_city_row(empty_db):
             assert name_row.places[0] is place
 
 def test_build_db_update_tracker(empty_db):
-    empty_db.build_db(['This isnt a CityRow'])
+    empty_db.build_db(['This isnt a CityRow']) # this triggers an update
     with Session(empty_db._engine, future=True) as session:
         tracker = session.execute(
             select(UpdateTracker).where(UpdateTracker.id == 1)
         ).scalar_one()
         assert isinstance(tracker.timestamp, str)
+
+def test_get_last_update_timestamp(empty_db):
+    assert empty_db.get_last_update_timestamp() is None
+    empty_db.build_db(['this isnt a CityRow']) # this triggers an update
+    assert isinstance(empty_db.get_last_update_timestamp(), datetime.datetime)
