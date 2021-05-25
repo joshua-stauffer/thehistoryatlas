@@ -3,6 +3,9 @@
 May 14th, 2021"""
 
 from collections.abc import Callable
+import logging
+
+log = logging.getLogger(__name__)
 
 ENTITY_TYPES = ['PERSON', 'PLACE', 'TIME']
 TextMap = dict[str, list[dict]]
@@ -56,6 +59,8 @@ class Resolver:
     async def open_queries(self) -> None:
         """Call when a new query session is created. Opens query requests to
         the ReadModel and the GeoService."""
+
+        log.info(f'Creating subqueries for query {self._corr_id}')
         # TODO: if names aren't found for a service request, shouldn't send it.
         all_names = self._get_names(self._text_map)
         geo_names = self._get_names(self._text_map, key='PLACE')
@@ -81,11 +86,12 @@ class Resolver:
         If incoming query response is the last we were waiting for, publishes the
         results back to the original requester based on reply_to field they provided."""
 
+        log.info(f'Received subquery response: {response}')
         resp_type = response.get('type')
         if resp_type == 'COORDS_BY_NAME_BATCH':
             if self._geo_complete == True:
                 return  # this query has already been resolved
-            self._text_map['coords'] = response['payload']['names']
+            self._text_map['coords'] = response['payload']['coords']
             self._geo_complete = True
         elif resp_type == 'GUIDS_BY_NAME_BATCH':
             if self._rm_complete == True:
@@ -98,6 +104,7 @@ class Resolver:
 
         if self.has_resolved:
             # send result back to service that requested this query
+            log.info(f'Query {self._corr_id} is now complete :: sending reply')
             await self._pub_func({
                 'type': 'TEXT_PROCESSED',
                 'payload': {

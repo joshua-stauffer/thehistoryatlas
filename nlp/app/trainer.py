@@ -7,8 +7,10 @@ import os
 import spacy
 from spacy.tokens import DocBin
 
-logging.basicConfig(level='DEBUG')
+
 log = logging.getLogger(__name__)
+logging.basicConfig(level='DEBUG')
+
 
 class Trainer:
 

@@ -43,7 +43,7 @@ class NLPService:
         # check for model, and build if none is found
         # self.ensure_model()   
         self.train()                  
-        self.processor = Processor(load_model=False)
+        self.processor = Processor(load_model=True)
         self.resolver_factory = partial(
             Resolver,
             query_geo=self.broker.query_geo,
@@ -101,6 +101,8 @@ class NLPService:
         if not any(file.name == 'model-best' for file in os.scandir('/app/models')):
             log.info('No models were found. Building one now.')
             self.train()
+        else:
+            log.info('Found existing model -- using model-best')
 
     def train(self):
         """Builds a new training file based on the latest data, and then 
