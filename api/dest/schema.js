@@ -17,6 +17,14 @@ exports.typeDefs = gql `
     GetGUIDsByName(
       name: String!
     ): GUIDs!
+
+    GetCoordinatesByName(
+      name: String!
+    ): [GeoResponse]
+
+    GetTextAnalysis(
+      text: String!
+    ): TextAnalysisResponse
   }
 
   type Mutation {
@@ -73,6 +81,25 @@ exports.typeDefs = gql `
     PLACE
   }
 
+  type TextAnalysisResponse {
+    text: String
+    text_map: TextMap
+  }
+
+  type TextAnalysis {
+    text: String
+    start_char: Int
+    stop_char: Int
+    guids: [String]
+    coords: [GeoResponse]
+  }
+
+  type TextMap {
+    PERSON: [TextAnalysis]
+    PLACE: [TextAnalysis]
+    TIME: [TextAnalysis]
+  }
+
   # geo types
 
   type Point {
@@ -86,8 +113,15 @@ exports.typeDefs = gql `
   }
 
   type Geo {
+    # i think this is deprecated?
     point: Point!
-    shape: [ Point ]
+    shape: String
+  }
+
+  type GeoResponse {
+    longitude: Float
+    latitude: Float
+    geoshape: String
   }
 
   # mutation types

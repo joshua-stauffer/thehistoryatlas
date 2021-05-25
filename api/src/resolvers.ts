@@ -92,8 +92,59 @@ export const resolvers: Resolvers = {
           message: err
         }
       }
+    },
+    GetCoordinatesByName: async (_,
+      { name }: Resolver.GetCoordinatesByNameArgs,
+      { queryGeo }: Context) => {
+      const msg = {
+        type: "GET_COORDS_BY_NAME",
+        payload: {
+          "name": name
+        }
+      }
+      try {
+        console.debug(`Publishing query `, msg)
+        console.debug(msg.payload)
+
+        const { payload } = await queryGeo(msg) as Resolver.CoordsByName;
+        console.debug('received result: ', payload);
+        const geoResult = payload.coords[name];
+        if (!geoResult) throw new Error(`GeoService returned unknown result: ${geoResult}`);
+        return geoResult
+      } catch (err) {
+        return {
+          code: 'Error',
+          success: false,
+          message: err
+        }
+      }
+    },
+    GetTextAnalysis: async (_,
+      { text }: Resolver.GetTextAnalysisArgs,
+      { queryNLP }: Context) => {
+      const msg = {
+        type: "PROCESS_TEXT",
+        payload: {
+          "text": text
+        }
+      }
+      try {
+        console.debug(`Publishing query `, msg)
+        console.debug(msg.payload)
+
+        const { payload } = await queryNLP(msg) as Resolver.TextProcessed;
+        console.debug('received result: ', payload);
+
+        return payload
+      } catch (err) {
+        return {
+          code: 'Error',
+          success: false,
+          message: err
+        }
+      }
     }
-    
+
 
   }, // end of Query
 

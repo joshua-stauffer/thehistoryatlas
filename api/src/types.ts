@@ -13,9 +13,9 @@ export interface BoundingBox {
   bottomRight: number;
 }
 
-export interface Location {
+export interface _Location {
   point: Point;
-  shape?: Point[];             // may need to adjust this to work with geojson better
+  shape?: string;
 }
 
 export interface Point {
@@ -65,9 +65,11 @@ export interface Person {
 
 export type EntityType = "TIME" | "PERSON" | "PLACE";
 
-
-
-
+export interface Location {
+  latitude: number;
+  longitude: number;
+  geoshape: string;
+}
 
 export interface GetCitationsByGUIDsArgs {
   citationGUIDs: string[]
@@ -142,6 +144,20 @@ export interface ReadModelQuery {
   }
 }
 
+export interface NLPServiceQuery {
+  type: string;
+  payload: {
+    text: string;
+  }
+}
+
+export interface GeoServiceQuery {
+  type: string;
+  payload: {
+    name: string;
+  }
+}
+
 export namespace Resolver {
 
   export interface GetManifestArgs {
@@ -161,6 +177,13 @@ export namespace Resolver {
     name: string;
   }
 
+  export interface GetCoordinatesByNameArgs {
+    name: string;
+  }
+
+  export interface GetTextAnalysisArgs {
+    text: string;
+  }
   // Query results
 
   export interface CitationsByGUID {
@@ -206,6 +229,31 @@ export namespace Resolver {
     type: string;
     payload: {
       guids: string[]
+    }
+  }
+
+  export interface CoordsByName {
+    type: string;
+    payload: {
+      coords: {
+        [key: string]: Location;
+      }
+    }
+  }
+
+  export interface TextProcessed {
+    type: string;
+    payload: {
+      text: string;
+      text_map: {
+        [key: string]: {
+          text: string;
+          start_char: number;
+          stop_char: number;
+          guids: string[];
+          coords?: Location[]
+        }
+      }
     }
   }
 

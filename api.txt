@@ -22,7 +22,7 @@ RabbitMQ config details
     payload: {}
 
   Topics are organized as:
-    <message_type>.<message_qualifier?>.<specific_message_recipient?>
+    <message_type>.<message_qualifier?>.<specific_message_recipient>
 
 
 ______________________________________________________________________________

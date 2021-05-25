@@ -8,7 +8,9 @@ import * as Amqp from 'amqplib';
 import { v4 } from 'uuid'
 import { Config } from './config';
 import {
-  ReadModelQuery
+  ReadModelQuery,
+  NLPServiceQuery,
+  GeoServiceQuery
 } from './types';
 
 
@@ -28,7 +30,7 @@ export interface Message {
   payload: any;
 }
 
-type RPCRecipient = 'query.readmodel' | 'command.writemodel';
+type RPCRecipient = 'query.readmodel' | 'command.writemodel' | 'query.nlp' | 'query.geo';
 type ExchangeName = string;
 
 type QueryMap = Map<string, { resolve: (value: unknown) => void, reject: (reason?: any) => void }>
@@ -59,6 +61,8 @@ export class Broker {
     this.connect = this.connect.bind(this);
     this.queryReadModel = this.queryReadModel.bind(this);
     this.emitCommand = this.emitCommand.bind(this);
+    this.queryGeo = this.queryGeo.bind(this)
+    this.queryNLP = this.queryNLP.bind(this)
     this.connect.bind(this);
     this.openChannel.bind(this);
     this.publishRPC.bind(this);
@@ -147,10 +151,19 @@ export class Broker {
     return this.publishRPC(msg, 'command.writemodel', 'main');
   }
 
+  public async queryNLP(msg: NLPServiceQuery): Promise<unknown> {
+    return this.publishRPC(msg, 'query.nlp', 'main');
+  }
+
+  public async queryGeo(msg: GeoServiceQuery): Promise<unknown> {
+    console.log('Querying geo')
+    return this.publishRPC(msg, 'query.geo', 'main');
+  }
+
   private async handleRPCCallback(msg: Amqp.ConsumeMessage | null): Promise<void> {
     // This callback is passed to the Amqp.consume method, and will be invoked
     // whenever our application wants to query the ReadModel.
-    console.log('received RPC callback')
+    console.info('received RPC callback')
     if (!msg) return;
     const { content, properties } = msg;
     const { correlationId } = properties;
@@ -160,7 +173,7 @@ export class Broker {
     // 4.21.21: now deleting on timeout to avoid duplication
     // this may become a memory issue if the request volume gets high
     //this.queryMap.delete(correlationId)
-    console.log('it resolved!')
+    console.info(`Message ${correlationId} resolved.`)
     // Decode the Buffer object and pass it to the stored resolve function,
     // which will return it to the correct Apollo resolver.
     return resolve(this.decode(content))

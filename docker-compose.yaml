@@ -79,6 +79,8 @@ services:
             - broker
         build:
             context: ./geo
+            args:
+                test: "False"
         environment:
             - DEV_DB_URI=sqlite:////etc/db/geo.db
             # choose between one of the following two city lists:

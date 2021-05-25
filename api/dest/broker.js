@@ -113,6 +113,8 @@ class Broker {
         this.connect = this.connect.bind(this);
         this.queryReadModel = this.queryReadModel.bind(this);
         this.emitCommand = this.emitCommand.bind(this);
+        this.queryGeo = this.queryGeo.bind(this);
+        this.queryNLP = this.queryNLP.bind(this);
         this.connect.bind(this);
         this.openChannel.bind(this);
         this.publishRPC.bind(this);
@@ -190,10 +192,17 @@ class Broker {
         // accepts a json message and publishes it.
         return this.publishRPC(msg, 'command.writemodel', 'main');
     }
+    async queryNLP(msg) {
+        return this.publishRPC(msg, 'query.nlp', 'main');
+    }
+    async queryGeo(msg) {
+        console.log('Querying geo');
+        return this.publishRPC(msg, 'query.geo', 'main');
+    }
     async handleRPCCallback(msg) {
         // This callback is passed to the Amqp.consume method, and will be invoked
         // whenever our application wants to query the ReadModel.
-        console.log('received RPC callback');
+        console.info('received RPC callback');
         if (!msg)
             return;
         const { content, properties } = msg;
@@ -205,7 +214,7 @@ class Broker {
         // 4.21.21: now deleting on timeout to avoid duplication
         // this may become a memory issue if the request volume gets high
         //this.queryMap.delete(correlationId)
-        console.log('it resolved!');
+        console.info(`Message ${correlationId} resolved.`);
         // Decode the Buffer object and pass it to the stored resolve function,
         // which will return it to the correct Apollo resolver.
         return resolve(this.decode(content));
