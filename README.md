@@ -4,7 +4,7 @@ The History Atlas is a web application that stores scholarly citations correlati
 
 The project has been my primary focus during my batch at [the Recurse Center](https://www.recurse.com), a three month self-directed retreat for programmers in NYC from April-June 2021. It's still very much a work in progress -- you can see the latest status of individual components in the [TODO file](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/todo). 
 
-I've been building the History Atlas with a CQRS/Event-Sourcing architecture in mind. The goal is to have a flexible, extensible base infrastructure that will be easy to maintain and scale, and will allow for significant changes in the frontend data requirements without needing to make changes to the primary database. In preparation for this project [I built a non-distributed, synchronous Todo application with a similar architecture](https://github.com/joshua-stauffer/EventBullet) -- the basic flow of data is the same in the History Atlas, without the complications of asynchronicity, so could potentially be a helpful resource.
+I've been building the History Atlas with a CQRS/Event-Sourcing architecture in mind. The goal is to have a flexible, extensible base infrastructure that will be easy to maintain and scale, and will allow for significant changes in the frontend data requirements without needing to make changes to the primary database. In preparation for this project [I built a non-distributed, synchronous Todo application with a similar architecture](https://github.com/joshua-stauffer/EventBullet). The basic flow of data is the same in the History Atlas, without the complications of asynchronicity, so it could potentially be a helpful resource for understanding the purpose of each service.
 
 The project is built as a series of microservices which communicate asynchronously via RabbitMQ. Details on message contracts between services are found in the [api.txt file](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/api.txt)
 
@@ -20,8 +20,11 @@ The RabbitMQ admin console is available at [localhost:15672](http://localhost:15
 - password: guest
 The GraphQL API is available at [localhost:4000](http://localhost:4000).
 
+### Extra considerations for the Geo service
+On the first build, the Geo service will build its database, which involves pulling in data from geonames.org and building a graph database structure locally. The source for this build can be adjusted in the docker compose file under the Geo service. The default source is cities15000.zip, which will take ~10-15 minutes to fully build. The alternate source (cities500.zip) will be used in production, but takes ~3.5 hours to build, so use at your own risk.
+
 ### Extra considerations for the Natural Language Processing service
-On the first build, the NLP service will need to build a model from the included training data. This will take a long time due to the limited resources allocated by default to a docker instance: on my machine ~24 hours. An optimization is currently in the works, but if you have an idea for making this more efficient, please reach out! After the first build, the model will be stored in a docker volume, so rebuilding won't be necessary unless the docker volume is removed. Rebuilds can be requested manually by sending an message in the main exchange to the RabbitMQ routing key 'signal.nlp.train'. The NLP service can consume a significant amount of memory as well, so it's recommended to increase Docker's memory allowance to around 4 gigs, if possible, to avoid 137 errors. In case these considerations make running the full application difficult, the NLP service can be commented out in the docker-compose file, and other functionality will continue to work. The training can also be cut short, and as long as the first batch has processed, the application will have a model to work with.
+On the first build, the NLP service will need to build a model from the included training data. This will take a long time due to the limited resources allocated by default to a docker instance: on my machine ~24 hours. See the NLP README.md for more details and workarounds.
 
 ### Tests
 Tests can be run with the ```bash test.sh``` command.
