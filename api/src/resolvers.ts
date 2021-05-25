@@ -134,7 +134,6 @@ export const resolvers: Resolvers = {
 
         const { payload } = await queryNLP(msg) as Resolver.TextProcessed;
         console.debug('received result: ', payload);
-
         return payload
       } catch (err) {
         return {

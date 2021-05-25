@@ -17,6 +17,8 @@ class Processor:
         if load_model:
             self.nlp = spacy.load(R'/app/models/model-best')
         else:
+            log.warning('No NLP model was loaded because the load_model flag ' +\
+                        'passed to Processor was False.')
             self.nlp = None
 
     def parse(self, text: str):
@@ -27,8 +29,8 @@ class Processor:
         for tok in doc:
             if tok.ent_type_:
                 results[tok.ent_type_].append({
-                    'char_start': tok.idx,
-                    'char_stop': tok.idx + len(tok.text),
+                    'start_char': tok.idx,
+                    'stop_char': tok.idx + len(tok.text),
                     'text': tok.text})
-        log.info(f'Results: {results}')
+        log.info(f'NLP processing results: {results}')
         return results

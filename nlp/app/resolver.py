@@ -91,7 +91,8 @@ class Resolver:
         if resp_type == 'COORDS_BY_NAME_BATCH':
             if self._geo_complete == True:
                 return  # this query has already been resolved
-            self._text_map['coords'] = response['payload']['coords']
+            coord_map = response['payload']['coords']
+            self._add_coords(coord_map)
             self._geo_complete = True
         elif resp_type == 'GUIDS_BY_NAME_BATCH':
             if self._rm_complete == True:
@@ -105,6 +106,8 @@ class Resolver:
         if self.has_resolved:
             # send result back to service that requested this query
             log.info(f'Query {self._corr_id} is now complete :: sending reply')
+            log.debug(self._tag_view)
+            log.debug(self._text_map)
             await self._pub_func({
                 'type': 'TEXT_PROCESSED',
                 'payload': {
