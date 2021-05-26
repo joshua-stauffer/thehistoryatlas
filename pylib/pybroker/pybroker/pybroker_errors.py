@@ -3,6 +3,9 @@ class BrokerError(Exception):
 
 class MissingReplyFieldError(BrokerError):
     """Raised when a client requests an event replay but neglects to supply
-    a reply_to address."""
+    a expected elements such as the reply_to address or correlation_id."""
     def __init__(self):
-        self.msg = "No reply_to field was supplied: unable to process request to replay"
+        self.msg = "Request is missing expected elements, possibly the \
+                    reply_to or correlation_id fields. \
+                    Unable to process the request."
+
