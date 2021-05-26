@@ -12,7 +12,7 @@ The Read Model requires incoming messages on the ```query.readmodel``` stream to
 - ```correlation_id```: query GUID
 
 Get full citation details based on its GUID.
-```json
+```typescript
 # Query:
 {
     "type": "GET_CITATIONS_BY_GUID"
@@ -59,7 +59,7 @@ Get full citation details based on its GUID.
 }
 ```
 Get an ordered list of Citation GUIDs for a person, place, or time.
-```json
+```typescript
 # Query
 {
     "type": "GET_MANIFEST",
@@ -79,7 +79,7 @@ Get an ordered list of Citation GUIDs for a person, place, or time.
 }
 ```
 Get a list of entity GUIDs that are associated with a given name. For example, the name 'Bach' will return GUIDs for J.S. Bach, J.C. Bach, C.P.E. Bach, Ambrosius Bach, etc.
-```json
+```typescript
 # Query
 {
     "type": "GET_GUIDS_BY_NAME",
@@ -97,7 +97,7 @@ Get a list of entity GUIDs that are associated with a given name. For example, t
 }
 ```
 Similarly, resolve a list of names into citation GUIDs.
-```json
+```typescript
 # Query
 {
     "type": "GET_GUIDS_BY_NAME_BATCH",

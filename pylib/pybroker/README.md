@@ -56,7 +56,7 @@ Alternatively, use the ```Broker.publish_one(message, routing_key)``` method, wh
 When constructing topic strings, ```*``` can be used as a wildcard for exactly one word, and ```#``` can match zero or more words.
 
 ### Start the broker
-Since starting the broker involves asynchronous network calls, it's not straightforward to implement the actual connection logic inside the init method. Instead, ```await``` the ```BrokerBase.connect()``` method inside an asynchronous method on the user class. Across the application, this expected to be the ```Broker.start()``` method, and may implement any other useful startup logic, including registering message handlers and requesting history replays.
+Since starting the broker involves asynchronous network calls, it's not straightforward to implement the actual connection logic inside the init method. Instead, ```await``` the ```Broker.connect()``` method inside an asynchronous method on the user class. Across the application, this expected to be the ```Broker.start()``` method, and may implement any other useful startup logic, including registering message handlers and requesting history replays.
 
 ### Stop the broker
 Use the ```Broker.cancel()``` method to unsubscribe from topic streams and disconnect from AMQP connection.

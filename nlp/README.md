@@ -11,7 +11,7 @@ The Geo Service requires incoming messages on the ```query.nlp``` stream to have
 - ```correlation_id```: query GUID
 
 Messages have the following shape:
-```json
+```typescript
 # Query
 {
     "type": "PROCESS_TEXT",

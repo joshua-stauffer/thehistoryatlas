@@ -11,7 +11,7 @@ The History service requires incoming messages on the ```event.replay.request```
 - ```correlation_id```: GUID used to prevent duplicate replay requests.
 
 Additionally, client should provide the ID of the last event they've received (default of 0), and the History service will begin replay from the next event in the sequence.
-```json
+```typescript
 {
     "type": "REQUEST_HISTORY_REPLAY",
     "payload":{

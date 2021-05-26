@@ -10,7 +10,7 @@ The Geo Service requires incoming messages on the ```query.geo``` stream to have
 - ```correlation_id```: query GUID
 
 Resolve a name into a list of coordinates, if any exist:
-```json
+```typescript
 # Query
 {
     "type": "GET_COORDS_BY_NAME",
@@ -34,7 +34,7 @@ Resolve a name into a list of coordinates, if any exist:
 }
 ```
 Similarly, resolve a list of names into coordinates:
-```json
+```typescript
 # Query
 {
     "type": "GET_COORDS_BY_NAME_BATCH",

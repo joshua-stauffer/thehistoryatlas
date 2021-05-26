@@ -14,7 +14,7 @@ One difficulty associated with a distributed system is that there is only the pr
 
 ## Contracts
 The Write Model expects incoming messages on the ```query.readmodel``` stream to have the following shape:
-```json
+```typescript
 {
     "type": "PUBLISH_NEW_CITATION",
     "user":         string,

@@ -14,8 +14,7 @@ class Config:
         NETWORK_HOST_NAME
         BROKER_USERNAME
         BROKER_PASS
-        SEND_QUEUE
-        RECV_QUEUE
+        QUEUE_NAME
     """
 
     def __init__(self):

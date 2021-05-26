@@ -7,7 +7,7 @@ The Event Store is the write-only path to the primary application database. For 
 
 ## Contracts
 The Event Store expects incoming messages on the ```events.emitted``` stream to be in the following form:
-```json
+```typescript
 {
     "type": "EVENT_TRANSACTION",
     "app_version":  string,
@@ -19,7 +19,7 @@ The Event Store expects incoming messages on the ```events.emitted``` stream to 
 }
 ```
 Published messages on the ```events.persisted``` stream will take the following form:
-```json
+```typescript
 {
     "type": "CITATION_ADDED",
     "transaction_guid": string,
@@ -34,7 +34,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "META_ADDED",
     "transaction_guid": string,
@@ -55,7 +55,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "PERSON_ADDED",
     "transaction_guid": string,
@@ -72,7 +72,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "PERSON_TAGGED",
     "transaction_guid":   string,
@@ -89,7 +89,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "PLACE_ADDED",
     "transaction_guid": string,
@@ -109,7 +109,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "PLACE_TAGGED",
     "transaction_guid":   string,
@@ -126,7 +126,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "TIME_ADDED",
     "transaction_guid":   string,
@@ -143,7 +143,7 @@ Published messages on the ```events.persisted``` stream will take the following 
     }
 }
 ```
-```json
+```typescript
 {
     "type": "TIME_TAGGED",
     "transaction_guid":   string,
