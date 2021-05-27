@@ -6,7 +6,7 @@ The NLP Service searches user provided text for people, places, and times using 
 - Listens to ```signal.nlp.train```, and upon receipt of a message, retrains model based on the latest data. Note that this will effectively take the service offline for an extended period of time -- currently, close to 24 hours. See 'building the model' for more details.
 
 ## Contracts
-The Geo Service requires incoming messages on the ```query.nlp``` stream to have two properties defined:
+The NLP Service requires incoming messages on the ```query.nlp``` stream to have two properties defined:
 - ```reply_to```: queue to receive query response
 - ```correlation_id```: query GUID
 
