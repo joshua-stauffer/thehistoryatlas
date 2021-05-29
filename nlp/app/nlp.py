@@ -42,7 +42,6 @@ class NLPService:
 
         # check for model, and build if none is found
         self.ensure_model()   
-        self.train()                  
         self.processor = Processor(load_model=True)
         self.resolver_factory = partial(
             Resolver,
@@ -103,6 +102,9 @@ class NLPService:
             self.train()
         else:
             log.info('Found existing model -- using model-best')
+            # reload the spaCy model
+            self.processor = Processor(load_model=True)
+
 
     def train(self):
         """Builds a new training file based on the latest data, and then 
@@ -112,9 +114,8 @@ class NLPService:
         trainer = Trainer(self.config, self.db)
         trainer.build_training_file()
         log.info('Built training file. Now training model.')
-        #trainer.train()
-        #log.info('Finished training model, loading it now.')
-        #self.processor = Processor(load_model=True)
+        trainer.train()
+        log.info('Finished training model, loading it now.')
 
 
 
