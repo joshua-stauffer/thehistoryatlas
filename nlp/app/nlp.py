@@ -41,7 +41,7 @@ class NLPService:
         # request a replay of history
 
         # check for model, and build if none is found
-        # self.ensure_model()   
+        self.ensure_model()   
         self.train()                  
         self.processor = Processor(load_model=True)
         self.resolver_factory = partial(
