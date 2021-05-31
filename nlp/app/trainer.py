@@ -1,16 +1,14 @@
 """Component to retrain spaCy models on the fly.
 
 May 19th, 2021"""
+
 import logging
 from subprocess import STDOUT, run
-import os
 import spacy
 from spacy.tokens import DocBin
 
-
 log = logging.getLogger(__name__)
 logging.basicConfig(level='DEBUG')
-
 
 class Trainer:
 
@@ -19,6 +17,7 @@ class Trainer:
         self._OUT_DIR = config.TRAIN_DIR
 
     def build_training_file(self):
+        # TODO: divide into training/dev
         nlp = spacy.blank('en')
         doc_bin = DocBin()
         annotated_text = self._db.get_training_corpus()
@@ -37,7 +36,8 @@ class Trainer:
                     ents.append(span)
             doc.ents = ents
             doc_bin.add(doc)
-        data_uri = f'{self._OUT_DIR}/train.spacy'
+        # TODO: remove underscore when dev data is available
+        data_uri = f'{self._OUT_DIR}/_train.spacy'  
         log.info(f'Now saving training file to disk at {data_uri}')
         doc_bin.to_disk(data_uri)
 
@@ -48,7 +48,7 @@ class Trainer:
                 '/app/train/config.cfg',                    # config file 
                 '--output', '/app/models',                  # output dir
                 '--paths.train', '/app/train/train.spacy',  # training data
-                '--paths.dev', '/app/train/train.spacy'     # validation data
+                '--paths.dev', '/app/train/dev.spacy'       # validation data
         ]
         res = run(cmd, stderr=STDOUT)
         log.info('training has completed: ', '\n', res)

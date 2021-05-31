@@ -8,6 +8,7 @@ import asyncio
 from functools import partial
 import logging
 import os
+from shutil import copytree
 import signal
 from app.broker import Broker
 from tha_config import Config
@@ -20,13 +21,16 @@ from app.trainer import Trainer
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
 
+BASE_MODEL_DIR = '/app/base-models'
+MODEL_DIR = '/app/models'
+TRAIN_DIR = '/app/train'
 
 class NLPService:
 
     def __init__(self):
         self.config = Config()
-        self.config.TRAIN_DIR = '/app/train'    # directory for database to find training data
-        self.config.OUT_DIR = '/app/models'     # directory for processor to find spaCy model
+        self.config.TRAIN_DIR = TRAIN_DIR    # directory for database to find training data
+        self.config.OUT_DIR = MODEL_DIR     # directory for processor to find spaCy model
         self.config.DB_URI = 'sqlite+pysqlite:///:memory:'   # for now always use in memory db
         # setup communication with the rest of teh application
         self.broker = Broker(
@@ -97,14 +101,11 @@ class NLPService:
     def ensure_model(self):
         """Checks that a model is available for the spaCy service, and builds
         one in case it is missing."""
-        if not any(file.name == 'model-best' for file in os.scandir('/app/models')):
-            log.info('No models were found. Building one now.')
-            self.train()
+        if not any(file.name == 'model-best' for file in os.scandir(MODEL_DIR)):
+            log.info('No models were found. Installing the base model now.')
+            copytree(BASE_MODEL_DIR, MODEL_DIR, dirs_exist_ok=True)
         else:
             log.info('Found existing model -- using model-best')
-            # reload the spaCy model
-            self.processor = Processor(load_model=True)
-
 
     def train(self):
         """Builds a new training file based on the latest data, and then 
@@ -113,10 +114,10 @@ class NLPService:
         log.info('Starting model training. This could take a little while..')
         trainer = Trainer(self.config, self.db)
         trainer.build_training_file()
-        log.info('Built training file. Now training model.')
+        log.info('Built training file, ready to train model.')
         trainer.train()
-        log.info('Finished training model, loading it now.')
-
+        log.info('Loading newly trained NLP model now.')
+        self.processor = Processor(load_model=True)
 
 
 if __name__ == "__main__":
