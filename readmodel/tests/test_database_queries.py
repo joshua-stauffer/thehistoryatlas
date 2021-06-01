@@ -294,3 +294,39 @@ def test_tag_instances(db_tuple):
             ).scalars()
         count = [1 for _ in res]
         assert len(count) == 300
+
+def test_get_entity_summary_by_guid_batch_returns_empty(db_tuple):
+    db, db_dict = db_tuple
+    res = db.get_entity_summary_by_guid_batch([])
+    assert isinstance(res, list)
+    assert len(res) == 0
+
+def test_get_entity_summary_by_guid_batch(db_tuple):
+    db, db_dict = db_tuple
+    time_guids = db_dict['time_guids'][:10]
+    place_guids = db_dict['place_guids'][:10]
+    person_guids = db_dict['person_guids'][:10]
+    combined_guids = [*time_guids, *place_guids, *person_guids]
+    assert len(combined_guids) == 30
+    res = db.get_entity_summary_by_guid_batch(combined_guids)
+    assert isinstance(res, list)
+    assert len(res) == 30
+    for summary in res:
+        assert isinstance(summary, dict)
+        guid = summary['guid']
+        assert isinstance(guid, str)
+        if summary['type'] == 'TIME':
+            assert guid in time_guids
+        elif summary['type'] == 'PLACE':
+            assert guid in place_guids
+        elif summary['type'] == 'PERSON':
+            assert guid in person_guids
+        else:
+            assert False # Summary type had an unexpected value
+        assert summary['citation_count'] > 0
+        assert isinstance(summary['names'], list)
+        for name in summary['names']:
+            assert isinstance(name, str)
+        assert isinstance(summary['first_citation_date'], str)
+        assert isinstance(summary['last_citation_date'], str)
+        assert summary['first_citation_date'] <= summary['last_citation_date']

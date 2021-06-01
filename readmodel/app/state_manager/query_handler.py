@@ -68,10 +68,12 @@ class QueryHandler:
         """Fetch a list of guids associated with a given name"""
         name = query['payload']['name']
         res = self._db.get_guids_by_name(name)
+        entity_summaries = self._db.get_entity_summary_by_guid_batch(res)
         return {
             'type': 'GUIDS_BY_NAME',
             'payload': {
-                'guids': res
+                'guids': res,
+                'summaries': entity_summaries
             }
         }
 

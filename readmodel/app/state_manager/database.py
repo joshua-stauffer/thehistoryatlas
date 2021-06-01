@@ -18,6 +18,7 @@ from .schema import Person
 from .schema import Place
 from .schema import TagInstance
 from .schema import Time
+from .schema import Tag
 
 
 log = logging.getLogger(__name__)
@@ -111,6 +112,48 @@ class Database:
             if not res:
                 return list()
             return res.guids
+
+    def get_entity_summary_by_guid_batch(self,
+        guids: list[str]
+        ) -> list[dict]:
+        """Given a list of guids, find their type, name/alt names,
+        first and last citation dates, and citation count, and returns
+        a dict of the data keyed by guid."""
+        res = list()
+        with Session(self._engine, future=True) as session:
+            for guid in guids:  
+                entity = session.execute(
+                    select(Tag).where(Tag.guid==guid)
+                ).scalar_one_or_none()
+                if not entity:
+                    log.debug(f'Could not find entity {guid}')
+                    continue
+                # find names / account for TIME only having a single name
+                if entity.type == 'TIME':
+                    # TODO: when time is updated to allow for a range of two,
+                    #       they ought to be treated the same as below
+                    name_list = [entity.name]
+                else:
+                    name_list = self.split_names(entity.names)
+                # get min/max of date range
+                min_time = entity.tag_instances[0].citation.time_tag
+                max_time = entity.tag_instances[0].citation.time_tag
+                for tag in entity.tag_instances:
+                    time = tag.citation.time_tag
+                    if time < min_time:
+                        min_time = time
+                    if time > max_time:
+                        max_time = time
+
+                res.append({
+                    'type': entity.type,
+                    'guid': guid,
+                    'citation_count': len(entity.tag_instances),
+                    'names': name_list,
+                    'first_citation_date': min_time,
+                    'last_citation_date': max_time
+                })
+        return res
 
     # MUTATIONS
 

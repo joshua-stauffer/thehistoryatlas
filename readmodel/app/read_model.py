@@ -4,8 +4,6 @@ May 3rd, 2021
 """
 
 import asyncio
-import os
-import json
 import logging
 import signal
 from broker import Broker

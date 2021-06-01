@@ -222,3 +222,4 @@ def test_get_guids_by_name(handle_query, db_tuple):
     assert res['type'] == 'GUIDS_BY_NAME'
     assert isinstance(res['payload'], dict)
     assert isinstance(res['payload']['guids'], list)
+    assert isinstance(res['payload']['summaries'], list)
