@@ -16,7 +16,7 @@ exports.typeDefs = gql `
 
     GetGUIDsByName(
       name: String!
-    ): GUIDs!
+    ): GUIDSummaries!
 
     GetCoordinatesByName(
       name: String!
@@ -53,8 +53,18 @@ exports.typeDefs = gql `
     citation_guids: [String]
   }
 
-  type GUIDs {
+  type GUIDSummaries {
     guids: [String]
+    summaries: [GUIDSummary]
+  }
+
+  type GUIDSummary {
+    type: String
+    guid: String
+    citation_count: Int
+    names: [String]
+    first_citation_date: String
+    last_citation_date: String
   }
 
   type Tag {
