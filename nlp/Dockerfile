@@ -1,4 +1,11 @@
-FROM ilriccio/thehistoryatlas:ner
+FROM ilriccio/thehistoryatlas:ner_base
+COPY /app /app
+
+FROM conda/miniconda3
+RUN conda install -c conda-forge spacy spacy-model-en_core_web_lg
+COPY --from=0 /app/base-models /app/base-models
+COPY --from=0 /app/train /app/train
+
 WORKDIR /app
 # get local python packages
 COPY --from=pylib /lib /lib
@@ -16,5 +23,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=nlp
-# CMD ["python3", "/app/app/test_script.py"]
 CMD ["python3", "-m", "app.nlp"]

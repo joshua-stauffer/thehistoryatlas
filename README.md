@@ -38,11 +38,8 @@ The RabbitMQ admin console is available at [localhost:15672](http://localhost:15
 - password: guest
 The GraphQL API is available at [localhost:4000](http://localhost:4000).
 
-### Extra considerations for the Geo service
+### First Time Build Considerations
 On the first build, the Geo service will build its database, which involves pulling in data from geonames.org and building a graph database structure locally. The source for this build can be adjusted in the docker compose file under the Geo service. The default source is cities15000.zip, which will take ~10-15 minutes to fully build. The alternate source (cities500.zip) will be used in production, but takes ~3.5 hours to build, so use at your own risk.
-
-### Extra considerations for the Natural Language Processing service
-On the first build, the NLP service will need to build a model from the included training data. This will take a long time due to the limited resources allocated by default to a docker instance: on my machine ~24 hours. See the [NLP docs](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/nlp#building-the-model) for more details and workarounds.
 
 ### Tests
 Tests can be run with the ```bash test.sh``` command.
