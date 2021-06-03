@@ -94,7 +94,7 @@ class Resolver:
             coord_map = response['payload']['coords']
             self._add_coords(coord_map)
             self._geo_complete = True
-        elif resp_type == 'GUIDS_BY_NAME_BATCH':
+        elif resp_type == 'GUIDS_BY_NAME_BATCH': 
             if self._rm_complete == True:
                 return  # this query has already been resolved
             name_map = response['payload']['names']

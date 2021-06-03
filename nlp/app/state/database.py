@@ -91,7 +91,7 @@ class Database:
         """Process an emitted event and save it to the database"""
         # this isn't as strict witih messages being lost/out of order, but
         # shouldn't be a huge deal for this particular use case.
-        id = event.get('id')
+        id = event.get('event_id')
         if id > self.last_event_id:
-            self.last_event_id = event.get('id')
+            self.last_event_id = id
         
