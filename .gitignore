@@ -40,4 +40,4 @@ yarn-debug.log*
 yarn-error.log*
 
 # builder
-builder/data/fake/*.json
+/builder/data/fake
