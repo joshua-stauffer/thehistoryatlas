@@ -3,17 +3,22 @@ names generated with listofrandomnames.com
 places generated from geonames.org
 text generated from loremipsum.io
 """
+
+from collections import defaultdict
 from collections import deque
 import json
 import os
+from pathlib import Path
 import random
 import string
+import datetime
 from uuid import uuid4
 
-# OUT_DIR = input('\n\nPlease enter the complete path of the output directory:\n')
-# if not os.path.isdir(OUT_DIR):
-#    raise Exception(f'Provided path {OUT_DIR} is not a directory.')
-OUT_DIR = '/Users/jds/dev/history-atlas/builder/data/fake/'
+cwd = os.getcwd()
+
+OUT_DIR = cwd + '/builder/data/fake/'
+OUT_FILENAME = OUT_DIR + 'generated_events.json'
+REPORT_FILENAME = OUT_DIR + 'generated_events_summary.txt'
 RANDOM_SEED = 'the history atlas of the future'
 MIN_YEAR = 2915
 MAX_YEAR = 3315
@@ -37,10 +42,7 @@ PLACE_1_THRESHOLD = 0.85
 PLACE_2_THRESHOLD = 1
 TIME_1_THRESHOLD = 0.85
 
-# DATA_SRC_DIR = input('\n\nPlease enter the complete path of the data source directory:\nDirectory should contain:\n\tpeople.txt\n\tcities.json\n\twords.txt')
-# if not os.path.isdir(DATA_SRC_DIR):
-#    raise Exception(f'Provided path {DATA_SRC_DIR} is not a directory.')
-DATA_SRC_DIR = '/Users/jds/dev/history-atlas/builder/src_data/'
+DATA_SRC_DIR = cwd + '/builder/src_data/'
 PEOPLE_PATH = DATA_SRC_DIR + 'people.txt'
 PLACES_PATH = DATA_SRC_DIR + 'cities.json'
 WORDS_PATH = DATA_SRC_DIR + 'words.txt'
@@ -95,18 +97,46 @@ def build():
                      for _ in range(time_count)]
         cur_places = random.sample(places, place_count)
         text = texts[random.randint(0, len(texts)-1)]
+        entities = [*cur_people, *cur_places, *cur_times]
         citation = generate_citation(
-            people=cur_people,
-            places=cur_places,
-            times=cur_times,
+            entities=entities,
             text=text)
         summary = generate_summary(
-            people=cur_people,
-            places=cur_places,
-            times=cur_times)
-        entities = [*cur_people, *cur_places, *cur_times]
-        tags = [generate_tag(entity) for entity in entities]
+            entities=entities,
+            text=text)
+        tags = [generate_tag(entity, citation) for entity in entities]
+        meta = generate_meta()
+        events.append({
+            'text': citation,
+            'summary': summary,
+            'tags': tags,
+            'meta': meta
+        })
+    
+    # write the resulting events to file
 
+    with open(OUT_FILENAME, 'w') as f:
+        json.dump(events, f)
+
+    # calculate stats on generated data
+    total_counter = defaultdict(set)
+    for event in events:
+        tags = event.get('tags')
+        for tag in tags:
+            total_counter[tag['type']].add(tag['guid'])
+    totals = dict()
+    totals['Event Count'] = len(events)
+    totals['People Count'] = len(total_counter.get('PERSON'))
+    totals['Places Count'] = len(total_counter.get('PLACE'))
+    totals['Times Count'] = len(total_counter.get('TIME'))
+    print('_' * 79)
+    print('Generated new events file. Totals:')
+    print(f'Events: {totals.get("Event Count"):>30}')
+    print(f'People: {totals.get("People Count"):>30}')
+    print(f'Places: {totals.get("Places Count"):>30}')
+    print(f'Times:  {totals.get("Times Count"):>30}')
+    print('_' * 79)
+    write_report(totals)
 
 # functions to create or obtain things
 
@@ -129,19 +159,27 @@ def generate_time(start: int, end: int) -> str:
         return f'{year}|{season}|{month}|{day}'
 
 def generate_citation(entities: list, text: str) -> str:
+    """Creates a fake citation with entity names embedded."""
+
+    entity_names = get_names_from_entities(entities)
     tmp_text = text.split(' ')
-    for entity in entities:
+    for entity in entity_names:
         tmp_text.insert(random.randint(0, len(tmp_text)), entity)
-    return tmp_text.join(' ')
+    return ' '.join(tmp_text)
 
 def generate_summary(entities: list, text: str) -> str:
+    """Creates a fake summary with entity names embedded"""
+
+    entity_names = get_names_from_entities(entities)
     extra_word_count = random.randint(1, 10)
     tmp_text = random.sample(text, extra_word_count)
-    for entity in entities:
-        tmp_text.insert(random.randint(0, len(tmp_text)), entity)
-    return tmp_text.join(' ')   
+    for name in entity_names:
+        tmp_text.insert(random.randint(0, len(tmp_text)), name)
+    return ' '.join(tmp_text)  
 
 def generate_tag(entity, text: str) -> dict:
+    """Creates a tag instance based on an entity's location in the text."""
+
     tag = dict()
     if isinstance(entity, Person):
         type = 'PERSON'
@@ -170,6 +208,7 @@ def generate_tag(entity, text: str) -> dict:
 
 def generate_meta() -> dict:
     """Returns a meta data dict with fields of random characters"""
+
     meta = dict()
     meta['author'] = ' '.join(get_random_string() for _ in range(2))
     meta['publisher'] = get_random_string()
@@ -177,7 +216,9 @@ def generate_meta() -> dict:
     meta['guid'] = str(uuid4())
     return meta
 
-def get_random_string(capitalize=False) -> dict:
+def get_random_string(capitalize=False) -> str:
+    """Returns a random 'word' of ascii letters."""
+
     length = random.randint(1, 10)
     word = [random.choice(string.ascii_lowercase) for _ in range(length)]
     if capitalize:
@@ -246,6 +287,17 @@ def get_people(
         end_year = cur_person.death_year
     return verified_people, start_year, end_year
 
+def get_names_from_entities(entities: list) -> list:
+    entity_names = list()
+    for entity in entities:
+        if isinstance(entity, Person):
+            entity_names.append(entity.name)
+        elif isinstance(entity, dict):
+            entity_names.append(entity['name'])
+        else:
+            entity_names.append(entity)
+    return entity_names
+
 # file utilities
 
 def load_people():
@@ -267,6 +319,17 @@ def load_texts():
             if len(line.strip()):
                 texts.append(line.strip())
     return texts
+
+def write_report(report: dict) -> None:
+
+    with open(REPORT_FILENAME, 'w') as f:
+        f.write('The History Atlas\n\n')
+        f.write(f'Summary of mock data generated on {datetime.datetime.utcnow()}\n\n')
+        f.write('_' * 79)
+        f.write('\n')
+        for k, v in report.items():
+            f.write(f'{k:>35}:{v:>44}\n')
+        f.write('_' * 79)
 
 
 if __name__ == '__main__':

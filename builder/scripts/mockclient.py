@@ -2,12 +2,22 @@ import json
 import os
 import requests
 
+cwd = os.getcwd()
+fake_data_dir = cwd + '/builder/data/fake'
+real_data_dir = cwd + '/builder/data/real'
+
 API_URL = 'http://localhost:4000/'
 src_dir = input(f"""
 
 Welcome to the MockClient utility script!
 This script will load any json files in a given source directory, and publish
 their data to the graphql server running at {API_URL}.
+
+To fill the database with around ~200,000 fake events, use:
+    {fake_data_dir}
+
+To fill the database with a (limited) amount of real data, use:
+    {real_data_dir}
 
 Please enter the full path of your source directory:
 """)
