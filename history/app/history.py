@@ -8,6 +8,7 @@ for rebuilding or replaying history.
 import asyncio
 import logging
 import signal
+import random
 from database import Database
 from broker import Broker
 from history_config import HistoryConfig
@@ -51,6 +52,13 @@ class HistoryPlayer:
         """Manages the generator from a coroutine."""
 
         for event in gen:
+            # adding a sleep in this coroutine helps to balance out requests
+            # when multiple services are simultaneously requesting replays.
+            if random.random() < 0.01:
+                await asyncio.sleep(0.0001)
+                # add a bit of chaos -- randomly fail
+                #log.info(f'Randomly killing this request on event {event.get("event_id")}!')
+                # return close_func()
             await send_func(event)
         # inform recipient that the stream is over
         await send_func({
