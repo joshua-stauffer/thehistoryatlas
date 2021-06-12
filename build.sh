@@ -4,7 +4,8 @@
 # and installs a virtual environment for running scripts and tests.
 python3 -m venv test_env
 source test_env/bin/activate
-pip install --upgrade pip requests sqlalchemy pytest pytest-asyncio
+pip install --upgrade pip
+pip install -r test_requirements.txt
 docker build -t pylib ./pylib
 docker build -t testlib ./testlib
 docker-compose build

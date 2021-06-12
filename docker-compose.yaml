@@ -7,8 +7,8 @@ services:
         ports:
             - "5672:5672"
             - "15672:15672"
-        volumes: 
-            - broker:/var/lib/rabbitmq
+        # volumes: 
+        #    - broker:/var/lib/rabbitmq
     api:
         depends_on:
             - broker
@@ -30,6 +30,8 @@ services:
                 test: "True"
         networks:
             - tha-connect
+        volumes:
+            - readmodel:/data/db
     writemodel:
         depends_on:
             - broker
@@ -41,6 +43,8 @@ services:
                 test: "True"
         networks:
             - tha-connect
+        volumes:
+            - writemodel:/data/db
     eventstore:
         depends_on:
             - broker
@@ -92,9 +96,11 @@ services:
         volumes:
             - geodb:/etc/db
 volumes:
-    broker:
+    # broker:
     teststore:
     models:
     geodb:
+    readmodel:
+    writemodel:
 networks:
     tha-connect:
