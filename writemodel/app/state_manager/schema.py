@@ -33,7 +33,7 @@ class GUID(Base):
     type = Column(String(32))       # person? place? citation? meta?
 
     def __repr__(self):
-        return f"GUID( value: {self.value}, type: {self.type})"
+        return f"GUID( type: {self.type}, value: {self.value})"
 
 class History(Base):
 

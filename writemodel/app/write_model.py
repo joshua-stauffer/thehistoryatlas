@@ -39,13 +39,12 @@ class WriteModel:
             self.handle_event,
             self.manager.db.check_database_init)
         last_event_id = self.manager.db.check_database_init()
-        log.info(f'Last event id was {last_event_id}, but requesting a full ' + \
-                  'replay anyways since database is currently in memory')
+        log.info(f'Last event id was {last_event_id}')
 
         try:
             await self.broker.start(
                 is_initialized=False,
-                replay_from=0)
+                replay_from=last_event_id)
         except Exception as e:
             log.critical(f'WriteModel caught unknown exception {e} and is ' + \
                           'shutting down without restart.')

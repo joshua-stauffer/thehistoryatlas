@@ -79,7 +79,7 @@ class EventHandler:
         logging.info(f'Successfully persisted new citation hash for GUID {GUID}.')
 
         # persist the guid
-        self._db.add_guid('CITATION', GUID)
+        self._db.add_guid(value=GUID, type='CITATION')
         logging.info(f'Successfully persisted CITATION with GUID {GUID} to database.')
 
         # update our record of the latest handled event
@@ -90,25 +90,25 @@ class EventHandler:
         """a metadata instance has been entered"""
 
         GUID = body['payload']['meta_guid']
-        self._db.add_guid('META', GUID)
+        self._db.add_guid(value=GUID, type='META')
 
-    def _handle_person_added(self, body):
+    def _handle_person_added(self, body):   
         """a new person instance has been created"""
 
         GUID = body['payload']['person_guid']
-        self._db.add_guid('PERSON', GUID)
+        self._db.add_guid(value=GUID, type='PERSON')
 
     def _handle_place_added(self, body):
         """a new place instance has been created"""
 
         GUID = body['payload']['place_guid']
-        self._db.add_guid('PLACE', GUID)
+        self._db.add_guid(value=GUID, type='PLACE')
 
     def _handle_time_added(self, body):
         """a new time instance has been created"""
 
         GUID = body['payload']['time_guid']
-        self._db.add_guid('TIME', GUID)
+        self._db.add_guid(value=GUID, type='TIME')
 
     def _handle_person_tagged(self, body):
         """an existing person has been tagged"""

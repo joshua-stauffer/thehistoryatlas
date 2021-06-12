@@ -80,11 +80,13 @@ class Database:
         """Adds a value from an emitted event to the short term memory"""
         self.__short_term_memory[key] = value
         asyncio.create_task(self.__rm_from_stm(key))
+        log.debug(f'Added key {key} to short term memory')
         return
     
     async def __rm_from_stm(self, key):
         """internal method to clean up stale values from the stm"""
         await asyncio.sleep(self.__stm_timeout)
+        log.debug(f'Removing key {key} from short term memory.')
         del self.__short_term_memory[key]
 
     # HISTORY MANAGEMENT

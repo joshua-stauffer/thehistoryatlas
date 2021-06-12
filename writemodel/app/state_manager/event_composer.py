@@ -21,7 +21,7 @@ class EventComposer:
             'user': user,
             'timestamp': timestamp
         }
-        log.debug(f'Created new logger for transaction {transaction_guid} by user {user}')
+        log.debug(f'Created new EventComposer for transaction {transaction_guid} by user {user}')
         
     @property
     def events(self):
