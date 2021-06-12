@@ -21,4 +21,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=eventstore
-CMD ["python3", "app/event_store.py"]
+CMD ["python3", "-m", "app.event_store"]

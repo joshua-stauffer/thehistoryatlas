@@ -8,8 +8,8 @@ import json
 import logging
 import os
 import signal
-from database import Database
-from broker import Broker
+from app.database import Database
+from app.broker import Broker
 from tha_config import Config
 
 logging.basicConfig(level='DEBUG')
