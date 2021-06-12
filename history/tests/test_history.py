@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event
 from app.history import HistoryPlayer
+from tha_config import Config
 
 
 @pytest.fixture
@@ -21,8 +22,18 @@ def event():
         })
     }
 
+class MockConfig(Config):
+    """minimal class for setting up an in memory db for this test"""
+    def __init__(self):
+        super().__init__()
+        self.DB_URI = 'sqlite+pysqlite:///:memory:'
+        self.DEBUG = False # outputs all activity
+
 @pytest.fixture
-def empty_history():
+def empty_history(mocker):
+    # Mock the HistoryConfig object in the location it's being called from,
+    # i.e. in the history module, not in the history_config module.
+    mocker.patch('app.history.HistoryConfig', new=MockConfig)
     return HistoryPlayer()
 
 @pytest.fixture
@@ -39,7 +50,9 @@ def mock_send_tuple():
     queue = list()
     async def send_func(message):
         queue.append(message)
-    return send_func, queue
+    def close_func():
+        return
+    return send_func, close_func, queue
 
 def test_history_exists(empty_history):
     assert empty_history != None
@@ -72,29 +85,29 @@ def test_parse_msg_with_int(history):
 
 @pytest.mark.asyncio
 async def test_handle_request(history, mock_send_tuple):
-    send_func, queue = mock_send_tuple
+    send_func, close_func, queue = mock_send_tuple
     await history.handle_request({
         'type': 'REQUEST_HISTORY_REPLAY',
         'payload': {
             'last_event_id': 0
         }
-    }, send_func)
+    }, send_func, close_func)
     assert len(queue) == 1001
     assert queue[-1]['type'] == 'HISTORY_REPLAY_END'
     msg_id = 1
     for msg in queue[:-1]:
-        assert json.loads(msg)['event_id'] == msg_id
+        assert msg['event_id'] == msg_id
         msg_id += 1
     
 @pytest.mark.asyncio
 async def test_handle_request_from_halfway(history, mock_send_tuple):
-    send_func, queue = mock_send_tuple
+    send_func, close_func, queue = mock_send_tuple
     await history.handle_request({
         'type': 'REQUEST_HISTORY_REPLAY',
         'payload': {
             'last_event_id': 500
         }
-    }, send_func)
+    }, send_func, close_func)
     assert len(queue) == 501
     assert queue[-1]['type'] == 'HISTORY_REPLAY_END'
     

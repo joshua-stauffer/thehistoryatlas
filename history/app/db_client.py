@@ -1,9 +1,8 @@
-from history import HistoryPlayer
+from app.history import HistoryPlayer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event
-
-enjoy = "Yay!"
+from event_schema.EventSchema import Base
 
 if __name__ == '__main__':
     store = HistoryPlayer()
@@ -14,5 +13,6 @@ if __name__ == '__main__':
     print('The following objects are available in the local namespace:')
     for obj in ('store: HistoryPlayer()', 'db: Database()', 'engine: Database._engine()', 'Event','select', 'Session'):
         print(obj)
-    print('\nEnjoy !\n')
+    session = Session(engine, future=True)
+    print('\nA database connection is available as session\n')
     print('.' * 79)

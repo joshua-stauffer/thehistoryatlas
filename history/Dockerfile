@@ -21,4 +21,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=history
-CMD ["python3", "app/history.py"]
+CMD ["python3", "-m", "app.history"]

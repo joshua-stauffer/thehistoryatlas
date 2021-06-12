@@ -9,9 +9,9 @@ import asyncio
 import logging
 import signal
 import random
-from database import Database
-from broker import Broker
-from history_config import HistoryConfig
+from app.database import Database
+from app.broker import Broker
+from app.history_config import HistoryConfig
 
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class HistoryPlayer:
             # adding a sleep in this coroutine helps to balance out requests
             # when multiple services are simultaneously requesting replays.
             if random.random() < 0.01:
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(0.001)
                 # add a bit of chaos -- randomly fail
                 #log.info(f'Randomly killing this request on event {event.get("event_id")}!')
                 # return close_func()

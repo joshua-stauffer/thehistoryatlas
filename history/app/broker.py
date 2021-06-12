@@ -6,7 +6,7 @@ April 27th, 2021"""
 from collections import namedtuple
 import logging
 from pybroker import BrokerBase
-from broker_errors import MissingReplyFieldError
+from pybroker import MissingReplyFieldError
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')

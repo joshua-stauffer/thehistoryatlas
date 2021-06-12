@@ -63,10 +63,10 @@ def test_get_events_from_halfway(db):
         c += 1
     assert c == 500
 
-def test_get_events_returns_json_string(db):
+def test_get_events_returns_dict(db):
     gen = db.get_event_generator(999)
     for e in gen:
-        e = json.loads(e)
+        assert isinstance(e, dict)
         e['event_id']
         e['type']
         e['transaction_guid']
