@@ -1,4 +1,4 @@
-
+import os
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -20,7 +20,8 @@ def config():
 
 @pytest.fixture
 def db(config):
-    config.TRAIN_DIR = "/Users/jds/dev/history-atlas/nlp/train"
+    root = os.getcwd()
+    config.TRAIN_DIR = root + '/tests/test_train_dir'
     config.debug = True
     db = Database(config)
     return db
@@ -32,6 +33,7 @@ def test_is_db_empty(db):
     assert db._db_is_empty() == False
 
 def test_db_content(db):
+    db._fill_db()
     with Session(db._engine, future=True) as session:
         annotated_citations = session.execute(
             select(AnnotatedCitation)).scalars()
