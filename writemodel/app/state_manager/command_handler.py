@@ -156,6 +156,7 @@ class CommandHandler:
                 
                 # make a tag of the correct type
                 if t_type == 'PERSON':
+                    log.debug(f'Tagging person {tag["name"]} of GUID {t_guid}')
                     composer.make_PERSON_TAGGED(
                         citation_guid=citation_guid,
                         person_guid=t_guid,
@@ -163,6 +164,7 @@ class CommandHandler:
                         citation_start=tag['start_char'],
                         citation_end=tag['stop_char'])
                 elif t_type == 'PLACE':
+                    log.debug(f'Tagging place {tag["name"]} of GUID {t_guid}')
                     composer.make_PLACE_TAGGED(
                         citation_guid=citation_guid,
                         place_guid=t_guid,
@@ -170,12 +172,15 @@ class CommandHandler:
                         citation_start=tag['start_char'],
                         citation_end=tag['stop_char'])
                 elif t_type == 'TIME':
+                    log.debug(f'Tagging time {tag["name"]} of GUID {t_guid}')
                     composer.make_TIME_TAGGED(
                         citation_guid=citation_guid,
                         time_guid=t_guid,
                         time_name=tag['name'],
                         citation_start=tag['start_char'],
-                        citation_end=tag['stop_char'])                            
+                        citation_end=tag['stop_char'])       
+                else:
+                    raise Exception(f'Tag of unknown type {t_type} received - in tagged')
                
             # now we know our GUID is unique, so we need to construct a new tag
             else:
@@ -185,6 +190,7 @@ class CommandHandler:
 
                 # make a tag of the correct type
                 if t_type == 'PERSON':
+                    log.debug(f'Adding person {tag["name"]} of GUID {t_guid}')
                     composer.make_PERSON_ADDED(
                         citation_guid=citation_guid,
                         person_guid=t_guid,
@@ -192,6 +198,7 @@ class CommandHandler:
                         citation_start=tag['start_char'],
                         citation_end=tag['stop_char'])
                 elif t_type == 'PLACE':
+                    log.debug(f'Adding place {tag["name"]} of GUID {t_guid}')
                     composer.make_PLACE_ADDED(
                         citation_guid=citation_guid,
                         place_guid=t_guid,
@@ -201,12 +208,15 @@ class CommandHandler:
                         latitude=tag['latitude'],
                         longitude=tag['longitude'])
                 elif t_type == 'TIME':
+                    log.debug(f'Adding time {tag["name"]} of GUID {t_guid}')
                     composer.make_TIME_ADDED(
                         citation_guid=citation_guid,
                         time_guid=t_guid,
                         time_name=tag['name'],
                         citation_start=tag['start_char'],
-                        citation_end=tag['stop_char'])                            
+                        citation_end=tag['stop_char'])
+                else:
+                    raise Exception(f'Tag of unknown type {t_type} received - in added') 
   
             log.debug(f'Successfully validated tag {tag}')
             tag_guids.append(t_guid)

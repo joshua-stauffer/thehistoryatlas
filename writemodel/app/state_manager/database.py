@@ -57,7 +57,7 @@ class Database:
         """Looks for guid and returns type if found"""
 
         if tmp_type := self.__short_term_memory.get(guid_to_test):
-            log.info('Matched a GUID in short term memory')
+            log.info(f'Matched GUID {guid_to_test} to type {tmp_type} in STM')
             return tmp_type
 
         with Session(self._engine, future=True) as sess:
@@ -68,13 +68,18 @@ class Database:
             if result:
                 return result.type
             else:
+                log.debug(f'Found no existing result for GUID {guid_to_test}')
                 return None
 
     def add_guid(self, value, type):
         """Adds a new record to the GUID lookup table"""
         record = GUID(value=value, type=type)
-        with Session(self._engine, future=True) as sess, sess.begin():
-            sess.add(record)
+        with Session(self._engine, future=True) as session:
+            res = session.execute(select(GUID).where(GUID.value==value)).scalar_one_or_none()
+            if res:
+                raise Exception(f'Caught duplicate row for type {type} guid {value}')
+            session.add(record)
+            session.commit()
 
     def add_to_stm(self, key, value):
         """Adds a value from an emitted event to the short term memory"""
