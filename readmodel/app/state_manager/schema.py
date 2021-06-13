@@ -89,7 +89,7 @@ class Person(Tag):
     }
 
     def __repr__(self):
-        return f'PersonTag(id: {self.id}, names: {self.name})'
+        return f'PersonTag(id: {self.id}, names: {self.names})'
 
 class Place(Tag):
 
@@ -106,7 +106,7 @@ class Place(Tag):
     }
 
     def __repr__(self):
-        return f'PlaceTag(id: {self.id}, names: {self.name})'
+        return f'PlaceTag(id: {self.id}, names: {self.names})'
 
 class Name(Base):
 

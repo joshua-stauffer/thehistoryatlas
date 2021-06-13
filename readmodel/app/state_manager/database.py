@@ -164,6 +164,7 @@ class Database:
         ) -> None:
         """Initializes a new citation in the database.
         Temporarily caches the new citation id for following operations."""
+        log.info(f'Creating a new citation: {text[:50]}...')
         c = Citation(
                 guid=citation_guid,
                 text=text)
@@ -190,10 +191,12 @@ class Database:
         with Session(self._engine, future=True) as session:
             # resolve person
             if is_new:
+                log.info(f'Creating a new person: {person_name}')
                 person = Person(
                     guid=person_guid,
                     names=person_name)
             else:
+                log.info(f'Tagging an existing person: {person_name}')
                 person = session.execute(
                     select(Person).where(Person.guid == person_guid)
                 ).scalar_one()

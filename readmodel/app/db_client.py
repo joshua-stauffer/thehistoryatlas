@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from tha_config import Config
 from app.state_manager.manager import Manager
+from app.state_manager.schema import Base
 from app.state_manager.schema import Citation
 from app.state_manager.schema import TagInstance
 from app.state_manager.schema import Tag
@@ -23,9 +24,10 @@ if __name__ == '__main__':
     print('The following objects are available in the local namespace:')
     for obj in ('manager: Manager()', 'db: Database()', 'engine: Database._engine()',
                 'Citation', 'TagInstance', 'Tag', 'Time', 'Person', 'Place',
-                'Name', 'History',
+                'Name', 'History', 'Base',
                 'select', 'Session'
                 ):
         print(obj)
-    print('\nenjoy!\n')
+    session = Session(engine, future=True)
+    print('\nAn active database connection is available as session\n')
     print('.' * 79)
