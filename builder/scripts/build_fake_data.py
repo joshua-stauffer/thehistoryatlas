@@ -21,11 +21,14 @@ OUT_FILENAME = OUT_DIR + 'generated_events.json'
 REPORT_FILENAME = OUT_DIR + 'generated_events_summary.txt'
 RANDOM_SEED = 'the history atlas of the future'
 MIN_YEAR = 2915
-MAX_YEAR = 3315
+MAX_YEAR = 3115
 MIN_LONGEVITY = 19
 MAX_LONGEVITY = 102
 MIN_EVENTS = 1
-MAX_EVENTS = 500
+MAX_EVENTS = 50
+
+# max number of people
+MAX_PEOPLE = 500
 
 # date constants
 # randomly generated numbers less than this will result in a date of that specificity.
@@ -46,8 +49,6 @@ DATA_SRC_DIR = cwd + '/builder/src_data/'
 PEOPLE_PATH = DATA_SRC_DIR + 'people.txt'
 PLACES_PATH = DATA_SRC_DIR + 'cities.json'
 WORDS_PATH = DATA_SRC_DIR + 'words.txt'
-
-MAX_LOOPS = 1000
 
 random.seed(a=RANDOM_SEED)
 
@@ -123,7 +124,7 @@ def build():
     for event in events:
         tags = event.get('tags')
         for tag in tags:
-            total_counter[tag['type']].add(tag['guid'])
+            total_counter[tag['type']].add(tag['GUID'])
     totals = dict()
     totals['Event Count'] = len(events)
     totals['People Count'] = len(total_counter.get('PERSON'))
@@ -170,12 +171,14 @@ def generate_citation(entities: list, text: str) -> str:
 def generate_summary(entities: list, text: str) -> str:
     """Creates a fake summary with entity names embedded"""
 
+    filtered_text = [word for word in text.split(' ') if len(word) > 1]
     entity_names = get_names_from_entities(entities)
     extra_word_count = random.randint(1, 10)
-    tmp_text = random.sample(text, extra_word_count)
+    tmp_text = random.sample(filtered_text, extra_word_count)
+
     for name in entity_names:
         tmp_text.insert(random.randint(0, len(tmp_text)), name)
-    return ' '.join(tmp_text)  
+    return ' '.join(tmp_text)
 
 def generate_tag(entity, text: str) -> dict:
     """Creates a tag instance based on an entity's location in the text."""
@@ -203,17 +206,17 @@ def generate_tag(entity, text: str) -> dict:
     tag['type'] = type
     tag['start_char'] = start_char
     tag['stop_char'] = stop_char
-    tag['guid'] = get_guid(name)
+    tag['GUID'] = get_guid(name)
     return tag
 
 def generate_meta() -> dict:
     """Returns a meta data dict with fields of random characters"""
 
     meta = dict()
-    meta['author'] = ' '.join(get_random_string() for _ in range(2))
-    meta['publisher'] = get_random_string()
-    meta['title'] = ' '.join(get_random_string() for _ in range(random.randint(1, 5)))
-    meta['guid'] = str(uuid4())
+    meta['author'] = ' '.join(get_random_string(capitalize=True) for _ in range(2))
+    meta['publisher'] = get_random_string(capitalize=True)
+    meta['title'] = ' '.join(get_random_string(capitalize=False) for _ in range(random.randint(1, 5)))
+    meta['GUID'] = str(uuid4())
     return meta
 
 def get_random_string(capitalize=False) -> str:
@@ -301,11 +304,11 @@ def get_names_from_entities(entities: list) -> list:
 # file utilities
 
 def load_people():
-    people = list()
+    people = set()
     with open(PEOPLE_PATH, 'r') as f:
         for name in f.readlines():
-            people.append(Person(name.strip()))
-    return people
+            people.add(Person(name.strip()))
+    return list(people)[:MAX_PEOPLE]
 
 def load_places():
     with open(PLACES_PATH, 'r') as f:
@@ -328,7 +331,7 @@ def write_report(report: dict) -> None:
         f.write('_' * 79)
         f.write('\n')
         for k, v in report.items():
-            f.write(f'{k:>35}:{v:>44}\n')
+            f.write(f'{k:>10}:{v:>44}\n')
         f.write('_' * 79)
 
 
