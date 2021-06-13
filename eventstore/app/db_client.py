@@ -2,7 +2,7 @@ from app.event_store import EventStore
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event
-
+from event_schema.EventSchema import Base
 
 if __name__ == '__main__':
     store = EventStore()
