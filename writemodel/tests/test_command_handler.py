@@ -51,14 +51,15 @@ def meta0():
     }
 
 @pytest.fixture
-def citation0(basic_meta, meta0):
+def citation0(basic_meta, meta0, summary_new):
     return {
         **basic_meta,
         'payload': {
             'GUID': str(uuid4()),
             'text': 'Dr Papscht hett ds Spiez Späck Besteck spät bestellt',
             'tags': [],
-            'meta': meta0
+            'meta': meta0,
+            'summary': summary_new
         }
     }
 
@@ -74,7 +75,7 @@ def meta1():
 
 
 @pytest.fixture
-def citation1(basic_meta, meta1):
+def citation1(basic_meta, meta1, summary_existing):
     return {
         **basic_meta,
         'payload': {
@@ -82,7 +83,8 @@ def citation1(basic_meta, meta1):
             # this text has an extra letter, so is considered unique
             'text': 'Der Papscht hett ds Spiez Späck Besteck spät bestellt',
             'tags': [],
-            'meta': meta1
+            'meta': meta1,
+            'summary': summary_existing
         }
     }
 
@@ -147,6 +149,24 @@ def time_tag_1(time_tag_0):
         'start_char': 19,
         'stop_char': 24
     }
+
+@pytest.fixture
+def summary_guid():
+    return str(uuid4())
+
+@pytest.fixture
+def summary_new(summary_guid):
+    return {
+        'GUID': summary_guid,
+        'text': 'here is some long text indicating a person, place, and time'
+    }
+
+@pytest.fixture
+def summary_existing(summary_guid):
+    return {
+        'GUID': summary_guid
+    }
+
 # sad paths
 
 def test_raises_error_with_unknown_type(handler):
@@ -273,10 +293,10 @@ async def test_synthetic_event(
     tags = [person_tag_0, person_tag_1, place_tag_0, place_tag_1, time_tag_0, time_tag_1]
     citation0['payload']['tags'] = tags
     synthetic_events = handler.handle_command(citation0)
-    # there are currently 8 types of synthetic tags, and this should 
+    # there are currently 9 types of synthetic tags, and this should 
     # include all of them
-    assert len(synthetic_events) == 8
-    expected_types = ['CITATION_ADDED', 'PERSON_ADDED', 'PERSON_TAGGED', 
+    assert len(synthetic_events) == 9
+    expected_types = ['SUMMARY_ADDED', 'CITATION_ADDED', 'PERSON_ADDED', 'PERSON_TAGGED', 
         'PLACE_ADDED', 'PLACE_TAGGED', 'TIME_ADDED', 'TIME_TAGGED',
         'META_ADDED']
     for t, s in zip(expected_types, synthetic_events):

@@ -31,13 +31,15 @@ class EventComposer:
         text: str,
         tags: list[str],
         meta: str,
-        citation_guid: str
+        citation_guid: str,
+        summary_guid: str
     ) -> None:
         """Add a CITATION_ADDED event"""
         self._events.appendleft({
             'type': 'CITATION_ADDED',
             **self.__meta,
             'payload': {
+                'summary_guid': summary_guid,
                 'citation_guid': citation_guid, #TODO: 5.3.21 just added, test and integrate this
                 'text': text,
                 'tags': tags, # NOTE: 5.3.21 this is not currently used in the read model
@@ -46,7 +48,7 @@ class EventComposer:
         })
 
     def make_PERSON_ADDED(self,
-        citation_guid: str,
+        summary_guid: str,
         person_guid: str,
         person_name: str,
         citation_start: int,
@@ -57,7 +59,7 @@ class EventComposer:
             'type': 'PERSON_ADDED',
             **self.__meta,
             'payload': {
-                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
                 'person_guid': person_guid,
                 'person_name': person_name,
                 'citation_start': citation_start,
@@ -66,7 +68,7 @@ class EventComposer:
         })
 
     def make_PLACE_ADDED(self,
-        citation_guid: str,
+        summary_guid: str,
         place_guid: str,
         place_name: str,
         citation_start: int,
@@ -80,7 +82,7 @@ class EventComposer:
             'type': 'PLACE_ADDED',
             **self.__meta,
             'payload': {
-                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
                 'place_guid': place_guid,
                 'place_name': place_name,
                 'citation_start': citation_start,
@@ -92,7 +94,7 @@ class EventComposer:
         })
 
     def make_TIME_ADDED(self,
-        citation_guid: str,
+        summary_guid: str,
         time_guid: str,
         time_name: str,
         citation_start: int,
@@ -103,7 +105,7 @@ class EventComposer:
             'type': 'TIME_ADDED',
             **self.__meta,
             'payload': {
-                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
                 'time_guid': time_guid,
                 'time_name': time_name,
                 'citation_start': citation_start,
@@ -112,7 +114,7 @@ class EventComposer:
         })
 
     def make_PERSON_TAGGED(self,
-        citation_guid: str,
+        summary_guid: str,
         person_guid: str,
         person_name: str,
         citation_start: int,
@@ -123,7 +125,7 @@ class EventComposer:
             'type': 'PERSON_TAGGED',
             **self.__meta,
             'payload': {
-                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
                 'person_guid': person_guid,
                 'person_name': person_name,
                 'citation_start': citation_start,
@@ -132,7 +134,7 @@ class EventComposer:
         })
 
     def make_PLACE_TAGGED(self,
-        citation_guid: str,
+        summary_guid: str,
         place_guid: str,
         place_name: str,
         citation_start: int,
@@ -143,15 +145,16 @@ class EventComposer:
             'type': 'PLACE_TAGGED',
             **self.__meta,
             'payload': {
-                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
                 'place_guid': place_guid,
                 'place_name': place_name,
                 'citation_start': citation_start,
                 'citation_end': citation_end
             }
         })
+
     def make_TIME_TAGGED(self,
-        citation_guid: str,
+        summary_guid: str,
         time_guid: str,
         time_name: str,
         citation_start: int,
@@ -162,7 +165,7 @@ class EventComposer:
             'type': 'TIME_TAGGED',
             **self.__meta,
             'payload': {
-                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
                 'time_guid': time_guid,
                 'time_name': time_name,
                 'citation_start': citation_start,
@@ -190,5 +193,36 @@ class EventComposer:
                 'publisher': publisher,
                 'title': title,
                 **kwargs
+            }
+        })
+
+    def make_SUMMARY_ADDED(self,
+        citation_guid: str,
+        summary_guid: str,
+        text: str,
+    ) -> None:
+        """Add a SUMMARY_ADDED event."""
+        self._events.appendleft({
+            'type': 'SUMMARY_ADDED',
+            **self.__meta,
+            'payload': {
+                'citation_guid': citation_guid,
+                'summary_guid': summary_guid,
+                'text': text,
+            }
+        })
+    
+    def make_SUMMARY_TAGGED(self,
+        citation_guid: str,
+        summary_guid: str,
+    ) -> None:
+        """Add a SUMMARY_TAGGED event."""
+        # NOTE: for now assuming that tags in existing summary match the ones we're adding
+        self._events.appendleft({
+            'type': 'SUMMARY_TAGGED',
+            **self.__meta,
+            'payload': {
+                'citation_guid': citation_guid,
+                'summary_guid': summary_guid
             }
         })

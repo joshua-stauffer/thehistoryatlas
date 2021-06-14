@@ -4,6 +4,7 @@ Friday, April 9th 2021
 """
 
 import logging
+from re import S
 from uuid import uuid4
 
 from .handler_errors import (CitationExistsError, UnknownCommandTypeError,
@@ -77,6 +78,8 @@ class CommandHandler:
         citation_GUID = cmd['payload']['GUID']
         tags = cmd['payload']['tags']
         meta = cmd['payload']['meta']
+        summary = cmd['payload']['summary']
+        summary_guid = summary['GUID']
 
         composer = EventComposer(
             transaction_guid=str(uuid4()),
@@ -103,7 +106,7 @@ class CommandHandler:
 
         # check tag GUIDs. if they match, ensure that they are labeled correctly
         # tags will be added to composer by type during validation
-        tag_guids = self.__parse_tags(tags, citation_GUID, composer)
+        tag_guids = self.__parse_tags(tags, summary_guid, composer)
 
         # check meta GUID
         meta_guid = meta['GUID']
@@ -129,14 +132,32 @@ class CommandHandler:
             text=text,
             tags=tag_guids,
             meta=meta_guid,
-            citation_guid=citation_GUID)
+            citation_guid=citation_GUID,
+            summary_guid=summary_guid)
+
+        # check summary guid
+        if s_res := self._db.check_guid_for_uniqueness(summary_guid):
+            if s_res != 'SUMMARY':
+                raise GUIDError(f'Summary GUID collided with GUID of type {s_res}')
+            # we're adding a new citation to this summary
+            composer.make_SUMMARY_TAGGED(
+                citation_guid=citation_GUID,
+                summary_guid=summary_guid)
+        else:
+            # this is a new summary
+            summary_text = summary['text']
+            composer.make_SUMMARY_ADDED(
+                citation_guid=citation_GUID,
+                summary_guid=summary_guid,
+                text=summary_text)
+            self._db.add_to_stm(key=summary_guid, value='SUMMARY')
 
         return composer.events
 
 
     def __parse_tags(self,
         tags,
-        citation_guid: str,
+        summary_guid: str,
         composer: EventComposer
     ) -> list[str]:
         """Validates each tag's GUID and adds it to composer according to type."""
@@ -158,7 +179,7 @@ class CommandHandler:
                 if t_type == 'PERSON':
                     log.debug(f'Tagging person {tag["name"]} of GUID {t_guid}')
                     composer.make_PERSON_TAGGED(
-                        citation_guid=citation_guid,
+                        summary_guid=summary_guid,
                         person_guid=t_guid,
                         person_name=tag['name'],
                         citation_start=tag['start_char'],
@@ -166,7 +187,7 @@ class CommandHandler:
                 elif t_type == 'PLACE':
                     log.debug(f'Tagging place {tag["name"]} of GUID {t_guid}')
                     composer.make_PLACE_TAGGED(
-                        citation_guid=citation_guid,
+                        summary_guid=summary_guid,
                         place_guid=t_guid,
                         place_name=tag['name'],
                         citation_start=tag['start_char'],
@@ -174,7 +195,7 @@ class CommandHandler:
                 elif t_type == 'TIME':
                     log.debug(f'Tagging time {tag["name"]} of GUID {t_guid}')
                     composer.make_TIME_TAGGED(
-                        citation_guid=citation_guid,
+                        summary_guid=summary_guid,
                         time_guid=t_guid,
                         time_name=tag['name'],
                         citation_start=tag['start_char'],
@@ -192,7 +213,7 @@ class CommandHandler:
                 if t_type == 'PERSON':
                     log.debug(f'Adding person {tag["name"]} of GUID {t_guid}')
                     composer.make_PERSON_ADDED(
-                        citation_guid=citation_guid,
+                        summary_guid=summary_guid,
                         person_guid=t_guid,
                         person_name=tag['name'],
                         citation_start=tag['start_char'],
@@ -200,7 +221,7 @@ class CommandHandler:
                 elif t_type == 'PLACE':
                     log.debug(f'Adding place {tag["name"]} of GUID {t_guid}')
                     composer.make_PLACE_ADDED(
-                        citation_guid=citation_guid,
+                        summary_guid=summary_guid,
                         place_guid=t_guid,
                         place_name=tag['name'],
                         citation_start=tag['start_char'],
@@ -210,7 +231,7 @@ class CommandHandler:
                 elif t_type == 'TIME':
                     log.debug(f'Adding time {tag["name"]} of GUID {t_guid}')
                     composer.make_TIME_ADDED(
-                        citation_guid=citation_guid,
+                        summary_guid=summary_guid,
                         time_guid=t_guid,
                         time_name=tag['name'],
                         citation_start=tag['start_char'],

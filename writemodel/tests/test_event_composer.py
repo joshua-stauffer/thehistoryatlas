@@ -19,6 +19,7 @@ def basic_meta():
 @pytest.fixture
 def citation_args():
     return {
+        'summary_guid': str(uuid4()),
         'citation_guid': str(uuid4()),
         'text': 'some nice text',
         'tags': ['a-guid', 'b-guid', 'c-guid'],
@@ -28,7 +29,7 @@ def citation_args():
 @pytest.fixture
 def person_args():
     return {
-        'citation_guid': str(uuid4()),
+        'summary_guid': str(uuid4()),
         'person_guid': str(uuid4()),
         'person_name': 'Charlemagne',
         'citation_start': 4,
@@ -38,7 +39,7 @@ def person_args():
 @pytest.fixture
 def place_args_with_coords():
     return {
-        'citation_guid': str(uuid4()),
+        'summary_guid': str(uuid4()),
         'place_guid': str(uuid4()),
         'place_name': 'Charlemagne',
         'citation_start': 4,
@@ -51,7 +52,7 @@ def place_args_with_coords():
 @pytest.fixture
 def place_args():
     return {
-        'citation_guid': str(uuid4()),
+        'summary_guid': str(uuid4()),
         'place_guid': str(uuid4()),
         'place_name': 'Charlemagne',
         'citation_start': 4,
@@ -61,7 +62,7 @@ def place_args():
 @pytest.fixture
 def time_args():
     return {
-        'citation_guid': str(uuid4()),
+        'summary_guid': str(uuid4()),
         'time_guid': str(uuid4()),
         'time_name': '1847:3:8:18',
         'citation_start': 4,
@@ -88,6 +89,21 @@ def meta_args_with_arbitrary_fields():
         'publisher': 'Dragon Press',
         'unexpected': 'but still shows up',
         'also didnt plan for this': 'but should come through anyways'
+    }
+
+@pytest.fixture
+def summary_added_args():
+    return {
+        'summary_guid': str(uuid4()),
+        'citation_guid': str(uuid4()),
+        'text': 'some string which is a summary including a person, a place, and a time'
+    }
+
+@pytest.fixture
+def summary_tagged_args():
+    return {
+        'summary_guid': str(uuid4()),
+        'citation_guid': str(uuid4()),
     }
 
 def test_basic_meta(composer, basic_meta):
@@ -193,6 +209,28 @@ def test_make_META_ADDED_with_arbitrary_fields(
         'payload': meta_args_with_arbitrary_fields
     }
 
+def test_make_SUMMARY_ADDED(composer, basic_meta, summary_added_args):
+    assert len(composer.events) == 0
+    composer.make_SUMMARY_ADDED(**summary_added_args)
+    assert len(composer.events) == 1
+    e = composer.events[0]
+    assert e == {
+        **basic_meta,
+        'type': 'SUMMARY_ADDED',
+        'payload': summary_added_args
+    }
+
+def test_make_SUMMARY_TAGGED(composer, basic_meta, summary_tagged_args):
+    assert len(composer.events) == 0
+    composer.make_SUMMARY_TAGGED(**summary_tagged_args)
+    assert len(composer.events) == 1
+    e = composer.events[0]
+    assert e == {
+        **basic_meta,
+        'type': 'SUMMARY_TAGGED',
+        'payload': summary_tagged_args
+    }
+
 def test_composer_maintains_order(composer, person_args,
     place_args, time_args, meta_args):
     assert len(composer.events) == 0
@@ -207,18 +245,20 @@ def test_composer_maintains_order(composer, person_args,
     assert e[2]['type'] == 'META_ADDED'
     assert e[3]['type'] == 'TIME_TAGGED'
 
-def test_composer_orders_citation_first(composer, person_args,
-    place_args, time_args, meta_args, citation_args):
+def test_composer_orders_summary_first(composer, person_args,
+    place_args, time_args, meta_args, citation_args, summary_added_args):
     assert len(composer.events) == 0
     composer.make_PERSON_ADDED(**person_args)
     composer.make_PLACE_TAGGED(**place_args)
     composer.make_META_ADDED(**meta_args)
     composer.make_TIME_TAGGED(**time_args)
     composer.make_CITATION_ADDED(**citation_args)
-    assert len(composer.events) == 5
+    composer.make_SUMMARY_ADDED(**summary_added_args)
+    assert len(composer.events) == 6
     e = composer.events
-    assert e[0]['type'] == 'CITATION_ADDED'
-    assert e[1]['type'] == 'PERSON_ADDED'
-    assert e[2]['type'] == 'PLACE_TAGGED'
-    assert e[3]['type'] == 'META_ADDED'
-    assert e[4]['type'] == 'TIME_TAGGED'
+    assert e[0]['type'] == 'SUMMARY_ADDED'
+    assert e[1]['type'] == 'CITATION_ADDED'
+    assert e[2]['type'] == 'PERSON_ADDED'
+    assert e[3]['type'] == 'PLACE_TAGGED'
+    assert e[4]['type'] == 'META_ADDED'
+    assert e[5]['type'] == 'TIME_TAGGED'

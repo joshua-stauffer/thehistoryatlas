@@ -55,7 +55,7 @@ def test_handle_event(monkeypatch):
             'TIME_ADDED': mock_time_added,
             'PERSON_TAGGED': mock_person_tagged,
             'PLACE_TAGGED': mock_place_tagged,
-            'TIME_TAGGED': mock_time_tagged,
+            'TIME_TAGGED': mock_time_tagged
     }
 
     [eh.handle_event({'type': tag, 'body': '_', 'event_id': i+1})

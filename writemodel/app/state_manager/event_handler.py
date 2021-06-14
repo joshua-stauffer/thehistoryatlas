@@ -57,6 +57,8 @@ class EventHandler:
             'PERSON_TAGGED':    self._handle_person_tagged,
             'PLACE_TAGGED':     self._handle_place_tagged,
             'TIME_TAGGED':      self._handle_time_tagged,
+            'SUMMARY_ADDED':    self._handle_summary_added,
+            'SUMMARY_TAGGED':   self._handle_summary_tagged
         }
         
     # event handlers
@@ -85,6 +87,16 @@ class EventHandler:
         # update our record of the latest handled event
         self._db.update_last_event_id(event['event_id'])
         self._event_id_set.add(event_id)
+
+    def _handle_summary_added(self, body):
+        """a new summary has been created"""
+        GUID = body['payload']['summary_guid']
+        self._db.add_guid(value=GUID, type='SUMMARY')
+
+    def _handle_summary_tagged(self, body):
+        """An existing summary has been tagged"""
+        # GUID already exists, no need to do anything
+        pass
 
     def _handle_meta_added(self, body):
         """a metadata instance has been entered"""
