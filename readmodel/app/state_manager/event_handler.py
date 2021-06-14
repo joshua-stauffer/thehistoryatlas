@@ -40,6 +40,8 @@ class EventHandler:
     def _map_event_handlers(self):
         """A dict of known event types and the methods which process them"""
         return {
+            'SUMMARY_ADDED': self._handle_summary_added,
+            'SUMMARY_TAGGED': self._handle_summary_tagged,
             'CITATION_ADDED': self._handle_citation_added,
             'PERSON_ADDED': self._handle_person_added,
             'PLACE_ADDED': self._handle_place_added,
@@ -50,13 +52,25 @@ class EventHandler:
             'META_ADDED': self._handle_meta_added
         }
 
+    def _handle_summary_added(self, event):
+        summary_guid = event['payload']['summary_guid']
+        text = event['payload']['text']
+        self._db.create_summary(
+            summary_guid=summary_guid,
+            text=text)
+
+    def _handle_summary_tagged(self, event):
+        # summary will automatically be tagged when the
+        # new citation is added.
+        pass 
+
     def _handle_citation_added(self, event):
-        transaction_guid = event['transaction_guid']
         citation_guid = event['payload']['citation_guid']
+        summary_guid = event['payload']['summary_guid']
         text = event['payload']['text']
         self._db.create_citation(
-            transaction_guid=transaction_guid,
             citation_guid=citation_guid,
+            summary_guid=summary_guid,
             text=text)
 
     def _handle_person_added(self, event):
@@ -73,9 +87,8 @@ class EventHandler:
         """Merges person added and person tagged functionality"""
         payload = event['payload']
         self._db.handle_person_update(
-            transaction_guid=event['transaction_guid'],
             person_guid=payload['person_guid'],
-            citation_guid=payload['citation_guid'],
+            summary_guid=payload['summary_guid'],
             person_name=payload['person_name'],
             start_char=payload['citation_start'],
             stop_char=payload['citation_end'],
@@ -104,9 +117,8 @@ class EventHandler:
         # arguments since they are only needed by place added
         payload = event['payload']
         self._db.handle_place_update(
-            transaction_guid=event['transaction_guid'],
             place_guid=payload['place_guid'],
-            citation_guid=payload['citation_guid'],
+            summary_guid=payload['summary_guid'],
             place_name=payload['place_name'],
             start_char=payload['citation_start'],
             stop_char=payload['citation_end'],
@@ -127,9 +139,8 @@ class EventHandler:
         """Merges time added and time tagged functionality"""
         payload = event['payload']
         self._db.handle_time_update(
-            transaction_guid=event['transaction_guid'],
             time_guid=payload['time_guid'],
-            citation_guid=payload['citation_guid'],
+            summary_guid=payload['summary_guid'],
             time_name=payload['time_name'],
             start_char=payload['citation_start'],
             stop_char=payload['citation_end'],

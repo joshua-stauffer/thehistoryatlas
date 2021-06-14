@@ -9,8 +9,15 @@ from sqlalchemy.orm import Session
 from app.state_manager.database import Database
 from app.state_manager.query_handler import QueryHandler
 from app.state_manager.errors import UnknownQueryError, UnknownManifestTypeError
-from app.state_manager.schema import Citation, TagInstance, Time, Person, Place
-
+from app.state_manager.schema import Base
+from app.state_manager.schema import Citation
+from app.state_manager.schema import TagInstance
+from app.state_manager.schema import Tag
+from app.state_manager.schema import Time
+from app.state_manager.schema import Person
+from app.state_manager.schema import Place
+from app.state_manager.schema import Name
+from app.state_manager.schema import Summary
 
 # constants
 TYPE_ENUM = set(['PERSON', 'PLACE', 'TIME'])
@@ -44,11 +51,13 @@ def db_tuple(_db):
     each entity name appears with exactly the same spelling in both citations
     in which it appears.
     """
+    summaries = list()
     citations = list()
     people = list()
     places = list()
     times = list()
     cit_guids = list()
+    sum_guids = list()
     person_guids = list()
     place_guids = list()
     time_guids = list()
@@ -80,13 +89,21 @@ def db_tuple(_db):
     entities = [(person, place, time) 
                 for person, place, time in zip(people, places, times)]
     for n in range(DB_COUNT):
-        guid = f'fake-guid-{n}'
-        cit_guids.append(guid)
+        # create a citation
+        cit_guid = f'fake-citation-guid-{n}'
+        cit_guids.append(cit_guid)
+        citation = Citation(
+            guid=cit_guid,
+            text=f'some citation text {n}',
+            meta=json.dumps({'some': 'meta data'}))
+        citations.append(citation)
+        # create a summary
+        sum_guid = f'fake-summary-guid-{n}'
+        sum_guids.append(sum_guid)
         person, place, time = entities[n % len(entities)]
-        citations.append(Citation(
-            guid=guid,
+        summaries.append(Summary(
+            guid=sum_guid,
             text=f'test text {n}',
-            meta=json.dumps({'some': 'meta data'}),
             time_tag=time.name,
             tags=[
                 TagInstance(
@@ -94,10 +111,11 @@ def db_tuple(_db):
                     stop_char=random.randint(100, 200),
                     tag=entity)
                 for entity in (person, place, time)
-            ]))
+            ],
+            citations=[citation]))
 
     with Session(_db._engine, future=True) as session:
-        session.add_all([*citations, *people, *places, *times])
+        session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
             _db._handle_name(person.names, person.guid, session)
@@ -107,6 +125,7 @@ def db_tuple(_db):
             _db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
+        'summary_guids': sum_guids,
         'citation_guids': cit_guids,
         'person_guids': person_guids,
         'place_guids': place_guids,
@@ -147,19 +166,19 @@ def test_get_manifest_raises_error_on_unknown_type(handle_query):
 
 # successful paths
 
-def test_get_citations_by_guid(handle_query, db_tuple):
+def test_get_citation_by_guid(handle_query, db_tuple):
     _, db_dict = db_tuple
     guids = db_dict['citation_guids']
     res = handle_query({
-        'type': 'GET_CITATIONS_BY_GUID',
+        'type': 'GET_CITATION_BY_GUID',
         'payload': {
-            'citation_guids': guids
+            'citation_guid': guids[1]
         }
     })
     assert isinstance(res, dict)
-    assert res['type'] == 'CITATIONS_BY_GUID'
+    assert res['type'] == 'CITATION_BY_GUID'
     assert isinstance(res['payload'], dict)
-    assert isinstance(res['payload']['citations'], list)
+    assert isinstance(res['payload']['citation'], dict)
 
 def test_get_manifest_person(handle_query, db_tuple):
     _, db_dict = db_tuple

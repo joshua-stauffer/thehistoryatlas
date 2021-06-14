@@ -14,6 +14,24 @@ from .errors import EmptyNameError
 
 Base = declarative_base()
 
+class Summary(Base):
+    """Model representing a user-created event summary"""
+
+    __tablename__ = 'summaries'
+    id = Column(Integer, primary_key=True)
+    guid = Column(String(36))
+    text = Column(String)
+    
+    # specific instances of tags anchored in the summary text
+    tags = relationship('TagInstance', back_populates='summary')
+
+    # TODO: this won't work with multiple time tags, gotta figure out a more
+    #       efficient way to calculate the correct time
+    time_tag = Column(String(32)) # cache timetag name for sorting
+    
+    # each summary may have multiple citations
+    citations = relationship('Citation', back_populates='summary')
+
 class Citation(Base):
     """Model representing citations and their meta data, with links to
     their tags"""
@@ -25,25 +43,23 @@ class Citation(Base):
     # meta data stored as json string with arbitrary fields
     # not planning on querying against this, just need it available
     meta = Column(String)
-    # specific instances of tags anchored in the citation text
-    tags = relationship('TagInstance', back_populates='citation')
-    time_tag = Column(String(32)) # cache timetag name for sorting
+    summary_id = Column(Integer, ForeignKey('summaries.id'))
+    summary = relationship('Summary', back_populates='citations')
 
     def __repr__(self):
-        return f'Citation(id: {self.id}, text: {self.text}, meta: {self.meta}, ' + \
-               f'tags: {len(self.tags)})'
+        return f'Citation(id: {self.id}, text: {self.text}, meta: {self.meta})'
 
 class TagInstance(Base):
-    """Model representing the connection point between a citation slice and
+    """Model representing the connection point between a summary slice and
     a tag."""
  
     __tablename__ = 'taginstances'
     id = Column(Integer, primary_key=True)
     start_char = Column(Integer)
     stop_char = Column(Integer)
-    # parent citation
-    citation_id = Column(Integer, ForeignKey('citations.id'))
-    citation = relationship('Citation', back_populates='tags')
+    # parent summary
+    summary_id = Column(Integer, ForeignKey('summaries.id'))
+    summary = relationship('Summary', back_populates='tags')
     # parent tag
     tag_id = Column(Integer, ForeignKey('tags.id'))
     tag = relationship('Tag', back_populates='tag_instances')

@@ -7,8 +7,15 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
-from app.state_manager.schema import (Citation, TagInstance, Time, Person,
-                                      Place, Name)
+from app.state_manager.schema import Base
+from app.state_manager.schema import Citation
+from app.state_manager.schema import TagInstance
+from app.state_manager.schema import Tag
+from app.state_manager.schema import Time
+from app.state_manager.schema import Person
+from app.state_manager.schema import Place
+from app.state_manager.schema import Name
+from app.state_manager.schema import Summary
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')
@@ -45,11 +52,13 @@ def db_tuple(_db):
     each entity name appears with exactly the same spelling in both citations
     in which it appears.
     """
+    summaries = list()
     citations = list()
     people = list()
     places = list()
     times = list()
     cit_guids = list()
+    sum_guids = list()
     person_guids = list()
     place_guids = list()
     time_guids = list()
@@ -81,13 +90,21 @@ def db_tuple(_db):
     entities = [(person, place, time) 
                 for person, place, time in zip(people, places, times)]
     for n in range(DB_COUNT):
-        guid = f'fake-guid-{n}'
-        cit_guids.append(guid)
+        # create a citation
+        cit_guid = f'fake-citation-guid-{n}'
+        cit_guids.append(cit_guid)
+        citation = Citation(
+            guid=cit_guid,
+            text=f'some citation text {n}',
+            meta=json.dumps({'some': 'meta data'}))
+        citations.append(citation)
+        # create a summary
+        sum_guid = f'fake-summary-guid-{n}'
+        sum_guids.append(sum_guid)
         person, place, time = entities[n % len(entities)]
-        citations.append(Citation(
-            guid=guid,
+        summaries.append(Summary(
+            guid=sum_guid,
             text=f'test text {n}',
-            meta=json.dumps({'some': 'meta data'}),
             time_tag=time.name,
             tags=[
                 TagInstance(
@@ -95,10 +112,11 @@ def db_tuple(_db):
                     stop_char=random.randint(100, 200),
                     tag=entity)
                 for entity in (person, place, time)
-            ]))
+            ],
+            citations=[citation]))
 
     with Session(_db._engine, future=True) as session:
-        session.add_all([*citations, *people, *places, *times])
+        session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
             _db._handle_name(person.names, person.guid, session)
@@ -108,6 +126,7 @@ def db_tuple(_db):
             _db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
+        'summary_guids': sum_guids,
         'citation_guids': cit_guids,
         'person_guids': person_guids,
         'place_guids': place_guids,
@@ -122,13 +141,13 @@ def load_db(db_tuple):
 
 # test that database preconditions are valid
 
-def test_each_citation_has_tags(db_tuple):
+def test_each_summary_has_tags(db_tuple):
     db, db_dict = db_tuple
-    citation_guids = db_dict['citation_guids']
+    summary_guids = db_dict['summary_guids']
     with Session(db._engine, future=True) as session:
-        for guid in citation_guids:
+        for guid in summary_guids:
             res = session.execute(
-                select(Citation).where(Citation.guid == guid)
+                select(Summary).where(Summary.guid == guid)
             ).scalar_one()
             assert len(res.tags) > 0
 
@@ -162,32 +181,39 @@ def test_each_time_has_tags(db_tuple):
             ).scalar_one()
             assert len(res.tag_instances) > 0
 
-def test_each_citation_has_a_timetag(db_tuple):
+def test_each_summary_has_a_timetag(db_tuple):
     db, db_dict = db_tuple
-    citation_guids = db_dict['citation_guids']
+    summary_guids = db_dict['summary_guids']
     with Session(db._engine, future=True) as session:
-        for guid in citation_guids:
+        for guid in summary_guids:
             res = session.execute(
-                select(Citation).where(Citation.guid==guid)
+                select(Summary).where(Summary.guid==guid)
             ).scalar_one()
             assert any(t.tag.type=='TIME' for t in res.tags)
 
-def test_all_citations_have_timetag_cache(db_tuple):
+def test_all_summaries_have_timetag_cache(db_tuple):
     db, db_dict = db_tuple
-    citation_guids = db_dict['citation_guids']
+    summary_guids = db_dict['summary_guids']
     with Session(db._engine, future=True) as session:
-        for guid in citation_guids:
+        for guid in summary_guids:
             res = session.execute(
-                select(Citation).where(Citation.guid==guid)
+                select(Summary).where(Summary.guid==guid)
             ).scalar_one()
             assert isinstance(res.time_tag, str)
 
 # test sad path
 
-def test_get_citations_returns_error_with_unknown_guid(db_tuple):
+def test_get_citation_returns_error_with_unknown_guid(db_tuple):
     db, db_dict = db_tuple
-    guid = str(uuid4())
-    res = db.get_citations([guid])
+    guid = 'this string isnt a guid'
+    res = db.get_citation(guid)
+    assert isinstance(res, dict)
+    assert len(res.keys()) == 0
+
+def test_get_summaries_returns_error_with_unknown_guid(db_tuple):
+    db, db_dict = db_tuple
+    guid = 'this string isnt a guid'
+    res = db.get_summaries([guid])
     assert len(res) == 0
 
 def test_get_manifest_by_person_returns_empty_list(db_tuple):
@@ -197,16 +223,16 @@ def test_get_manifest_by_person_returns_empty_list(db_tuple):
     assert len(res) == 0
 # test successful queries
 
-def test_get_citation_fuzz_test(db_tuple):
+def test_get_summary_fuzz_test(db_tuple):
     db, db_dict = db_tuple
-    citation_guids = db_dict['citation_guids']
-    # ensure that there are no duplicates in citation_guids
-    test = set(citation_guids)
-    assert len(test) == len(citation_guids)
+    summary_guids = db_dict['summary_guids']
+    # ensure that there are no duplicates in summary_guids
+    test = set(summary_guids)
+    assert len(test) == len(summary_guids)
     # fuzz
     # NOTE: this slows down the test considerably at higher iterations
     for _ in range(FUZZ_ITERATIONS):
-        c = citation_guids[:]
+        c = summary_guids[:]
         guids = list()
         log.info(f'Loop {_}')
         # draw guids to get
@@ -215,18 +241,17 @@ def test_get_citation_fuzz_test(db_tuple):
             guids.append(c.pop(random.randint(0, len(c)-1)))
         log.info(f'Count: {count}')
         log.info(f'GUIDs head: {guids[:10]}')
-        res = db.get_citations(guids)
+        res = db.get_summaries(guids)
         assert isinstance(res, list)
         assert len(res) == len(guids)
-        for cit in res:
-            assert cit['guid'] in guids
+        for summary in res:
+            assert summary['guid'] in guids
             # describe the shape of expected properties
-            assert isinstance(cit, dict)
-            assert cit['text'] != None
-            assert isinstance(cit['text'], str)
-            assert isinstance(cit['meta'], dict)
-            assert isinstance(cit['tags'], list)
-            for t in cit['tags']:
+            assert isinstance(summary, dict)
+            assert summary['text'] != None
+            assert isinstance(summary['text'], str)
+            assert isinstance(summary['tags'], list)
+            for t in summary['tags']:
                 assert isinstance(t, dict)
                 assert isinstance(t['start_char'], int)
                 assert isinstance(t['stop_char'], int)

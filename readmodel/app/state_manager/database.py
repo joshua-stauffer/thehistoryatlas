@@ -6,7 +6,6 @@ Provides read and write access to the Query database.
 import asyncio
 import logging
 import json
-from typing import Union
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +18,7 @@ from .schema import Place
 from .schema import TagInstance
 from .schema import Time
 from .schema import Tag
+from .schema import Summary
 
 
 log = logging.getLogger(__name__)
@@ -37,26 +37,44 @@ class Database:
 
     # QUERIES
 
-    def get_citations(self, citation_guids: list[str]) -> list:
-        """Expects a list of citation guids and returns their data in a dict 
+    def get_citation(self, citation_guid: str) -> dict:
+        """Expects acitation guids and returns its data in a dict"""
+        # NOTE: refactored as part of resolving issue 11 on 6.14.21
+        #       previously known as get_citations, and returned a list
+        log.debug(f'Looking up citation for citation GUID {citation_guid}')
+        with Session(self._engine, future=True) as session:
+            res = session.execute(
+                select(Citation).where(Citation.guid==citation_guid)
+            ).scalar_one_or_none()
+            if res:
+                return {
+                    'guid': citation_guid,
+                    'text': res.text,
+                    'meta': json.loads(res.meta)
+                    # took tags out here -- may want to add them back in later
+                }
+            else:
+                log.debug(f'Found no citation for citation GUID {citation_guid}')
+                return {}
+
+    def get_summaries(self, summary_guids: list[str]) -> list[dict]:
+        """Expects a list of summary guids and returns their data in a dict
         keyed by guid"""
-        log.info(f'Received request to return {len(citation_guids)} Citations.')
+        log.debug(f'Received request to return {len(summary_guids)} summaries.')
         result = list()
         with Session(self._engine, future=True) as session:
-            for guid in citation_guids:
+            for guid in summary_guids:
                 res = session.execute(
-                    select(Citation).where(Citation.guid==guid)
+                    select(Summary).where(Summary.guid==guid)
                 ).scalar_one_or_none()
                 if res:
                     result.append({
                         'guid': guid,
                         'text': res.text,
-                        'meta': json.loads(res.meta),
                         'tags': [self.get_tag_instance_data(t)
                                 for t in res.tags]
                     })
-
-        log.info(f'Returning {len(result)} Citations')
+        log.debug(f'Returning {len(result)} summaries')
         return result
 
     def get_manifest_by_person(self,
@@ -93,13 +111,13 @@ class Database:
             if not entity:
                 log.debug(f'Manifest lookup found nothing for GUID {guid}')
                 return list()
-            # DEBUG CODE:
 
             tag_instances = entity.tag_instances
 
             tag_list = [t for t in tag_instances]
-            tag_list.sort(key=lambda a: a.citation.time_tag)
-            result = [t.citation.guid for t in tag_instances]
+            # TODO: update this to better handle multiple time tags
+            tag_list.sort(key=lambda a: a.summary.time_tag)
+            result = [t.summary.guid for t in tag_instances]
         log.debug(f'Manifest lookup is returning a result of length {len(result)}')
         return result
 
@@ -136,10 +154,10 @@ class Database:
                 else:
                     name_list = self.split_names(entity.names)
                 # get min/max of date range
-                min_time = entity.tag_instances[0].citation.time_tag
-                max_time = entity.tag_instances[0].citation.time_tag
+                min_time = entity.tag_instances[0].summary.time_tag
+                max_time = entity.tag_instances[0].summary.time_tag
                 for tag in entity.tag_instances:
-                    time = tag.citation.time_tag
+                    time = tag.summary.time_tag
                     if time < min_time:
                         min_time = time
                     if time > max_time:
@@ -157,29 +175,42 @@ class Database:
 
     # MUTATIONS
 
+    def create_summary(self,
+        summary_guid: str,
+        text: str
+    ) -> None:
+        """Creates a new summary, and caches its database level id for any 
+        following operations to use"""
+        log.info(f'Creating a new summary: {text[:50]}...')
+        summary = Summary(
+            guid=summary_guid,
+            text=text)
+        with Session(self._engine, future=True) as session:
+            session.add(summary)
+            session.commit()
+            self.add_to_stm(key=summary_guid, value=summary.id)
+
+
     def create_citation(self,
-        transaction_guid: str,
         citation_guid: str,
+        summary_guid: str,
         text: str
         ) -> None:
-        """Initializes a new citation in the database.
-        Temporarily caches the new citation id for following operations."""
+        """Initializes a new citation in the database."""
+
         log.info(f'Creating a new citation: {text[:50]}...')
+        summary_id = self.get_summary_id(summary_guid=summary_guid)
         c = Citation(
                 guid=citation_guid,
-                text=text)
+                text=text,
+                summary_id=summary_id)
         with Session(self._engine, future=True) as session:
             session.add(c)
-            # save this id in memory for a few seconds
             session.commit()
-            self.add_to_stm(
-                key=transaction_guid,
-                value=c.id)
 
     def handle_person_update(self,
-        transaction_guid: str,
         person_guid: str,
-        citation_guid: str,
+        summary_guid: str,
         person_name: str,
         start_char: int,
         stop_char: int,
@@ -192,6 +223,7 @@ class Database:
             # resolve person
             if is_new:
                 log.info(f'Creating a new person: {person_name}')
+                print('creating person: ', person_name)
                 person = Person(
                     guid=person_guid,
                     names=person_name)
@@ -202,21 +234,21 @@ class Database:
                 ).scalar_one()
                 cur_names = self.split_names(person.names)
                 if person_name not in cur_names:
+                    print('found new person name ', person_name)
                     person.names += f'|{person_name}'
+                    print('person.names is now ', person.names)
             # add name to Name registry
             self._handle_name(person_name, person_guid, session)
             self._create_tag_instance(
                 tag=person,
-                transaction_guid=transaction_guid,
-                citation_guid=citation_guid,
+                summary_guid=summary_guid,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session)
         
     def handle_place_update(self,
-        transaction_guid: str,
         place_guid: str,
-        citation_guid: str,
+        summary_guid: str,
         place_name: str,
         start_char: int,
         stop_char: int,
@@ -247,16 +279,14 @@ class Database:
             self._handle_name(place_name, place_guid, session)
             self._create_tag_instance(
                 tag=place,
-                transaction_guid=transaction_guid,
-                citation_guid=citation_guid,
+                summary_guid=summary_guid,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session)
 
     def handle_time_update(self,
-        transaction_guid: str,
         time_guid: str,
-        citation_guid: str,
+        summary_guid: str,
         time_name: str,
         start_char: int,
         stop_char: int,
@@ -275,50 +305,49 @@ class Database:
                 time = session.execute(
                     select(Time).where(Time.guid == time_guid)
                 ).scalar_one()
-            # cache timetag name on citation
-            citation = session.execute(
-                select(Citation).where(Citation.guid==citation_guid)
+            # cache timetag name on summary
+            # NOTE: this currently results in a 'last write wins' scenario
+            summary = session.execute(
+                select(Summary).where(Summary.guid==summary_guid)
             ).scalar_one()
-            citation.time_tag = time_name
-            session.add(citation)
+            summary.time_tag = time_name
+            session.add(summary)
             self._handle_name(time_name, time_guid, session)
             self._create_tag_instance(
                 tag=time,
-                transaction_guid=transaction_guid,
-                citation_guid=citation_guid,
+                summary_guid=summary_guid,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session)
 
-    def _create_tag_instance(self, tag, transaction_guid, citation_guid,
-        start_char, stop_char, session):
-        """Second step of handle updates: creates a tag instance, and 
+    def _create_tag_instance(self,
+        tag: Tag,
+        summary_guid: str,
+        start_char: int,
+        stop_char: int,
+        session: Session):
+        """Second: step of handle updates: creates a tag instance, and 
         associates it with citation and tag"""
         # resolve citation
         log.debug('Creating a TagInstance')
-        citation_id = self.__short_term_memory.get(transaction_guid)
-        if not citation_id:
-            log.debug('Couldn\'t find citation id in short term memory: ' + \
-                      'looking it up')
-            citation_id = session.execute(
-                select(Citation).where(Citation.guid == citation_guid)
-            ).scalar_one().id
-        log.debug(f'Citation ID is {citation_id}')
+        summary_id = self.get_summary_id(summary_guid=summary_guid, session=session)
+
         # create Tag Instance
         tag_instance = TagInstance(
-            citation_id=citation_id,
+            summary_id=summary_id,
             tag=tag,
             start_char=start_char,
             stop_char=stop_char)
         
         session.add_all([tag, tag_instance])
         session.commit()
+        print('just committed the session: ', tag)
         log.debug('☀️ ☀️ ☀️ Created tag instance and tag. ' + \
                  f'TagInstance id is {tag_instance.id}, ' + \
-                 f'TagInstance Citation ID is {tag_instance.citation_id}, ' + \
+                 f'TagInstance Summary ID is {tag_instance.summary_id}, ' + \
                  f'TagInstance Tag ID is {tag_instance.tag_id}')
 
-    def add_meta_to_citation(self, 
+    def add_meta_to_citation(self,
         citation_guid: str,
         **kwargs
         ) -> None:
@@ -349,6 +378,28 @@ class Database:
                 return
             res.add_guid(guid)
         session.add(res)
+
+    # CACHE LAYER FOR INCOMING CITATIONS
+
+    def get_summary_id(self, summary_guid: str, session=None) -> int:
+        """fetches a summary id, utilizing caching if possible."""
+        if id := self.__short_term_memory.get(summary_guid):
+            return id
+        if not session:
+            with Session(self._engine, future=True) as session:
+                res = session.execute(select(Summary).where(Summary.guid==summary_guid)).scalar_one()
+                # cache result
+                self.add_to_stm(
+                    key=summary_guid,
+                    value=res.id)
+                return res.id
+        else:
+            res = session.execute(select(Summary).where(Summary.guid==summary_guid)).scalar_one()
+            # cache result
+            self.add_to_stm(
+                key=summary_guid,
+                value=res.id)
+            return res.id
 
     # HISTORY MANAGEMENT
 

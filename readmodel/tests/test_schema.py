@@ -5,8 +5,15 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import text
 
-from app.state_manager.schema import (Base, Citation, TagInstance, Tag,
-    Time, Person, Place, Name)
+from app.state_manager.schema import Base
+from app.state_manager.schema import Citation
+from app.state_manager.schema import TagInstance
+from app.state_manager.schema import Tag
+from app.state_manager.schema import Time
+from app.state_manager.schema import Person
+from app.state_manager.schema import Place
+from app.state_manager.schema import Name
+from app.state_manager.schema import Summary
 from app.state_manager.errors import EmptyNameError
 
 @pytest.fixture
@@ -16,6 +23,18 @@ def engine():
                             future=True)
     Base.metadata.create_all(engine)
     return engine
+
+@pytest.fixture
+def summary_data_1():
+    guid = str(uuid4())
+    text = 'A summary of a person doing something somewhere at some time'
+    return guid, text 
+
+@pytest.fixture
+def summary_data_2():
+    guid = str(uuid4())
+    text = 'Another summary of a person doing something somewhere at some time'
+    return guid, text 
 
 @pytest.fixture
 def citation_data_1():
@@ -58,23 +77,42 @@ def tag4():
 def test_db_exists(engine):
     assert engine != None
 
-def test_citation_and_taginstance(citation_data_1, engine, tag1, tag2):
-    """verify relationship between citations and tag instances are correct"""
+def test_summary_and_taginstance(summary_data_1, engine, tag1, tag2):
+    """verify relationship between summary and tag instances are correct"""
+    guid, text = summary_data_1
+    summary = Summary(
+        guid=guid,
+        text=text)
+    tag1.summary = summary
+    tag2.summary = summary
+
+    with Session(engine, future=True) as sess, sess.begin():
+        sess.add_all([summary, tag1, tag2])
+
+        assert tag1 in summary.tags
+        assert tag2 in summary.tags
+        assert tag1.summary is summary
+        assert tag2.summary is summary
+
+def test_summary_and_citation(summary_data_1, citation_data_1, engine):
+    """verify relationship between citations and summaries are correct"""
+    guid, text = summary_data_1
     guid, text, meta = citation_data_1
+    summary = Summary(
+        guid=guid,
+        text=text)
     citation = Citation(
         guid=guid,
         text=text,
         meta=meta)
-    tag1.citation = citation
-    tag2.citation = citation
+    summary.citations = [citation]
 
     with Session(engine, future=True) as sess, sess.begin():
-        sess.add_all([citation, tag1, tag2])
+        sess.add_all([citation, citation])
 
-        assert tag1 in citation.tags
-        assert tag2 in citation.tags
-        assert tag1.citation is citation
-        assert tag2.citation is citation
+        assert citation in summary.citations
+        assert summary.citations[0] is citation
+
 
 def test_taginstance_and_tag(engine, tag1, tag2):
     """verify relationships between tag instances and tags are correct"""
@@ -89,7 +127,7 @@ def test_taginstance_and_tag(engine, tag1, tag2):
         assert tag1.tag is tag
         assert tag2.tag is tag
 
-def test_citation_and_tag(engine, citation_data_1, citation_data_2,
+def test_summary_and_tag(engine, summary_data_1, summary_data_2,
     tag1, tag2, tag3, tag4):
     person = Tag(
         guid = str(uuid4()),
@@ -99,31 +137,29 @@ def test_citation_and_tag(engine, citation_data_1, citation_data_2,
         guid = str(uuid4()),
         tag_instances = [tag2, tag4]
     )
-    guid1, text1, meta1 = citation_data_1 
-    cit_1 = Citation(
+    guid1, text1 = summary_data_1 
+    sum_1 = Summary(
         guid=guid1,
         text=text1,
-        meta=meta1,
         tags=[tag1, tag2]
     )
-    guid2, text2, meta2 = citation_data_2 
-    cit_2 = Citation(
+    guid2, text2 = summary_data_2 
+    sum_2 = Summary(
         guid=guid2,
         text=text2,
-        meta=meta2,
         tags=[tag3, tag4]
     )
 
-    data = [tag1, tag2, tag3, tag4, cit_1, cit_2, person, place]
+    data = [tag1, tag2, tag3, tag4, sum_1, sum_2, person, place]
     with Session(engine, future=True) as sess, sess.begin():
         sess.add_all(data)
 
-        assert person.tag_instances[0].citation is cit_1
-        assert place.tag_instances[0].citation is cit_1
-        assert person.tag_instances[1].citation is cit_2
-        assert place.tag_instances[1].citation is cit_2
+        assert person.tag_instances[0].summary is sum_1
+        assert place.tag_instances[0].summary is sum_1
+        assert person.tag_instances[1].summary is sum_2
+        assert place.tag_instances[1].summary is sum_2
 
-def test_tag_inheritance(engine, citation_data_1, citation_data_2):
+def test_tag_inheritance(engine, summary_data_1, summary_data_2):
     time = Time(
         guid = str(uuid4()),
         name = 'November 1963')
@@ -133,25 +169,23 @@ def test_tag_inheritance(engine, citation_data_1, citation_data_2):
     place = Place(
         guid=str(uuid4()),
         names='Milan,Milano')
-    guid1, text1, meta1 = citation_data_1 
-    cit_1 = Citation(
+    guid1, text1 = summary_data_1 
+    sum_1 = Summary(
         guid=guid1,
-        text=text1,
-        meta=meta1)
-    guid2, text2, meta2 = citation_data_2 
-    cit_2 = Citation(
+        text=text1)
+    guid2, text2 = summary_data_2 
+    sum_2 = Summary(
         guid=guid2,
-        text=text2,
-        meta=meta2)
+        text=text2)
     tags = [TagInstance(
         start_char=1,
         stop_char=5,
-        citation=c,
+        summary=c,
         tag=t)
         for t in [time, person, place]
-        for c in [cit_1, cit_2]]
+        for c in [sum_1, sum_2]]
 
-    data = [time, person, place, cit_1, cit_2, *tags]
+    data = [time, person, place, sum_1, sum_2, *tags]
     with Session(engine, future=True) as sess, sess.begin():
         sess.add_all(data)
 

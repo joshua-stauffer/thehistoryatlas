@@ -8,8 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
 from app.state_manager.event_handler import EventHandler
-from app.state_manager.errors import UnknownEventError, DuplicateEventError
-from app.state_manager.schema import Citation, TagInstance, Time, Person, Place
+from app.state_manager.errors import UnknownEventError
+from app.state_manager.errors import DuplicateEventError
+from app.state_manager.schema import Base
+from app.state_manager.schema import Citation
+from app.state_manager.schema import TagInstance
+from app.state_manager.schema import Tag
+from app.state_manager.schema import Time
+from app.state_manager.schema import Person
+from app.state_manager.schema import Place
+from app.state_manager.schema import Name
+from app.state_manager.schema import Summary
 
 class Config:
     """minimal class for setting up an in memory db for this test"""
@@ -49,12 +58,25 @@ def citation_guid():
     return str(uuid4())
 
 @pytest.fixture
+def summary_guid():
+    return str(uuid4())
+
+@pytest.fixture
 def place_guid():
     return str(uuid4())
 
 @pytest.fixture
-def citation_args(citation_guid):
+def summary_args(summary_guid, citation_guid):
     return {
+        'summary_guid': summary_guid,
+        'citation_guid': citation_guid,
+        'text': 'some random text here please!'
+    }
+
+@pytest.fixture
+def citation_args(citation_guid, summary_guid):
+    return {
+        'summary_guid': summary_guid,
         'citation_guid': citation_guid,
         'text': 'some nice text',
         'tags': ['a-guid', 'b-guid', 'c-guid'],
@@ -62,9 +84,9 @@ def citation_args(citation_guid):
     }
 
 @pytest.fixture
-def person_args(citation_guid):
+def person_args(summary_guid):
     return {
-        'citation_guid': citation_guid,
+        'summary_guid': summary_guid,
         'person_guid': str(uuid4()),
         'person_name': 'Charlemagne',
         'citation_start': 4,
@@ -72,9 +94,9 @@ def person_args(citation_guid):
     }
 
 @pytest.fixture
-def place_args_with_coords(citation_guid, place_guid):
+def place_args_with_coords(summary_guid, place_guid):
     return {
-        'citation_guid': citation_guid,
+        'summary_guid': summary_guid,
         'place_guid': place_guid,
         'place_name': 'Charlemagne',
         'citation_start': 4,
@@ -85,9 +107,9 @@ def place_args_with_coords(citation_guid, place_guid):
     }
 
 @pytest.fixture
-def place_args(citation_guid, place_guid):
+def place_args(summary_guid, place_guid):
     return {
-        'citation_guid': citation_guid,
+        'summary_guid': summary_guid,
         'place_guid': place_guid,
         'place_name': 'Charlemagne',
         'citation_start': 4,
@@ -95,9 +117,9 @@ def place_args(citation_guid, place_guid):
     }
 
 @pytest.fixture
-def time_args(citation_guid):
+def time_args(summary_guid):
     return {
-        'citation_guid': citation_guid,
+        'summary_guid': summary_guid,
         'time_guid': str(uuid4()),
         'time_name': '1847:3:8:18',
         'citation_start': 4,
@@ -124,6 +146,16 @@ def meta_args_with_arbitrary_fields(citation_guid):
         'publisher': 'Dragon Press',
         'unexpected': 'but still shows up',
         'also didnt plan for this': 'but should come through anyways'
+    }
+
+@pytest.fixture
+def SUMMARY_ADDED(basic_meta, summary_args):
+    return {
+        'type': 'SUMMARY_ADDED',
+        **basic_meta,
+        'payload': {
+            **summary_args
+        }
     }
 
 @pytest.fixture
@@ -224,7 +256,11 @@ def test_unknown_event_raises_error(handle_event):
         })
 
 @pytest.mark.asyncio
-async def test_citation_added(db, handle_event, CITATION_ADDED):
+async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, SUMMARY_ADDED]):
+        event['event_id'] = i + 1
+    handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
     payload = CITATION_ADDED['payload']
     with Session(db._engine, future=True) as sess:
@@ -237,10 +273,11 @@ async def test_citation_added(db, handle_event, CITATION_ADDED):
         assert res.text == text
 
 @pytest.mark.asyncio
-async def test_person_added(db, handle_event, CITATION_ADDED, PERSON_ADDED):
-    for i, event in enumerate([CITATION_ADDED, PERSON_ADDED]):
+async def test_person_added(db, handle_event, SUMMARY_ADDED, PERSON_ADDED):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED]):
         event['event_id'] = i + 1
-    handle_event(CITATION_ADDED)
+    handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
     payload = PERSON_ADDED['payload']
     names = payload['person_name']
@@ -255,11 +292,12 @@ async def test_person_added(db, handle_event, CITATION_ADDED, PERSON_ADDED):
 
 
 @pytest.mark.asyncio
-async def test_person_tagged(db, handle_event, CITATION_ADDED, PERSON_ADDED,
+async def test_person_tagged(db, handle_event, SUMMARY_ADDED, PERSON_ADDED,
     PERSON_TAGGED):
-    for i, event in enumerate([CITATION_ADDED, PERSON_ADDED, PERSON_TAGGED]):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED]):
         event['event_id'] = i + 1
-    handle_event(CITATION_ADDED)
+    handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
     handle_event(PERSON_TAGGED)
     payload = PERSON_ADDED['payload']
@@ -285,10 +323,10 @@ async def test_person_tagged(db, handle_event, CITATION_ADDED, PERSON_ADDED,
 
 
 @pytest.mark.asyncio
-async def test_place_added(db, handle_event, CITATION_ADDED, PLACE_ADDED):
-    for i, event in enumerate([CITATION_ADDED, PLACE_ADDED]):
+async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
+    for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED]):
         event['event_id'] = i + 1
-    handle_event(CITATION_ADDED)
+    handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     payload = PLACE_ADDED['payload']
     names = payload['place_name']
@@ -302,11 +340,12 @@ async def test_place_added(db, handle_event, CITATION_ADDED, PLACE_ADDED):
         assert res.names == names
 
 @pytest.mark.asyncio
-async def test_place_tagged(db, handle_event, CITATION_ADDED, PLACE_ADDED,
+async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED,
     PLACE_TAGGED):
-    for i, event in enumerate([CITATION_ADDED, PLACE_ADDED, PLACE_TAGGED]):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED]):
         event['event_id'] = i + 1
-    handle_event(CITATION_ADDED)
+    handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     handle_event(PLACE_TAGGED)
     payload = PLACE_ADDED['payload']
@@ -338,10 +377,11 @@ async def test_place_tagged(db, handle_event, CITATION_ADDED, PLACE_ADDED,
 
 
 @pytest.mark.asyncio
-async def test_time_added(db, handle_event, CITATION_ADDED, TIME_ADDED):
-    for i, event in enumerate([CITATION_ADDED, TIME_ADDED]):
+async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED]):
         event['event_id'] = i + 1
-    handle_event(CITATION_ADDED)
+    handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     payload = TIME_ADDED['payload']
     name = payload['time_name']
@@ -356,11 +396,12 @@ async def test_time_added(db, handle_event, CITATION_ADDED, TIME_ADDED):
 
 
 @pytest.mark.asyncio
-async def test_time_tagged(db, handle_event, CITATION_ADDED, TIME_ADDED,
+async def test_time_tagged(db, handle_event, SUMMARY_ADDED, TIME_ADDED,
     TIME_TAGGED):
-    for i, event in enumerate([CITATION_ADDED, TIME_ADDED, TIME_TAGGED]):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED]):
         event['event_id'] = i + 1
-    handle_event(CITATION_ADDED)
+    handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     handle_event(TIME_TAGGED)
     payload = TIME_ADDED['payload']
@@ -385,8 +426,10 @@ async def test_time_tagged(db, handle_event, CITATION_ADDED, TIME_ADDED,
         assert c == 2
 
 @pytest.mark.asyncio
-async def test_meta_added_basic(db, handle_event, CITATION_ADDED, META_ADDED_basic):
-    for i, event in enumerate([CITATION_ADDED, META_ADDED_basic]):
+async def test_meta_added_basic(db, handle_event, SUMMARY_ADDED, CITATION_ADDED,
+    META_ADDED_basic):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_basic]):
         event['event_id'] = i + 1
     citation_guid = CITATION_ADDED['payload']['citation_guid']
     meta = dict(**META_ADDED_basic['payload'])
@@ -394,7 +437,7 @@ async def test_meta_added_basic(db, handle_event, CITATION_ADDED, META_ADDED_bas
     del meta['citation_guid']
     del meta['meta_guid']
     meta_string = json.dumps(meta)
-
+    handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
     # make sure meta is starts empty
     with Session(db._engine, future=True) as sess:
@@ -410,9 +453,10 @@ async def test_meta_added_basic(db, handle_event, CITATION_ADDED, META_ADDED_bas
         assert res.meta == meta_string
 
 @pytest.mark.asyncio
-async def test_meta_added_more(db, handle_event, CITATION_ADDED,
+async def test_meta_added_more(db, handle_event, SUMMARY_ADDED, CITATION_ADDED,
     META_ADDED_more):
-    for i, event in enumerate([CITATION_ADDED, META_ADDED_more]):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_more]):
         event['event_id'] = i + 1
     citation_guid = CITATION_ADDED['payload']['citation_guid']
     meta = dict(**META_ADDED_more['payload'])
@@ -420,7 +464,7 @@ async def test_meta_added_more(db, handle_event, CITATION_ADDED,
     del meta['citation_guid']
     del meta['meta_guid']
     meta_string = json.dumps(meta)
-
+    handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
     # make sure meta is starts empty
     with Session(db._engine, future=True) as sess:
@@ -436,7 +480,12 @@ async def test_meta_added_more(db, handle_event, CITATION_ADDED,
         assert res.meta == meta_string
 
 @pytest.mark.asyncio
-async def test_reject_event_with_duplicate_id(db, handle_event, CITATION_ADDED):
+async def test_reject_event_with_duplicate_id(db, handle_event, SUMMARY_ADDED, 
+    CITATION_ADDED):
+    # ensure each event_id is unique to prevent duplicate_event errors
+    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED]):
+        event['event_id'] = i + 1
+    handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
     with pytest.raises(DuplicateEventError):
         handle_event(CITATION_ADDED)

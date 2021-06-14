@@ -26,21 +26,33 @@ class QueryHandler:
     def _map_query_handlers(self):
         """A dict of known query types and the methods which process them"""
         return {
-            'GET_CITATIONS_BY_GUID': self._handle_get_citations_by_guid,
+            'GET_SUMMARIES_BY_GUID': self._handle_get_summaries_by_guid,
+            'GET_CITATION_BY_GUID': self._handle_get_citation_by_guid,
             'GET_MANIFEST': self._handle_get_manifest, 
             'GET_GUIDS_BY_NAME': self._handle_get_guids_by_name,
             'GET_GUIDS_BY_NAME_BATCH': self._handle_get_guids_by_name_batch,
         }
 
-    def _handle_get_citations_by_guid(self, query):
-        """Fetch a series of citations and their associated data by guid"""
-        citation_guids = query['payload']['citation_guids']
-        res = self._db.get_citations(citation_guids)
+    def _handle_get_summaries_by_guid(self, query):
+        """Fetch a series of summaries by a list of guids"""
+
+        summary_guids = query['payload']['summary_guids']
+        res = self._db.get_summaries(summary_guids=summary_guids)
         return {
-            'type': 'CITATIONS_BY_GUID',
+            'type': 'SUMMARIES_BY_GUID',
             'payload': {
-                'citations': res
+                'summaries': res
             }
+        }
+
+    def _handle_get_citation_by_guid(self, query):
+        """Fetch a citation and its associated data by guid"""
+        citation_guid = query['payload']['citation_guid']
+        res = self._db.get_citation(citation_guid)
+        return {
+            'type': 'CITATION_BY_GUID',
+            # NOTE: refactored for issue 11 on 6.14.21
+            'payload': { 'citation': res}
         }
     
     def _handle_get_manifest(self, query):
