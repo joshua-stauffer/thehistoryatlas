@@ -55,7 +55,7 @@ class EventHandler:
             'PLACE_ADDED':      self._handle_place_added,
             'TIME_ADDED':       self._handle_time_added,
             'PERSON_TAGGED':    self._handle_person_tagged,
-            'PLACE_TAGGED':     self._handle_place_added,
+            'PLACE_TAGGED':     self._handle_place_tagged,
             'TIME_TAGGED':      self._handle_time_tagged,
         }
         

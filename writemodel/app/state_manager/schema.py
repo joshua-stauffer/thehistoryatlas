@@ -29,7 +29,7 @@ class GUID(Base):
     __tablename__ = 'guids'
 
     id = Column(Integer, primary_key=True)
-    value = Column(String(36))
+    value = Column(String(36), unique=True)
     type = Column(String(32))       # person? place? citation? meta?
 
     def __repr__(self):
