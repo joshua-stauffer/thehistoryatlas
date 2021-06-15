@@ -5,9 +5,13 @@ const { gql } = require('apollo-server')
 export const typeDefs = gql`
   type Query {
 
-    GetCitationsByGUID(
-      citationGUIDs: [String!]!
-    ): [Citation]
+    GetSummariesByGUID(
+      summary_guids: [String!]!
+    ): [Summary]
+
+    GetCitationByGUID(
+      citationGUID: String!
+    ): Citation
 
     GetManifest(
       entityType: EntityType!
@@ -30,12 +34,18 @@ export const typeDefs = gql`
   type Mutation {
 
     PublishNewCitation(
-      AnnotatedCitation: AnnotateCitationInput!
+      Annotation: AnnotateCitationInput!
     ): PublishCitationResponse!
 
   }
 
   # general types
+
+  type Summary {
+    guid: String!
+    text: String!
+    tags: [Tag!]!
+  }
   
   type CitationByGUID {
     citation_guid: String
@@ -44,7 +54,7 @@ export const typeDefs = gql`
   type Citation {
     guid: String!
     text: String!
-    tags: [Tag!]!
+    # tags: [Tag!]!
     meta: MetaData!
   }
 
@@ -137,8 +147,11 @@ export const typeDefs = gql`
   # mutation types
 
   input AnnotateCitationInput {
-    text: String!
-    tags: [TagInput!]!
+    citation_guid: String!
+    citation: String!
+    summary_guid: String!
+    summary: String!
+    summary_tags: [TagInput!]!
     meta: MetaDataInput!
   }
 

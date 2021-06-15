@@ -1,11 +1,7 @@
 // Resolver for the History Atlas Apollo GraphQL API
 
-import { v4 } from 'uuid';
 import { Context } from './index';
-import {
-  GetCitationsByGUIDsArgs,
-  Resolver
-} from './types'
+import { Resolver, WriteModelResponse } from './types'
 
 const APP_VERSION = '0.1.0'
 
@@ -20,20 +16,44 @@ interface Resolvers {
 
 export const resolvers: Resolvers = {
   Query: {
-    GetCitationsByGUID: async (_,
-      { citationGUIDs }: GetCitationsByGUIDsArgs,
+
+    GetSummariesByGUID: async (_,
+      { summary_guids }: Resolver.GetSummariesByGUIDsArgs,
+      { queryReadModel }: Context) => {
+      const msg = {
+        type: "GET_SUMMARIES_BY_GUID",
+        payload: {
+          summary_guids: summary_guids
+        }
+      }
+      try {
+        console.debug(`Publishing query`, msg)
+        const { payload } = await queryReadModel(msg) as Resolver.SummariesByGUID;
+        console.debug('received result: ', payload)
+        return payload.summaries
+      } catch (err) {
+        return {
+          code: 'Error',
+          success: false,
+          message: err
+        }
+      }
+    },
+    
+    GetCitationByGUID: async (_,
+      { citationGUID }: Resolver.GetCitationByGUIDsArgs,
       { queryReadModel }: Context) => {
         const msg = {
-          type: "GET_CITATIONS_BY_GUID",
+          type: "GET_CITATION_BY_GUID",
           payload: {
-            citation_guids: citationGUIDs,
+            citation_guid: citationGUID
           }
         }
         try {
-          console.info(`Publishing query`, msg)
-          const { payload } = await queryReadModel(msg) as Resolver.CitationsByGUID;
-          console.log('received result: ', payload)
-          return payload.citations
+          console.debug(`Publishing query`, msg)
+          const { payload } = await queryReadModel(msg) as Resolver.CitationByGUID;
+          console.debug('received result: ', payload)
+          return payload.citation
         } catch (err) {
           return {
             code: 'Error',
@@ -53,11 +73,11 @@ export const resolvers: Resolvers = {
         }
       }
       try {
-        console.info(`Publishing query `, msg)
-        console.info(msg.payload)
+        console.debug(`Publishing query `, msg)
+        console.debug(msg.payload)
 
         const { payload } = await queryReadModel(msg) as Resolver.Manifest;
-        console.log('received result: ', payload)
+        console.debug('received result: ', payload)
         return {
           guid: payload.guid,
           citation_guids: payload.citation_guids
@@ -80,10 +100,10 @@ export const resolvers: Resolvers = {
         }
       }
       try {
-        console.info(`Publishing query ${msg}`)
+        console.debug(`Publishing query ${msg}`)
         const { payload } = await queryReadModel(msg) as Resolver.GUIDByName;
-        console.log('received result: ', payload)
-        console.log('payload.guids is ', payload.guids)
+        console.debug('received result: ', payload)
+        console.debug('payload.guids is ', payload.guids)
         return payload
       } catch (err) {
         return {
@@ -144,19 +164,15 @@ export const resolvers: Resolvers = {
       }
     }
 
-
   }, // end of Query
 
   Mutation: {
 
     PublishNewCitation: async (_,
-      { AnnotatedCitation }: Resolver.PublishNewCitationArgs,
+      { Annotation }: Resolver.PublishNewCitationArgs,
       { emitCommand }: Context) => {
-        console.log('Publishing the following command: ', AnnotatedCitation)
-        const payload = {
-          ...AnnotatedCitation,
-          GUID: v4()
-        }
+        console.debug('Publishing the following command: ', Annotation)
+        const payload = Annotation;
         try {
           const result = await emitCommand({
             type: 'PUBLISH_NEW_CITATION',
@@ -165,8 +181,21 @@ export const resolvers: Resolvers = {
             // TODO: update this to reflect the current user
             user: 'test-user',
             payload: payload
-          })
-          console.log('received result from emitting command ', result)
+          }) as WriteModelResponse;
+          console.debug('received result from emitting command ', result)
+          if (result.type === 'COMMAND_FAILED') {
+            let message: string;
+            if (result.payload) {
+              message = 'Your Citation has not been processed due to an error: ' + result.payload.reason
+            } else {
+              message = 'Your Citation has not been processed due to an error.'
+            }
+            return {
+              code: 'Failure',
+              success: false,
+              message: message
+            }
+          }
           return {
             code: 'Success',
             success: true,
@@ -176,7 +205,7 @@ export const resolvers: Resolvers = {
           return {
             code: 'Error',
             success: false,
-            message: err
+            message: err // this may run the risk of exposing sensitive data -- debug only
           }
         }
       }

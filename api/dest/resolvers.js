@@ -2,22 +2,42 @@
 // Resolver for the History Atlas Apollo GraphQL API
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = void 0;
-const uuid_1 = require("uuid");
 const APP_VERSION = '0.1.0';
 exports.resolvers = {
     Query: {
-        GetCitationsByGUID: async (_, { citationGUIDs }, { queryReadModel }) => {
+        GetSummariesByGUID: async (_, { summary_guids }, { queryReadModel }) => {
             const msg = {
-                type: "GET_CITATIONS_BY_GUID",
+                type: "GET_SUMMARIES_BY_GUID",
                 payload: {
-                    citation_guids: citationGUIDs,
+                    summary_guids: summary_guids
                 }
             };
             try {
-                console.info(`Publishing query`, msg);
+                console.debug(`Publishing query`, msg);
                 const { payload } = await queryReadModel(msg);
-                console.log('received result: ', payload);
-                return payload.citations;
+                console.debug('received result: ', payload);
+                return payload.summaries;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        GetCitationByGUID: async (_, { citationGUID }, { queryReadModel }) => {
+            const msg = {
+                type: "GET_CITATION_BY_GUID",
+                payload: {
+                    citation_guid: citationGUID
+                }
+            };
+            try {
+                console.debug(`Publishing query`, msg);
+                const { payload } = await queryReadModel(msg);
+                console.debug('received result: ', payload);
+                return payload.citation;
             }
             catch (err) {
                 return {
@@ -36,10 +56,10 @@ exports.resolvers = {
                 }
             };
             try {
-                console.info(`Publishing query `, msg);
-                console.info(msg.payload);
+                console.debug(`Publishing query `, msg);
+                console.debug(msg.payload);
                 const { payload } = await queryReadModel(msg);
-                console.log('received result: ', payload);
+                console.debug('received result: ', payload);
                 return {
                     guid: payload.guid,
                     citation_guids: payload.citation_guids
@@ -61,10 +81,10 @@ exports.resolvers = {
                 }
             };
             try {
-                console.info(`Publishing query ${msg}`);
+                console.debug(`Publishing query ${msg}`);
                 const { payload } = await queryReadModel(msg);
-                console.log('received result: ', payload);
-                console.log('payload.guids is ', payload.guids);
+                console.debug('received result: ', payload);
+                console.debug('payload.guids is ', payload.guids);
                 return payload;
             }
             catch (err) {
@@ -124,12 +144,9 @@ exports.resolvers = {
         }
     },
     Mutation: {
-        PublishNewCitation: async (_, { AnnotatedCitation }, { emitCommand }) => {
-            console.log('Publishing the following command: ', AnnotatedCitation);
-            const payload = {
-                ...AnnotatedCitation,
-                GUID: uuid_1.v4()
-            };
+        PublishNewCitation: async (_, { Annotation }, { emitCommand }) => {
+            console.debug('Publishing the following command: ', Annotation);
+            const payload = Annotation;
             try {
                 const result = await emitCommand({
                     type: 'PUBLISH_NEW_CITATION',
@@ -139,7 +156,21 @@ exports.resolvers = {
                     user: 'test-user',
                     payload: payload
                 });
-                console.log('received result from emitting command ', result);
+                console.debug('received result from emitting command ', result);
+                if (result.type === 'COMMAND_FAILED') {
+                    let message;
+                    if (result.payload) {
+                        message = 'Your Citation has not been processed due to an error: ' + result.payload.reason;
+                    }
+                    else {
+                        message = 'Your Citation has not been processed due to an error.';
+                    }
+                    return {
+                        code: 'Failure',
+                        success: false,
+                        message: message
+                    };
+                }
                 return {
                     code: 'Success',
                     success: true,
@@ -150,7 +181,7 @@ exports.resolvers = {
                 return {
                     code: 'Error',
                     success: false,
-                    message: err
+                    message: err // this may run the risk of exposing sensitive data -- debug only
                 };
             }
         }

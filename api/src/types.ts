@@ -3,43 +3,7 @@ Collection of application-wide types
 April 16th, 2021
 */
 
-export interface Message {
-  type: string;
-  payload: unknown;
-}
 
-export interface BoundingBox {
-  upperLeft: number;
-  bottomRight: number;
-}
-
-export interface _Location {
-  point: Point;
-  shape?: string;
-}
-
-export interface Point {
-  latitude: number;
-  longitude: number;
-}
-
-export interface PlaceSummaryByTimeTag {
-  placeName: string[];
-  placeLocation: Location;
-  citationCount: number;
-  personCount: number;
-}
-
-export interface TimeTagByFocus {
-  citations: Citation[];
-  adjacentPeople: Person[];
-}
-
-export interface Citation {
-  text: string;
-  tags: Tag[];
-  meta: MetaData;
-}
 
 export interface Tag {
   type: EntityType;
@@ -71,9 +35,7 @@ export interface Location {
   geoshape: string;
 }
 
-export interface GetCitationsByGUIDsArgs {
-  citationGUIDs: string[]
-}
+
 
 export interface CitationsByGUID {
   type: string;
@@ -106,9 +68,6 @@ export interface CitationsByGUID {
   }
 }
 
-
-
-
 export interface WriteModelCommand {
   type: string;
   payload: any;
@@ -116,6 +75,14 @@ export interface WriteModelCommand {
   user?: string;
   app_version: string;
   citation_guid?: string;
+}
+
+export interface WriteModelResponse {
+  type: string;
+  payload?: {
+    reason: string;
+    existing_event_guid?: string;
+  }
 }
 
 export type ReadModelResponse = FailedReadModelResponse | SuccessfulReadModelResponse;
@@ -135,7 +102,8 @@ interface SuccessfulReadModelResponse {
 export interface ReadModelQuery {
   type: string;
   payload: {
-    citation_guids?: string[];
+    citation_guid?: string;
+    summary_guids?: string[];
     entityType?: EntityType;
     GUID?: string;
     name?: string;
@@ -158,7 +126,16 @@ export interface GeoServiceQuery {
   }
 }
 
+// type defs for GraphQL resolvers
 export namespace Resolver {
+
+  export interface GetCitationByGUIDsArgs {
+    citationGUID: string;
+  }
+  
+  export interface GetSummariesByGUIDsArgs {
+    summary_guids: string[];
+  }
 
   export interface GetManifestArgs {
     entityType: EntityType;
@@ -166,10 +143,13 @@ export namespace Resolver {
   }
 
   export interface PublishNewCitationArgs {
-    AnnotatedCitation: {
-      text: string;
-      tags: Tag[];
+    Annotation: {
+      citation: string;
       meta: MetaData;
+      citation_guid: string;
+      summary_guid: string;
+      summary: string;
+      summary_tags: Tag[];
     }
   }
 
@@ -186,10 +166,37 @@ export namespace Resolver {
   }
   // Query results
 
-  export interface CitationsByGUID {
+
+
+  export interface SummariesByGUID {
     type: string;
     payload: {
-      citations: {
+      summaries: Summary[];
+    }
+  }
+
+  export interface Summary {
+    guid: string;
+    text: string;
+    tags: {
+      start_char: number;
+      stop_char: number;
+      tag_type: EntityType;
+      tag_guid: string;
+      name?: string;
+      names?: string[];
+      coords?: {
+        latitude: number;
+        longitude: number;
+        geoshape?: string;
+      }
+    }
+  }
+
+  export interface CitationByGUID {
+    type: string;
+    payload: {
+      citation: {
         citation_guid: {
           text: string;
           meta: {
@@ -199,19 +206,6 @@ export namespace Resolver {
             pubDate?: string;
             pageNum?: number;
           }
-          tags: {
-            start_char: number;
-            stop_char: number;
-            tag_type: EntityType;
-            tag_guid: string;
-            name?: string;
-            names?: string[];
-            coords?: {
-              latitude: number;
-              longitude: number;
-              geoshape?: string;
-            }
-          }[]
         }
       }
     }
