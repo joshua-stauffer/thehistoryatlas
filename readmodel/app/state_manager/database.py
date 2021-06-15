@@ -38,7 +38,7 @@ class Database:
     # QUERIES
 
     def get_citation(self, citation_guid: str) -> dict:
-        """Expects acitation guids and returns its data in a dict"""
+        """Resolves citation GUID to its value in the database"""
         # NOTE: refactored as part of resolving issue 11 on 6.14.21
         #       previously known as get_citations, and returned a list
         log.debug(f'Looking up citation for citation GUID {citation_guid}')
