@@ -4,11 +4,13 @@ Friday, April 9th 2021
 """
 
 import logging
-from re import S
 from uuid import uuid4
 
-from .handler_errors import (CitationExistsError, UnknownCommandTypeError,
-    CitationMissingFieldsError, GUIDError, UnknownTagTypeError)
+from .handler_errors import CitationExistsError
+from .handler_errors import UnknownCommandTypeError
+from .handler_errors import CitationMissingFieldsError
+from .handler_errors import GUIDError
+from .handler_errors import UnknownTagTypeError
 from .event_composer import EventComposer
 
 log = logging.getLogger(__name__)
@@ -75,11 +77,11 @@ class CommandHandler:
         user = cmd['user']
         timestamp = cmd['timestamp']
         app_version = cmd['app_version']
-        citation_GUID = cmd['payload']['GUID']
-        tags = cmd['payload']['tags']
+        citation_guid = cmd['payload']['citation_guid']
+        tags = cmd['payload']['summary_tags']
         meta = cmd['payload']['meta']
-        summary = cmd['payload']['summary']
-        summary_guid = summary['GUID']
+        summary_text = cmd['payload']['summary']
+        summary_guid = cmd['payload']['summary_guid']
 
         composer = EventComposer(
             transaction_guid=str(uuid4()),
@@ -88,21 +90,21 @@ class CommandHandler:
             timestamp=timestamp)
 
         # validate that this text is unique
-        text = cmd['payload']['text']
+        text = cmd['payload']['citation']
         hashed_text = self._hashfunc(text)
         log.debug(f'Text hash is {hashed_text}')
         if hash_guid := self._db.check_citation_for_uniqueness(hashed_text):
             log.info('tried (and failed) to publish duplicate citation')
             raise CitationExistsError(hash_guid)
         # add this to short term memory for preventing immediate duplication
-        self._db.add_to_stm(key=hashed_text, value=citation_GUID)
+        self._db.add_to_stm(key=hashed_text, value=citation_guid)
 
         # check citation GUID
-        if cit_res := self._db.check_guid_for_uniqueness(citation_GUID):
+        if cit_res := self._db.check_guid_for_uniqueness(citation_guid):
             raise GUIDError('Citation GUID was not unique. ' + \
                             f'Collided with GUID of type {cit_res}')
         # add this to short term memory for preventing immediate duplication
-        self._db.add_to_stm(key=citation_GUID, value='CITATION')
+        self._db.add_to_stm(key=citation_guid, value='CITATION')
 
         # check tag GUIDs. if they match, ensure that they are labeled correctly
         # tags will be added to composer by type during validation
@@ -118,7 +120,7 @@ class CommandHandler:
         self._db.add_to_stm(key=meta_guid, value='META')        
 
         composer.make_META_ADDED(
-            citation_guid=citation_GUID,
+            citation_guid=citation_guid,
             meta_guid=meta_guid,
             author=meta['author'],
             publisher=meta['publisher'],
@@ -132,7 +134,7 @@ class CommandHandler:
             text=text,
             tags=tag_guids,
             meta=meta_guid,
-            citation_guid=citation_GUID,
+            citation_guid=citation_guid,
             summary_guid=summary_guid)
 
         # check summary guid
@@ -141,13 +143,12 @@ class CommandHandler:
                 raise GUIDError(f'Summary GUID collided with GUID of type {s_res}')
             # we're adding a new citation to this summary
             composer.make_SUMMARY_TAGGED(
-                citation_guid=citation_GUID,
+                citation_guid=citation_guid,
                 summary_guid=summary_guid)
         else:
             # this is a new summary
-            summary_text = summary['text']
             composer.make_SUMMARY_ADDED(
-                citation_guid=citation_GUID,
+                citation_guid=citation_guid,
                 summary_guid=summary_guid,
                 text=summary_text)
             self._db.add_to_stm(key=summary_guid, value='SUMMARY')
