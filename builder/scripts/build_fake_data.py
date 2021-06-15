@@ -25,10 +25,10 @@ MAX_YEAR = 3115
 MIN_LONGEVITY = 19
 MAX_LONGEVITY = 102
 MIN_EVENTS = 1
-MAX_EVENTS = 50
+MAX_EVENTS = 100
 
 # max number of people
-MAX_PEOPLE = 500
+MAX_PEOPLE = 100
 
 # date constants
 # randomly generated numbers less than this will result in a date of that specificity.
@@ -105,12 +105,14 @@ def build():
         summary = generate_summary(
             entities=entities,
             text=text)
-        tags = [generate_tag(entity, citation) for entity in entities]
+        tags = [generate_tag(entity, text=summary) for entity in entities]
         meta = generate_meta()
         events.append({
-            'text': citation,
+            'citation_guid': str(uuid4()),
+            'citation': citation,
+            'summary_guid': str(uuid4()),
             'summary': summary,
-            'tags': tags,
+            'summary_tags': tags,
             'meta': meta
         })
     
@@ -122,7 +124,7 @@ def build():
     # calculate stats on generated data
     total_counter = defaultdict(set)
     for event in events:
-        tags = event.get('tags')
+        tags = event.get('summary_tags')
         for tag in tags:
             total_counter[tag['type']].add(tag['GUID'])
     totals = dict()

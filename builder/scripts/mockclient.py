@@ -21,7 +21,9 @@ To fill the database with around script-generated fake events, use:
     {fake_data_dir}
 
 To fill the database with a (limited) amount of real data, use:
-    {real_data_dir}
+    {real_data_dir} 
+    WARNING: 
+    (6.14.21 -- with updates for issue 11 real data is not currently in the correct format)
 
 Please enter the full path of your source directory:
 """)
@@ -37,7 +39,7 @@ for file in os.scandir(src_dir):
 
 mutation = """
 mutation publishWithVariables($input: AnnotateCitationInput!) {
-  PublishNewCitation(AnnotatedCitation: $input) {
+  PublishNewCitation(Annotation: $input) {
     code
     success
     message
@@ -61,7 +63,8 @@ for i, entry in enumerate(data):
     # print status bar
     if i % block == 0:
         progress_count = i // block
-        print('.' * progress_count)
+        line = '.' * progress_count + ' ' * (79 - progress_count) + '|'
+        print(line)
 
     # limit amount published per second
     """ 
@@ -78,8 +81,6 @@ for i, entry in enumerate(data):
             next_start = now + datetime.timedelta(seconds=1)
     """
 
-    # for testing purposes, delete summary
-    del entry['summary']
     body = {
         'query': mutation,
         'variables': {'input': entry}
