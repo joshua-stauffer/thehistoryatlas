@@ -1,18 +1,29 @@
 import { useState } from 'react';
 import { SearchBar } from './components/searchBar';
+import { EventFeed } from './components/eventFeed';
+import { EntityType } from './types';
 
-type EntityID = null | string;
+export type CurrentEntity = null | Entity;
+
+interface Entity {
+  guid: string;
+  type: EntityType;
+}
 
 export const HomePage = () => {
-  const [entityID, setEntityID] = useState<EntityID>(null);
+  const [currentEntity, setCurrentEntity] = useState<CurrentEntity>(null);
 
-  if (!entityID) {
+  if (!currentEntity) {
     // select an entity
     return (
-      <SearchBar handleEntityClick={setEntityID}/>
+      <SearchBar handleEntityClick={setCurrentEntity}/>
     )
   }
   return (
-    <h1>Entity was chosen! {entityID}</h1>
+    <EventFeed 
+      currentFocusID={currentEntity.guid}
+      currentFocusType={currentEntity.type}
+      lastCitationID={"a28adc11-5ccb-4a32-9fa0-c01ddf447c54"}
+    />
   )
 }

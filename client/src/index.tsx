@@ -8,7 +8,7 @@ import { ApolloProvider } from '@apollo/client/react';
 import { cache } from './graphql/cache';
 
 
-const client = new ApolloClient({
+export const client = new ApolloClient({
   cache,
   uri: 'http://localhost:4000',
   connectToDevTools: true
