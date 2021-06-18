@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { SearchBar } from './components/searchBar';
 import { EventFeed } from './components/eventFeed';
@@ -6,8 +6,10 @@ import { EntityType } from './types';
 import { handleFeedScroll } from './scrollLogic';
 import { sliceManifest } from './sliceManifest';
 import { initManifestSubset } from './initializeManifestSubset';
-import { GET_MANIFEST, GetManifestResult, GetManifestVars } from './graphql/queries';
-
+import { 
+  GET_MANIFEST, GetManifestResult, GetManifestVars,
+  GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
+} from './graphql/queries';
 
 export type CurrentEntity = null | Entity;
 
@@ -21,7 +23,11 @@ export interface EntityHistory {
   rootEventID?: string;
 }
 
-export const HomePage = () => {
+interface HomePageProps {
+
+}
+
+export const HomePage = (props: HomePageProps) => {
   
   // history logic
   const [entityHistory, setEntityHistory] = useState<EntityHistory[]>([{
@@ -37,10 +43,11 @@ export const HomePage = () => {
   }
   const { entity: currentEntity, rootEventID } = entityHistory[entityHistory.length - 1]
   // track events currently in feed
-  const [ currentEvents, setCurrentEvents ] = useState<string[] | null>(null)
+  const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
+  useEffect(() => console.log('current events are ', currentEvents))
 
   // load manifest on current entity
-  const { 
+  const {
     loading: manifestLoading, 
     error: manifestError, 
     data: manifestData 
@@ -48,12 +55,28 @@ export const HomePage = () => {
     GET_MANIFEST,
     { variables: { GUID: currentEntity.guid, entityType: currentEntity.type} }
   )
+  useEffect(() => console.log('manifest data is ', manifestData))
+
+  // load summaries for slice of manifest currently in event feed
+  const {
+    loading: summariesLoading, 
+    error: summariesError, 
+    data: summariesData 
+  } = useQuery<GetSummariesByGUIDResult, GetSummariesByGUIDVars>(
+      GET_SUMMARIES_BY_GUID,
+      { variables: { summary_guids: currentEvents } }
+  )
+  if (summariesData) {
+    const { GetSummariesByGUID } = summariesData;
+  }
+  const summariesList = summariesData ? summariesData.GetSummariesByGUID : [];
+  useEffect(() => console.log('summaries list is ', summariesList))
 
   const feedRef = useRef<HTMLDivElement>(null)
 
   // feed logic
   // has the feed been initialized?
-  if (!currentEvents && manifestData) {
+  if (!currentEvents.length && manifestData) {
     setCurrentEvents(curEvents => {
       return initManifestSubset({
         eventCount: 20,
@@ -73,7 +96,6 @@ export const HomePage = () => {
       scrollTop: feedRef.current.scrollTop
     })
     setCurrentEvents(curEvents => {
-      if (!curEvents) return null;
       return sliceManifest({
         manifest: manifestData.GetManifest.citation_guids,
         manifestSubset: curEvents,
@@ -102,13 +124,21 @@ export const HomePage = () => {
     console.log(manifestError)
     return <h1>Error in loading manifest!</h1>
   }
-  if (!currentEvents) {
-    return <h1>Current Events havent loaded.</h1>
-  }
 
+  if (summariesLoading) return <h1>...loading summaries</h1>
+  if (summariesError) {
+    console.log(summariesError)
+    return <h1>Error in loading summaries!</h1>
+  }
+  if (!summariesData) {
+    return <h1>WTF?</h1>
+  }
+  if (!summariesData.GetSummariesByGUID) {
+    return <h1>hmm...</h1>
+  }
   return (
     <EventFeed 
-      summaryList={currentEvents}
+      summaryList={summariesList}
       feedRef={feedRef}
     />
   )

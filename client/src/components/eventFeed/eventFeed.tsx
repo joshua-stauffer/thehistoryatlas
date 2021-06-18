@@ -1,11 +1,9 @@
 import { Container } from './style';
-import { EntityType } from '../../types';
 import { EventFeedItem } from '../eventFeedItem';
 import { GetSummariesByGUIDResult } from '../../graphql/getSummariesByGUID';
 
 interface EventFeedProps {
-  // summaryList: GetSummariesByGUIDResult["GetSummaryByGUIDs"];
-  summaryList: string[];
+  summaryList: GetSummariesByGUIDResult["GetSummariesByGUID"];
   feedRef: React.RefObject<HTMLDivElement>;
 }
 
@@ -17,7 +15,7 @@ export const EventFeed = (props: EventFeedProps) => {
 
   return (
     <Container ref={feedRef}>
-      {summaryList.map(guid => <EventFeedItem guid={guid} key={guid}/>)}
+      {summaryList.map(summary => <EventFeedItem summary={summary} key={summary.guid}/>)}
     </Container>
   )
 }

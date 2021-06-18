@@ -2,7 +2,7 @@ import { gql } from "@apollo/client";
 
 export const GET_SUMMARIES_BY_GUID = gql`
   query SummaryQuery($summary_guids: [String!]!) {
-    GetSummaryByGUIDs(summary_guids: $summary_guids) {
+    GetSummariesByGUID(summary_guids: $summary_guids) {
       guid
       text
       tags {
@@ -16,7 +16,7 @@ export const GET_SUMMARIES_BY_GUID = gql`
 `;
 
 export interface GetSummariesByGUIDResult {
-  GetSummaryByGUIDs: {
+  GetSummariesByGUID: {
     guid: string;
     text: string;
     tags: {
