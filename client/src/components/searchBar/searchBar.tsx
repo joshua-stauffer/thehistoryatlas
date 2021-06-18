@@ -1,11 +1,11 @@
 import { useQuery } from '@apollo/client';
-import { useState, Dispatch, SetStateAction } from 'react';
+import { useState } from 'react';
 import { Container, InputBox, SubmitButton, QueryResult, QueryResultButton } from './style';
 import { GET_GUIDS_BY_NAME, GUIDsByNameResult, GUIDsByNameVars } from '../../graphql/queries';
-import { CurrentEntity } from '../../homePage';
+import { EntityHistory } from '../../homePage';
 
 interface SearchBarProps {
-  handleEntityClick: Dispatch<SetStateAction<CurrentEntity>>;
+  handleEntityClick: (entry: EntityHistory) => void;
 }
 
 export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {
@@ -31,18 +31,23 @@ export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {
       />
       <SubmitButton onClick={submitSearch}>Search</SubmitButton>
       <ul>
-        {data && data.GetGUIDsByName.summaries.map(summary =>
+        {data ? data.GetGUIDsByName.summaries.map(summary =>
           <QueryResult key={summary.guid}>
             <QueryResultButton
               onClick={() => handleEntityClick({
-                guid: summary.guid,
-                type: summary.type
+                entity: {
+                  guid: summary.guid,
+                  type: summary.type
+                },
+                rootEventID: undefined
               })}
               key={summary.guid}
             >{summary.type}: {summary.names} -- {summary.citation_count} citations,
              from {summary.first_citation_date} to {summary.last_citation_date}
             </QueryResultButton>
-          </QueryResult>)}
+          </QueryResult>)
+         : <li>Sorry, no results were found for that name.</li>
+        }
       </ul>
     </Container>
   )
