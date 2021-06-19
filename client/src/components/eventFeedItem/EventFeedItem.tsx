@@ -1,4 +1,5 @@
 import { ReactElement } from 'react';
+import { EntityHistory } from '../../homePage';
 import { SummaryBox, SummaryText, PersonTag, PlaceTag, TimeTag } from './style';
 import { prettifyDate } from '../../prettifyDate';
 import { BiTimeFive } from 'react-icons/bi';
@@ -16,10 +17,51 @@ interface EventFeedItemProps {
       stop_char: number;
     }[]
   }
+  setCurrentEntity: (entity: EntityHistory) => void;
 }
 
-export const EventFeedItem = ({ summary }: EventFeedItemProps) => {
+interface TagElementProps {
+  tagType: string;
+  tagText: string;
+  tagGUID: string;
+}
+
+
+export const EventFeedItem = ({ summary, setCurrentEntity }: EventFeedItemProps) => {
   const { text, tags } = summary;
+
+  const getTagElement = (props: TagElementProps): ReactElement<any, any> => {
+    const { tagType, tagText, tagGUID } = props;
+    switch (tagType) {
+  
+      case 'TIME':
+        const prettifiedTime = prettifyDate({ dateString: tagText })
+        return <TimeTag onClick={() => setCurrentEntity({ 
+          entity: {
+            type: "TIME",
+            guid: tagGUID
+          }
+        })}><BiTimeFive /> {prettifiedTime}</TimeTag>
+  
+      case 'PERSON':
+        return <PersonTag onClick={() => setCurrentEntity({
+          entity: {
+            type: 'PERSON',
+            guid: tagGUID
+          }
+        })}><GoPerson /> {tagText}</PersonTag>
+  
+      case "PLACE":
+        return <PlaceTag onClick={() => setCurrentEntity({
+          entity: {
+            type: 'PLACE',
+            guid: tagGUID
+          }
+        })}><VscLocation /> {tagText}</PlaceTag>
+  
+      default: throw new Error('Unknown tag type passed to getTagAndIcon')
+    }
+  }
 
   // add tags to text
   const textArray = []; // TODO: add better typing here
@@ -29,7 +71,8 @@ export const EventFeedItem = ({ summary }: EventFeedItemProps) => {
   for (const tag of sortedTags) {
     const TagElement = getTagElement({
       tagText: text.slice(tag.start_char, tag.stop_char),
-      tagType: tag.tag_type
+      tagType: tag.tag_type,
+      tagGUID: tag.tag_guid
     })
     textArray.push(text.slice(pointer, tag.start_char))
     textArray.push(TagElement)
@@ -47,25 +90,4 @@ export const EventFeedItem = ({ summary }: EventFeedItemProps) => {
   )
 }
 
-interface TagElementProps {
-  tagType: string;
-  tagText: string;
-}
 
-const getTagElement = (props: TagElementProps): ReactElement<any, any> => {
-  const { tagType, tagText } = props;
-  switch (tagType) {
-
-    case "TIME":
-      const prettifiedTime = prettifyDate({ dateString: tagText })
-      return <TimeTag><BiTimeFive /> {prettifiedTime}</TimeTag>
-
-    case "PERSON":
-      return <PersonTag><GoPerson /> {tagText}</PersonTag>
-
-    case "PLACE":
-      return <PlaceTag><VscLocation /> {tagText}</PlaceTag>
-
-    default: throw new Error('Unknown tag type passed to getTagAndIcon')
-  }
-}

@@ -39,15 +39,16 @@ export const HomePage = (props: HomePageProps) => {
     },
     //rootEventID: 'b947ffcd-a7e6-490c-ad65-e969642f9bb7'
   }]);
-  const setCurrentEntity = (entry: EntityHistory): void => {
-    setEntityHistory(history => [...history, entry])
+  const setCurrentEntity = (entity: EntityHistory): void => {
+    setEntityHistory(history => [...history, entity])
   }
   const { entity: currentEntity, rootEventID } = entityHistory[entityHistory.length - 1]
+
   // track events currently in feed
   const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
   const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
 
-  // load manifest on current entity
+    // load manifest on current entity
   const {
     loading: manifestLoading, 
     error: manifestError, 
@@ -131,6 +132,7 @@ export const HomePage = (props: HomePageProps) => {
     <EventFeed 
       summaryList={currentSummaries}
       feedRef={feedRef}
+      setCurrentEntity={setCurrentEntity}
     />
   )
 }
