@@ -27,6 +27,7 @@ interface HomePageProps {
 
 }
 
+
 export const HomePage = (props: HomePageProps) => {
   
   // history logic
@@ -36,7 +37,7 @@ export const HomePage = (props: HomePageProps) => {
       guid: 'bd025284-890b-42c5-88a7-27f417737955',
       type: 'PERSON',
     },
-    rootEventID: 'b947ffcd-a7e6-490c-ad65-e969642f9bb7'
+    //rootEventID: 'b947ffcd-a7e6-490c-ad65-e969642f9bb7'
   }]);
   const setCurrentEntity = (entry: EntityHistory): void => {
     setEntityHistory(history => [...history, entry])
@@ -44,7 +45,7 @@ export const HomePage = (props: HomePageProps) => {
   const { entity: currentEntity, rootEventID } = entityHistory[entityHistory.length - 1]
   // track events currently in feed
   const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
-  useEffect(() => console.log('current events are ', currentEvents))
+  const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
 
   // load manifest on current entity
   const {
@@ -55,7 +56,6 @@ export const HomePage = (props: HomePageProps) => {
     GET_MANIFEST,
     { variables: { GUID: currentEntity.guid, entityType: currentEntity.type} }
   )
-  useEffect(() => console.log('manifest data is ', manifestData))
 
   // load summaries for slice of manifest currently in event feed
   const {
@@ -66,18 +66,19 @@ export const HomePage = (props: HomePageProps) => {
       GET_SUMMARIES_BY_GUID,
       { variables: { summary_guids: currentEvents } }
   )
-  if (summariesData) {
-    const { GetSummariesByGUID } = summariesData;
-  }
-  const summariesList = summariesData ? summariesData.GetSummariesByGUID : [];
-  useEffect(() => console.log('summaries list is ', summariesList))
+
+  // const summariesList = summariesData ? summariesData.GetSummariesByGUID : [];
+  useEffect(() => {
+    if (!summariesData) return;
+    setCurrentSummaries(summariesData.GetSummariesByGUID)
+  }, [summariesData])
 
   const feedRef = useRef<HTMLDivElement>(null)
 
   // feed logic
   // has the feed been initialized?
   if (!currentEvents.length && manifestData) {
-    setCurrentEvents(curEvents => {
+    setCurrentEvents(() => {
       return initManifestSubset({
         eventCount: 20,
         manifest: manifestData.GetManifest.citation_guids,
@@ -89,6 +90,7 @@ export const HomePage = (props: HomePageProps) => {
   const handleScroll = (): void => {
     if (!feedRef.current) return;
     if (!manifestData) return;
+    if (summariesLoading) return;
     const handleScrollResult = handleFeedScroll({
       pixelsBeforeReload: 1000,
       offsetHeight: feedRef.current.offsetHeight,
@@ -102,9 +104,9 @@ export const HomePage = (props: HomePageProps) => {
         handleScrollResult: handleScrollResult,
         loadCount: 20
       })
-    })
+    }) // else, we're still waiting for the last result
   }
-  
+
   useLayoutEffect(() => {
     window.addEventListener('scroll', handleScroll, true)
     return () => window.removeEventListener('scroll', handleScroll, true)
@@ -125,20 +127,9 @@ export const HomePage = (props: HomePageProps) => {
     return <h1>Error in loading manifest!</h1>
   }
 
-  if (summariesLoading) return <h1>...loading summaries</h1>
-  if (summariesError) {
-    console.log(summariesError)
-    return <h1>Error in loading summaries!</h1>
-  }
-  if (!summariesData) {
-    return <h1>WTF?</h1>
-  }
-  if (!summariesData.GetSummariesByGUID) {
-    return <h1>hmm...</h1>
-  }
   return (
     <EventFeed 
-      summaryList={summariesList}
+      summaryList={currentSummaries}
       feedRef={feedRef}
     />
   )

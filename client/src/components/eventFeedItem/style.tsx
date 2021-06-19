@@ -18,12 +18,15 @@ export const SummaryText = styled.p`
 `
 
 export const TimeTag = styled.button`
-border: none;
-background-color: inherit;
-color: green; 
-font-size: inherit;
-font-family: inherit;
-text-decoration: underline;
+  border: none;
+  background-color: inherit;
+  color: green; 
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline;
+  :hover: {
+    border: solid 1px grey;
+  }
 `
 
 export const PersonTag = styled.button`
