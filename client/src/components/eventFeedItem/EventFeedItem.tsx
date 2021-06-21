@@ -1,5 +1,5 @@
 import { ReactElement } from 'react';
-import { EntityHistory } from '../../homePage';
+import { HistoryEntity } from '../../types';
 import { SummaryBox, SummaryText, PersonTag, PlaceTag, TimeTag } from './style';
 import { prettifyDate } from '../../prettifyDate';
 import { BiTimeFive } from 'react-icons/bi';
@@ -17,7 +17,7 @@ interface EventFeedItemProps {
       stop_char: number;
     }[]
   }
-  setCurrentEntity: (entity: EntityHistory) => void;
+  setCurrentEntity: (entity: HistoryEntity) => void;
 }
 
 interface TagElementProps {

@@ -1,8 +1,7 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
-import { SearchBar } from './components/searchBar';
 import { EventFeed } from './components/eventFeed';
-import { EntityType } from './types';
+import { HistoryNavBar } from './components/historyNavigation';
 import { handleFeedScroll } from './scrollLogic';
 import { sliceManifest } from './sliceManifest';
 import { initManifestSubset } from './initializeManifestSubset';
@@ -10,43 +9,23 @@ import {
   GET_MANIFEST, GetManifestResult, GetManifestVars,
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from './graphql/queries';
+import { readHistory, addToHistory } from './history';
 
-export type CurrentEntity = null | Entity;
 
-export interface Entity {
-  guid: string;
-  type: EntityType;
-}
 
-export interface EntityHistory {
-  entity: Entity;
-  rootEventID?: string;
-}
 
 interface HomePageProps {
 
 }
 
-
 export const HomePage = (props: HomePageProps) => {
-  
-  // history logic
-  const [entityHistory, setEntityHistory] = useState<EntityHistory[]>([{
-    // TODO: pass this in as props
-    entity: {
-      guid: 'bd025284-890b-42c5-88a7-27f417737955',
-      type: 'PERSON',
-    },
-    //rootEventID: 'b947ffcd-a7e6-490c-ad65-e969642f9bb7'
-  }]);
-  const setCurrentEntity = (entity: EntityHistory): void => {
-    setEntityHistory(history => [...history, entity])
-  }
-  const { entity: currentEntity, rootEventID } = entityHistory[entityHistory.length - 1]
-
   // track events currently in feed
   const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
   const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
+
+  // history logic
+
+  const { currentEntity } = readHistory()
 
     // load manifest on current entity
   const {
@@ -55,13 +34,12 @@ export const HomePage = (props: HomePageProps) => {
     data: manifestData 
   } = useQuery<GetManifestResult, GetManifestVars>(
     GET_MANIFEST,
-    { variables: { GUID: currentEntity.guid, entityType: currentEntity.type} }
+    { variables: { GUID: currentEntity.entity.guid, entityType: currentEntity.entity.type} }
   )
 
   // load summaries for slice of manifest currently in event feed
   const {
-    loading: summariesLoading, 
-    error: summariesError, 
+    loading: summariesLoading,
     data: summariesData 
   } = useQuery<GetSummariesByGUIDResult, GetSummariesByGUIDVars>(
       GET_SUMMARIES_BY_GUID,
@@ -83,7 +61,7 @@ export const HomePage = (props: HomePageProps) => {
       return initManifestSubset({
         eventCount: 20,
         manifest: manifestData.GetManifest.citation_guids,
-        rootCitation: rootEventID
+        rootCitation: currentEntity.rootEventID
       })
     })
   }
@@ -113,14 +91,6 @@ export const HomePage = (props: HomePageProps) => {
     return () => window.removeEventListener('scroll', handleScroll, true)
   })
 
-  // if no entity has been selected yet, show a search page
-  if (!currentEntity) {
-    // select an entity
-    return (
-      <SearchBar handleEntityClick={setCurrentEntity}/>
-    )
-  }
-
   // manifest is loading, or there was an error
   if (manifestLoading) return <h1>...loading manifest</h1>
   if (manifestError) {
@@ -129,10 +99,13 @@ export const HomePage = (props: HomePageProps) => {
   }
 
   return (
+    <>
+    <HistoryNavBar />
     <EventFeed 
       summaryList={currentSummaries}
       feedRef={feedRef}
-      setCurrentEntity={setCurrentEntity}
+      setCurrentEntity={addToHistory}
     />
+    </>
   )
 }

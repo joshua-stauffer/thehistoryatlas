@@ -1,12 +1,12 @@
 import { Container } from './style';
 import { EventFeedItem } from '../eventFeedItem';
 import { GetSummariesByGUIDResult } from '../../graphql/getSummariesByGUID';
-import { EntityHistory } from '../../homePage';
+import { HistoryEntity } from '../../types';
 
 interface EventFeedProps {
   summaryList: GetSummariesByGUIDResult["GetSummariesByGUID"];
   feedRef: React.RefObject<HTMLDivElement>;
-  setCurrentEntity: (entity: EntityHistory) => void;
+  setCurrentEntity: (entity : HistoryEntity) => void;
 }
 
 export const EventFeed = (props: EventFeedProps) => {

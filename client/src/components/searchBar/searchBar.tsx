@@ -2,10 +2,10 @@ import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Container, InputBox, SubmitButton, QueryResult, QueryResultButton } from './style';
 import { GET_GUIDS_BY_NAME, GUIDsByNameResult, GUIDsByNameVars } from '../../graphql/queries';
-import { EntityHistory } from '../../homePage';
+import { HistoryEntity } from '../../types';
 
 interface SearchBarProps {
-  handleEntityClick: (entry: EntityHistory) => void;
+  handleEntityClick: (entry: HistoryEntity) => void;
 }
 
 export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {

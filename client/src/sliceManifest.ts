@@ -7,6 +7,7 @@ interface sliceManifestProps {
   handleScrollResult: handleScrollResult;
 }
 
+// refactor to return an object, and include a current page subset?
 
 export const sliceManifest = (props: sliceManifestProps): string[] => {
   // transform manifest based on handleScrollResult object
