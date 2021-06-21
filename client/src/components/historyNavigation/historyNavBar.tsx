@@ -1,18 +1,30 @@
 import { readHistory, navigateHistoryBack, navigateHistoryForward } from "../../history"
 import { NavBar, NavButton, FocusHeader } from "./style"
 
-export const HistoryNavBar = () => {
+interface HistoryNavBarProps {
+  resetCurrentEvents: () => void;
+}
+
+export const HistoryNavBar = ({resetCurrentEvents}: HistoryNavBarProps) => {
   const { currentEntity, lastEntity, nextEntity } = readHistory()
+  const navigateBack = () => {
+    resetCurrentEvents();
+    navigateHistoryBack();
+  }
+  const navigateForward = () => {
+    resetCurrentEvents();
+    navigateHistoryForward();
+  }
   return (
     <NavBar>
       <NavButton
-        onClick={navigateHistoryBack}
+        onClick={navigateBack}
       >
         Back : {lastEntity ? lastEntity.entity.type : ''}
       </NavButton>
       <FocusHeader>{currentEntity.entity.guid.slice(0, 6)} : {currentEntity.entity.type}</FocusHeader>
       <NavButton
-        onClick={navigateHistoryForward}
+        onClick={navigateForward}
       >
         Forward : {nextEntity ? nextEntity.entity.type : ''}
       </NavButton>

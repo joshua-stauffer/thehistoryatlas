@@ -10,6 +10,7 @@ import {
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from './graphql/queries';
 import { readHistory, addToHistory } from './history';
+import { HistoryEntity } from './types';
 
 
 
@@ -22,7 +23,11 @@ export const HomePage = (props: HomePageProps) => {
   // track events currently in feed
   const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
   const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
-
+  const setCurrentEntity = (entity: HistoryEntity): void => {
+    setCurrentEvents([])
+    addToHistory(entity)
+  }
+  const resetCurrentEvents = () => setCurrentEvents([]);
   // history logic
 
   const { currentEntity } = readHistory()
@@ -100,11 +105,11 @@ export const HomePage = (props: HomePageProps) => {
 
   return (
     <>
-    <HistoryNavBar />
+    <HistoryNavBar resetCurrentEvents={resetCurrentEvents}/>
     <EventFeed 
       summaryList={currentSummaries}
       feedRef={feedRef}
-      setCurrentEntity={addToHistory}
+      setCurrentEntity={setCurrentEntity}
     />
     </>
   )
