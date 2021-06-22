@@ -18,6 +18,12 @@ docker build -t pylib ./pylib
 docker build -t testlib ./testlib
 echo "Building all images"
 docker-compose build
+if [ ! -d client/node_modules ] ; then
+  echo "Installing React client"
+  npm --prefix ./client install
+else
+  echo "React client is already installed"
+fi
 echo ""
 echo ""
 echo "Finished building the History Atlas!"
