@@ -84,7 +84,7 @@ exports.typeDefs = gql `
     stop_char: Int!       # index of character in text 
     name: String
     names: [String]
-    coords: Geo
+    coords: Coords
   }
 
   type MetaData {
@@ -121,21 +121,10 @@ exports.typeDefs = gql `
   }
 
   # geo types
-
-  type Point {
-    latitude: Float!
-    longitude: Float!
-  }
-
-  type BoundingBox {
-    upperLeft: Point
-    lowerRight: Point
-  }
-
-  type Geo {
-    # i think this is deprecated?
-    point: Point!
-    shape: String
+  type Coords {
+    latitude: Float
+    longitude: Float
+    geoshape: String
   }
 
   type GeoResponse {
