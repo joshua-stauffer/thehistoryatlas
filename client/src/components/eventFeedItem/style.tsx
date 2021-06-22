@@ -12,27 +12,24 @@ export const SummaryBox = styled.div`
 `
 
 export const SummaryText = styled.p`
-  margin: 10px;
-  font-family: monospace;
+  font-family: inherit;
   font-size: 1.2rem;
+  color: charcoal;
 `
 
 export const TimeTag = styled.button`
   border: none;
   background-color: inherit;
-  color: green; 
+  color: darkgreen; 
   font-size: inherit;
   font-family: inherit;
   text-decoration: underline;
-  :hover: {
-    border: solid 1px grey;
-  }
 `
 
 export const PersonTag = styled.button`
 border: none;
 background-color: inherit;
-color: red;
+color: darkred;
 font-size: inherit;
 font-family: inherit;
 text-decoration: underline;
@@ -41,8 +38,14 @@ text-decoration: underline;
 export const PlaceTag = styled.button`
   border: none;
   background-color: inherit;
-  color: blue;
+  color: darkblue;
   font-size: inherit;
   font-family: inherit;
   text-decoration: underline;
   `
+
+export const SummaryHeader = styled.h3`
+  font-family: inherit;
+  width: 150px;
+  color: charcoal;
+`

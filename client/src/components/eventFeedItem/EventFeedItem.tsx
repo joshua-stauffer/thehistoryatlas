@@ -1,6 +1,6 @@
 import { ReactElement } from 'react';
 import { HistoryEntity } from '../../types';
-import { SummaryBox, SummaryText, PersonTag, PlaceTag, TimeTag } from './style';
+import { SummaryBox, SummaryText, PersonTag, PlaceTag, TimeTag, SummaryHeader } from './style';
 import { prettifyDate } from '../../prettifyDate';
 import { BiTimeFive } from 'react-icons/bi';
 import { GoPerson } from 'react-icons/go';
@@ -16,7 +16,8 @@ interface EventFeedItemProps {
       start_char: number;
       stop_char: number;
     }[]
-  }
+  },
+  index: number;
   setCurrentEntity: (entity: HistoryEntity) => void;
 }
 
@@ -27,7 +28,7 @@ interface TagElementProps {
 }
 
 
-export const EventFeedItem = ({ summary, setCurrentEntity }: EventFeedItemProps) => {
+export const EventFeedItem = ({ summary, setCurrentEntity, index }: EventFeedItemProps) => {
   const { text, tags } = summary;
 
   const getTagElement = (props: TagElementProps): ReactElement<any, any> => {
@@ -83,6 +84,7 @@ export const EventFeedItem = ({ summary, setCurrentEntity }: EventFeedItemProps)
 
   return (
     <SummaryBox>
+      <SummaryHeader>[ {index} ]</SummaryHeader>
       <SummaryText>
         {textArray}
       </SummaryText>

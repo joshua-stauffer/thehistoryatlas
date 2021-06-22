@@ -10,6 +10,12 @@ export const GET_SUMMARIES_BY_GUID = gql`
         tag_guid
         start_char
         stop_char
+        names
+        name
+        coords {
+          latitude
+          longitude
+        }
       }
     }
   }
@@ -24,6 +30,12 @@ export interface GetSummariesByGUIDResult {
       tag_guid: string;
       start_char: number;
       stop_char: number;
+      name?: string;
+      names?: string[];
+      coords?: {
+        latitude: number;
+        longitude: number;
+      }
     }[]
   }[]
 }

@@ -18,7 +18,7 @@ export const EventFeed = (props: EventFeedProps) => {
 
   return (
     <Container ref={feedRef}>
-      {summaryList.map(summary => <EventFeedItem summary={summary} key={summary.guid} setCurrentEntity={setCurrentEntity}/>)}
+      {summaryList.map((summary, i) => <EventFeedItem summary={summary} index={i} key={i} setCurrentEntity={setCurrentEntity}/>)}
     </Container>
   )
 }
