@@ -37,7 +37,8 @@ export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {
               onClick={() => handleEntityClick({
                 entity: {
                   guid: summary.guid,
-                  type: summary.type
+                  type: summary.type,
+                  name: summary.names ? summary.names[0] : ''
                 },
                 rootEventID: undefined
               })}

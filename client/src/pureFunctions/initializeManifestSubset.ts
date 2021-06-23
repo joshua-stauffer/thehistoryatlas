@@ -13,7 +13,7 @@ export const initManifestSubset = (props: initManifestSubsetProps): string[] => 
   } = props;
   // base no-compute cases
   if (manifest.length < eventCount) {
-    return manifest.slice();
+    return manifest.slice()
   }
   if (!rootCitation) {
     return manifest.slice(0, eventCount);
@@ -32,7 +32,7 @@ export const initManifestSubset = (props: initManifestSubsetProps): string[] => 
   }
   if (rootIndex >= (manifest.length - oneSideCount)) {
     // citation is in the last x, but we want to load eventCount events anyways.
-    return manifest.slice(manifest.length - eventCount);
+    return manifest.slice(manifest.length - eventCount)
   }
   // primary logic
   return manifest.slice(rootIndex - oneSideCount, rootIndex + oneSideCount);

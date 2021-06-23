@@ -1,4 +1,4 @@
-import { readHistory, navigateHistoryBack, navigateHistoryForward } from "../../history"
+import { readHistory, navigateHistoryBack, navigateHistoryForward } from "../../hooks/history"
 import { NavBar, NavButton, FocusHeader } from "./style"
 
 interface HistoryNavBarProps {
@@ -20,13 +20,13 @@ export const HistoryNavBar = ({resetCurrentEvents}: HistoryNavBarProps) => {
       <NavButton
         onClick={navigateBack}
       >
-        Back : {lastEntity ? lastEntity.entity.type : ''}
+        Back : {lastEntity ? lastEntity.entity.name : ''}
       </NavButton>
-      <FocusHeader>{currentEntity.entity.guid.slice(0, 6)} : {currentEntity.entity.type}</FocusHeader>
+      <FocusHeader>{currentEntity.entity.name}</FocusHeader>
       <NavButton
         onClick={navigateForward}
       >
-        Forward : {nextEntity ? nextEntity.entity.type : ''}
+        Forward : {nextEntity ? nextEntity.entity.name : ''}
       </NavButton>
     </NavBar>
   )

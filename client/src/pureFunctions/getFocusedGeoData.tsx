@@ -1,5 +1,5 @@
-import { GetSummariesByGUIDResult } from './graphql/getSummariesByGUID';
-import { FocusedGeoEntity } from './types';
+import { GetSummariesByGUIDResult } from '../graphql/getSummariesByGUID';
+import { FocusedGeoEntity } from '../types';
 
 interface GetFocusedGeoDataProps {
   currentSummaries: GetSummariesByGUIDResult["GetSummariesByGUID"];

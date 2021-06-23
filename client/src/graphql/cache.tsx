@@ -1,5 +1,5 @@
 import { InMemoryCache } from "@apollo/client";
-import { historyBackVar } from "../history";
+import { historyBackVar } from "../hooks/history";
 
 export const cache: InMemoryCache = new InMemoryCache({
   typePolicies: {

@@ -1,5 +1,5 @@
-import { GetSummariesByGUIDResult } from './graphql/getSummariesByGUID';
-import { MarkerData } from './types';
+import { GetSummariesByGUIDResult } from '../graphql/getSummariesByGUID';
+import { MarkerData } from '../types';
 
 interface GetCoordsProps {
   indices: number[];

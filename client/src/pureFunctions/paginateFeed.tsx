@@ -6,14 +6,9 @@ interface paginateFeedProps {
   listLength: number;
   elementHeight: number;
 }
+type indicesOnDataPage = number[];
 
-interface paginateFeedResults {
-  activeIndex: number;
-  indicesInView: number[];
-  indicesInCurrentPage: number[];
-}
-
-export const paginateFeed = (props: paginateFeedProps): paginateFeedResults => {
+export const paginateFeed = (props: paginateFeedProps): indicesOnDataPage => {
   const {
     scrollTop, 
     offsetHeight, 
@@ -24,13 +19,6 @@ export const paginateFeed = (props: paginateFeedProps): paginateFeedResults => {
   const topPercent = scrollTop / scrollHeight;
   const firstIndex = Math.ceil(topPercent * listLength);
   const elementsInView = Math.floor(offsetHeight / elementHeight);
-
-  let indicesInView;
-  if (elementsInView > listLength) {
-    indicesInView = Array.from({ length: listLength }).map((_, i) => i);
-  } else {
-    indicesInView = Array.from({ length: elementsInView}).map((_, i) => i + firstIndex);
-  }
 
   // find which indices are on the current page of data?
   let indicesOnPage;
@@ -53,9 +41,5 @@ export const paginateFeed = (props: paginateFeedProps): paginateFeedResults => {
     indicesOnPage =  Array.from({ length: elementsInPage }).map((_, i) => i + startI)
   }
 
-  return {
-    indicesInView: indicesInView,
-    activeIndex: firstIndex,
-    indicesInCurrentPage: indicesOnPage
-  }
+  return indicesOnPage
 }

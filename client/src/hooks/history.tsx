@@ -1,11 +1,12 @@
 import { makeVar } from '@apollo/client';
-import { HistoryEntity } from './types';
+import { Entity, HistoryEntity } from '../types';
 
 export const currentEntity = makeVar<HistoryEntity>({
   // a default start value, can be removed once we're starting on search page
   entity: {
     guid: 'bd025284-890b-42c5-88a7-27f417737955',
-    type: 'PERSON'
+    type: 'PERSON',
+    name: 'Someone!'
   }
 })
 export const historyBackVar = makeVar<HistoryEntity[]>([])
@@ -28,13 +29,25 @@ export const readHistory = (): readHistoryResult => {
   }
 }
 
-export const addToHistory = (entity: HistoryEntity ) => {
+export interface addToHistoryProps {
+  entity: Entity;
+  lastSummaryGUID?: string;
+}
+
+export const addToHistory = (props: addToHistoryProps) => {
+  const { entity, lastSummaryGUID } = props;
   const currentHistory = historyBackVar()
-  const oldCurrentEntity = currentEntity()
-  currentEntity(entity)
+  let oldCurrentEntity = currentEntity()
+  oldCurrentEntity = {...oldCurrentEntity, rootEventID: lastSummaryGUID};
+  currentEntity({
+    entity: entity,
+    rootEventID: lastSummaryGUID
+  })
   historyBackVar([...currentHistory, oldCurrentEntity])
   // now that we've navigated forwards, clear the future cache
   historyForwardVar([])
+  const { lastEntity } = readHistory()
+  console.log(lastEntity)
 }
 
 export const navigateHistoryBack = () => {

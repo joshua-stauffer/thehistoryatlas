@@ -5,6 +5,7 @@ export type EntityType = "PERSON" | "PLACE" | "TIME";
 export interface Entity {
   guid: string;
   type: EntityType;
+  name: string;
 }
 
 export interface HistoryEntity {
@@ -26,4 +27,9 @@ export interface Coordinates {
 export interface FocusedGeoEntity {
   GUID: string;
   coords: Coordinates;
+}
+
+export interface CurrentFocus {
+  focusedGUID: string;
+  scrollIntoView: boolean;
 }
