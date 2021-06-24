@@ -117,7 +117,7 @@ class Database:
             tag_list = [t for t in tag_instances]
             # TODO: update this to better handle multiple time tags
             tag_list.sort(key=lambda a: a.summary.time_tag)
-            result = [t.summary.guid for t in tag_instances]
+            result = [t.summary.guid for t in tag_list]
         log.debug(f'Manifest lookup is returning a result of length {len(result)}')
         return result
 
