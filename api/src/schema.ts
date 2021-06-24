@@ -61,6 +61,13 @@ export const typeDefs = gql`
   type Manifest {
     guid: String!
     citation_guids: [String]
+    timeline: [Timeline]!
+  }
+
+  type Timeline {
+    year: Int!
+    count: Int!
+    root_guid: String! 
   }
 
   type GUIDSummaries {

@@ -216,6 +216,11 @@ export namespace Resolver {
     payload: {
       guid: string;
       citation_guids: string[];
+      timeline: {
+        year: number;
+        count: number;
+        base_guid: string;
+      }[]
     }
   }
 

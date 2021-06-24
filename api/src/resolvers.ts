@@ -80,7 +80,8 @@ export const resolvers: Resolvers = {
         console.debug('received result: ', payload)
         return {
           guid: payload.guid,
-          citation_guids: payload.citation_guids
+          citation_guids: payload.citation_guids,
+          timeline: payload.timeline
         }
       } catch (err) {
         return {
