@@ -2,7 +2,7 @@
 
 The History Atlas is a web application that stores scholarly citations correlating historical people with a time and place, and presents an interactive map searchable by time period, geographic area, or person.
 
-The project has been my primary focus during my batch at [the Recurse Center](https://www.recurse.com), a three month self-directed retreat for programmers in NYC from April-June 2021. It's still very much a work in progress -- you can see the latest status of individual components in the [TODO file](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/todo). 
+The project has been my primary focus during my batch at [the Recurse Center](https://www.recurse.com), a three month self-directed retreat for programmers in NYC from April-June 2021.
 
 I've been building the History Atlas with a CQRS/Event-Sourcing architecture in mind. The goal is to have a flexible, extensible base infrastructure that will be easy to maintain and scale, and will allow for significant changes in the frontend data requirements without needing to make changes to the primary database.
 
@@ -10,7 +10,7 @@ The project is built as a series of microservices which communicate asynchronous
 
 ## Overview
 ### Core Services
-- Client: React app (in progress)
+- [Client](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/client): React app
 - [API:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/api) Apollo GraphQL service
 - [Read Model:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/readmodel) Service for querying application state
 - [Write Model:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/writemodel) Service for making mutations to application state
@@ -45,4 +45,4 @@ On the first build, the Geo service will build its database, which involves pull
 Tests can be run with the ```bash test.sh``` command.
 
 ### Contributing
-Ideas, suggestions, and contributions are all welcome!
+Ideas, suggestions, and contributions are all welcome! If you would like to be involved, the [issues page](https://github.com/joshua-stauffer/thehistoryatlas/issues) is a great place to start, but feel free to reach out directly as well.
