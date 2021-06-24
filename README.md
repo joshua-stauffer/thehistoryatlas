@@ -22,6 +22,11 @@ The project is built as a series of microservices which communicate asynchronous
 - [Geo Service:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/geo) Database of place names and their geographic coordinates.
 - [tha-config:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/pylib/tha-config) Basic config library for working with environmental variables across Python services
 - [Tackle:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/testlib/tackle) Integration testing library built to help ensure message contracts between services
+- [Builder:](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/builder) Series of scripts to generate and manage data in development:
+  - [builddata](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/builddata.py): a command-line tool to create annotations of real data sources
+  - [build_geo_src](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/build_geo_src.py): sources geo data from geonames.org and saves it to disk for the use by other scripts.
+  - [build_fake_data](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/build_fake_data.py): a script to generate a large amount of fake (but realistically interconnected) related data.
+  - [mock_client](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/mockclient.py): a tool to programmatically publish data from json files to the GraphQL API endpoint.
 - User Service: Manages user information (in progress)
 - Email Service: Provides email services across the application (in progress)
 - Logging Service: Tracks query/response times and application traffic patterns (in progress)
@@ -31,7 +36,8 @@ The project is built as a series of microservices which communicate asynchronous
 - fork/clone the repo, and navigate to the project root directory
 - Build the project with ``` bash build.sh```
 - Run the project with ``` docker-compose up```
-- Stop the project with ctl-C in the same terminal or with```docker-compose down``` in a separate tab.
+- Generate fake data (or create your own real data) and publish it to the application using the scripts in the [builder](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/builder) directory.
+- Stop the project with ctl-C in the same terminal or with ```docker-compose down``` in a separate tab.
 
 The RabbitMQ admin console is available at [localhost:15672](http://localhost:15672).
 - username: guest
