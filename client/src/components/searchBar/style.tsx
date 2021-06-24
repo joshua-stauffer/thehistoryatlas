@@ -20,8 +20,8 @@ export const InputBox = styled.input`
 export const SubmitButton = styled.button`
   height: 20px;
   width: 100px;
-  border: solid 1px;
-  background-color: white;
+  border: solid 1px #111;
+  background-color: inherit;
   font-family: inherit;
 `
 

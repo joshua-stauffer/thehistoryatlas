@@ -1,20 +1,24 @@
 import styled from 'styled-components';
 
 export const Nav = styled.nav`
-  width: 100%;
-  border: solid 1px gray;
-  font-family: arial;
+  display: flex;
+  align-items: space-between;
+  height: 75px;
+  border: none;
 `
 
 export const Logo = styled.h1`
-  font-size: 1.5rem;
-  color: gray;
+  margin: auto auto;
+  border: none;
+  height: 50px;
   margin-left: 20px;
 `
 
 export const NavButton = styled.button`
-  background-color: none;
   border: none;
+  color: inherit;
+  background-color: inherit;
+  margin: auto auto;
+  margin-right: 20px;
   font-family: inherit;
-  color: gray;
 `

@@ -1,8 +1,9 @@
 import styled from 'styled-components';
 
-export const Main = styled.main`
+export const FeedAndMap = styled.div`
+  display: flex;
 `
 
-export const FeedAndMap = styled.div`
+export const NavAndTimeline = styled.div`
   display: flex;
 `

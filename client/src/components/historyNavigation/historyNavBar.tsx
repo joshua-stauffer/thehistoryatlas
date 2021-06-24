@@ -1,5 +1,6 @@
 import { readHistory, navigateHistoryBack, navigateHistoryForward } from "../../hooks/history"
 import { NavBar, NavButton, FocusHeader } from "./style"
+import { useHistory } from 'react-router-dom';
 
 interface HistoryNavBarProps {
   resetCurrentEvents: () => void;
@@ -7,6 +8,9 @@ interface HistoryNavBarProps {
 
 export const HistoryNavBar = ({resetCurrentEvents}: HistoryNavBarProps) => {
   const { currentEntity, lastEntity, nextEntity } = readHistory()
+  const history = useHistory();
+  if (!currentEntity) history.push('/search')
+  if (!currentEntity) throw new Error()
   const navigateBack = () => {
     resetCurrentEvents();
     navigateHistoryBack();
@@ -20,13 +24,13 @@ export const HistoryNavBar = ({resetCurrentEvents}: HistoryNavBarProps) => {
       <NavButton
         onClick={navigateBack}
       >
-        Back : {lastEntity ? lastEntity.entity.name : ''}
+        Back {lastEntity ? '( ' + lastEntity.entity.name + ' )' : ''}
       </NavButton>
       <FocusHeader>{currentEntity.entity.name}</FocusHeader>
       <NavButton
         onClick={navigateForward}
       >
-        Forward : {nextEntity ? nextEntity.entity.name : ''}
+        Forward  {nextEntity ? '( ' + nextEntity.entity.name + ' )' : ''}
       </NavButton>
     </NavBar>
   )

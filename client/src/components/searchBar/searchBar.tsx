@@ -27,6 +27,7 @@ export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {
       <InputBox
         type="text"
         value={searchText}
+        autoFocus={true}
         onChange={(e) => setSearchText(e.target.value)}
       />
       <SubmitButton onClick={submitSearch}>Search</SubmitButton>

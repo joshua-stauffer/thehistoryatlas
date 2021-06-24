@@ -4,7 +4,7 @@ export const SummaryBox = styled.div`
   width: 500px;
   height: 200px;
   margin: 20px auto;
-  background-color: white;
+  background-color: inherit;
   border-radius: 5px;
   display: flex;
   justify-content: center;
@@ -15,12 +15,12 @@ export const FocusedSummaryBox = styled.div`
   width: 500px;
   height: 200px;
   margin: 20px auto;
-  background-color: white;
+  background-color: inherit;
   display: flex;
   justify-content: center;
   justify-items: center;
-  border-left: solid 2px gray;
-  border-right: solid 2px gray;
+  border: solid 1px #111;
+  border-radius: 10px;
 `
 
 export const SummaryText = styled.p`

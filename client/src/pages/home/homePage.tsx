@@ -1,10 +1,11 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
-import { Main, FeedAndMap } from './style';
+import { useHistory } from 'react-router';
+import {  FeedAndMap, NavAndTimeline } from './style';
 import { EventFeed } from '../../components/eventFeed';
 import { MapView } from '../../components/map';
-import { MainNav } from '../../components/mainNav';
 import { HistoryNavBar } from '../../components/historyNavigation';
+import { Timeline } from '../../components/timeline';
 import { handleFeedScroll } from '../../pureFunctions/scrollLogic';
 import { sliceManifest } from '../../pureFunctions/sliceManifest';
 import { initManifestSubset } from '../../pureFunctions/initializeManifestSubset';
@@ -36,6 +37,9 @@ export const HomePage = (props: HomePageProps) => {
 
   // hooks & utility functions for state
   const { currentEntity } = readHistory()
+  const history = useHistory();
+  if (!currentEntity) history.push('/search')
+  if (!currentEntity) throw new Error()
   const setCurrentEntity = (props: addToHistoryProps): void => {
     const { entity, lastSummaryGUID } = props;
     setCurrentEvents([])
@@ -178,9 +182,11 @@ export const HomePage = (props: HomePageProps) => {
   })
 
   return (
-    <Main>
-      <MainNav />
-      <HistoryNavBar resetCurrentEvents={resetCurrentEvents}/>
+      <>
+      <NavAndTimeline>
+        <Timeline />
+        <HistoryNavBar resetCurrentEvents={resetCurrentEvents}/>
+      </NavAndTimeline>
       <FeedAndMap>
         <EventFeed 
           summaryList={(!manifestLoading && !manifestError) ? currentSummaries : []}
@@ -194,6 +200,6 @@ export const HomePage = (props: HomePageProps) => {
           focusedGeoEntities={focusedGeoEntities}
         />
       </FeedAndMap>
-    </Main>
+      </>
   )
 }
