@@ -80,7 +80,7 @@ def db_tuple(_db):
             geoshape='A geoshape string {_}' if random.random() > 0.7 else None))
         time_guid = str(uuid4())
         time_guids.append(time_guid)
-        time_name = f'A Time Name {_}'
+        time_name = f'2{_}5{random.randint(0, 9)}|{random.randint(1, 4)}'
         times.append(Time(
             guid=time_guid,
             name=time_name))
@@ -190,11 +190,18 @@ def test_get_manifest_person(handle_query, db_tuple):
             'guid': guid
         }
     })
+    print('manifest is ', res)
     assert isinstance(res, dict)
     assert res['type'] == 'MANIFEST'
     assert isinstance(res['payload'], dict)
     assert isinstance(res['payload']['guid'], str)
     assert isinstance(res['payload']['citation_guids'], list)
+    assert isinstance(res['payload']['timeline'], list)
+    for r in res['payload']['timeline']:
+        assert isinstance(r, dict)
+        assert isinstance(r['count'], int)
+        assert isinstance(r['root_guid'], str)
+        assert isinstance(r['year'], int)
 
 def test_get_manifest_place(handle_query, db_tuple):
     _, db_dict = db_tuple
@@ -211,6 +218,12 @@ def test_get_manifest_place(handle_query, db_tuple):
     assert isinstance(res['payload'], dict)
     assert isinstance(res['payload']['guid'], str)
     assert isinstance(res['payload']['citation_guids'], list)
+    assert isinstance(res['payload']['timeline'], list)
+    for r in res['payload']['timeline']:
+        assert isinstance(r, dict)
+        assert isinstance(r['count'], int)
+        assert isinstance(r['root_guid'], str)
+        assert isinstance(r['year'], int)
 
 def test_get_manifest_time(handle_query, db_tuple):
     _, db_dict = db_tuple
@@ -227,6 +240,12 @@ def test_get_manifest_time(handle_query, db_tuple):
     assert isinstance(res['payload'], dict)
     assert isinstance(res['payload']['guid'], str)
     assert isinstance(res['payload']['citation_guids'], list)
+    assert isinstance(res['payload']['timeline'], list)
+    for r in res['payload']['timeline']:
+        assert isinstance(r, dict)
+        assert isinstance(r['count'], int)
+        assert isinstance(r['root_guid'], str)
+        assert isinstance(r['year'], int)
 
 def test_get_guids_by_name(handle_query, db_tuple):
     _, db_dict = db_tuple

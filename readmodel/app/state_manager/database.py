@@ -4,8 +4,10 @@ Provides read and write access to the Query database.
 """
 
 import asyncio
+from collections import defaultdict
 import logging
 import json
+from typing import Union
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -101,8 +103,8 @@ class Database:
             entity_base=Time,
             guid=time_guid)
 
-    def __get_manifest_util(self, entity_base, guid):
-        """Utility to query db for manifest"""
+    def __get_manifest_util(self, entity_base, guid) -> tuple[list[str], dict[int, dict[str, Union[str, int]]]]:
+        """Utility to query db for manifest -- also calculates timeline summary."""
         log.debug(f'Looking up manifest for GUID {guid}')
         with Session(self._engine, future=True) as session:
             entity = session.execute(
@@ -117,9 +119,25 @@ class Database:
             tag_list = [t for t in tag_instances]
             # TODO: update this to better handle multiple time tags
             tag_list.sort(key=lambda a: a.summary.time_tag)
-            result = [t.summary.guid for t in tag_list]
-        log.debug(f'Manifest lookup is returning a result of length {len(result)}')
-        return result
+            tag_result = list()
+            timeline_dict = dict()
+            for tag in tag_list:
+                tag_result.append(tag.summary.guid)
+                year = self.get_year_from_date(tag.summary.time_tag)
+                if time_res := timeline_dict.get(year):
+                    time_res['count'] += 1
+                else:
+                    timeline_dict[year] = {
+                        'count': 1,
+                        'root_guid': tag.summary.guid
+                    }
+        timeline_result = [{
+            'year': year,
+            'count': timeline_dict[year]['count'],
+            'root_guid': timeline_dict[year]['root_guid']
+        } for year in timeline_dict.keys()]
+        print(timeline_result)
+        return tag_result, timeline_result
 
     def get_guids_by_name(self, name) -> list[str]:
         """Allows searching on known names. Returns list of GUIDs, if any."""
@@ -471,3 +489,7 @@ class Database:
         else:
             raise ValueError(f'Unknown tag type {tag.type}!')
         return res
+
+    def get_year_from_date(self, date) -> int:
+        split_date = date.split('|')
+        return int(split_date[0])

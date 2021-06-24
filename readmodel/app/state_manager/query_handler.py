@@ -60,19 +60,20 @@ class QueryHandler:
         entity_type = query['payload']['type']
         guid = query['payload']['guid']
         if entity_type == 'TIME':
-            res = self._db.get_manifest_by_time(guid)
+            manifest, timeline = self._db.get_manifest_by_time(guid)
         elif entity_type == 'PLACE':
-            res = self._db.get_manifest_by_place(guid)
+            manifest, timeline = self._db.get_manifest_by_place(guid)
         elif entity_type == 'PERSON':
-            res = self._db.get_manifest_by_person(guid)
+            manifest, timeline = self._db.get_manifest_by_person(guid)
         else:
             raise UnknownManifestTypeError(entity_type)
-
+        print('in handle query, timeline is ', timeline)
         return {
             'type': 'MANIFEST',
             'payload': {
                 'guid': guid,
-                'citation_guids': res
+                'citation_guids': manifest,
+                'timeline': timeline
             }
         }
 

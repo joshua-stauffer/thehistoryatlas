@@ -81,7 +81,7 @@ def db_tuple(_db):
             geoshape='A geoshape string {_}' if random.random() > 0.7 else None))
         time_guid = str(uuid4())
         time_guids.append(time_guid)
-        time_name = f'A Time Name {_}'
+        time_name = f'2{_}5{random.randint(0, 9)}|{random.randint(1, 4)}'
         times.append(Time(
             guid=time_guid,
             name=time_name))
@@ -272,29 +272,47 @@ def test_get_manifest_by_person(db_tuple):
     db, db_dict = db_tuple
     person_guids = db_dict['person_guids']
     for guid in person_guids:
-        res = db.get_manifest_by_person(guid)
-        assert isinstance(res, list)
-        assert all(isinstance(e, str) for e in res)
-        assert len(res) > 0
+        manifest_res, timeline_res = db.get_manifest_by_person(guid)
+        assert isinstance(manifest_res, list)
+        assert all(isinstance(e, str) for e in manifest_res)
+        assert len(manifest_res) > 0
+        assert isinstance(timeline_res, list)
+        for res in timeline_res:
+            assert isinstance(res, dict)
+            assert isinstance(res['count'], int)
+            assert isinstance(res['root_guid'], str)
+            assert isinstance(res['year'], int)
 
 def test_get_manifest_by_place(db_tuple):
     db, db_dict = db_tuple
     place_guids = db_dict['place_guids']
     for guid in place_guids:
-        res = db.get_manifest_by_place(guid)
-        assert isinstance(res, list)
-        assert all(isinstance(e, str) for e in res)
-        assert len(res) > 0
+        manifest_res, timeline_res = db.get_manifest_by_place(guid)
+        assert isinstance(manifest_res, list)
+        assert all(isinstance(e, str) for e in manifest_res)
+        assert len(manifest_res) > 0
+        assert isinstance(timeline_res, list)
+        for res in timeline_res:
+            assert isinstance(res, dict)
+            assert isinstance(res['count'], int)
+            assert isinstance(res['root_guid'], str)
+            assert isinstance(res['year'], int)
 
 
 def test_get_manifest_by_time(db_tuple):
     db, db_dict = db_tuple
     time_guids = db_dict['time_guids']
     for guid in time_guids:
-        res = db.get_manifest_by_time(guid)
-        assert isinstance(res, list)
-        assert all(isinstance(e, str) for e in res)
-        assert len(res) > 0
+        manifest_res, timeline_res = db.get_manifest_by_time(guid)
+        assert isinstance(manifest_res, list)
+        assert all(isinstance(e, str) for e in manifest_res)
+        assert len(manifest_res) > 0
+        assert isinstance(timeline_res, list)
+        for res in timeline_res:
+            assert isinstance(res, dict)
+            assert isinstance(res['count'], int)
+            assert isinstance(res['root_guid'], str)
+            assert isinstance(res['year'], int)
 
 def test_get_guids_by_name(db_tuple):
     db, db_dict = db_tuple
