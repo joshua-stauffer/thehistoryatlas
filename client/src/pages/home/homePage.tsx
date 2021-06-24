@@ -133,7 +133,7 @@ export const HomePage = (props: HomePageProps) => {
     // calculate and set the active summary
     const focusPixel = feedRef.current.scrollTop;
     const focusPercent = focusPixel / feedRef.current.scrollHeight;
-    const focusIndex = Math.round(focusPercent * (currentSummaries.length))
+    const focusIndex = Math.ceil(focusPercent * (currentSummaries.length))
     setCurrentFocus({
       focusedGUID: currentSummaries[focusIndex].guid,
       scrollIntoView: false

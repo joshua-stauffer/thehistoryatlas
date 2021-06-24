@@ -57,7 +57,7 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
     if (scrollIntoView) ref.current.scrollIntoView()
     return (
       <FocusedSummaryBox ref={ref}>
-        <SummaryHeader>[ {index} ]</SummaryHeader>
+        <SummaryHeader>{index}</SummaryHeader>
         <SummaryText>
           {textArray}
         </SummaryText>
@@ -67,7 +67,7 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
 
   return (
     <SummaryBox ref={ref}>
-      <SummaryHeader>[ {index} ]</SummaryHeader>
+      <SummaryHeader>{index}</SummaryHeader>
       <SummaryText>
         {textArray}
       </SummaryText>

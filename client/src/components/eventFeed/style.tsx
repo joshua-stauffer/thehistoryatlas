@@ -6,7 +6,7 @@ export const Container = styled.div`
   margin-right: 30px;
   overflow-y: scroll;
   border: none;
-  border-radius: 5px;
+  border-radius: 0;
   scrollbar-background: inherit;
   scrollbar-color: #FFFFF1 #FFFFF!;
   scrollbar: hidden;

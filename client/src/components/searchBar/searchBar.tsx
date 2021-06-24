@@ -1,8 +1,10 @@
 import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Container, InputBox, SubmitButton, QueryResult, QueryResultButton } from './style';
+import { prettifyType } from '../../pureFunctions/prettifyType';
 import { GET_GUIDS_BY_NAME, GUIDsByNameResult, GUIDsByNameVars } from '../../graphql/queries';
 import { HistoryEntity } from '../../types';
+import { prettifyDate } from '../../pureFunctions/prettifyDate';
 
 interface SearchBarProps {
   handleEntityClick: (entry: HistoryEntity) => void;
@@ -34,6 +36,7 @@ export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {
       <ul>
         {data ? data.GetGUIDsByName.summaries.map(summary =>
           <QueryResult key={summary.guid}>
+
             <QueryResultButton
               onClick={() => handleEntityClick({
                 entity: {
@@ -44,8 +47,12 @@ export const SearchBar = ({ handleEntityClick }: SearchBarProps) => {
                 rootEventID: undefined
               })}
               key={summary.guid}
-            >{summary.type}: {summary.names} -- {summary.citation_count} citations,
-             from {summary.first_citation_date} to {summary.last_citation_date}
+            >
+              <h1>{summary.names} </h1><h2>{prettifyType(summary.type)}</h2>
+             
+             <h2>{prettifyDate({dateString: summary.first_citation_date})} - {prettifyDate({ dateString: summary.last_citation_date} )}</h2>
+             <h3>Appears in {summary.citation_count} events.</h3>
+
             </QueryResultButton>
           </QueryResult>)
          : <li>Sorry, no results were found for that name.</li>

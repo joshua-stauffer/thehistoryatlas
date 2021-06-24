@@ -30,6 +30,9 @@ export const QueryResult = styled.li`
 `
 
 export const QueryResultButton = styled.button`
-  border: solid 1px darkgray;
-  background-color: white;
+  border: none;
+  background-color: inherit;
+  font-family: inherit;
+  font-size: 3rem;
+  text-align: left;
 `

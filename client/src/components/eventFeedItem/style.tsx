@@ -1,9 +1,9 @@
 import styled from 'styled-components';
 
 export const SummaryBox = styled.div`
-  width: 500px;
+  width: 450px;
   height: 200px;
-  margin: 20px auto;
+  margin: 20px 20px;
   background-color: inherit;
   border-radius: 5px;
   display: flex;
@@ -12,21 +12,23 @@ export const SummaryBox = styled.div`
 `
 
 export const FocusedSummaryBox = styled.div`
-  width: 500px;
+  width: 450px;
   height: 200px;
-  margin: 20px auto;
-  background-color: inherit;
   display: flex;
   justify-content: center;
   justify-items: center;
-  border: solid 1px #111;
-  border-radius: 10px;
+  margin-left: 20px;
+  margin: 20px auto;
+  background-color: inherit;
+  border: solid 1px #FFFFF1;
+  border-radius: 5px;
+  box-shadow: -2px 0px 2px 1px #111;
 `
 
 export const SummaryText = styled.p`
   font-family: inherit;
   font-size: 1.2rem;
-  color: charcoal;
+  color: #111;
   line-height: 2rem;
 `
 
@@ -40,12 +42,12 @@ export const TimeTag = styled.button`
 `
 
 export const PersonTag = styled.button`
-border: none;
-background-color: inherit;
-color: darkred;
-font-size: inherit;
-font-family: inherit;
-text-decoration: underline;
+  border: none;
+  background-color: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline;
+  color: darkred
 `
 
 export const PlaceTag = styled.button`
@@ -59,7 +61,8 @@ export const PlaceTag = styled.button`
 
 export const SummaryHeader = styled.h3`
   font-family: inherit;
-  width: 150px;
-  color: charcoal;
-  margin: 10px;
+  color: #111;
+  margin: 10px 10px;
+  width: 125px;
+  line-height: 3
 `

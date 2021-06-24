@@ -1,14 +1,6 @@
 import { makeVar } from '@apollo/client';
 import { Entity, HistoryEntity } from '../types';
 
-const startEntity = {
-  entity: {
-    guid: 'bd025284-890b-42c5-88a7-27f417737955',
-    type: 'PERSON',
-    name: 'Someone!'
-  }
-}
-
 export const currentEntity = makeVar<HistoryEntity | null>(null)
 export const historyBackVar = makeVar<HistoryEntity[]>([])
 export const historyForwardVar = makeVar<HistoryEntity[]>([])
