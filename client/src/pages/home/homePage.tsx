@@ -5,7 +5,7 @@ import {  FeedAndMap, NavAndTimeline } from './style';
 import { EventFeed } from '../../components/eventFeed';
 import { MapView } from '../../components/map';
 import { HistoryNavBar } from '../../components/historyNavigation';
-import { Timeline } from '../../components/timeline';
+import { BarTimeline } from '../../components/barTimeline';
 import { handleFeedScroll } from '../../pureFunctions/scrollLogic';
 import { sliceManifest } from '../../pureFunctions/sliceManifest';
 import { initManifestSubset } from '../../pureFunctions/initializeManifestSubset';
@@ -14,7 +14,7 @@ import {
   GET_MANIFEST, GetManifestResult, GetManifestVars,
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from '../../graphql/queries';
-import { readHistory, addToHistory, addToHistoryProps } from '../../hooks/history';
+import { readHistory, addToHistory, addToHistoryProps, updateRootSummary } from '../../hooks/history';
 import { MarkerData, FocusedGeoEntity, CurrentFocus } from '../../types';
 import { getCoords } from '../../pureFunctions/getCoords';
 import { getFocusedGeoData } from '../../pureFunctions/getFocusedGeoData';
@@ -39,7 +39,10 @@ export const HomePage = (props: HomePageProps) => {
   const { currentEntity } = readHistory()
   const history = useHistory();
   if (!currentEntity) history.push('/search')
+  // add a little check for TypeScript's sake..
   if (!currentEntity) throw new Error()
+
+  // create an onClick handler for navigating between entities
   const setCurrentEntity = (props: addToHistoryProps): void => {
     const { entity, lastSummaryGUID } = props;
     setCurrentEvents([])
@@ -56,6 +59,11 @@ export const HomePage = (props: HomePageProps) => {
   }
   const resetCurrentEvents = () => setCurrentEvents([]);
 
+  // create an onClick handler for the timeline
+  const handleTimelineClick = (guid: string) => {
+    updateRootSummary(guid)
+    setCurrentEvents([])
+  }
 
   // API Calls
   //  -- load manifest on current entity
@@ -76,10 +84,8 @@ export const HomePage = (props: HomePageProps) => {
       { variables: { summary_guids: currentEvents } }
   )
 
-
   // create a ref for interacting with event feed
   const feedRef = useRef<HTMLDivElement>(null)
-
 
   // This effect is called when summariesData changes.
   // If data is present, it updates currentSummaries, and updates a flag  
@@ -181,10 +187,26 @@ export const HomePage = (props: HomePageProps) => {
     return () => window.removeEventListener('scroll', handleScroll, true)
   })
 
+  // get the date from our currently focused summary
+  let currentDate: string | null = null;
+  if (currentSummaries.length) {
+    const focusedSummary = currentSummaries.find(summary => summary.guid === currentFocus.focusedGUID);
+    if (focusedSummary) {
+      // take the first time tag for now
+      const timeTag = focusedSummary.tags.find(tag => tag.tag_type === 'TIME');
+      currentDate = timeTag && timeTag.name ? timeTag.name : null;
+      console.log('current date is ', currentDate)
+    }
+  }
+
   return (
       <>
       <NavAndTimeline>
-        <Timeline />
+        <BarTimeline
+          data={manifestData ? manifestData.GetManifest.timeline : []}
+          currentDate={currentDate}
+          handleTimelineClick={handleTimelineClick}
+        />
         <HistoryNavBar resetCurrentEvents={resetCurrentEvents}/>
       </NavAndTimeline>
       <FeedAndMap>

@@ -17,13 +17,16 @@ export const InputBox = styled.input`
 export const Container = styled.div`
   width: auto;
   border: none;
-  position: relative;
+  position: absolute;
+  top: 25px;
+  right: 100px;
 
 `
 
 export const NavQueryResult = styled.div`
   position: absolute;
-  border-bottom: solid 1px darkred;
+  border: none;
+  box-shadow: -1px 0px 1px 1px rgba(17, 17, 17, 0.25);
   width: 100%;
   right: 0px;
   top: 50px;

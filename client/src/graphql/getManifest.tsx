@@ -5,6 +5,11 @@ export const GET_MANIFEST = gql`
     GetManifest(entityType: $entityType, GUID: $GUID) {
       guid
       citation_guids
+      timeline {
+        year
+        root_guid
+        count
+      }
     }
   }
 `;
@@ -14,6 +19,11 @@ export interface GetManifestResult {
   GetManifest: {
     guid: string;
     citation_guids: string[];
+    timeline: {
+      year: number;
+      root_guid: string;
+      count: number;
+    }[]
   }
 }
 

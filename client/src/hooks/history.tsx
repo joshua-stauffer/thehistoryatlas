@@ -72,3 +72,12 @@ export const navigateHistoryForward = () => {
   historyBackVar([...currentHistory, oldCurrentEntity])
   historyForwardVar([...newFuture])
 }
+
+export const updateRootSummary = (guid: string): void => {
+  const current = currentEntity();
+  if (!current) return;
+  currentEntity({
+    ...current,
+    rootEventID: guid
+  })
+}

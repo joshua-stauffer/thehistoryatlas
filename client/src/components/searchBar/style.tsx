@@ -15,6 +15,7 @@ export const InputBox = styled.input`
   width: 200px;
   display: block;
   margin: 20px;
+  font-family: inherit;
 `
 
 export const SubmitButton = styled.button`

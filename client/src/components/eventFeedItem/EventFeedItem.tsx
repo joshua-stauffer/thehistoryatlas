@@ -1,11 +1,16 @@
 import { useRef, ReactElement } from 'react';
 import { CurrentFocus } from '../../types';
-import { FocusedSummaryBox, SummaryBox, SummaryText, PersonTag, PlaceTag, TimeTag, SummaryHeader } from './style';
+import { 
+  FocusedSummaryBox, FocusedSummaryText, FocusedSummaryHeader,
+  FocusedPersonTag, FocusedPlaceTag, FocusedTimeTag,
+  SummaryBox, SummaryText, PersonTag, PlaceTag, 
+  TimeTag, SummaryHeader } from './style';
 import { prettifyDate } from '../../pureFunctions/prettifyDate';
 import { BiTimeFive } from 'react-icons/bi';
 import { GoPerson } from 'react-icons/go';
 import { VscLocation } from 'react-icons/vsc';
 import { addToHistoryProps } from '../../hooks/history';
+import { Citation } from './citation';
 
 interface EventFeedItemProps {
   summary: {
@@ -43,7 +48,8 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
       name: tag.name,
       names: tag.names,
       setCurrentEntity: setCurrentEntity,
-      summaryGUID: summaryGUID
+      summaryGUID: summaryGUID,
+      isFocused: summaryGUID === focusedGUID
     })
     textArray.push(text.slice(pointer, tag.start_char))
     textArray.push(TagElement)
@@ -57,11 +63,13 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
     if (scrollIntoView) ref.current.scrollIntoView()
     return (
       <FocusedSummaryBox ref={ref}>
-        <SummaryHeader>{index}</SummaryHeader>
-        <SummaryText>
+        <FocusedSummaryHeader>{index}</FocusedSummaryHeader>
+        <FocusedSummaryText>
           {textArray}
-        </SummaryText>
+        </FocusedSummaryText>
+        <Citation guid={''}/>
       </FocusedSummaryBox>
+      
     )
   }
 
@@ -71,6 +79,7 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
       <SummaryText>
         {textArray}
       </SummaryText>
+      <Citation guid={''}/>
     </SummaryBox>
   )
 }
@@ -84,45 +93,83 @@ interface TagElementProps {
   names?: string[] | undefined;
   setCurrentEntity: (props: addToHistoryProps) => void;
   summaryGUID: string;
+  isFocused: boolean;
 }
 
 // utility function to generate inline span tags
 const getTagElement = (props: TagElementProps): ReactElement<any, any> => {
-  const { tagType, tagText, tagGUID, setCurrentEntity, summaryGUID } = props;
+  const { tagType, tagText, tagGUID, setCurrentEntity, summaryGUID, isFocused } = props;
 
   switch (tagType) {
 
-    case 'TIME':
+    case 'TIME': {
       const prettifiedTime = prettifyDate({ dateString: tagText })
 
-      return <TimeTag onClick={() => setCurrentEntity({ 
-        entity: {
-          type: "TIME",
-          guid: tagGUID,
-          name: prettifiedTime ? prettifiedTime : tagText
-        },
-        lastSummaryGUID: summaryGUID
-      })}><BiTimeFive /> {prettifiedTime}</TimeTag>
+      const tag = isFocused ? ( <FocusedTimeTag onClick={() => setCurrentEntity({ 
+            entity: {
+              type: "TIME",
+              guid: tagGUID,
+              name: prettifiedTime ? prettifiedTime : tagText
+            },
+            lastSummaryGUID: summaryGUID
+          })}><BiTimeFive /> {prettifiedTime}</FocusedTimeTag>
+        ) 
+        : ( <TimeTag onClick={() => setCurrentEntity({ 
+          entity: {
+            type: "TIME",
+            guid: tagGUID,
+            name: prettifiedTime ? prettifiedTime : tagText
+          },
+          lastSummaryGUID: summaryGUID
+        })}><BiTimeFive /> {prettifiedTime}</TimeTag>
+      ) 
+      return tag
+    }
 
-    case 'PERSON':
-      return <PersonTag onClick={() => setCurrentEntity({
+    case 'PERSON': {
+      const tag = isFocused ? <FocusedPersonTag onClick={() => setCurrentEntity({
         entity: {
           type: 'PERSON',
           guid: tagGUID,
           name: tagText
         },
         lastSummaryGUID: summaryGUID
-      })}><GoPerson /> {tagText}</PersonTag>
+      })}><GoPerson /> {tagText}</FocusedPersonTag>
+      : (
+        <PersonTag onClick={() => setCurrentEntity({
+          entity: {
+            type: 'PERSON',
+            guid: tagGUID,
+            name: tagText
+          },
+          lastSummaryGUID: summaryGUID
+        })}><GoPerson /> {tagText}</PersonTag>
+      )
+      return tag
+    }
 
-    case "PLACE":
-      return <PlaceTag onClick={() => setCurrentEntity({
-        entity: {
-          type: 'PLACE',
-          guid: tagGUID,
-          name: tagText
-        },
-        lastSummaryGUID: summaryGUID
-      })}><VscLocation /> {tagText}</PlaceTag>
+    case "PLACE": {
+      const tag = isFocused ? ( <FocusedPlaceTag onClick={() => setCurrentEntity({
+          entity: {
+            type: 'PLACE',
+            guid: tagGUID,
+            name: tagText
+          },
+          lastSummaryGUID: summaryGUID
+        })}><VscLocation /> {tagText}</FocusedPlaceTag>
+        )
+      :
+        (<PlaceTag onClick={() => setCurrentEntity({
+          entity: {
+            type: 'PLACE',
+            guid: tagGUID,
+            name: tagText
+          },
+          lastSummaryGUID: summaryGUID
+        })}><VscLocation /> {tagText}</PlaceTag>
+      )
+      return tag
+    }
 
     default: throw new Error('Unknown tag type passed to getTagAndIcon')
   }

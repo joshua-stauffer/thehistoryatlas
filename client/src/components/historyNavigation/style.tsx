@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const NavBar = styled.nav`
   width: 600px;
-  height: 100px;
+  height: 150px;
   margin-right: 30px;
   display: flex;
   justify-content: space-evenly;
@@ -19,8 +19,9 @@ export const NavButton = styled.button`
 `
 
 export const FocusHeader = styled.h2`
-  width: 200px;
-  padding: auto;
+  width: 250px;
+  padding: 0;
   margin: auto;
   text-align: center;
+  font-size: 2rem;
 `
