@@ -74,7 +74,8 @@ class Database:
                         'guid': guid,
                         'text': res.text,
                         'tags': [self.get_tag_instance_data(t)
-                                for t in res.tags]
+                                for t in res.tags],
+                        'citation_guids': [r.guid for r in res.citations]
                     })
         log.debug(f'Returning {len(result)} summaries')
         return result
