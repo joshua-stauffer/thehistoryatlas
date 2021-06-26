@@ -136,6 +136,8 @@ export const CitationContainer = styled.div`
   padding: 10px;
   width: 430px;
   height: auto;
+  max-height: 400px;
+  overflow-y: scroll;
   top: 171px;
   border: none;
   border-radius: 5px;

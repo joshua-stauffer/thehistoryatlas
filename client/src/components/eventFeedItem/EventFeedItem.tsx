@@ -24,6 +24,7 @@ interface EventFeedItemProps {
       names?: string[] | undefined;
       name?: string | undefined;
     }[]
+    citation_guids: string[];
   },
   index: number | undefined;
   setCurrentEntity: (props: addToHistoryProps) => void;
@@ -32,7 +33,7 @@ interface EventFeedItemProps {
 
 
 export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}: EventFeedItemProps) => {
-  const { text, tags, guid: summaryGUID } = summary;
+  const { text, tags, guid: summaryGUID, citation_guids } = summary;
   const ref = useRef<HTMLDivElement>(null)
   const { focusedGUID, scrollIntoView } = currentFocus;
   // add tags to text
@@ -67,7 +68,7 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
         <FocusedSummaryText>
           {textArray}
         </FocusedSummaryText>
-        <Citation guid={''}/>
+        <Citation guid={citation_guids[0]}/>
       </FocusedSummaryBox>
       
     )
@@ -79,7 +80,7 @@ export const EventFeedItem = ({ summary, setCurrentEntity, index, currentFocus}:
       <SummaryText>
         {textArray}
       </SummaryText>
-      <Citation guid={''}/>
+      <Citation guid={citation_guids[0]}/>
     </SummaryBox>
   )
 }

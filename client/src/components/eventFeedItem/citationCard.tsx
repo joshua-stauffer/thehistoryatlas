@@ -16,13 +16,17 @@ export const CitationCard = ({ citationGUID }: CitationCardProps) => {
     GET_CITATION_BY_GUID,
     { variables: { citationGUID: citationGUID } }
   )
-  
+  const metaData = data ? data.GetCitationByGUID.meta : null;
+  const authorText = metaData ? metaData.author : '';
+  const publisherText = metaData ? metaData.publisher : '';
+  const titleText = metaData ? metaData.title : '';
+  const text = data ? data.GetCitationByGUID.text : '';
   return (
     <CitationContainer>
-      <CitationText>Author: Diana C. Rodriguez</CitationText>
-      <CitationText>Publisher: History Atlas Press</CitationText>
-      <CitationText>Citation: Praesent elementum facilisis leo vel fringilla. Amet luctus venenatis lectus magna fringilla urna porttitor. At ultrices mi tempus imperdiet nulla malesuada pellentesque. Facilisi morbi tempus iaculis urna id volutpat lacus laoreet non. Nunc lobortis mattis aliquam faucibus purus. Dolor sed viverra ipsum nunc aliquet. Morbi enim nunc faucibus a pellentesque sit amet porttitor eget. Ornare suspendisse sed nisi lacus. Posuere lorem ipsum dolor sit. Quis commodo odio aenean sed adipiscing. Fringilla est ullamcorper eget nulla facilisi etiam dignissim diam. Sed nisi lacus sed viverra tellus in hac habitasse.
-    </CitationText>
+      <CitationText>Author: {authorText}</CitationText>
+      <CitationText>Publisher: {publisherText}</CitationText>
+      <CitationText>Title: {titleText}</CitationText>
+      <CitationText>Text: {text}</CitationText>
     </CitationContainer>
   )  
 }

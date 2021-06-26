@@ -17,6 +17,7 @@ export const GET_SUMMARIES_BY_GUID = gql`
           longitude
         }
       }
+      citation_guids
     }
   }
 `;
@@ -37,6 +38,7 @@ export interface GetSummariesByGUIDResult {
         longitude: number;
       }
     }[]
+    citation_guids: string[];
   }[]
 }
 
