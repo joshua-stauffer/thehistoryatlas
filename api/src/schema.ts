@@ -45,6 +45,7 @@ export const typeDefs = gql`
     guid: String!
     text: String!
     tags: [Tag!]!
+    citation_guids: [String!]!
   }
   
   type CitationByGUID {
