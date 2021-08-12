@@ -4,12 +4,22 @@
 # and installs a virtual environment for running scripts and tests.
 if [ ! -d test_env ] ; then
   echo "Creating Python virtual environment for testing in directory test_env"
-  python3 -m venv test_env
+  if [ python3 -m venv test_env ] ; then
+    echo "Built Python virtual environment test_env"
+  else
+    echo "Failed to build Python virtual environment, and cannot continue build process."
+    exit 1
+  fi
 else
   echo "Skipping creating a virtual environment: Python venv test_env found."
 fi
 echo "Installing test dependencies"
-source test_env/bin/activate
+if source test_env/bin/activate  ; then
+  echo "Using virtual environment"
+else
+  echo "Failed to activate virtual environment"
+  exit 1
+fi
 pip install --upgrade pip
 pip install -r test_requirements.txt
 deactivate

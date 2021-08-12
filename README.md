@@ -34,7 +34,7 @@ The project is built as a series of microservices which communicate asynchronous
 ## Local project setup
 - [install/setup docker](https://docs.docker.com/get-docker/)
 - fork/clone the repo, and navigate to the project root directory
-- Build the project with ``` bash build.sh```
+- Build the project with ``` sudo bash build.sh```
 - Run the project with ``` docker-compose up```
 - Generate fake data (or create your own real data) and publish it to the application using the scripts in the [builder](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/builder) directory.
 - Stop the project with ctl-C in the same terminal or with ```docker-compose down``` in a separate tab.
@@ -52,3 +52,6 @@ Tests can be run with the ```bash test.sh``` command.
 
 ### Contributing
 Ideas, suggestions, and contributions are all welcome! If you would like to be involved, the [issues page](https://github.com/joshua-stauffer/thehistoryatlas/issues) is a great place to start, but feel free to reach out directly as well.
+
+### Building on Apple silicon (ARM64)
+At the time of writing, there are still some lingering issues with building select libraries on Apple silicon (notably, numpy, which is a dependency for spaCy in the NLP app). If you are developing on an ARM64 architecture, rename the default docker file [in the NLP directory](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/nlp) to something else, and rename the Dockerfile_arm64 file to simply Dockerfile. This alternate dockerfile uses Conda as a workaround, but has caused problems on Linux machines, so is no longer the default build.

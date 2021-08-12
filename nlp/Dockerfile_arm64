@@ -1,9 +1,8 @@
 FROM ilriccio/thehistoryatlas:ner_base
 COPY /app /app
 
-FROM python:3.9-slim-buster
-
-RUN pip3 install spacy
+FROM conda/miniconda3
+RUN conda install -c conda-forge spacy spacy-model-en_core_web_lg
 COPY --from=0 /app/base-models /app/base-models
 COPY --from=0 /app/train /app/train
 
