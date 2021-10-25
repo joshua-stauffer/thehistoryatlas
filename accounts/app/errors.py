@@ -23,6 +23,10 @@ class ExpiredTokenError(Exception):
     """Request failed because the token has expired. Please refresh token and try again."""
     ...
 
+class InvalidTokenError(Exception):
+    """Request failed because the token is invalid."""
+    ...
+
 class UnknownQueryError(Exception):
     """Request failed becaues the no handler was found for the requested query type."""
     ...

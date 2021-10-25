@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import os
+from typing import Union
 import logging
 from typing import Tuple, get_args
 from cryptography.fernet import Fernet
@@ -7,6 +8,7 @@ from cryptography.fernet import InvalidToken
 from app.types import Token
 from app.types import UserId
 from app.errors import ExpiredTokenError
+from app.errors import InvalidTokenError
 
 
 logging.basicConfig(level='DEBUG')
@@ -40,14 +42,21 @@ def get_token(user_id) -> Token:
     return fernet.encrypt(token_bytes)
 
 
-def validate_token(token) -> Tuple[UserId, Token]:
+def validate_token(token: Union[str, bytes]) -> Tuple[UserId, Token]:
     """Checks if token has expired and returns a user id or raises an exception"""
-
+    if isinstance(token, str):
+        token = token.encode()
+    elif isinstance(token, bytes):
+        pass
+    else:
+        raise InvalidTokenError("Token must be string or bytes")
     try:
         token_str = fernet.decrypt(token, ttl=TTL).decode()
     except InvalidToken:
-        raise ExpiredTokenError
+        raise InvalidTokenError
     user_id, create_time = parse_token_str(token_str)
+    if create_time < datetime.utcnow() - timedelta(seconds=TTL):
+        raise ExpiredTokenError
     refresh_time = create_time + timedelta(seconds=REFRESH_BY)
     if refresh_time < datetime.utcnow():
         log.debug('Token close to expiration - returning new token.')
@@ -55,7 +64,7 @@ def validate_token(token) -> Tuple[UserId, Token]:
     return user_id, token
 
 
-def parse_token_str(token_str) -> Tuple[UserId, datetime]:
+def parse_token_str(token_str: str) -> Tuple[UserId, datetime]:
     split_token = token_str.split('|')
     user_id = split_token[0]
     time_ = str_to_time(split_token[1])

@@ -6,6 +6,7 @@ Allows creation and updating users
 import asyncio
 import logging
 import json
+from uuid import uuid4
 from typing import Dict
 from sqlalchemy import create_engine
 from sqlalchemy import select
@@ -40,9 +41,19 @@ class Database:
         
     def add_user(self, user_data: Dict) -> None:
         """Adds a user to the database"""
+        for field in user_data.keys():
+            if field in PROTECTED_FIELDS:
+                raise UnauthorizedUserError
 
         # don't mutate original dict
-        user_data = {**user_data}
+        user_data = {
+            **user_data,
+            'id': str(uuid4()),
+            'type': 'contrib',
+            'confirmed': False,
+            'deactivated': False
+        }
+
         try:
             # handle password
             password = user_data["password"]
@@ -59,17 +70,18 @@ class Database:
     def update_user(self, token, user_dict) -> UserDetails:
         """Update a user's data"""
 
-        user_id = get_user_from_token(token)
+        user_id, token = validate_token(token)
         
         with Session(self._engine, future=True) as session:
             user = session.execute(
-                select(User).where(User.id==user_id)
+                select(User).where(User.id == user_id)
             ).scalar_one_or_none()
             if not user:
                 raise MissingUserError
             for key, val in user_dict.items():
-                if not user.is_admin and key in PROTECTED_FIELDS:
-                    raise UnauthorizedUserError
+                if key in PROTECTED_FIELDS:
+                    if not user.is_admin:
+                        raise UnauthorizedUserError
                 setattr(user, key, val)
             session.add(user)
             session.commit()

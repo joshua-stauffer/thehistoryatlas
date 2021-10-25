@@ -33,10 +33,7 @@ class Accounts:
             self.handle_query,
         )
         try:
-            # always replay history on restart to ensure data consistency
-            await self.broker.start(
-                is_initialized=False,
-                replay_from=last_event_id)
+            await self.broker.start()
         except Exception as e:
             log.critical(f'Accounts Service caught unknown exception {e} and is ' + \
                           'shutting down without restart.')

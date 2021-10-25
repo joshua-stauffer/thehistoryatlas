@@ -34,7 +34,6 @@ class Broker(BrokerBase):
             routing_key='query.users',
             callback=self._handle_query)
 
-
     async def _handle_query(self, message):
         """Primary handler for making Users service available to the
         rest of the application."""

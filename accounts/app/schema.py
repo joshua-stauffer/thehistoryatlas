@@ -14,19 +14,20 @@ from app.utils import update_last_login
 Base = declarative_base()
 
 # the following fields cannot be updated by users
-PROTECTED_FIELDS = set(["type", "last_login", "disabled", "id"])
+PROTECTED_FIELDS = {"type", "last_login", "disabled", "id"}
+
 
 class User(Base):
     """Model representing Users and their data"""
 
     __tablename__ = 'users'
-    id = Column(String(64), default=uuid4, primary_key=True)
+    id = Column(String(64), primary_key=True)
     email = Column(String(128))
     f_name = Column(String(64))
     l_name = Column(String(64))
     username = Column(String(64), unique=True)
     password = Column(String(128))
-    type = Column(String(8)) # "admin" or "contrib"
+    type = Column(String(8), default='contrib')  # "admin" or "contrib"
     last_login = Column(String(32), onupdate=update_last_login)
     deactivated = Column(Boolean, default=False)
     confirmed = Column(Boolean, default=False)
