@@ -1,5 +1,4 @@
 import React from 'react';
-import { useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Switch,
@@ -11,9 +10,9 @@ import { HomePage } from './pages/home';
 import { SearchPage } from './pages/search';
 import { MainNav } from './components/mainNav';
 import { Background } from './baseStyle';
+import { AnnotatePage } from './pages/annotatePage';
 function App() {
   const entity = useReactiveVar(currentEntity)
-  useEffect(() => console.log('current entity is ', entity))
   return (
     <Router>
       <Background>
@@ -21,6 +20,9 @@ function App() {
         <Switch>
           <Route path='/search'>
             <SearchPage />
+          </Route>
+          <Route path='/annotate'>
+            <AnnotatePage />
           </Route>
           <Route path='/'>
             {entity ? <HomePage /> : <SearchPage/>}

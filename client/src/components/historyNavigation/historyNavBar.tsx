@@ -1,5 +1,5 @@
 import { readHistory, navigateHistoryBack, navigateHistoryForward } from "../../hooks/history"
-import { NavBar, NavButton, FocusHeader } from "./style"
+import { NavBar, ActiveNavButton, NavButton, FocusHeader } from "./style"
 import { useHistory } from 'react-router-dom';
 import { BiTimeFive } from 'react-icons/bi';
 import { GoPerson } from 'react-icons/go';
@@ -30,17 +30,34 @@ export const HistoryNavBar = ({resetCurrentEvents}: HistoryNavBarProps) => {
 
   return (
     <NavBar>
-      <NavButton
-        onClick={navigateBack}
-      >
-        Back {lastEntity ? '( ' + lastEntity.entity.name + ' )' : ''}
-      </NavButton>
+      { lastEntity
+        ?  <ActiveNavButton
+              onClick={navigateBack}
+            >
+              Back {'( ' + lastEntity.entity.name + ' )'}
+            </ActiveNavButton>
+        :  <NavButton
+              disabled
+            >
+              Back 
+            </NavButton>
+      }
+      
       <FocusHeader>{Icon} {currentEntity.entity.name}</FocusHeader>
-      <NavButton
-        onClick={navigateForward}
-      >
-        Forward  {nextEntity ? '( ' + nextEntity.entity.name + ' )' : ''}
-      </NavButton>
+      
+      { nextEntity
+        ?  <ActiveNavButton
+              onClick={navigateForward}
+            >
+              Forward {'( ' + nextEntity.entity.name + ' )'}
+            </ActiveNavButton>
+        :  <NavButton
+              disabled
+            >
+              Forward 
+            </NavButton>
+      }
+      
     </NavBar>
   )
 }
