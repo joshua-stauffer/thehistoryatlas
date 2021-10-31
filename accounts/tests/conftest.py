@@ -7,6 +7,7 @@ from app.database import Database
 from app.encryption import get_token
 from app.encryption import fernet
 from app.encryption import TTL
+from app.encryption import encrypt
 from app.schema import User
 
 class Config:
@@ -15,11 +16,38 @@ class Config:
         self.DB_URI = 'sqlite+pysqlite:///:memory:'
         self.DEBUG = False
 
-
 @pytest.fixture
-def db():
+def bare_db():
+    """An active database instance with no users"""
     c = Config()
     return Database(c)
+
+
+@pytest.fixture
+def db(bare_db, admin_user_details):
+    """An active database instance with one admin user"""
+    # must start with an admin user
+    encrypted_admin_details = {
+        **admin_user_details,
+        'password': encrypt(admin_user_details['password'])
+    }
+    with Session(bare_db._engine, future=True) as session:
+        session.add(User(**encrypted_admin_details))
+        session.commit()
+    return bare_db
+
+@pytest.fixture
+def loaded_db(db, user_details, unconfirmed_user):
+    """An active database instance with two users -- one admin, one contrib"""
+    encrypted_user_details = {
+        **user_details,
+        'password': encrypt(user_details['password'])
+    }
+    with Session(db._engine, future=True) as session:
+        session.add(User(**encrypted_user_details))
+        session.add(User(**unconfirmed_user))
+        session.commit()
+    return db
 
 @pytest.fixture
 def user_details():
@@ -30,6 +58,35 @@ def user_details():
         'l_name': 'tester',
         'username': 'testersone',
         'password': 'vivaciously',
+        'confirmed': True,
+        'deactivated': False
+    }
+
+@pytest.fixture
+def unconfirmed_user():
+    return {
+        'id': '76586111-aaf1-4c3d-8cf5-2d55fca19977',
+        'email': 'another_test_email@thehistoryatlas.org',
+        'f_name': 'freethrow',
+        'l_name': 'shooter',
+        'username': 'swoop',
+        'password': 'nothing-but-net',
+        'confirmed': False,
+        'deactivated': False
+    }
+
+@pytest.fixture
+def unconfirmed_user_id(unconfirmed_user):
+    return unconfirmed_user['id']
+
+@pytest.fixture
+def other_user_details():
+    return {
+        'email': 'test@thehistoryatlas.org',
+        'f_name': 'another',
+        'l_name': 'tester',
+        'username': 'the_test_user',
+        'password': 'test_test_test',
     }
 
 @pytest.fixture
@@ -54,24 +111,20 @@ def user_id(user_details):
 def admin_user_id(admin_user_details):
     return admin_user_details["id"]
 
-@pytest.fixture
-def loaded_db(db, user_details, admin_user_details):
-    with Session(db._engine, future=True) as session:
-        session.add(User(**user_details))
-        session.add(User(**admin_user_details))
-        session.commit()
-    return db
-
 
 @pytest.fixture
-def active_token(loaded_db, user_id):
+def active_token(user_id):
     token = get_token(user_id)
     return token
 
 @pytest.fixture
-def active_admin_token(loaded_db, admin_user_id):
+def active_admin_token(admin_user_id):
     token = get_token(admin_user_id)
     return token
+
+@pytest.fixture
+def unconfirmed_user_token(unconfirmed_user_id):
+    return get_token(unconfirmed_user_id)
 
 @pytest.fixture
 def nearly_expired_token(user_id):

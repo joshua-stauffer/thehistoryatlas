@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import os
 from typing import Union
 import logging
-from typing import Tuple, get_args
+from typing import Tuple, Optional
 from cryptography.fernet import Fernet
 from cryptography.fernet import InvalidToken
 from app.types import Token
@@ -42,7 +42,7 @@ def get_token(user_id) -> Token:
     return fernet.encrypt(token_bytes)
 
 
-def validate_token(token: Union[str, bytes]) -> Tuple[UserId, Token]:
+def validate_token(token: Union[str, bytes], force_refresh=False) -> Tuple[UserId, Token]:
     """Checks if token has expired and returns a user id or raises an exception"""
     if isinstance(token, str):
         token = token.encode()
@@ -60,6 +60,8 @@ def validate_token(token: Union[str, bytes]) -> Tuple[UserId, Token]:
     refresh_time = create_time + timedelta(seconds=REFRESH_BY)
     if refresh_time < datetime.utcnow():
         log.debug('Token close to expiration - returning new token.')
+        token = get_token(user_id)
+    elif force_refresh:
         token = get_token(user_id)
     return user_id, token
 

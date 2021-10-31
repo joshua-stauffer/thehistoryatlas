@@ -10,6 +10,9 @@ import signal
 from broker import Broker
 from tha_config import Config
 
+from app.database import Database
+from app.query_handler import QueryHandler
+
 
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
@@ -21,9 +24,12 @@ class Accounts:
     def __init__(self):
         self.config = Config()
         self.broker = None  # created asynchronously in ReadModel.start_broker()
+        self.db = Database(self.config)
+        self.qh = QueryHandler(self.db)
 
     def handle_query(self, msg):
-        ...
+        log.info(f"handling message {msg}")
+        return self.qh.handle_query(msg)
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""

@@ -36,7 +36,6 @@ class User(Base):
     def is_admin(self):
         return self.type == "admin"
 
-    @property
     def to_dict(self) -> UserDetails:
         """returns all queriable fields on the User object"""
         return {

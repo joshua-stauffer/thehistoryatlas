@@ -8,6 +8,7 @@ import logging
 import json
 from uuid import uuid4
 from typing import Dict
+from typing import Tuple
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +20,7 @@ from app.errors import MissingFieldsError
 from app.errors import MissingUserError
 from app.errors import DeactivatedUserError
 from app.errors import UnauthorizedUserError
+from app.errors import UnconfirmedUserError
 from app.encryption import get_token
 from app.encryption import encrypt
 from app.encryption import check_password
@@ -39,74 +41,74 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
         
-    def add_user(self, user_data: Dict) -> None:
+    def add_user(self, token: Token, user_data: Dict) -> UserDetails:
         """Adds a user to the database"""
-        for field in user_data.keys():
-            if field in PROTECTED_FIELDS:
-                raise UnauthorizedUserError
 
-        # don't mutate original dict
-        user_data = {
-            **user_data,
-            'id': str(uuid4()),
-            'type': 'contrib',
-            'confirmed': False,
-            'deactivated': False
-        }
 
-        try:
+        user_id, token = validate_token(token)
+        with Session(self._engine, future=True) as session:
+            self._require_admin_user(
+                user_id=user_id,
+                session=session,
+            )
+
+            for field in user_data.keys():
+                if field in PROTECTED_FIELDS:
+                    raise UnauthorizedUserError
+
+            # don't mutate original dict
+            user_data = {
+                **user_data,
+                'id': str(uuid4()),
+                'type': 'contrib',
+                'confirmed': False,
+                'deactivated': False
+            }
+
             # handle password
             password = user_data["password"]
             user_data["password"] = encrypt(password)
             # create user object
             new_user = User(**user_data)
-        except KeyError:
-            raise MissingFieldsError
         
-        with Session(self._engine, future=True) as session:
             session.add(new_user)
             session.commit()
 
-    def update_user(self, token, user_dict) -> UserDetails:
+            # TODO: when email service is enabled, add call here to send a token to
+            # the provided email address.
+
+            return token, new_user.to_dict()
+
+    def update_user(self, token, user_data) -> Tuple[Token, UserDetails]:
         """Update a user's data"""
 
         user_id, token = validate_token(token)
         
         with Session(self._engine, future=True) as session:
-            user = session.execute(
-                select(User).where(User.id == user_id)
-            ).scalar_one_or_none()
-            if not user:
-                raise MissingUserError
-            for key, val in user_dict.items():
+            user = self._get_user_by_id(user_id, session)
+            for key, val in user_data.items():
                 if key in PROTECTED_FIELDS:
                     if not user.is_admin:
                         raise UnauthorizedUserError
                 setattr(user, key, val)
             session.add(user)
             session.commit()
+            return token, user.to_dict()
 
-    def get_user(self, token) -> UserDetails:
+    def get_user(self, token) -> Tuple[Token, UserDetails]:
         """Obtain user details"""
 
-        username = validate_token(token)
+        user_id, token = validate_token(token)
         with Session(self._engine, future=True) as session:
-            user = session.execute(
-                select(User).where(User.username==username)
-            ).scalar_one_or_none()
-            if not user:
-                raise MissingUserError
-            if user.deactivated:
-                raise DeactivatedUserError
-            
-
+            user = self._get_user_by_id(user_id=user_id, session=session)
+            return token, user.to_dict()
 
     def login(self, username, password) -> Token:
         """Exchange login credentials for a token"""
 
         with Session(self._engine, future=True) as session:
             user = session.execute(
-                select(User).where(User.username==username)
+                select(User).where(User.username == username)
             ).scalar_one_or_none()
             if not user:
                 raise MissingUserError
@@ -114,8 +116,10 @@ class Database:
                 raise DeactivatedUserError
             if not check_password(password, user.password):
                 raise AuthenticationError
+            if not user.confirmed:
+                raise UnconfirmedUserError
             token = get_token(user.id)
-        return token
+            return token
 
     def check_if_username_is_unique(self, username) -> bool:
         """Returns True if a username is unique else False."""
@@ -127,3 +131,42 @@ class Database:
             if user:
                 return False
             return True
+
+    def deactivate_account(self, token, user_id) -> Tuple[Token, UserDetails]:
+        admin_user_id, token = validate_token(token)
+        with Session(self._engine, future=True) as session:
+            self._require_admin_user(user_id=admin_user_id, session=session)
+            user = self._get_user_by_id(user_id=user_id, session=session)
+            user.deactivated = True
+            session.add(user)
+            session.commit()
+            return token, user.to_dict()
+
+    def confirm_account(self, token) -> Tuple[Token, UserDetails]:
+        user_id, token = validate_token(token, force_refresh=True)
+        with Session(self._engine, future=True) as session:
+            user = self._get_user_by_id(user_id, session)
+            user.confirmed = True
+            session.add(user)
+            session.commit()
+            return token, user.to_dict()
+
+    @staticmethod
+    def _get_user_by_id(user_id, session):
+        """internal helper method to retrieve a user object by id.
+        Must be called within context of active session."""
+
+        user = session.execute(
+            select(User).where(User.id == user_id)
+        ).scalar_one_or_none()
+        if not user:
+            raise MissingUserError
+        if user.deactivated:
+            raise DeactivatedUserError
+        return user
+
+    def _require_admin_user(self, user_id, session) -> bool:
+        user = self._get_user_by_id(user_id, session)
+        if not user.is_admin:
+            raise UnauthorizedUserError
+        return True

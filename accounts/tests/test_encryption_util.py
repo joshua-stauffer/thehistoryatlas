@@ -32,6 +32,13 @@ def test_get_token():
     assert user_id == new_user_id
     assert token is new_token
 
+def test_get_token_with_force_refresh():
+    user_id = 'my_user_id_123'
+    token = get_token(user_id)
+    new_user_id, new_token = validate_token(token, force_refresh=True)
+    assert user_id == new_user_id
+    assert token is not new_token
+
 def test_validate_token(active_token, user_details):
     user_id, token = validate_token(active_token)
     assert user_id == user_details["id"]

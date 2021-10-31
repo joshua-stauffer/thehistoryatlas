@@ -30,3 +30,7 @@ class InvalidTokenError(Exception):
 class UnknownQueryError(Exception):
     """Request failed becaues the no handler was found for the requested query type."""
     ...
+
+class UnconfirmedUserError(Exception):
+    """Request failed because this user hasn't confirmed their email yet."""
+    ...

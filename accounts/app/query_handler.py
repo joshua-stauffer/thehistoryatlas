@@ -8,6 +8,9 @@ from app.errors import UnknownQueryError
 from app.errors import MissingUserError
 from app.errors import AuthenticationError
 from app.errors import DeactivatedUserError
+from app.errors import MissingFieldsError
+from app.errors import UnauthorizedUserError
+from app.schema import User
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +28,12 @@ class QueryHandler:
         handler = self._query_handlers.get(query_type)
         if not handler:
             raise UnknownQueryError(query_type)
-        return handler(query)
+        try:
+            res = handler(query)
+        except KeyError:
+            # globally catch all missing fields
+            raise MissingFieldsError
+        return res
 
     def _map_query_handlers(self):
         """A dict of known query types and the methods which process them"""
@@ -36,6 +44,7 @@ class QueryHandler:
             "UPDATE_USER": self._handle_update_user,
             "IS_USERNAME_UNIQUE": self._handle_is_username_unique,
             "DEACTIVATE_ACCOUNT": self._handle_deactivate_account,
+            "CONFIRM_ACCOUNT": self._handle_confirm_account,
         }
 
     def _handle_login(self, query):
@@ -61,16 +70,48 @@ class QueryHandler:
                 }
             }
 
-
-
     def _handle_add_user(self, query):
-        ...
+        """Add a user. Requires admin credentials"""
+        token=query["payload"]["token"]
+        user_data = query["payload"]["user_data"]
+        token, user_details = self._db.add_user(
+            token, user_data
+        )
+        return {
+            'type': 'ADD_USER',
+            'payload': {
+                'token': token,
+                'user_details': user_details
+            }
+        }
 
     def _handle_update_user(self, query):
-        ...
+        """Updates a user's information"""
+        token = query["payload"]["token"]
+        user_data = query["payload"]["user_data"]
+        token, user_details = self._db.update_user(
+            token=token,
+            user_data=user_data
+        )
+        return {
+            'type': 'UPDATE_USER',
+            'payload': {
+                'token': token,
+                'user_details': user_details
+            }
+        }
 
     def _handle_get_user(self, query):
-        ...
+        """Fetches a user's information"""
+        token = query["payload"]["token"]
+        token, user_details = self._db.get_user(token=token)
+        return {
+            'type': 'GET_USER',
+            'payload': {
+                'token': token,
+                'user_details': user_details
+            }
+        }
 
     def _handle_is_username_unique(self, query):
         """Test if a given username is already in use."""
@@ -80,11 +121,32 @@ class QueryHandler:
         return {
             'type': 'IS_USERNAME_UNIQUE',
             'payload': {
-                username: res
+                'is_unique': res,
+                'username': username
             }
         }
 
-
     def _handle_deactivate_account(self, query):
-        ...
+        """Deactivate a user's account. Requires admin credentials"""
+        token = query['payload']['token']
+        user_id = query['payload']['user_id']
+        token, user_details = self._db.deactivate_account(token, user_id)
+        return {
+            'type': 'DEACTIVATE_ACCOUNT',
+            'payload': {
+                'token': token,
+                'user_details': user_details
+            }
+        }
 
+    def _handle_confirm_account(self, query):
+        """Path for user to verify their email address"""
+        token = query['payload']['token']
+        token, user_details = self._db.confirm_account(token)
+        return {
+            'type': 'CONFIRM_ACCOUNT',
+            'payload': {
+                'token': token,
+                'user_details': user_details
+            }
+        }
