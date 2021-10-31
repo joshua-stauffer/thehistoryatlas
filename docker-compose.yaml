@@ -95,6 +95,15 @@ services:
             - tha-connect
         volumes:
             - geodb:/etc/db
+    accounts:
+        depends_on:
+            -   broker
+        build:
+            context: ./accounts
+            args:
+                test: "False"
+        networks:
+            - tha-connect
 volumes:
     # broker:
     teststore:
