@@ -25,4 +25,4 @@ ENV QUEUE_NAME=users
 ENV SEC_KEY=nHECungBxXETr9hdYml6sik9Eb368q0cm2wutp644oQ=
 ENV TTL=28800
 ENV REFRESH_BY=7200
-CMD ["python3", "-m", "app.users"]
+CMD ["python3", "-m", "app.accounts"]

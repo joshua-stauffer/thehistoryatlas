@@ -7,9 +7,9 @@ October 16th, 2021
 import asyncio
 import logging
 import signal
-from broker import Broker
 from tha_config import Config
 
+from app.broker import Broker
 from app.database import Database
 from app.query_handler import QueryHandler
 
