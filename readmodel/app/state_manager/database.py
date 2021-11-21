@@ -4,24 +4,18 @@ Provides read and write access to the Query database.
 """
 
 import asyncio
-from collections import defaultdict
-import logging
 import json
-from typing import Union
-from sqlalchemy import create_engine
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from .schema import Base
-from .schema import Citation
-from .schema import History
-from .schema import Name
-from .schema import Person
-from .schema import Place
-from .schema import TagInstance
-from .schema import Time
-from .schema import Tag
-from .schema import Summary
+import logging
+from typing import Tuple, Union
 
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+
+from app.state_manager.schema import (
+    Base, Citation, History, Name, Person, Place, Summary,
+    Tag, TagInstance, Time
+)
+from app.state_manager.trie import Trie, TrieResult
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +30,8 @@ class Database:
         Base.metadata.create_all(self._engine)
         self.__short_term_memory = dict()
         self.__stm_timeout = stm_timeout
+        # intialize the search trie
+        self._trie = Trie(self.get_all_entity_names())
 
     # QUERIES
 
@@ -192,6 +188,32 @@ class Database:
                 })
         return res
 
+    def get_all_entity_names(self) -> Tuple[str, str]:
+        """Util for building search trie. Returns a list of (name, guid) tuples."""
+        res = []
+        with Session(self._engine, future=True) as session:
+
+            people = session.execute(select(Person)).scalars()
+            for person in people:
+                for name in person.names:
+                    res.append((name, person.guid))
+
+            places = session.execute(select(Place)).scalars()
+            for place in places:
+                for name in place.names:
+                    res.append((name, place.guid))
+
+            times = session.execute(select(Time)).scalars()
+            for time in times:
+                res.append((time.name, time.guid))
+            
+        return res
+
+    def get_name_by_fuzzy_search(self, name: str) -> list[TrieResult]:
+        """Search for possible completions to a given string from known entity names."""
+        return self._trie.find(name, res_count=1)
+            
+
     # MUTATIONS
 
     def create_summary(self,
@@ -208,7 +230,6 @@ class Database:
             session.add(summary)
             session.commit()
             self.add_to_stm(key=summary_guid, value=summary.id)
-
 
     def create_citation(self,
         citation_guid: str,
@@ -383,7 +404,8 @@ class Database:
             session.commit()
 
     def _handle_name(self, name, guid, session):
-        """Accepts a name and GUID and links the two in the Name table"""
+        """Accepts a name and GUID and links the two in the Name table and
+        updates the name search trie."""
         res = session.execute(
             select(Name).where(Name.name==name)
         ).scalar_one_or_none()
@@ -391,11 +413,13 @@ class Database:
             res = Name(
                 name=name,
                 guids=guid)
+            self.update_trie(new_string=name, new_string_guid=guid)
         else:
             # check if guid is already represented
             if guid in res.guids:
-                return
+                return  # this name/guid pair isn't new
             res.add_guid(guid)
+            self.update_trie(new_string=name, new_string_guid=guid)
         session.add(res)
 
     # CACHE LAYER FOR INCOMING CITATIONS
@@ -447,6 +471,33 @@ class Database:
             res.latest_event_id = event_id
             session.add(res)
             session.commit()
+
+    # TRIE MANAGEMENT
+
+    def update_trie(self, 
+        new_string=None, 
+        new_string_guid=None, 
+        old_string=None,
+        old_string_guid=None
+        ):
+        """Maintains trie state by adding new string and/or removing old string.
+        if new_string is provided, new_string_guid is required as well.
+        if old_string is provided, old_string_guid is required as well.
+        """
+        if new_string:
+            if not new_string_guid:
+                raise Exception(f'Update_trie was provided with new_string {new_string} but not a new_string_guid.')
+            self._trie.insert(
+                string=new_string,
+                guid=new_string_guid
+            )
+        if old_string:
+            if not new_string_guid:
+                raise Exception(f'Update_trie was provided with old_string {new_string} but not a new_string_guid.')
+            self._trie.delete(
+                string=old_string,
+                guid=old_string_guid
+            )
 
     # UTILITY
 

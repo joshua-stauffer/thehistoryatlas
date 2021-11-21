@@ -5,12 +5,13 @@ Tuesday, May 4th 2021
 
 import logging
 from .errors import UnknownQueryError, UnknownManifestTypeError
+from app.state_manager.database import Database
 
 log = logging.getLogger(__name__)
 
 class QueryHandler:
 
-    def __init__(self, database_instance):
+    def __init__(self, database_instance: Database):
         self._db = database_instance
         self._query_handlers = self._map_query_handlers()
 
@@ -31,6 +32,7 @@ class QueryHandler:
             'GET_MANIFEST': self._handle_get_manifest, 
             'GET_GUIDS_BY_NAME': self._handle_get_guids_by_name,
             'GET_GUIDS_BY_NAME_BATCH': self._handle_get_guids_by_name_batch,
+            'GET_NAME_BY_FUZZY_SEARCH': self._handle_get_fuzzy_search_by_name,
         }
 
     def _handle_get_summaries_by_guid(self, query):
@@ -91,7 +93,7 @@ class QueryHandler:
         }
 
     def _handle_get_guids_by_name_batch(self, query):
-        """Fetch GUIDs for a series of names."""
+        """Fetch GUIDs for a series of names. Used internally by other services."""
         name_list = query['payload']['names']
         res = dict()
         for name in name_list:
@@ -101,5 +103,16 @@ class QueryHandler:
             'type': 'GUIDS_BY_NAME_BATCH',
             'payload': {
                 'names': res
+            }
+        }
+
+    def _handle_get_fuzzy_search_by_name(self, query):
+        """Perform a fuzzy search on the given string and return possible completions."""
+
+        name = query['payload']['name']
+        return {
+            'type': 'FUZZY_SEARCH_BY_NAME',
+            'payload': {
+                'results': self._db.get_name_by_fuzzy_search(name)
             }
         }

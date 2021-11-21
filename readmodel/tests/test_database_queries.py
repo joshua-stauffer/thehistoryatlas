@@ -1,13 +1,11 @@
-import asyncio
 import json
 import logging
 import pytest
 import random
-from uuid import uuid4
+from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
-from app.state_manager.schema import Base
 from app.state_manager.schema import Citation
 from app.state_manager.schema import TagInstance
 from app.state_manager.schema import Tag
@@ -373,3 +371,16 @@ def test_get_entity_summary_by_guid_batch(db_tuple):
         assert isinstance(summary['first_citation_date'], str)
         assert isinstance(summary['last_citation_date'], str)
         assert summary['first_citation_date'] <= summary['last_citation_date']
+
+def test_get_all_entity_names(db_tuple):
+    db, _ = db_tuple
+    res = db.get_all_entity_names()
+    assert len(res) > 0
+    assert isinstance(res, list)
+    for tup in res:
+        assert isinstance(tup, tuple)
+        name, guid = tup
+        assert isinstance(name, str)
+        assert isinstance(guid, str)
+        assert UUID(guid)
+    
