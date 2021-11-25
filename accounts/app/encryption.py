@@ -11,14 +11,14 @@ from app.errors import ExpiredTokenError
 from app.errors import InvalidTokenError
 
 
-logging.basicConfig(level='DEBUG')
+logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
-SEC_KEY = os.environ.get('SEC_KEY')
-TTL = int(os.environ.get('TTL'))
-REFRESH_BY = int(os.environ.get('REFRESH_BY'))
+SEC_KEY = os.environ.get("SEC_KEY")
+TTL = int(os.environ.get("TTL"))
+REFRESH_BY = int(os.environ.get("REFRESH_BY"))
 if not (TTL and SEC_KEY and REFRESH_BY):
-    raise Exception('Missing environment variables for the encryption utility.')
+    raise Exception("Missing environment variables for the encryption utility.")
 
 fernet = Fernet(SEC_KEY)
 
@@ -42,7 +42,9 @@ def get_token(user_id) -> Token:
     return fernet.encrypt(token_bytes)
 
 
-def validate_token(token: Union[str, bytes], force_refresh=False) -> Tuple[UserId, Token]:
+def validate_token(
+    token: Union[str, bytes], force_refresh=False
+) -> Tuple[UserId, Token]:
     """Checks if token has expired and returns a user id or raises an exception"""
     if isinstance(token, str):
         token = token.encode()
@@ -59,7 +61,7 @@ def validate_token(token: Union[str, bytes], force_refresh=False) -> Tuple[UserI
         raise ExpiredTokenError
     refresh_time = create_time + timedelta(seconds=REFRESH_BY)
     if refresh_time < datetime.utcnow():
-        log.debug('Token close to expiration - returning new token.')
+        log.debug("Token close to expiration - returning new token.")
         token = get_token(user_id)
     elif force_refresh:
         token = get_token(user_id)
@@ -67,11 +69,11 @@ def validate_token(token: Union[str, bytes], force_refresh=False) -> Tuple[UserI
 
 
 def parse_token_str(token_str: str) -> Tuple[UserId, datetime]:
-    split_token = token_str.split('|')
+    split_token = token_str.split("|")
     user_id = split_token[0]
     time_ = str_to_time(split_token[1])
     return user_id, time_
 
 
 def str_to_time(time_str: str) -> datetime:
-    return datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S.%f')
+    return datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f")

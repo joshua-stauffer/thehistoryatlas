@@ -14,8 +14,9 @@ from app.database import Database
 from app.query_handler import QueryHandler
 
 
-logging.basicConfig(level='DEBUG')
+logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
+
 
 class Accounts:
     """Primary class for application. Primarily coordinates AMQP broker with
@@ -33,7 +34,7 @@ class Accounts:
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
-        log.info('Accounts Service: starting broker')
+        log.info("Accounts Service: starting broker")
         self.broker = Broker(
             self.config,
             self.handle_query,
@@ -41,35 +42,38 @@ class Accounts:
         try:
             await self.broker.start()
         except Exception as e:
-            log.critical(f'Accounts Service caught unknown exception {e} and is ' + \
-                          'shutting down without restart.')
+            log.critical(
+                f"Accounts Service caught unknown exception {e} and is "
+                + "shutting down without restart."
+            )
             await self.shutdown()
 
     async def shutdown(self, signal=None):
         """Gracefully close all open connections and cancel tasks"""
         if signal:
-            log.info(f'Received shutdown signal: {signal}')
+            log.info(f"Received shutdown signal: {signal}")
         await self.broker.cancel()
         loop = asyncio.get_event_loop()
-        tasks = [t for t in asyncio.all_tasks() if t is not
-             asyncio.current_task()]
+        tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         [task.cancel() for task in tasks]
         await asyncio.gather(*tasks, return_exceptions=True)
         loop.stop()
-        log.info('Asyncio loop has been stopped')
+        log.info("Asyncio loop has been stopped")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     accounts = Accounts()
-    log.info('Accounts initialized')
+    log.info("Accounts initialized")
     loop = asyncio.get_event_loop()
     loop.create_task(accounts.start_broker())
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
         loop.add_signal_handler(
-            s, lambda s=s: asyncio.create_task(accounts.shutdown(s)))
+            s, lambda s=s: asyncio.create_task(accounts.shutdown(s))
+        )
     try:
-        log.info('Asyncio loop now running')
+        log.info("Asyncio loop now running")
         loop.run_forever()
     finally:
         loop.close()
-        log.info('Accounts shut down successfully.') 
+        log.info("Accounts shut down successfully.")

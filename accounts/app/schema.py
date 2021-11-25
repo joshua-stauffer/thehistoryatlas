@@ -19,15 +19,17 @@ PROTECTED_FIELDS = {"type", "last_login", "disabled", "id"}
 class User(Base):
     """Model representing Users and their data"""
 
-    __tablename__ = 'users'
+    __tablename__ = "users"
     id = Column(String(64), primary_key=True)
     email = Column(String(128))
     f_name = Column(String(64))
     l_name = Column(String(64))
     username = Column(String(64), unique=True)
     password = Column(String(128))
-    type = Column(String(8), default='contrib')  # "admin" or "contrib"
-    last_login = Column(String(32), onupdate=update_last_login, default=update_last_login)
+    type = Column(String(8), default="contrib")  # "admin" or "contrib"
+    last_login = Column(
+        String(32), onupdate=update_last_login, default=update_last_login
+    )
     deactivated = Column(Boolean, default=False)
     confirmed = Column(Boolean, default=False)
 
@@ -38,9 +40,9 @@ class User(Base):
     def to_dict(self) -> UserDetails:
         """returns all queriable fields on the User object"""
         return {
-                "f_name": self.f_name,
-                "l_name": self.l_name,
-                "username": self.username,
-                "email": self.email,
-                "last_login": self.last_login
-            }
+            "f_name": self.f_name,
+            "l_name": self.l_name,
+            "username": self.username,
+            "email": self.email,
+            "last_login": self.last_login,
+        }

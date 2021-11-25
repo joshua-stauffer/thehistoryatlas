@@ -3,6 +3,7 @@ from typing import TypedDict
 Token = str
 UserId = str
 
+
 class UserDetails(TypedDict):
     """A dict representing all queriable user details"""
 

@@ -31,21 +31,17 @@ from app.types import UserDetails
 
 log = logging.getLogger(__name__)
 
-class Database:
 
+class Database:
     def __init__(self, config):
-        self._engine = create_engine(
-            config.DB_URI,
-            echo=config.DEBUG,
-            future=True)
+        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
         # initialize the db
         Base.metadata.create_all(self._engine)
         # dev only, create a default admin user
         self._ensure_admin()
-        
+
     def add_user(self, token: Token, user_details: Dict) -> UserDetails:
         """Adds a user to the database"""
-
 
         user_id, token = validate_token(token)
         with Session(self._engine, future=True) as session:
@@ -61,10 +57,10 @@ class Database:
             # don't mutate original dict
             user_details = {
                 **user_details,
-                'id': str(uuid4()),
-                'type': 'contrib',
-                'confirmed': False,
-                'deactivated': False
+                "id": str(uuid4()),
+                "type": "contrib",
+                "confirmed": False,
+                "deactivated": False,
             }
 
             # handle password
@@ -72,7 +68,7 @@ class Database:
             user_details["password"] = encrypt(password)
             # create user object
             new_user = User(**user_details)
-        
+
             session.add(new_user)
             session.commit()
 
@@ -86,10 +82,10 @@ class Database:
 
         user_id, token = validate_token(token)
 
-        if 'password' in user_details:
-            password = user_details['password']
-            user_details['password'] = encrypt(password)
-        
+        if "password" in user_details:
+            password = user_details["password"]
+            user_details["password"] = encrypt(password)
+
         with Session(self._engine, future=True) as session:
             user = self._get_user_by_id(user_id, session)
             for key, val in user_details.items():
@@ -132,7 +128,7 @@ class Database:
 
         with Session(self._engine, future=True) as session:
             user = session.execute(
-                select(User).where(User.username==username)
+                select(User).where(User.username == username)
             ).scalar_one_or_none()
             if user:
                 return False
@@ -208,22 +204,22 @@ class Database:
         with Session(self._engine, future=True) as session:
             accounts = session.query(User).all()
             if len(accounts):
-                log.info('Found an existing account.')
+                log.info("Found an existing account.")
                 return
-            log.info('Creating a default admin account.')
+            log.info("Creating a default admin account.")
             # cur_user = session.query(User).filter(User.username == 'admin').one()
             # session.delete(cur_user)
             # session.commit()
             user = User(
                 id=str(uuid4()),
-                username='admin',
-                password=encrypt('admin'),
-                f_name='tha',
-                l_name='admin',
-                email='test@thehistoryatlas.org',
-                type='admin',
+                username="admin",
+                password=encrypt("admin"),
+                f_name="tha",
+                l_name="admin",
+                email="test@thehistoryatlas.org",
+                type="admin",
                 confirmed=True,
-                deactivated=False
+                deactivated=False,
             )
             session.add(user)
             session.commit()
