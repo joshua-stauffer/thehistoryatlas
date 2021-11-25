@@ -73,9 +73,9 @@ class QueryHandler:
     def _handle_add_user(self, query):
         """Add a user. Requires admin credentials"""
         token=query["payload"]["token"]
-        user_data = query["payload"]["user_data"]
+        user_details = query["payload"]["user_data"]
         token, user_details = self._db.add_user(
-            token, user_data
+            token, user_details
         )
         return {
             'type': 'ADD_USER',
@@ -88,10 +88,10 @@ class QueryHandler:
     def _handle_update_user(self, query):
         """Updates a user's information"""
         token = query["payload"]["token"]
-        user_data = query["payload"]["user_data"]
+        user_details = query["payload"]["user_data"]
         token, user_details = self._db.update_user(
             token=token,
-            user_data=user_data
+            user_data=user_details
         )
         return {
             'type': 'UPDATE_USER',
@@ -129,8 +129,8 @@ class QueryHandler:
     def _handle_deactivate_account(self, query):
         """Deactivate a user's account. Requires admin credentials"""
         token = query['payload']['token']
-        user_id = query['payload']['user_id']
-        token, user_details = self._db.deactivate_account(token, user_id)
+        username = query['payload']['username']
+        token, user_details = self._db.deactivate_account(token, username)
         return {
             'type': 'DEACTIVATE_ACCOUNT',
             'payload': {

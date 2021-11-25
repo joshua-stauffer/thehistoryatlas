@@ -10,7 +10,8 @@ import { Config } from './config';
 import {
   ReadModelQuery,
   NLPServiceQuery,
-  GeoServiceQuery
+  GeoServiceQuery,
+  AccountsServiceQuery
 } from './types';
 
 
@@ -30,7 +31,7 @@ export interface Message {
   payload: any;
 }
 
-type RPCRecipient = 'query.readmodel' | 'command.writemodel' | 'query.nlp' | 'query.geo';
+type RPCRecipient = 'query.readmodel' | 'command.writemodel' | 'query.nlp' | 'query.geo' | 'query.accounts';
 type ExchangeName = string;
 
 type QueryMap = Map<string, { resolve: (value: unknown) => void, reject: (reason?: any) => void }>
@@ -158,6 +159,11 @@ export class Broker {
   public async queryGeo(msg: GeoServiceQuery): Promise<unknown> {
     console.log('Querying geo')
     return this.publishRPC(msg, 'query.geo', 'main');
+  }
+
+  public async queryAccounts(msg: AccountsServiceQuery): Promise<unknown> {
+    console.log('querying the accounts service')
+    return this.publishRPC(msg, 'query.accounts', 'main')
   }
 
   private async handleRPCCallback(msg: Amqp.ConsumeMessage | null): Promise<void> {

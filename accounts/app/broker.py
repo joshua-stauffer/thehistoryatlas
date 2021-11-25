@@ -31,7 +31,7 @@ class Broker(BrokerBase):
 
         # register handlers
         await self.add_message_handler(
-            routing_key='query.users',
+            routing_key='query.accounts',
             callback=self._handle_query)
 
     async def _handle_query(self, message):

@@ -29,13 +29,46 @@ exports.typeDefs = gql `
     GetTextAnalysis(
       text: String!
     ): TextAnalysisResponse
+
+    IsUsernameUnique(
+      username: String!
+    ): IsUsernameUniqueResponse!
+
+    GetUser(
+      token: String!
+    ): AccountsGenericResponse!
   }
+
 
   type Mutation {
 
     PublishNewCitation(
       Annotation: AnnotateCitationInput!
     ): PublishCitationResponse!
+
+    ConfirmAccount(
+      token: String!
+    ): AccountsGenericResponse!
+
+    DeactivateAccount(
+      token: String!
+      username: String!
+    ): AccountsGenericResponse
+
+    UpdateUser(
+      token: String!
+      user_details: UserDetailsInput!
+    ): AccountsGenericResponse!
+
+    AddUser(
+      token: String!
+      user_details: UserDetailsInput!
+    ): AccountsGenericResponse!
+
+    Login(
+      username: String!
+      password: String!
+    ): LoginResponse!
 
   }
 
@@ -183,5 +216,39 @@ exports.typeDefs = gql `
     success: Boolean!
     message: String!
   }
+
+  # Accounts Service Types
+
+  type AccountsGenericResponse {
+    token: String!
+    user_details: UserDetails!
+  }
+
+  type UserDetails {
+    f_name: String!
+    l_name: String!
+    username: String!
+    email: String!
+    last_login: String!
+  }
+
+  input UserDetailsInput {
+    f_name: String!
+    l_name: String!
+    username: String!
+    email: String!
+    last_login: String!
+  }
+
+  type IsUsernameUniqueResponse {
+    username: String!
+    is_unique: Boolean!
+  }
+
+  type LoginResponse {
+    success: Boolean!
+    token: String
+  }
+
 `;
 //# sourceMappingURL=schema.js.map

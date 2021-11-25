@@ -125,7 +125,7 @@ exports.resolvers = {
             const msg = {
                 type: "PROCESS_TEXT",
                 payload: {
-                    "text": text
+                    text: text
                 }
             };
             try {
@@ -142,7 +142,52 @@ exports.resolvers = {
                     message: err
                 };
             }
-        }
+        },
+        // ACCOUNTS MESSAGES
+        GetUser: async (_, { token }, { queryAccounts }) => {
+            const msg = {
+                type: "GET_USER",
+                payload: {
+                    token: token
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        IsUsernameUnique: async (_, { username }, { queryAccounts }) => {
+            const msg = {
+                type: "IS_USERNAME_UNIQUE",
+                payload: {
+                    username: username
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
     },
     Mutation: {
         PublishNewCitation: async (_, { Annotation }, { emitCommand }) => {
@@ -185,7 +230,122 @@ exports.resolvers = {
                     message: err // this may run the risk of exposing sensitive data -- debug only
                 };
             }
-        }
+        },
+        AddUser: async (_, { token, user_details }, { queryAccounts }) => {
+            const msg = {
+                type: "ADD_USER",
+                payload: {
+                    token: token,
+                    user_details: user_details
+                }
+            };
+            try {
+                ``;
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        UpdateUser: async (_, { token, user_details }, { queryAccounts }) => {
+            const msg = {
+                type: "UPDATE_USER",
+                payload: {
+                    token: token,
+                    user_details: user_details
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        Login: async (_, { username, password }, { queryAccounts }) => {
+            const msg = {
+                type: "LOGIN",
+                payload: {
+                    username: username,
+                    password: password
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        DeactivateAccount: async (_, { token, username }, { queryAccounts }) => {
+            const msg = {
+                type: "DEACTIVATE_ACCOUNT",
+                payload: {
+                    token: token,
+                    username: username // user to be deactivated
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        ConfirmAccount: async (_, { token }, { queryAccounts }) => {
+            const msg = {
+                type: "CONFIRM_ACCOUNT",
+                payload: {
+                    token: token
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const { payload } = await queryAccounts(msg);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
     }
 }; // end of Resolvers
 //# sourceMappingURL=resolvers.js.map

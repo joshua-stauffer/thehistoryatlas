@@ -6,7 +6,6 @@ October 16th 2021
 from sqlalchemy import Column
 from sqlalchemy import String
 from sqlalchemy.ext.declarative import declarative_base
-from uuid import uuid4
 from sqlalchemy.sql.sqltypes import Boolean
 from app.types import UserDetails
 from app.utils import update_last_login
@@ -28,7 +27,7 @@ class User(Base):
     username = Column(String(64), unique=True)
     password = Column(String(128))
     type = Column(String(8), default='contrib')  # "admin" or "contrib"
-    last_login = Column(String(32), onupdate=update_last_login)
+    last_login = Column(String(32), onupdate=update_last_login, default=update_last_login)
     deactivated = Column(Boolean, default=False)
     confirmed = Column(Boolean, default=False)
 

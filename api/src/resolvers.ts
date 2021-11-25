@@ -1,7 +1,7 @@
 // Resolver for the History Atlas Apollo GraphQL API
 
 import { Context } from './index';
-import { Resolver, WriteModelResponse } from './types'
+import { Resolver, WriteModelResponse, Accounts } from './types'
 
 const APP_VERSION = '0.1.0'
 
@@ -140,13 +140,14 @@ export const resolvers: Resolvers = {
         }
       }
     },
+
     GetTextAnalysis: async (_,
       { text }: Resolver.GetTextAnalysisArgs,
       { queryNLP }: Context) => {
       const msg = {
         type: "PROCESS_TEXT",
         payload: {
-          "text": text
+          text: text
         }
       }
       try {
@@ -163,7 +164,61 @@ export const resolvers: Resolvers = {
           message: err
         }
       }
-    }
+    },
+
+    // ACCOUNTS MESSAGES
+
+    GetUser: async (_,
+      { token }: Accounts.GetUserPayload,
+      { queryAccounts }: Context) => {
+        const msg: Accounts.GetUserQuery = {
+          type: "GET_USER",
+          payload: {
+            token: token
+          }
+        }
+        try {
+          console.debug('Publishing query ', msg)
+          console.debug(msg.payload)
+
+          const { payload } = await queryAccounts(msg) as Accounts.GetUserResult;
+          console.debug('received result: ', payload)
+          return payload
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
+      },
+
+      IsUsernameUnique: async (_,
+        { username }: Accounts.IsUsernameUniquePayload,
+        { queryAccounts }: Context) => {
+          const msg: Accounts.IsUsernameUniqueQuery = {
+            type: "IS_USERNAME_UNIQUE",
+            payload: {
+              username: username
+            }
+          }
+          try {
+            console.debug('Publishing query ', msg)
+            console.debug(msg.payload)
+  
+            const { payload } = await queryAccounts(msg) as Accounts.IsUsernameUniqueResult;
+            console.debug('received result: ', payload)
+            return payload
+          } catch (err) {
+            return {
+              code: 'Error',
+              success: false,
+              message: err
+            }
+          }
+        },
+
+              
 
   }, // end of Query
 
@@ -207,8 +262,137 @@ export const resolvers: Resolvers = {
             code: 'Error',
             success: false,
             message: err // this may run the risk of exposing sensitive data -- debug only
-          }
         }
       }
+    },
+
+    AddUser: async (_,
+      { token, user_details }: Accounts.AddUserPayload,
+      { queryAccounts }: Context) => {
+        const msg: Accounts.AddUserQuery = {
+          type: "ADD_USER",
+          payload: {
+            token: token,
+            user_details: user_details
+          }
+        }
+        try {``
+          console.debug('Publishing query ', msg)
+          console.debug(msg.payload)
+
+          const { payload } = await queryAccounts(msg) as Accounts.AddUserResult;
+          console.debug('received result: ', payload)
+          return payload
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
+      },
+
+    UpdateUser: async (_,
+      { token, user_details }: Accounts.UpdateUserPayload,
+      { queryAccounts }: Context) => {
+        const msg: Accounts.UpdateUserQuery = {
+          type: "UPDATE_USER",
+          payload: {
+            token: token,
+            user_details: user_details
+          }
+        }
+        try {
+          console.debug('Publishing query ', msg)
+          console.debug(msg.payload)
+
+          const { payload } = await queryAccounts(msg) as Accounts.UpdateUserResponse;
+          console.debug('received result: ', payload)
+          return payload
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
+      },
+
+    Login: async (_,
+      { username, password }: Accounts.LoginPayload,
+      { queryAccounts }: Context) => {
+        const msg: Accounts.LoginQuery = {
+          type: "LOGIN",
+          payload: {
+            username: username,
+            password: password
+          }
+        }
+        try {
+          console.debug('Publishing query ', msg)
+          console.debug(msg.payload)
+
+          const { payload } = await queryAccounts(msg) as Accounts.LoginResult;
+          console.debug('received result: ', payload)
+          return payload
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
+      },
+
+    DeactivateAccount: async (_,
+      { token, username }: Accounts.DeactivateAccountPayload,
+      { queryAccounts }: Context) => {
+        const msg: Accounts.DeactivateAccountQuery = {
+          type: "DEACTIVATE_ACCOUNT",
+          payload: {
+            token: token,     // admin token required
+            username: username  // user to be deactivated
+          }
+        }
+        try {
+          console.debug('Publishing query ', msg)
+          console.debug(msg.payload)
+
+          const { payload } = await queryAccounts(msg) as Accounts.DeactivateAccountResult;
+          console.debug('received result: ', payload)
+          return payload
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
+      },
+
+    ConfirmAccount: async (_,
+      { token }: Accounts.ConfirmAccountPayload,
+      { queryAccounts }: Context) => {
+        const msg: Accounts.ConfirmAccountQuery = {
+          type: "CONFIRM_ACCOUNT",
+          payload: {
+            token: token
+          }
+        }
+        try {
+          console.debug('Publishing query ', msg)
+          console.debug(msg.payload)
+
+          const { payload } = await queryAccounts(msg) as Accounts.ConfirmAccountResult;
+          console.debug('received result: ', payload)
+          return payload
+        } catch (err) {
+          return {
+            code: 'Error',
+            success: false,
+            message: err
+          }
+        }
+      },
   }
 } // end of Resolvers
