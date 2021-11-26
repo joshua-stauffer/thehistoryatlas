@@ -1,8 +1,19 @@
 "use strict";
-// Resolver for the History Atlas Apollo GraphQL API
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = void 0;
+// Resolver for the History Atlas Apollo GraphQL API
+const apollo_server_errors_1 = require("apollo-server-errors");
 const APP_VERSION = '0.1.0';
+const handleErrors = (response) => {
+    // This util is currently specific to the Accounts service,
+    // but should be expanded to cover the entire api.
+    const { type, payload } = response;
+    if (type === 'ERROR') {
+        const { error, code } = payload;
+        throw new apollo_server_errors_1.ApolloError(error, code);
+    }
+    return payload;
+};
 exports.resolvers = {
     Query: {
         GetSummariesByGUID: async (_, { summary_guids }, { queryReadModel }) => {
@@ -154,16 +165,16 @@ exports.resolvers = {
             try {
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
         IsUsernameUnique: async (_, { username }, { queryAccounts }) => {
@@ -176,16 +187,16 @@ exports.resolvers = {
             try {
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
     },
@@ -243,16 +254,16 @@ exports.resolvers = {
                 ``;
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
         UpdateUser: async (_, { token, user_details }, { queryAccounts }) => {
@@ -266,16 +277,16 @@ exports.resolvers = {
             try {
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
         Login: async (_, { username, password }, { queryAccounts }) => {
@@ -289,16 +300,16 @@ exports.resolvers = {
             try {
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
         DeactivateAccount: async (_, { token, username }, { queryAccounts }) => {
@@ -312,16 +323,16 @@ exports.resolvers = {
             try {
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
         ConfirmAccount: async (_, { token }, { queryAccounts }) => {
@@ -334,16 +345,16 @@ exports.resolvers = {
             try {
                 console.debug('Publishing query ', msg);
                 console.debug(msg.payload);
-                const { payload } = await queryAccounts(msg);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
                 console.debug('received result: ', payload);
                 return payload;
             }
             catch (err) {
-                return {
-                    code: 'Error',
-                    success: false,
-                    message: err
-                };
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
             }
         },
     }

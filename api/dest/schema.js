@@ -57,12 +57,12 @@ exports.typeDefs = gql `
 
     UpdateUser(
       token: String!
-      user_details: UserDetailsInput!
+      user_details: UpdateUserDetailsInput!
     ): AccountsGenericResponse!
 
     AddUser(
       token: String!
-      user_details: UserDetailsInput!
+      user_details: NewUserDetailsInput!
     ): AccountsGenericResponse!
 
     Login(
@@ -232,12 +232,20 @@ exports.typeDefs = gql `
     last_login: String!
   }
 
-  input UserDetailsInput {
+  input NewUserDetailsInput {
     f_name: String!
     l_name: String!
     username: String!
+    password: String!
     email: String!
-    last_login: String!
+  }
+
+  input UpdateUserDetailsInput {
+    f_name: String
+    l_name: String
+    username: String
+    password: String
+    email: String
   }
 
   type IsUsernameUniqueResponse {

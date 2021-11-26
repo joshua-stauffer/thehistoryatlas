@@ -115,6 +115,7 @@ class Broker {
         this.emitCommand = this.emitCommand.bind(this);
         this.queryGeo = this.queryGeo.bind(this);
         this.queryNLP = this.queryNLP.bind(this);
+        this.queryAccounts = this.queryAccounts.bind(this);
         this.connect.bind(this);
         this.openChannel.bind(this);
         this.publishRPC.bind(this);
@@ -159,6 +160,7 @@ class Broker {
         ];
     }
     publishRPC(msg, recipient, exchangeName) {
+        console.log('entering publish RPC');
         if (!this.channel)
             throw new Error('Channel doesn\'t exist');
         const exchange = this.exchanges.find(ex => ex.name === exchangeName);

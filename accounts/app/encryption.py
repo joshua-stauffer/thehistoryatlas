@@ -39,7 +39,7 @@ def get_token(user_id) -> Token:
     """obtain a cryptographically secure token"""
 
     token_bytes = f"{user_id}|{datetime.utcnow()}".encode()
-    return fernet.encrypt(token_bytes)
+    return str(fernet.encrypt(token_bytes))
 
 
 def validate_token(
@@ -65,7 +65,7 @@ def validate_token(
         token = get_token(user_id)
     elif force_refresh:
         token = get_token(user_id)
-    return user_id, token
+    return user_id, str(token)
 
 
 def parse_token_str(token_str: str) -> Tuple[UserId, datetime]:

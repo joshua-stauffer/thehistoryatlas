@@ -21,6 +21,7 @@ from app.errors import MissingUserError
 from app.errors import DeactivatedUserError
 from app.errors import UnauthorizedUserError
 from app.errors import UnconfirmedUserError
+from app.errors import DuplicateUsernameError
 from app.encryption import get_token
 from app.encryption import encrypt
 from app.encryption import check_password
@@ -44,6 +45,8 @@ class Database:
         """Adds a user to the database"""
 
         user_id, token = validate_token(token)
+        if not self.check_if_username_is_unique(user_details['username']):
+            raise DuplicateUsernameError
         with Session(self._engine, future=True) as session:
             self._require_admin_user(
                 user_id=user_id,
@@ -74,6 +77,8 @@ class Database:
 
             # TODO: when email service is enabled, add call here to send a token to
             # the provided email address.
+            new_user_token = get_token(new_user.id)
+            log.info(f"New User Token is: {new_user_token}")
 
             return token, new_user.to_dict()
 
@@ -95,7 +100,7 @@ class Database:
                 setattr(user, key, val)
             session.add(user)
             session.commit()
-            return token, user.to_dict()
+            return str(token), user.to_dict()
 
     def get_user(self, token) -> Tuple[Token, UserDetails]:
         """Obtain user details"""
@@ -103,7 +108,7 @@ class Database:
         user_id, token = validate_token(token)
         with Session(self._engine, future=True) as session:
             user = self._get_user_by_id(user_id=user_id, session=session)
-            return token, user.to_dict()
+            return str(token), user.to_dict()
 
     def login(self, username, password) -> Token:
         """Exchange login credentials for a token"""

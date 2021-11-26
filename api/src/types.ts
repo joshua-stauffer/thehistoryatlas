@@ -161,10 +161,36 @@ export namespace Accounts {
     | DeactivateAccountPayload
     | ConfirmAccountPayload
 
+  export type ResponseType = 
+    ErrorResponse
+    | LoginResult
+    | AddUserResult
+    | UpdateUserResponse
+    | GetUserResult
+    | IsUsernameUniqueResult
+    | DeactivateAccountResult
+    | ConfirmAccountResult
+
   export interface UserDetails {
     f_name: string;
     l_name: string;
     email: string;
+    password: string;
+  }
+
+  export interface AddUserDetails {
+    f_name: string;
+    l_name: string;
+    email: string;
+    username: string;
+    password: string;
+  }
+
+  export interface UpdateUserDetails {
+    f_name: string;
+    l_name: string;
+    email: string;
+    username: string;
     password: string;
   }
 
@@ -193,16 +219,16 @@ export namespace Accounts {
   }
 
   export interface AddUserQuery {
-    type: 'ADD_USER',
+    type: 'ADD_USER'
     payload: {
       token: string;
-      user_details: UserDetails
+      user_details: AddUserDetails
     }
   }
 
   export interface AddUserPayload {
     token: string;
-    user_details: UserDetails
+    user_details: AddUserDetails
   }
 
   export interface AddUserResult {
@@ -211,13 +237,13 @@ export namespace Accounts {
   }
 
   export interface UpdateUserQuery {
-    type: 'UPDATE_USER',
+    type: 'UPDATE_USER'
     payload: UpdateUserPayload
   }
 
   export interface UpdateUserPayload {
     token: string;
-    user_details: UserDetails;
+    user_details: UpdateUserDetails;
   }
 
   export interface UpdateUserResponse {
@@ -243,7 +269,7 @@ export namespace Accounts {
   }
 
   export interface IsUsernameUniqueQuery {
-    type: 'IS_USERNAME_UNIQUE',
+    type: 'IS_USERNAME_UNIQUE'
     payload: IsUsernameUniquePayload
   }
 
@@ -252,7 +278,7 @@ export namespace Accounts {
   }
 
   export interface IsUsernameUniqueResult {
-    type: "IS_USERNAME_UNIQUE",
+    type: "IS_USERNAME_UNIQUE"
     payload: {
       is_unique: boolean;
       username: string;
@@ -260,7 +286,7 @@ export namespace Accounts {
   }
 
   export interface DeactivateAccountQuery {
-    type: 'DEACTIVATE_ACCOUNT',
+    type: 'DEACTIVATE_ACCOUNT'
     payload: DeactivateAccountPayload
   }
 
@@ -270,7 +296,7 @@ export namespace Accounts {
   }
 
   export interface DeactivateAccountResult {
-    type: "DEACTIVATE_ACCOUNT",
+    type: "DEACTIVATE_ACCOUNT"
     payload: {
       token: string;
       user_details: UserDetails
@@ -278,7 +304,7 @@ export namespace Accounts {
   }
 
   export interface ConfirmAccountQuery {
-    type: 'CONFIRM_ACCOUNT',
+    type: 'CONFIRM_ACCOUNT'
     payload: ConfirmAccountPayload
   }
 
@@ -287,11 +313,21 @@ export namespace Accounts {
   }
 
   export interface ConfirmAccountResult {
-    type: "CONFIRM_ACCOUNT",
+    type: "CONFIRM_ACCOUNT"
     payload: {
       token: string;
       user_details: UserDetails
     }
+  }
+
+  export interface ErrorResponse {
+    type: "ERROR"
+    payload: ErrorPayload
+  }
+
+  export interface ErrorPayload {
+    error: string;
+    code: string;
   }
 
 }

@@ -9,8 +9,7 @@ from app.errors import MissingUserError
 from app.errors import AuthenticationError
 from app.errors import DeactivatedUserError
 from app.errors import MissingFieldsError
-from app.errors import UnauthorizedUserError
-from app.schema import User
+from app.utils import error_handler
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +19,7 @@ class QueryHandler:
         self._db = database_instance
         self._query_handlers = self._map_query_handlers()
 
+    @error_handler
     def handle_query(self, query) -> dict:
         """Process incoming queries and return results"""
         log.info(f"Handling a query: {query}")
@@ -67,8 +67,8 @@ class QueryHandler:
     def _handle_add_user(self, query):
         """Add a user. Requires admin credentials"""
         token = query["payload"]["token"]
-        user_details = query["payload"]["user_data"]
-        token, user_details = self._db.add_user(token, user_details)
+        user_details = query["payload"]["user_details"]
+        token, user_details = self._db.add_user(token=token, user_details=user_details)
         return {
             "type": "ADD_USER",
             "payload": {"token": token, "user_details": user_details},
@@ -77,8 +77,10 @@ class QueryHandler:
     def _handle_update_user(self, query):
         """Updates a user's information"""
         token = query["payload"]["token"]
-        user_details = query["payload"]["user_data"]
-        token, user_details = self._db.update_user(token=token, user_data=user_details)
+        user_details = query["payload"]["user_details"]
+        token, user_details = self._db.update_user(
+            token=token, user_details=user_details
+        )
         return {
             "type": "UPDATE_USER",
             "payload": {"token": token, "user_details": user_details},

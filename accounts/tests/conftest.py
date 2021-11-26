@@ -105,7 +105,7 @@ def admin_user_details():
         "email": "admin@thehistoryatlas.org",
         "f_name": "admin",
         "l_name": "user",
-        "username": "admin",
+        "username": "admin1",
         "password": "super_secure_password",
         "type": "admin",
         "confirmed": True,

@@ -1,52 +1,69 @@
-class MissingFieldsError(Exception):
-    """Request could not be completed because of missing fields."""
+"""
+Expected exceptions for the Accounts Service. Should return a meaningful string 
+representation, which will be returned to the requesting service. All exceptions
+should be included in the **known_exceptions** list.
+"""
 
-    ...
+
+class MissingFieldsError(Exception):
+    def __str__(self):
+        return """Request could not be completed because of missing fields."""
 
 
 class MissingUserError(Exception):
-    """Request failed because user does not exist."""
-
-    ...
+    def __str__(self):
+        return """Request failed because user does not exist."""
 
 
 class UnauthorizedUserError(Exception):
-    """Request failed because the user is unauthorized to perform that action."""
-
-    ...
+    def __str__(self):
+        return """Request failed because the user is unauthorized to perform that action."""
 
 
 class DeactivatedUserError(Exception):
-    """Request failed because the user has been deactivated."""
-
-    ...
+    def __str__(self):
+        return """Request failed because the user has been deactivated."""
 
 
 class AuthenticationError(Exception):
-    """Request failed because credentials could not be authenticated."""
-
-    ...
+    def __str__(self):
+        return """Request failed because credentials could not be authenticated."""
 
 
 class ExpiredTokenError(Exception):
-    """Request failed because the token has expired. Please refresh token and try again."""
-
-    ...
+    def __str__(self) -> str:
+        return """Request failed because the token has expired. Please refresh token and try again."""
 
 
 class InvalidTokenError(Exception):
-    """Request failed because the token is invalid."""
-
-    ...
+    def __str__(self) -> str:
+        return """Request failed because the token is invalid."""
 
 
 class UnknownQueryError(Exception):
-    """Request failed becaues the no handler was found for the requested query type."""
-
-    ...
+    def __str__(self) -> str:
+        return """Request failed because the query type was unknown."""
 
 
 class UnconfirmedUserError(Exception):
-    """Request failed because this user hasn't confirmed their email yet."""
+    def __str__(self) -> str:
+        return """Request failed because this user hasn't confirmed their email yet."""
 
-    ...
+
+class DuplicateUsernameError(Exception):
+    def __str__(self) -> str:
+        return """Request failed because this username is already registered"""
+
+
+known_exceptions = (
+    MissingFieldsError,
+    MissingUserError,
+    UnauthorizedUserError,
+    DeactivatedUserError,
+    AuthenticationError,
+    ExpiredTokenError,
+    InvalidTokenError,
+    UnknownQueryError,
+    UnconfirmedUserError,
+    DuplicateUsernameError
+)

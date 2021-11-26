@@ -20,7 +20,7 @@ ENV DEV_DB_URI=sqlite:////data/db/accounts.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
-ENV QUEUE_NAME=users
+ENV QUEUE_NAME=accounts
 # obviously, this key for local dev only
 ENV SEC_KEY=nHECungBxXETr9hdYml6sik9Eb368q0cm2wutp644oQ=
 ENV TTL=28800

@@ -1,4 +1,6 @@
 // Resolver for the History Atlas Apollo GraphQL API
+import { ApolloError } from 'apollo-server-errors';
+
 
 import { Context } from './index';
 import { Resolver, WriteModelResponse, Accounts } from './types'
@@ -12,6 +14,17 @@ interface ResolverMap {
 interface Resolvers {
   Query: ResolverMap;
   Mutation: ResolverMap;
+}
+
+const handleErrors = (response: Accounts.ResponseType) => {
+  // This util is currently specific to the Accounts service,
+  // but should be expanded to cover the entire api.
+  const { type, payload } = response;
+  if (type === 'ERROR') {
+    const { error, code } = payload as Accounts.ErrorPayload
+    throw new ApolloError(error, code);
+  }
+  return payload
 }
 
 export const resolvers: Resolvers = {
@@ -181,16 +194,14 @@ export const resolvers: Resolvers = {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const { payload } = await queryAccounts(msg) as Accounts.GetUserResult;
+          const response = await queryAccounts(msg) as Accounts.GetUserResult | Accounts.ErrorResponse;
+          const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload
         } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
-        }
+          if (err instanceof ApolloError) throw err;
+          console.error('Unknown Error Occurred: ', err)
+          throw new ApolloError('Something went wrong - that\'s all we know', '500');        }
       },
 
       IsUsernameUnique: async (_,
@@ -206,16 +217,14 @@ export const resolvers: Resolvers = {
             console.debug('Publishing query ', msg)
             console.debug(msg.payload)
   
-            const { payload } = await queryAccounts(msg) as Accounts.IsUsernameUniqueResult;
+            const response = await queryAccounts(msg) as Accounts.IsUsernameUniqueResult | Accounts.ErrorResponse;
+            const payload = handleErrors(response)
             console.debug('received result: ', payload)
             return payload
           } catch (err) {
-            return {
-              code: 'Error',
-              success: false,
-              message: err
-            }
-          }
+            if (err instanceof ApolloError) throw err;
+            console.error('Unknown Error Occurred: ', err)
+            throw new ApolloError('Something went wrong - that\'s all we know', '500');          }
         },
 
               
@@ -280,15 +289,14 @@ export const resolvers: Resolvers = {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const { payload } = await queryAccounts(msg) as Accounts.AddUserResult;
+          const response = await queryAccounts(msg) as Accounts.AddUserResult | Accounts.ErrorResponse;
+          const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload
         } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
+          if (err instanceof ApolloError) throw err;
+          console.error('Unknown Error Occurred: ', err)
+          throw new ApolloError('Something went wrong - that\'s all we know', '500');
         }
       },
 
@@ -306,15 +314,14 @@ export const resolvers: Resolvers = {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const { payload } = await queryAccounts(msg) as Accounts.UpdateUserResponse;
+          const response= await queryAccounts(msg) as Accounts.UpdateUserResponse | Accounts.ErrorResponse;
+          const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload
         } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
+          if (err instanceof ApolloError) throw err;
+          console.error('Unknown Error Occurred: ', err)
+          throw new ApolloError('Something went wrong - that\'s all we know', '500');
         }
       },
 
@@ -332,16 +339,14 @@ export const resolvers: Resolvers = {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const { payload } = await queryAccounts(msg) as Accounts.LoginResult;
+          const response = await queryAccounts(msg) as Accounts.LoginResult | Accounts.ErrorResponse;
+          const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload
         } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
-        }
+          if (err instanceof ApolloError) throw err;
+          console.error('Unknown Error Occurred: ', err)
+          throw new ApolloError('Something went wrong - that\'s all we know', '500');        }
       },
 
     DeactivateAccount: async (_,
@@ -358,16 +363,14 @@ export const resolvers: Resolvers = {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const { payload } = await queryAccounts(msg) as Accounts.DeactivateAccountResult;
+          const response = await queryAccounts(msg) as Accounts.DeactivateAccountResult | Accounts.ErrorResponse;
+          const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload
         } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
-        }
+          if (err instanceof ApolloError) throw err;
+          console.error('Unknown Error Occurred: ', err)
+          throw new ApolloError('Something went wrong - that\'s all we know', '500');        }
       },
 
     ConfirmAccount: async (_,
@@ -383,16 +386,14 @@ export const resolvers: Resolvers = {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const { payload } = await queryAccounts(msg) as Accounts.ConfirmAccountResult;
+          const response = await queryAccounts(msg) as Accounts.ConfirmAccountResult | Accounts.ErrorResponse;
+          const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload
         } catch (err) {
-          return {
-            code: 'Error',
-            success: false,
-            message: err
-          }
-        }
+          if (err instanceof ApolloError) throw err;
+          console.error('Unknown Error Occurred: ', err)
+          throw new ApolloError('Something went wrong - that\'s all we know', '500');        }
       },
   }
 } // end of Resolvers
