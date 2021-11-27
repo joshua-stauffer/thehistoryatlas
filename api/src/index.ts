@@ -9,7 +9,13 @@ const { Broker } = require('./broker') ;
 const { typeDefs } = require('./schema') ;
 const { resolvers } = require('./resolvers') 
 const { Config } = require('./config') ;
-import { GeoServiceQuery, NLPServiceQuery, ReadModelQuery, WriteModelCommand } from './types';
+import { 
+  AccountsServiceQuery,
+  GeoServiceQuery, 
+  NLPServiceQuery, 
+  ReadModelQuery, 
+  WriteModelCommand 
+} from './types';
 
 
 const config = new Config()
@@ -21,13 +27,15 @@ export interface Context {
   emitCommand: (command: WriteModelCommand) => Promise<unknown>;
   queryNLP: (query: NLPServiceQuery) => Promise<unknown>;
   queryGeo: (query: GeoServiceQuery) => Promise<unknown>;
+  queryAccounts: (query: AccountsServiceQuery) => Promise<unknown>;
 }
 
 const context: Context = {
   queryReadModel: broker.queryReadModel,
   emitCommand: broker.emitCommand,
   queryNLP: broker.queryNLP,
-  queryGeo: broker.queryGeo
+  queryGeo: broker.queryGeo,
+  queryAccounts: broker.queryAccounts
 }
 
 const server = new ApolloServer({ typeDefs, resolvers, context });

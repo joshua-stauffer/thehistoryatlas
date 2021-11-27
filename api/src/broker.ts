@@ -10,7 +10,8 @@ import { Config } from './config';
 import {
   ReadModelQuery,
   NLPServiceQuery,
-  GeoServiceQuery
+  GeoServiceQuery,
+  AccountsServiceQuery
 } from './types';
 
 
@@ -30,7 +31,7 @@ export interface Message {
   payload: any;
 }
 
-type RPCRecipient = 'query.readmodel' | 'command.writemodel' | 'query.nlp' | 'query.geo';
+type RPCRecipient = 'query.readmodel' | 'command.writemodel' | 'query.nlp' | 'query.geo' | 'query.accounts';
 type ExchangeName = string;
 
 type QueryMap = Map<string, { resolve: (value: unknown) => void, reject: (reason?: any) => void }>
@@ -63,6 +64,7 @@ export class Broker {
     this.emitCommand = this.emitCommand.bind(this);
     this.queryGeo = this.queryGeo.bind(this)
     this.queryNLP = this.queryNLP.bind(this)
+    this.queryAccounts = this.queryAccounts.bind(this)
     this.connect.bind(this);
     this.openChannel.bind(this);
     this.publishRPC.bind(this);
@@ -112,6 +114,7 @@ export class Broker {
     recipient: RPCRecipient,
     exchangeName: ExchangeName
   ): Promise<unknown> {
+    console.log('entering publish RPC')
     if (!this.channel) throw new Error('Channel doesn\'t exist');
     const exchange = this.exchanges.find(ex => ex.name === exchangeName) as ExchangeDetails;
     const queryID = v4();
@@ -158,6 +161,11 @@ export class Broker {
   public async queryGeo(msg: GeoServiceQuery): Promise<unknown> {
     console.log('Querying geo')
     return this.publishRPC(msg, 'query.geo', 'main');
+  }
+
+  public async queryAccounts(msg: AccountsServiceQuery): Promise<unknown> {
+    console.log('querying the accounts service')
+    return this.publishRPC(msg, 'query.accounts', 'main')
   }
 
   private async handleRPCCallback(msg: Amqp.ConsumeMessage | null): Promise<void> {

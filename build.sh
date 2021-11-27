@@ -4,7 +4,7 @@
 # and installs a virtual environment for running scripts and tests.
 if [ ! -d test_env ] ; then
   echo "Creating Python virtual environment for testing in directory test_env"
-  if [ python3 -m venv test_env ] ; then
+  if  python3 -m venv test_env ; then
     echo "Built Python virtual environment test_env"
   else
     echo "Failed to build Python virtual environment, and cannot continue build process."

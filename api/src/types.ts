@@ -35,8 +35,6 @@ export interface Location {
   geoshape: string;
 }
 
-
-
 export interface CitationsByGUID {
   type: string;
   payload: {
@@ -126,6 +124,218 @@ export interface GeoServiceQuery {
   }
 }
 
+export type AccountsServiceQuery = Accounts.Query
+
+
+export namespace Accounts {
+
+
+  export interface Message {
+    type: QueryType;
+    payload: PayloadType;
+  }
+
+  export type Query =
+    AddUserQuery
+    | GetUserQuery
+    | UpdateUserQuery
+    | IsUsernameUniqueQuery
+    | DeactivateAccountQuery
+    | ConfirmAccountQuery
+    | LoginQuery
+
+  export type QueryType = 
+    'LOGIN' 
+    | 'ADD_USER'
+    | 'GET_USER'
+    | 'UPDATE_USER'
+    | 'IS_USERNAME_UNIQUE'
+    | 'DEACTIVATE_ACCOUNT'
+    | 'CONFIRM_ACCOUNT';
+
+  export type PayloadType =
+    LoginPayload
+    | AddUserPayload
+    | GetUserPayload
+    | IsUsernameUniquePayload
+    | DeactivateAccountPayload
+    | ConfirmAccountPayload
+
+  export type ResponseType = 
+    ErrorResponse
+    | LoginResult
+    | AddUserResult
+    | UpdateUserResponse
+    | GetUserResult
+    | IsUsernameUniqueResult
+    | DeactivateAccountResult
+    | ConfirmAccountResult
+
+  export interface UserDetails {
+    f_name: string;
+    l_name: string;
+    email: string;
+    password: string;
+  }
+
+  export interface AddUserDetails {
+    f_name: string;
+    l_name: string;
+    email: string;
+    username: string;
+    password: string;
+  }
+
+  export interface UpdateUserDetails {
+    f_name: string;
+    l_name: string;
+    email: string;
+    username: string;
+    password: string;
+  }
+
+  export interface AccountResult {
+    // standard AccountService result object
+    token: string;
+    user_details: UserDetails;
+  }
+
+  export interface Credentials {
+    username: string;
+    password: string;
+  }
+
+  export type LoginPayload = Credentials
+
+  export interface LoginQuery {
+    type: 'LOGIN';
+    payload: LoginPayload
+  }
+
+  export interface LoginResult {
+    type: 'LOGIN';
+    payload: {
+      success: boolean;
+      token?: string;
+    }
+  }
+
+  export interface AddUserQuery {
+    type: 'ADD_USER'
+    payload: {
+      token: string;
+      user_details: AddUserDetails
+    }
+  }
+
+  export interface AddUserPayload {
+    token: string;
+    user_details: AddUserDetails
+  }
+
+  export interface AddUserResult {
+    type: 'ADD_USER'
+    payload: AccountResult
+  }
+
+  export interface UpdateUserQuery {
+    type: 'UPDATE_USER'
+    payload: UpdateUserPayload
+  }
+
+  export interface UpdateUserPayload {
+    token: string;
+    credentials?: Credentials;
+    user_details: UpdateUserDetails;
+  }
+
+  export interface UpdateUserResponse {
+    type: 'UPDATE_USER';
+    payload: UpdateUserPayload;
+  }
+
+  export interface GetUserQuery {
+    type: 'GET_USER';
+    payload: GetUserPayload;
+  }
+
+  export interface GetUserPayload {
+    token: string;
+  }
+
+  export interface GetUserResult {
+    type: 'GET_USER'
+    payload: {
+      token: string;
+      user_details: UserDetails;
+    }
+  }
+
+  export interface IsUsernameUniqueQuery {
+    type: 'IS_USERNAME_UNIQUE'
+    payload: IsUsernameUniquePayload
+  }
+
+  export interface IsUsernameUniquePayload {
+    username: string;
+  }
+
+  export interface IsUsernameUniqueResult {
+    type: "IS_USERNAME_UNIQUE"
+    payload: {
+      is_unique: boolean;
+      username: string;
+    }
+  }
+
+  export interface DeactivateAccountQuery {
+    type: 'DEACTIVATE_ACCOUNT'
+    payload: DeactivateAccountPayload
+  }
+
+  export interface DeactivateAccountPayload {
+    token: string;
+    username: string;
+  }
+
+  export interface DeactivateAccountResult {
+    type: "DEACTIVATE_ACCOUNT"
+    payload: {
+      token: string;
+      user_details: UserDetails
+    }
+  }
+
+  export interface ConfirmAccountQuery {
+    type: 'CONFIRM_ACCOUNT'
+    payload: ConfirmAccountPayload
+  }
+
+  export interface ConfirmAccountPayload {
+    token: string;
+  }
+
+  export interface ConfirmAccountResult {
+    type: "CONFIRM_ACCOUNT"
+    payload: {
+      token: string;
+      user_details: UserDetails
+    }
+  }
+
+  export interface ErrorResponse {
+    type: "ERROR"
+    payload: ErrorPayload
+  }
+
+  export interface ErrorPayload {
+    error: string;
+    code: string;
+  }
+
+}
+
+
 // type defs for GraphQL resolvers
 export namespace Resolver {
 
@@ -165,8 +375,6 @@ export namespace Resolver {
     text: string;
   }
   // Query results
-
-
 
   export interface SummariesByGUID {
     type: string;

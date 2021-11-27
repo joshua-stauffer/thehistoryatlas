@@ -1,8 +1,19 @@
 "use strict";
-// Resolver for the History Atlas Apollo GraphQL API
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resolvers = void 0;
+// Resolver for the History Atlas Apollo GraphQL API
+const apollo_server_errors_1 = require("apollo-server-errors");
 const APP_VERSION = '0.1.0';
+const handleErrors = (response) => {
+    // This util is currently specific to the Accounts service,
+    // but should be expanded to cover the entire api.
+    const { type, payload } = response;
+    if (type === 'ERROR') {
+        const { error, code } = payload;
+        throw new apollo_server_errors_1.ApolloError(error, code);
+    }
+    return payload;
+};
 exports.resolvers = {
     Query: {
         GetSummariesByGUID: async (_, { summary_guids }, { queryReadModel }) => {
@@ -125,7 +136,7 @@ exports.resolvers = {
             const msg = {
                 type: "PROCESS_TEXT",
                 payload: {
-                    "text": text
+                    text: text
                 }
             };
             try {
@@ -142,7 +153,52 @@ exports.resolvers = {
                     message: err
                 };
             }
-        }
+        },
+        // ACCOUNTS MESSAGES
+        GetUser: async (_, { token }, { queryAccounts }) => {
+            const msg = {
+                type: "GET_USER",
+                payload: {
+                    token: token
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
+        IsUsernameUnique: async (_, { username }, { queryAccounts }) => {
+            const msg = {
+                type: "IS_USERNAME_UNIQUE",
+                payload: {
+                    username: username
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
     },
     Mutation: {
         PublishNewCitation: async (_, { Annotation }, { emitCommand }) => {
@@ -185,7 +241,123 @@ exports.resolvers = {
                     message: err // this may run the risk of exposing sensitive data -- debug only
                 };
             }
-        }
+        },
+        AddUser: async (_, { token, user_details }, { queryAccounts }) => {
+            const msg = {
+                type: "ADD_USER",
+                payload: {
+                    token: token,
+                    user_details: user_details
+                }
+            };
+            try {
+                ``;
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
+        UpdateUser: async (_, { token, user_details, credentials }, { queryAccounts }) => {
+            const msg = {
+                type: "UPDATE_USER",
+                payload: {
+                    token: token,
+                    user_details: user_details,
+                    credentials: credentials
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
+        Login: async (_, { username, password }, { queryAccounts }) => {
+            const msg = {
+                type: "LOGIN",
+                payload: {
+                    username: username,
+                    password: password
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
+        DeactivateAccount: async (_, { token, username }, { queryAccounts }) => {
+            const msg = {
+                type: "DEACTIVATE_ACCOUNT",
+                payload: {
+                    token: token,
+                    username: username // user to be deactivated
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
+        ConfirmAccount: async (_, { token }, { queryAccounts }) => {
+            const msg = {
+                type: "CONFIRM_ACCOUNT",
+                payload: {
+                    token: token
+                }
+            };
+            try {
+                console.debug('Publishing query ', msg);
+                console.debug(msg.payload);
+                const response = await queryAccounts(msg);
+                const payload = handleErrors(response);
+                console.debug('received result: ', payload);
+                return payload;
+            }
+            catch (err) {
+                if (err instanceof apollo_server_errors_1.ApolloError)
+                    throw err;
+                console.error('Unknown Error Occurred: ', err);
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
+            }
+        },
     }
 }; // end of Resolvers
 //# sourceMappingURL=resolvers.js.map

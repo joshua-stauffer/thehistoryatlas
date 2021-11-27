@@ -17,7 +17,8 @@ const context = {
     queryReadModel: broker.queryReadModel,
     emitCommand: broker.emitCommand,
     queryNLP: broker.queryNLP,
-    queryGeo: broker.queryGeo
+    queryGeo: broker.queryGeo,
+    queryAccounts: broker.queryAccounts
 };
 const server = new ApolloServer({ typeDefs, resolvers, context });
 server.listen().then(({ url }) => {
