@@ -115,6 +115,7 @@ class Broker {
         this.emitCommand = this.emitCommand.bind(this);
         this.queryGeo = this.queryGeo.bind(this);
         this.queryNLP = this.queryNLP.bind(this);
+        this.queryAccounts = this.queryAccounts.bind(this);
         this.connect.bind(this);
         this.openChannel.bind(this);
         this.publishRPC.bind(this);
@@ -159,10 +160,11 @@ class Broker {
         ];
     }
     publishRPC(msg, recipient, exchangeName) {
+        console.log('entering publish RPC');
         if (!this.channel)
             throw new Error('Channel doesn\'t exist');
         const exchange = this.exchanges.find(ex => ex.name === exchangeName);
-        const queryID = uuid_1.v4();
+        const queryID = (0, uuid_1.v4)();
         console.log('Broker is sending message with payload of ', msg.payload);
         if (!this.channel.publish(exchange.name, recipient, Buffer.from(JSON.stringify(msg)), {
             replyTo: 'query.api',
@@ -198,6 +200,10 @@ class Broker {
     async queryGeo(msg) {
         console.log('Querying geo');
         return this.publishRPC(msg, 'query.geo', 'main');
+    }
+    async queryAccounts(msg) {
+        console.log('querying the accounts service');
+        return this.publishRPC(msg, 'query.accounts', 'main');
     }
     async handleRPCCallback(msg) {
         // This callback is passed to the Amqp.consume method, and will be invoked

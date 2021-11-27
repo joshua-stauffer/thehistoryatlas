@@ -95,6 +95,19 @@ services:
             - tha-connect
         volumes:
             - geodb:/etc/db
+    accounts:
+        depends_on:
+            -   broker
+        build:
+            context: ./accounts
+            args:
+                test: "False"
+        environment:
+            - DEV_DB_URI=sqlite:////etc/db/accounts.db
+        networks:
+            - tha-connect
+        volumes:
+            - accounts:/etc/db
 volumes:
     # broker:
     teststore:
@@ -102,5 +115,6 @@ volumes:
     geodb:
     readmodel:
     writemodel:
+    accounts:
 networks:
     tha-connect:
