@@ -89,7 +89,9 @@ class Database:
         self, token: str, user_details: dict, credentials: Optional[dict[str, str]]
     ) -> Tuple[Token, UserDetails]:
         """Update a user's data"""
-
+        if not credentials:
+            credentials = {}
+        user_details = {**user_details}  # don't mutate original object
         user_id, token = validate_token(token)
 
         if "password" in user_details or "username" in user_details:

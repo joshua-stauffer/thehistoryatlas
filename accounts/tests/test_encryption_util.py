@@ -32,7 +32,7 @@ def test_get_token():
     token = get_token(user_id)
     new_user_id, new_token = validate_token(token)
     assert user_id == new_user_id
-    assert token is new_token
+    assert token == new_token
 
 
 def test_get_token_with_force_refresh():
@@ -46,7 +46,7 @@ def test_get_token_with_force_refresh():
 def test_validate_token(active_token, user_details):
     user_id, token = validate_token(active_token)
     assert user_id == user_details["id"]
-    assert active_token is token
+    assert active_token == token
 
 
 def test_validate_nearly_expired_token(user_id, nearly_expired_token):
@@ -66,7 +66,8 @@ def test_invalid_token(invalid_token):
 
 
 def test_parse_token_str(active_token):
-    token_str = fernet.decrypt(active_token).decode()
+    token = active_token.encode()
+    token_str = fernet.decrypt(token).decode()
     user_id, time_ = parse_token_str(token_str)
     assert UUID(user_id), "This user_id should be a valid UUID"
     assert isinstance(time_, datetime.datetime)

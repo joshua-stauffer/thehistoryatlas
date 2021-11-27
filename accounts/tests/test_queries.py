@@ -21,18 +21,18 @@ def test_login(handler, user_details):
     assert res["type"] == "LOGIN"
     assert isinstance(res["payload"], dict)
     assert res["payload"]["success"] is True
-    assert isinstance(res["payload"]["token"], bytes)
+    assert isinstance(res["payload"]["token"], str)
 
 
 def test_add_user(handler, active_admin_token, other_user_details):
     query = {
         "type": "ADD_USER",
-        "payload": {"token": active_admin_token, "user_data": {**other_user_details}},
+        "payload": {"token": active_admin_token, "user_details": {**other_user_details}},
     }
     res = handler(query)
     assert res["type"] == "ADD_USER"
     assert isinstance(res["payload"], dict)
-    assert res["payload"]["token"] is active_admin_token
+    assert res["payload"]["token"] == active_admin_token
     assert isinstance(res["payload"]["user_details"], dict)
 
 
@@ -41,19 +41,19 @@ def test_get_user(handler, active_token):
     res = handler(query)
     assert res["type"] == "GET_USER"
     assert isinstance(res["payload"], dict)
-    assert res["payload"]["token"] is active_token
+    assert res["payload"]["token"] == active_token
     assert isinstance(res["payload"]["user_details"], dict)
 
 
 def test_update_user(handler, active_token):
     query = {
         "type": "UPDATE_USER",
-        "payload": {"token": active_token, "user_data": {"f_name": "sebastian"}},
+        "payload": {"token": active_token, "user_details": {"f_name": "sebastian"}},
     }
     res = handler(query)
     assert res["type"] == "UPDATE_USER"
     assert isinstance(res["payload"], dict)
-    assert res["payload"]["token"] is active_token
+    assert res["payload"]["token"] == active_token
     assert isinstance(res["payload"]["user_details"], dict)
 
 
@@ -66,15 +66,15 @@ def test_is_username_unique(handler):
     assert isinstance(res["payload"]["username"], str)
 
 
-def test_deactivate_account(handler, active_admin_token, user_id):
+def test_deactivate_account(handler, active_admin_token, user_id, user_details):
     query = {
         "type": "DEACTIVATE_ACCOUNT",
-        "payload": {"token": active_admin_token, "user_id": user_id},
+        "payload": {"token": active_admin_token, "username": user_details['username']},
     }
     res = handler(query)
     assert res["type"] == "DEACTIVATE_ACCOUNT"
     assert isinstance(res["payload"], dict)
-    assert res["payload"]["token"] is active_admin_token
+    assert res["payload"]["token"] == active_admin_token
     assert isinstance(res["payload"]["user_details"], dict)
 
 

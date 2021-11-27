@@ -65,6 +65,8 @@ def validate_token(
         token = get_token(user_id)
     elif force_refresh:
         token = get_token(user_id)
+    if isinstance(token, bytes):
+        token = token.decode()
     return user_id, str(token)
 
 
