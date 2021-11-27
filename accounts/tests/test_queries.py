@@ -27,7 +27,10 @@ def test_login(handler, user_details):
 def test_add_user(handler, active_admin_token, other_user_details):
     query = {
         "type": "ADD_USER",
-        "payload": {"token": active_admin_token, "user_details": {**other_user_details}},
+        "payload": {
+            "token": active_admin_token,
+            "user_details": {**other_user_details},
+        },
     }
     res = handler(query)
     assert res["type"] == "ADD_USER"
@@ -69,7 +72,7 @@ def test_is_username_unique(handler):
 def test_deactivate_account(handler, active_admin_token, user_id, user_details):
     query = {
         "type": "DEACTIVATE_ACCOUNT",
-        "payload": {"token": active_admin_token, "username": user_details['username']},
+        "payload": {"token": active_admin_token, "username": user_details["username"]},
     }
     res = handler(query)
     assert res["type"] == "DEACTIVATE_ACCOUNT"

@@ -13,7 +13,9 @@ from app.encryption import fernet
 def test_default_user(bare_db):
     with Session(bare_db._engine, future=True) as session:
         res = session.execute(select(User)).scalars()
-        assert len([r for r in res]) == 1, "If database is empty, expect one default admin user."
+        assert (
+            len([r for r in res]) == 1
+        ), "If database is empty, expect one default admin user."
 
 
 def test_db_has_one_user(db):
@@ -41,7 +43,7 @@ def test_admin_can_add_user(db, other_user_details, active_admin_token):
 
 
 def test_non_admin_cant_add_user(loaded_db, user_details, active_token):
-    user_details['username'] = 'something else'
+    user_details["username"] = "something else"
     with pytest.raises(UnauthorizedUserError):
         loaded_db.add_user(token=active_token, user_details=user_details)
 
@@ -66,9 +68,7 @@ def test_partial_update_user(loaded_db, user_details, active_token):
         "l_name": "gilmore",
     }
     loaded_db.update_user(
-        token=active_token,
-        user_details=updated_user_info,
-        credentials=None
+        token=active_token, user_details=updated_user_info, credentials=None
     )
 
     # verify
@@ -80,21 +80,20 @@ def test_partial_update_user(loaded_db, user_details, active_token):
         assert user.l_name == updated_user_info["l_name"]
         assert user.email == user_details["email"]
 
-def test_update_login_creds_fails_without_login(
-    loaded_db,
-    active_token,
-    user_details
-):
-    username_test = {
-        "username": "nope"
-    }
-    password_test = {
-        "password": "nope"
-    }
-    with pytest.raises(KeyError):  # gets translated to a MissingFieldsError in QueryHandler
-        loaded_db.update_user(token=active_token, user_details=username_test, credentials=None)
+
+def test_update_login_creds_fails_without_login(loaded_db, active_token, user_details):
+    username_test = {"username": "nope"}
+    password_test = {"password": "nope"}
+    with pytest.raises(
+        KeyError
+    ):  # gets translated to a MissingFieldsError in QueryHandler
+        loaded_db.update_user(
+            token=active_token, user_details=username_test, credentials=None
+        )
     with pytest.raises(KeyError):
-        loaded_db.update_user(token=active_token, user_details=password_test, credentials=None)
+        loaded_db.update_user(
+            token=active_token, user_details=password_test, credentials=None
+        )
 
     # verify
     with Session(loaded_db._engine, future=True) as session:
@@ -104,22 +103,17 @@ def test_update_login_creds_fails_without_login(
         assert user.username == user_details["username"]
         assert fernet.decrypt(user.password).decode() == user_details["password"]
 
-def test_update_login_creds_with_login(
-    loaded_db,
-    active_token,
-    user_details
-):
-    new_details = {
-        "username": "fanciful",
-        "password": "unlikely"
-    }
+
+def test_update_login_creds_with_login(loaded_db, active_token, user_details):
+    new_details = {"username": "fanciful", "password": "unlikely"}
     loaded_db.update_user(
         token=active_token,
         user_details=new_details,
         credentials={
             "username": user_details["username"],
-            "password": user_details["password"]
-        })
+            "password": user_details["password"],
+        },
+    )
     # verify
     with Session(loaded_db._engine, future=True) as session:
         user = session.execute(
@@ -134,8 +128,9 @@ def test_update_protected_field(loaded_db, active_token):
     for field in PROTECTED_FIELDS:
         with pytest.raises(UnauthorizedUserError):
             loaded_db.update_user(
-                token=active_token, user_details={field: "cant change this"},
-                credentials=None
+                token=active_token,
+                user_details={field: "cant change this"},
+                credentials=None,
             )
 
 
@@ -149,7 +144,7 @@ def test_admin_can_update_protected_fields(loaded_db, active_admin_token):
             "deactivated": True,
             "confirmed": False,
         },
-        credentials=None
+        credentials=None,
     )
 
 
@@ -187,13 +182,10 @@ def test_is_username_unique(loaded_db, user_details):
 
 
 def test_deactivate_account_with_admin_token(
-    loaded_db,
-    active_admin_token,
-    user_id,
-    user_details
+    loaded_db, active_admin_token, user_id, user_details
 ):
     token, user_details = loaded_db.deactivate_account(
-        token=active_admin_token, username=user_details['username']
+        token=active_admin_token, username=user_details["username"]
     )
     assert token == active_admin_token
 
@@ -203,14 +195,13 @@ def test_deactivate_account_with_admin_token(
 
 
 def test_deactivate_account_with_non_admin_token(
-    loaded_db,
-    active_token,
-    user_id,
-    user_details
+    loaded_db, active_token, user_id, user_details
 ):
 
     with pytest.raises(UnauthorizedUserError):
-        loaded_db.deactivate_account(token=active_token, username=user_details['username'])
+        loaded_db.deactivate_account(
+            token=active_token, username=user_details["username"]
+        )
 
     with Session(loaded_db._engine, future=True) as session:
         user = session.execute(select(User).where(User.id == user_id)).scalar_one()
