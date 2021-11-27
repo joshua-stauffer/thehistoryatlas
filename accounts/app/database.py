@@ -7,8 +7,11 @@ import asyncio
 import logging
 import json
 from uuid import uuid4
-from typing import Dict
-from typing import Tuple
+from typing import (
+    Dict,
+    Optional,
+    Tuple,
+)
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -45,7 +48,7 @@ class Database:
         """Adds a user to the database"""
 
         user_id, token = validate_token(token)
-        if not self.check_if_username_is_unique(user_details['username']):
+        if not self.check_if_username_is_unique(user_details["username"]):
             raise DuplicateUsernameError
         with Session(self._engine, future=True) as session:
             self._require_admin_user(
@@ -82,12 +85,19 @@ class Database:
 
             return token, new_user.to_dict()
 
-    def update_user(self, token: str, user_details: dict) -> Tuple[Token, UserDetails]:
+    def update_user(
+        self, token: str, user_details: dict, credentials: Optional[dict[str, str]]
+    ) -> Tuple[Token, UserDetails]:
         """Update a user's data"""
 
         user_id, token = validate_token(token)
 
-        if "password" in user_details:
+        if "password" in user_details or "username" in user_details:
+            # Must login again to change access credentials
+            token = self.login(  # will raise an error if login fails
+                username=credentials["username"], password=credentials["password"]
+            )
+        if "password" in user_details:  # encrypt new password
             password = user_details["password"]
             user_details["password"] = encrypt(password)
 

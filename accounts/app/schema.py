@@ -13,7 +13,7 @@ from app.utils import update_last_login
 Base = declarative_base()
 
 # the following fields cannot be updated by users
-PROTECTED_FIELDS = {"type", "last_login", "disabled", "id"}
+PROTECTED_FIELDS = {"type", "last_login", "disabled", "id", "confirmed"}
 
 
 class User(Base):

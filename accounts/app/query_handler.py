@@ -4,6 +4,7 @@ Sunday, October 17th 2021
 """
 
 import logging
+from app.database import Database
 from app.errors import UnknownQueryError
 from app.errors import MissingUserError
 from app.errors import AuthenticationError
@@ -15,7 +16,7 @@ log = logging.getLogger(__name__)
 
 
 class QueryHandler:
-    def __init__(self, database_instance):
+    def __init__(self, database_instance: Database):
         self._db = database_instance
         self._query_handlers = self._map_query_handlers()
 
@@ -78,8 +79,9 @@ class QueryHandler:
         """Updates a user's information"""
         token = query["payload"]["token"]
         user_details = query["payload"]["user_details"]
+        credentials = query["payload"].get("credentials", None)
         token, user_details = self._db.update_user(
-            token=token, user_details=user_details
+            token=token, user_details=user_details, credentials=credentials
         )
         return {
             "type": "UPDATE_USER",

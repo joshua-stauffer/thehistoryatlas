@@ -58,6 +58,7 @@ export const typeDefs = gql`
     UpdateUser(
       token: String!
       user_details: UpdateUserDetailsInput!
+      credentials: CredentialsInput
     ): AccountsGenericResponse!
 
     AddUser(
@@ -230,6 +231,11 @@ export const typeDefs = gql`
     username: String!
     email: String!
     last_login: String!
+  }
+
+  input CredentialsInput {
+    username: String!
+    password: String!
   }
 
   input NewUserDetailsInput {

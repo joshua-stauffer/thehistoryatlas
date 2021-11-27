@@ -301,20 +301,21 @@ export const resolvers: Resolvers = {
       },
 
     UpdateUser: async (_,
-      { token, user_details }: Accounts.UpdateUserPayload,
+      { token, user_details, credentials }: Accounts.UpdateUserPayload,
       { queryAccounts }: Context) => {
         const msg: Accounts.UpdateUserQuery = {
           type: "UPDATE_USER",
           payload: {
             token: token,
-            user_details: user_details
+            user_details: user_details,
+            credentials: credentials
           }
         }
         try {
           console.debug('Publishing query ', msg)
           console.debug(msg.payload)
 
-          const response= await queryAccounts(msg) as Accounts.UpdateUserResponse | Accounts.ErrorResponse;
+          const response = await queryAccounts(msg) as Accounts.UpdateUserResponse | Accounts.ErrorResponse;
           const payload = handleErrors(response)
           console.debug('received result: ', payload)
           return payload

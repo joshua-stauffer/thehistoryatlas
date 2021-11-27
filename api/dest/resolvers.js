@@ -174,7 +174,7 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
         IsUsernameUnique: async (_, { username }, { queryAccounts }) => {
@@ -196,7 +196,7 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
     },
@@ -263,15 +263,16 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
-        UpdateUser: async (_, { token, user_details }, { queryAccounts }) => {
+        UpdateUser: async (_, { token, user_details, credentials }, { queryAccounts }) => {
             const msg = {
                 type: "UPDATE_USER",
                 payload: {
                     token: token,
-                    user_details: user_details
+                    user_details: user_details,
+                    credentials: credentials
                 }
             };
             try {
@@ -286,7 +287,7 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
         Login: async (_, { username, password }, { queryAccounts }) => {
@@ -309,7 +310,7 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
         DeactivateAccount: async (_, { token, username }, { queryAccounts }) => {
@@ -332,7 +333,7 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
         ConfirmAccount: async (_, { token }, { queryAccounts }) => {
@@ -354,7 +355,7 @@ exports.resolvers = {
                 if (err instanceof apollo_server_errors_1.ApolloError)
                     throw err;
                 console.error('Unknown Error Occurred: ', err);
-                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500_INTERNAL_SERVER_ERROR');
+                throw new apollo_server_errors_1.ApolloError('Something went wrong - that\'s all we know', '500');
             }
         },
     }

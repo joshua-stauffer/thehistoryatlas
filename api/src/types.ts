@@ -200,10 +200,12 @@ export namespace Accounts {
     user_details: UserDetails;
   }
 
-  export interface LoginPayload {
+  export interface Credentials {
     username: string;
     password: string;
   }
+
+  export type LoginPayload = Credentials
 
   export interface LoginQuery {
     type: 'LOGIN';
@@ -243,6 +245,7 @@ export namespace Accounts {
 
   export interface UpdateUserPayload {
     token: string;
+    credentials?: Credentials;
     user_details: UpdateUserDetails;
   }
 
@@ -253,7 +256,7 @@ export namespace Accounts {
 
   export interface GetUserQuery {
     type: 'GET_USER';
-    payload: GetUserPayload
+    payload: GetUserPayload;
   }
 
   export interface GetUserPayload {
@@ -264,7 +267,7 @@ export namespace Accounts {
     type: 'GET_USER'
     payload: {
       token: string;
-      user_details: UserDetails
+      user_details: UserDetails;
     }
   }
 

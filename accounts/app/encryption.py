@@ -39,7 +39,7 @@ def get_token(user_id) -> Token:
     """obtain a cryptographically secure token"""
 
     token_bytes = f"{user_id}|{datetime.utcnow()}".encode()
-    return str(fernet.encrypt(token_bytes))
+    return str(fernet.encrypt(token_bytes).decode())
 
 
 def validate_token(

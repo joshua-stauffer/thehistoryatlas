@@ -65,5 +65,5 @@ known_exceptions = (
     InvalidTokenError,
     UnknownQueryError,
     UnconfirmedUserError,
-    DuplicateUsernameError
+    DuplicateUsernameError,
 )
