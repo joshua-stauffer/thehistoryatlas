@@ -55,3 +55,13 @@ def test_delete(trie):
     assert len(trie.find('bb')) == 1
     trie.delete('bb', '933ef06a-9c5d-41fa-be95-c9b01e453934')
     assert len(trie.find('bb')) == 0
+
+def test_insert(trie: Trie):
+    my_guid = str(uuid4())
+    trie.insert(
+        string='aaz',
+        guid=my_guid
+    )
+    node = trie.root.children['a'].children['a'].children['z']
+    assert len(node.ids) == 1
+    assert my_guid in node.ids

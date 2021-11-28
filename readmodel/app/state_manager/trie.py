@@ -33,7 +33,7 @@ class Node:
 
     def print(self, depth=0):
         indent = "-" * depth + "  "
-        print(indent, f"{self.name}: ({len(self.children)}")
+        print(indent, f"<{self.value}> {self.name}: ({len(self.children)} children)")
         for child in self.children.values():
             child.print(depth=depth+1)
 
@@ -67,24 +67,24 @@ class Trie:
         node.name = string
         self.root.print()
 
-    def delete(self, string: str, guid: str):
+    def delete(self, string: str, guid: str) -> bool:
         processed_string = string.lower()
         node = self.root
         path = [node]
         for char in processed_string:
-            node = node.children[char]
-            path.append(node)
-        # remove any orphaned nodes
-        for n in path:
-            print(n)
+            node = node.children.get(char, None)
+            if node:
+                path.append(node)
+            else:
+                return False
         node.ids.remove(guid)
+        # remove any orphaned nodes
+        path.pop()  # node points to this already
         while not len(node.children) and not len(node.ids) and len(path):
-            print('starting at node ', node.name)
             val = node.value
             node = path.pop()
-            print('now at node ', node.name)
             del node.children[val]
-
+        return True
 
 
     def find(self, string: str, res_count=1) -> list[TrieResult]:
