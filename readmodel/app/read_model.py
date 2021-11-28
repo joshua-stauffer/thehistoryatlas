@@ -11,8 +11,9 @@ from tha_config import Config
 from state_manager.manager import Manager
 
 
-logging.basicConfig(level='DEBUG')
+logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
+
 
 class ReadModel:
     """Primary class for application. Primarily coordinates AMQP broker with
@@ -27,49 +28,49 @@ class ReadModel:
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
-        log.info('ReadModel: starting broker')
+        log.info("ReadModel: starting broker")
         self.broker = Broker(
             self.config,
             self.handle_query,
             self.handle_event,
-            self.manager.db.check_database_init)
+            self.manager.db.check_database_init,
+        )
         last_event_id = self.manager.db.check_database_init()
-        log.info(f'Last event id was {last_event_id}')
+        log.info(f"Last event id was {last_event_id}")
         try:
             # always replay history on restart to ensure data consistency
-            await self.broker.start(
-                is_initialized=False,
-                replay_from=last_event_id)
+            await self.broker.start(is_initialized=False, replay_from=last_event_id)
         except Exception as e:
-            log.critical(f'ReadModel caught unknown exception {e} and is ' + \
-                          'shutting down without restart.')
+            log.critical(
+                f"ReadModel caught unknown exception {e} and is "
+                + "shutting down without restart."
+            )
             await self.shutdown()
 
     async def shutdown(self, signal=None):
         """Gracefully close all open connections and cancel tasks"""
         if signal:
-            log.info(f'Received shutdown signal: {signal}')
+            log.info(f"Received shutdown signal: {signal}")
         await self.broker.cancel()
         loop = asyncio.get_event_loop()
-        tasks = [t for t in asyncio.all_tasks() if t is not
-             asyncio.current_task()]
+        tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         [task.cancel() for task in tasks]
         await asyncio.gather(*tasks, return_exceptions=True)
         loop.stop()
-        log.info('Asyncio loop has been stopped')
+        log.info("Asyncio loop has been stopped")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     rm = ReadModel()
-    log.info('ReadModel initialized')
+    log.info("ReadModel initialized")
     loop = asyncio.get_event_loop()
     loop.create_task(rm.start_broker())
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
-        loop.add_signal_handler(
-            s, lambda s=s: asyncio.create_task(rm.shutdown(s)))
+        loop.add_signal_handler(s, lambda s=s: asyncio.create_task(rm.shutdown(s)))
     try:
-        log.info('Asyncio loop now running')
+        log.info("Asyncio loop now running")
         loop.run_forever()
     finally:
         loop.close()
-        log.info('ReadModel shut down successfully.') 
+        log.info("ReadModel shut down successfully.")

@@ -16,73 +16,72 @@ from app.state_manager.schema import Name
 from app.state_manager.schema import Summary
 from app.state_manager.errors import EmptyNameError
 
+
 @pytest.fixture
 def engine():
-    engine = create_engine('sqlite+pysqlite:///:memory:',
-                            echo=False,
-                            future=True)
+    engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     Base.metadata.create_all(engine)
     return engine
+
 
 @pytest.fixture
 def summary_data_1():
     guid = str(uuid4())
-    text = 'A summary of a person doing something somewhere at some time'
-    return guid, text 
+    text = "A summary of a person doing something somewhere at some time"
+    return guid, text
+
 
 @pytest.fixture
 def summary_data_2():
     guid = str(uuid4())
-    text = 'Another summary of a person doing something somewhere at some time'
-    return guid, text 
+    text = "Another summary of a person doing something somewhere at some time"
+    return guid, text
+
 
 @pytest.fixture
 def citation_data_1():
     guid = str(uuid4())
-    text = 'A sample text to test'
-    meta = 'someone said this once'
+    text = "A sample text to test"
+    meta = "someone said this once"
     return guid, text, meta
+
 
 @pytest.fixture
 def citation_data_2():
     guid = str(uuid4())
-    text = 'Some further sample text to test'
-    meta = 'someone never said this'
+    text = "Some further sample text to test"
+    meta = "someone never said this"
     return guid, text, meta
+
 
 @pytest.fixture
 def tag1():
-    return TagInstance(
-        start_char=5,
-        stop_char=10)
+    return TagInstance(start_char=5, stop_char=10)
+
 
 @pytest.fixture
 def tag2():
-    return TagInstance(
-        start_char=8,
-        stop_char=12)
+    return TagInstance(start_char=8, stop_char=12)
+
 
 @pytest.fixture
 def tag3():
-    return TagInstance(
-        start_char=9,
-        stop_char=15)
+    return TagInstance(start_char=9, stop_char=15)
+
 
 @pytest.fixture
 def tag4():
-    return TagInstance(
-        start_char=27,
-        stop_char=32)
+    return TagInstance(start_char=27, stop_char=32)
+
 
 def test_db_exists(engine):
     assert engine != None
 
+
 def test_summary_and_taginstance(summary_data_1, engine, tag1, tag2):
     """verify relationship between summary and tag instances are correct"""
     guid, text = summary_data_1
-    summary = Summary(
-        guid=guid,
-        text=text)
+    summary = Summary(guid=guid, text=text)
     tag1.summary = summary
     tag2.summary = summary
 
@@ -94,17 +93,13 @@ def test_summary_and_taginstance(summary_data_1, engine, tag1, tag2):
         assert tag1.summary is summary
         assert tag2.summary is summary
 
+
 def test_summary_and_citation(summary_data_1, citation_data_1, engine):
     """verify relationship between citations and summaries are correct"""
     guid, text = summary_data_1
     guid, text, meta = citation_data_1
-    summary = Summary(
-        guid=guid,
-        text=text)
-    citation = Citation(
-        guid=guid,
-        text=text,
-        meta=meta)
+    summary = Summary(guid=guid, text=text)
+    citation = Citation(guid=guid, text=text, meta=meta)
     summary.citations = [citation]
 
     with Session(engine, future=True) as sess, sess.begin():
@@ -116,10 +111,7 @@ def test_summary_and_citation(summary_data_1, citation_data_1, engine):
 
 def test_taginstance_and_tag(engine, tag1, tag2):
     """verify relationships between tag instances and tags are correct"""
-    tag = Tag(
-        guid=str(uuid4()),
-        tag_instances=[tag1, tag2]
-    )
+    tag = Tag(guid=str(uuid4()), tag_instances=[tag1, tag2])
     with Session(engine, future=True) as sess, sess.begin():
         sess.add_all([tag, tag1, tag2])
         assert tag1 in tag.tag_instances
@@ -127,28 +119,16 @@ def test_taginstance_and_tag(engine, tag1, tag2):
         assert tag1.tag is tag
         assert tag2.tag is tag
 
-def test_summary_and_tag(engine, summary_data_1, summary_data_2,
-    tag1, tag2, tag3, tag4):
-    person = Tag(
-        guid = str(uuid4()),
-        tag_instances = [tag1, tag3]
-    )
-    place = Tag(
-        guid = str(uuid4()),
-        tag_instances = [tag2, tag4]
-    )
-    guid1, text1 = summary_data_1 
-    sum_1 = Summary(
-        guid=guid1,
-        text=text1,
-        tags=[tag1, tag2]
-    )
-    guid2, text2 = summary_data_2 
-    sum_2 = Summary(
-        guid=guid2,
-        text=text2,
-        tags=[tag3, tag4]
-    )
+
+def test_summary_and_tag(
+    engine, summary_data_1, summary_data_2, tag1, tag2, tag3, tag4
+):
+    person = Tag(guid=str(uuid4()), tag_instances=[tag1, tag3])
+    place = Tag(guid=str(uuid4()), tag_instances=[tag2, tag4])
+    guid1, text1 = summary_data_1
+    sum_1 = Summary(guid=guid1, text=text1, tags=[tag1, tag2])
+    guid2, text2 = summary_data_2
+    sum_2 = Summary(guid=guid2, text=text2, tags=[tag3, tag4])
 
     data = [tag1, tag2, tag3, tag4, sum_1, sum_2, person, place]
     with Session(engine, future=True) as sess, sess.begin():
@@ -159,64 +139,50 @@ def test_summary_and_tag(engine, summary_data_1, summary_data_2,
         assert person.tag_instances[1].summary is sum_2
         assert place.tag_instances[1].summary is sum_2
 
+
 def test_tag_inheritance(engine, summary_data_1, summary_data_2):
-    time = Time(
-        guid = str(uuid4()),
-        name = 'November 1963')
-    person = Person(
-        guid = str(uuid4()),
-        names = 'Bach,Johann Sebastian Bach,J.S.Bach')
-    place = Place(
-        guid=str(uuid4()),
-        names='Milan,Milano')
-    guid1, text1 = summary_data_1 
-    sum_1 = Summary(
-        guid=guid1,
-        text=text1)
-    guid2, text2 = summary_data_2 
-    sum_2 = Summary(
-        guid=guid2,
-        text=text2)
-    tags = [TagInstance(
-        start_char=1,
-        stop_char=5,
-        summary=c,
-        tag=t)
+    time = Time(guid=str(uuid4()), name="November 1963")
+    person = Person(guid=str(uuid4()), names="Bach,Johann Sebastian Bach,J.S.Bach")
+    place = Place(guid=str(uuid4()), names="Milan,Milano")
+    guid1, text1 = summary_data_1
+    sum_1 = Summary(guid=guid1, text=text1)
+    guid2, text2 = summary_data_2
+    sum_2 = Summary(guid=guid2, text=text2)
+    tags = [
+        TagInstance(start_char=1, stop_char=5, summary=c, tag=t)
         for t in [time, person, place]
-        for c in [sum_1, sum_2]]
+        for c in [sum_1, sum_2]
+    ]
 
     data = [time, person, place, sum_1, sum_2, *tags]
     with Session(engine, future=True) as sess, sess.begin():
         sess.add_all(data)
 
+
 def test_name_returns_list():
-    n = Name(
-        name='Ocean',
-        guids='some-guid')
+    n = Name(name="Ocean", guids="some-guid")
     assert isinstance(n.guids, list)
-    assert n.guids[0] == 'some-guid'
+    assert n.guids[0] == "some-guid"
     print(n.guids)
     assert len(n.guids) == 1
 
+
 def test_name_on_set():
-    n = Name(
-        name='Ocean',
-        guids='some-guid')
-    n.add_guid('Frank')
-    assert n.guids[1] == 'Frank'
+    n = Name(name="Ocean", guids="some-guid")
+    n.add_guid("Frank")
+    assert n.guids[1] == "Frank"
     assert len(n.guids) == 2
 
+
 def test_name_on_del():
-    n = Name(
-        name='Ocean',
-        guids='some-guid')
+    n = Name(name="Ocean", guids="some-guid")
     with pytest.raises(ValueError):
-        n.del_guid('Frank')
+        n.del_guid("Frank")
     assert len(n.guids) == 1
     with pytest.raises(IndexError):
         assert n.guids[1]
     with pytest.raises(EmptyNameError):
-        n.del_guid('some-guid')
-    n.add_guid('Frank')
-    n.del_guid('Frank')
+        n.del_guid("some-guid")
+    n.add_guid("Frank")
+    n.del_guid("Frank")
     assert len(n.guids) == 1

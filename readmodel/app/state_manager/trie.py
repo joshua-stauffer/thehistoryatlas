@@ -8,14 +8,15 @@ from collections import deque
 from logging import log
 from typing import TypedDict
 
+
 class TrieResult(TypedDict):
     """The result of a trie search"""
+
     name: str
     guids: list[str]
 
 
 class Node:
-
     def __init__(self, value: str):
         self.value: str = value
         self.children: dict[str, Node] = {}
@@ -35,14 +36,13 @@ class Node:
         indent = "-" * depth + "  "
         print(indent, f"<{self.value}> {self.name}: ({len(self.children)} children)")
         for child in self.children.values():
-            child.print(depth=depth+1)
+            child.print(depth=depth + 1)
 
 
 class Trie:
-
     def __init__(self, entity_tuples):
-        
-        self.root = Node('')
+
+        self.root = Node("")
         self.build(entity_tuples)
 
     def build(self, entity_tuples):
@@ -86,7 +86,6 @@ class Trie:
             del node.children[val]
         return True
 
-
     def find(self, string: str, res_count=1) -> list[TrieResult]:
         processed_string = string.lower()
         node = self.root
@@ -100,10 +99,6 @@ class Trie:
             current_node = queue.popleft()
             queue.extend(current_node.children.values())
             if current_node.name:
-                res.append({
-                    'name': current_node.name,
-                    'guids': list(current_node.ids)
-                })
+                res.append({"name": current_node.name, "guids": list(current_node.ids)})
                 res_count -= 1
         return res
-
