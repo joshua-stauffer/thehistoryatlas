@@ -65,7 +65,7 @@ class Trie:
         # this node is now a leaf
         node.ids.add(guid)
         node.name = string
-        self.root.print()
+        # debug only: self.root.print()
 
     def delete(self, string: str, guid: str) -> bool:
         processed_string = string.lower()

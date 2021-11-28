@@ -207,7 +207,7 @@ class Database:
 
     def get_name_by_fuzzy_search(self, name: str) -> list[TrieResult]:
         """Search for possible completions to a given string from known entity names."""
-        return self._trie.find(name, res_count=1)
+        return self._trie.find(name, res_count=10)
 
     # MUTATIONS
 

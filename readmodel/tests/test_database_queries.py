@@ -408,3 +408,15 @@ def test_get_all_entity_names(db_tuple):
         assert isinstance(name, str)
         assert isinstance(guid, str)
         assert UUID(guid)
+
+
+def test_get_name_by_fuzzy_search(db_tuple):
+    db, _ = db_tuple
+    res1 = db.get_name_by_fuzzy_search("A person name")
+    assert isinstance(res1, list)
+    assert len(res1) <= 10
+    trie_result = res1[0]
+    assert isinstance(trie_result["name"], str)
+    assert isinstance(trie_result["guids"], list)
+    for id_ in trie_result["guids"]:
+        assert isinstance(id_, str)

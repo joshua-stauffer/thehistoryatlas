@@ -64,7 +64,8 @@ def test_limit_res_count(trie):
 def test_delete(trie):
     assert len(trie.find("bb")) == 1
     trie.delete("bb", "933ef06a-9c5d-41fa-be95-c9b01e453934")
-    assert len(trie.find("bb")) == 0
+    assert "b" not in trie.root.children
+    assert len(trie.find("bb")) == 1, "Still provides a suggestion"
 
 
 def test_insert(trie: Trie):

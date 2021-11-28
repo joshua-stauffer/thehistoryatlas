@@ -32,7 +32,7 @@ class QueryHandler:
             "GET_MANIFEST": self._handle_get_manifest,
             "GET_GUIDS_BY_NAME": self._handle_get_guids_by_name,
             "GET_GUIDS_BY_NAME_BATCH": self._handle_get_guids_by_name_batch,
-            "GET_NAME_BY_FUZZY_SEARCH": self._handle_get_fuzzy_search_by_name,
+            "GET_FUZZY_SEARCH_BY_NAME": self._handle_get_fuzzy_search_by_name,
         }
 
     def _handle_get_summaries_by_guid(self, query):
@@ -95,5 +95,8 @@ class QueryHandler:
         name = query["payload"]["name"]
         return {
             "type": "FUZZY_SEARCH_BY_NAME",
-            "payload": {"results": self._db.get_name_by_fuzzy_search(name)},
+            "payload": {
+                "results": self._db.get_name_by_fuzzy_search(name),
+                "name": name,
+            },
         }

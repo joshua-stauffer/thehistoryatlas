@@ -146,7 +146,7 @@ def db_tuple(_db):
 
 @pytest.fixture
 def handler(db_tuple):
-    db, db_dict = db_tuple
+    db, _ = db_tuple
     return QueryHandler(database_instance=db)
 
 
@@ -259,3 +259,18 @@ def test_get_guids_by_name(handle_query, db_tuple):
     assert isinstance(res["payload"], dict)
     assert isinstance(res["payload"]["guids"], list)
     assert isinstance(res["payload"]["summaries"], list)
+
+
+def test_get_fuzzy_search_by_name(handle_query):
+    name = "a"
+    res = handle_query({"type": "GET_FUZZY_SEARCH_BY_NAME", "payload": {"name": name}})
+    assert isinstance(res, dict)
+    assert res["type"] == "FUZZY_SEARCH_BY_NAME"
+    assert isinstance(res["payload"], dict)
+    assert isinstance(res["payload"]["results"], list)
+    assert res["payload"]["name"] == name
+    for r in res["payload"]["results"]:
+        assert isinstance(r["name"], str)
+        assert isinstance(r["guids"], list)
+        for id_ in r["guids"]:
+            assert isinstance(id_, str)
