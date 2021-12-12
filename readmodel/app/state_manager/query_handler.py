@@ -4,7 +4,7 @@ Tuesday, May 4th 2021
 """
 
 import logging
-from .errors import UnknownQueryError, UnknownManifestTypeError
+from app.errors import UnknownQueryError, UnknownManifestTypeError
 from app.state_manager.database import Database
 
 log = logging.getLogger(__name__)

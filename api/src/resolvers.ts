@@ -30,6 +30,8 @@ const handleErrors = (response: Accounts.ResponseType) => {
 export const resolvers: Resolvers = {
   Query: {
 
+    // READMODEL Queries
+
     GetSummariesByGUID: async (_,
       { summary_guids }: Resolver.GetSummariesByGUIDsArgs,
       { queryReadModel }: Context) => {
@@ -127,6 +129,32 @@ export const resolvers: Resolvers = {
         }
       }
     },
+
+    GetFuzzySearchByName: async (_,
+      { name }: Resolver.GetFuzzySearchByNamePayload,
+      { queryReadModel }: Context) => {
+      const msg = {
+        type: "GET_FUZZY_SEARCH_BY_NAME",
+        payload: {
+          name: name,
+        }
+      }
+      try {
+        console.debug(`Publishing query ${msg}`)
+        const { payload } = await queryReadModel(msg) as Resolver.FuzzySearchResponse;
+        console.debug('received result: ', payload)
+        return payload.results
+      } catch (err) {
+        return {
+          code: 'Error',
+          success: false,
+          message: err
+        }
+      }
+    },
+
+    // GEO Queries
+
     GetCoordinatesByName: async (_,
       { name }: Resolver.GetCoordinatesByNameArgs,
       { queryGeo }: Context) => {
@@ -154,6 +182,8 @@ export const resolvers: Resolvers = {
       }
     },
 
+    // NLP Queries
+
     GetTextAnalysis: async (_,
       { text }: Resolver.GetTextAnalysisArgs,
       { queryNLP }: Context) => {
@@ -179,7 +209,7 @@ export const resolvers: Resolvers = {
       }
     },
 
-    // ACCOUNTS MESSAGES
+    // ACCOUNTS Queries
 
     GetUser: async (_,
       { token }: Accounts.GetUserPayload,

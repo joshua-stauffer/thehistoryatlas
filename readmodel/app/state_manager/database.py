@@ -129,7 +129,6 @@ class Database:
             }
             for year in timeline_dict.keys()
         ]
-        print(timeline_result)
         return tag_result, timeline_result
 
     def get_guids_by_name(self, name) -> list[str]:
@@ -191,12 +190,12 @@ class Database:
 
             people = session.execute(select(Person)).scalars()
             for person in people:
-                for name in person.names:
+                for name in person.names.split('|'):
                     res.append((name, person.guid))
 
             places = session.execute(select(Place)).scalars()
             for place in places:
-                for name in place.names:
+                for name in place.names.split('|'):
                     res.append((name, place.guid))
 
             times = session.execute(select(Time)).scalars()
@@ -246,19 +245,18 @@ class Database:
         with Session(self._engine, future=True) as session:
             # resolve person
             if is_new:
-                log.info(f"Creating a new person: {person_name}")
-                print("creating person: ", person_name)
+                log.debug(f"Creating a new person: {person_name}")
                 person = Person(guid=person_guid, names=person_name)
             else:
-                log.info(f"Tagging an existing person: {person_name}")
+                log.debug(f"Tagging an existing person: {person_name}")
                 person = session.execute(
                     select(Person).where(Person.guid == person_guid)
                 ).scalar_one()
                 cur_names = self.split_names(person.names)
                 if person_name not in cur_names:
-                    print("found new person name ", person_name)
+                    log.debug(f"found new person name {person_name}")
                     person.names += f"|{person_name}"
-                    print("person.names is now ", person.names)
+                    log.debug(f"person.names is now {person.names}")
             # add name to Name registry
             self._handle_name(person_name, person_guid, session)
             self._create_tag_instance(
@@ -460,7 +458,8 @@ class Database:
         old_string=None,
         old_string_guid=None,
     ):
-        """Maintains trie state by adding new string and/or removing old string.
+        """
+        Maintains trie state by adding new string and/or removing old string.
         if new_string is provided, new_string_guid is required as well.
         if old_string is provided, old_string_guid is required as well.
         """

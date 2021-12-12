@@ -464,10 +464,19 @@ export namespace Resolver {
     }
   }
 
-}
+  export interface GetFuzzySearchByNamePayload {
+    name: string
+  }
 
-export namespace Schema {
-  // migrate to using this namespace for any type defined inside the GraphQL Schema
+  export interface FuzzySearchResponse {
+    type: "GET_FUZZY_SEARCH_BY_NAME";
+    payload: {
+      name: string; // original search term
+      results: {
+        name: string;
+        guids: string[]
+      }[]
+    }
+  }
 
-  
 }

@@ -16,6 +16,7 @@ const handleErrors = (response) => {
 };
 exports.resolvers = {
     Query: {
+        // READMODEL Queries
         GetSummariesByGUID: async (_, { summary_guids }, { queryReadModel }) => {
             const msg = {
                 type: "GET_SUMMARIES_BY_GUID",
@@ -107,6 +108,28 @@ exports.resolvers = {
                 };
             }
         },
+        GetFuzzySearchByName: async (_, { name }, { queryReadModel }) => {
+            const msg = {
+                type: "GET_FUZZY_SEARCH_BY_NAME",
+                payload: {
+                    name: name,
+                }
+            };
+            try {
+                console.debug(`Publishing query ${msg}`);
+                const { payload } = await queryReadModel(msg);
+                console.debug('received result: ', payload);
+                return payload.results;
+            }
+            catch (err) {
+                return {
+                    code: 'Error',
+                    success: false,
+                    message: err
+                };
+            }
+        },
+        // GEO Queries
         GetCoordinatesByName: async (_, { name }, { queryGeo }) => {
             const msg = {
                 type: "GET_COORDS_BY_NAME",
@@ -132,6 +155,7 @@ exports.resolvers = {
                 };
             }
         },
+        // NLP Queries
         GetTextAnalysis: async (_, { text }, { queryNLP }) => {
             const msg = {
                 type: "PROCESS_TEXT",
@@ -154,7 +178,7 @@ exports.resolvers = {
                 };
             }
         },
-        // ACCOUNTS MESSAGES
+        // ACCOUNTS Queries
         GetUser: async (_, { token }, { queryAccounts }) => {
             const msg = {
                 type: "GET_USER",

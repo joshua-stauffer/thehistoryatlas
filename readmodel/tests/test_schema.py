@@ -14,7 +14,7 @@ from app.state_manager.schema import Person
 from app.state_manager.schema import Place
 from app.state_manager.schema import Name
 from app.state_manager.schema import Summary
-from app.state_manager.errors import EmptyNameError
+from app.errors import EmptyNameError
 
 
 @pytest.fixture

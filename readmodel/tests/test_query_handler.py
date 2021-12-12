@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
 from app.state_manager.query_handler import QueryHandler
-from app.state_manager.errors import UnknownQueryError, UnknownManifestTypeError
+from app.errors import UnknownQueryError, UnknownManifestTypeError
 from app.state_manager.schema import Base
 from app.state_manager.schema import Citation
 from app.state_manager.schema import TagInstance

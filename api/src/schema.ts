@@ -26,6 +26,10 @@ export const typeDefs = gql`
       name: String!
     ): [GeoResponse]
 
+    GetFuzzySearchByName(
+      name: String!
+    ): [FuzzySearchResponse]
+
     GetTextAnalysis(
       text: String!
     ): TextAnalysisResponse
@@ -160,6 +164,11 @@ export const typeDefs = gql`
     PERSON: [TextAnalysis]
     PLACE: [TextAnalysis]
     TIME: [TextAnalysis]
+  }
+
+  type FuzzySearchResponse {
+    name: String!
+    guids: [String]!
   }
 
   # geo types

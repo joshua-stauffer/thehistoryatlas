@@ -10,7 +10,7 @@ from sqlalchemy import Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
-from .errors import EmptyNameError
+from app.errors import EmptyNameError
 
 Base = declarative_base()
 

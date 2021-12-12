@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.state_manager.database import Database
 from app.state_manager.event_handler import EventHandler
-from app.state_manager.errors import UnknownEventError
-from app.state_manager.errors import DuplicateEventError
+from app.errors import UnknownEventError
+from app.errors import DuplicateEventError
 from app.state_manager.schema import Base
 from app.state_manager.schema import Citation
 from app.state_manager.schema import TagInstance

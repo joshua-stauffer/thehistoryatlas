@@ -6,9 +6,9 @@ May 3rd, 2021
 import asyncio
 import logging
 import signal
-from broker import Broker
+from app.broker import Broker
 from tha_config import Config
-from state_manager.manager import Manager
+from app.state_manager.manager import Manager
 
 
 logging.basicConfig(level="DEBUG")

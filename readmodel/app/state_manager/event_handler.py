@@ -4,7 +4,7 @@ Monday, May 3rd 2021
 """
 
 import logging
-from .errors import UnknownEventError, MissingEventFieldError, DuplicateEventError
+from app.errors import UnknownEventError, MissingEventFieldError, DuplicateEventError
 
 log = logging.getLogger(__name__)
 

@@ -7,7 +7,6 @@ from collections import deque
 import logging
 from uuid import uuid4
 from pybroker import BrokerBase
-from errors import MessageError
 
 
 log = logging.getLogger(__name__)
