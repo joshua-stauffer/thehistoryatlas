@@ -190,12 +190,12 @@ class Database:
 
             people = session.execute(select(Person)).scalars()
             for person in people:
-                for name in person.names.split('|'):
+                for name in person.names.split("|"):
                     res.append((name, person.guid))
 
             places = session.execute(select(Place)).scalars()
             for place in places:
-                for name in place.names.split('|'):
+                for name in place.names.split("|"):
                     res.append((name, place.guid))
 
             times = session.execute(select(Time)).scalars()

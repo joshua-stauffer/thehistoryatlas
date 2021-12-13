@@ -1,23 +1,26 @@
 import asyncio
-from datetime import datetime
 import json
-import pytest
 import random
-from uuid import uuid4
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from datetime import datetime
+from uuid import UUID, uuid4
+
+import pytest
+from app.errors import UnknownManifestTypeError, UnknownQueryError
 from app.state_manager.database import Database
 from app.state_manager.query_handler import QueryHandler
-from app.errors import UnknownQueryError, UnknownManifestTypeError
-from app.state_manager.schema import Base
-from app.state_manager.schema import Citation
-from app.state_manager.schema import TagInstance
-from app.state_manager.schema import Tag
-from app.state_manager.schema import Time
-from app.state_manager.schema import Person
-from app.state_manager.schema import Place
-from app.state_manager.schema import Name
-from app.state_manager.schema import Summary
+from app.state_manager.schema import (
+    Base,
+    Citation,
+    Name,
+    Person,
+    Place,
+    Summary,
+    Tag,
+    TagInstance,
+    Time,
+)
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 # constants
 TYPE_ENUM = set(["PERSON", "PLACE", "TIME"])
@@ -274,3 +277,55 @@ def test_get_fuzzy_search_by_name(handle_query):
         assert isinstance(r["guids"], list)
         for id_ in r["guids"]:
             assert isinstance(id_, str)
+
+
+def test_get_entity_summaries_by_guid_handles_empty_list(handle_query, db_tuple):
+
+    res = handle_query(
+        {"type": "GET_ENTITY_SUMMARIES_BY_GUID", "payload": {"guids": []}}
+    )
+    assert res["type"] == "ENTITY_SUMMARIES_BY_GUID"
+    assert isinstance(res["payload"], dict)
+    assert len(res["payload"]["results"]) == 0
+
+
+def test_get_entity_summaries_by_guid_with_invalid_guids(handle_query, db_tuple):
+    wrong_guids = [
+        "c0c0ba02-b43b-4733-ac09-f35bd06b123f",
+        "ee9b40e5-7066-4be6-ac6b-970b79035a22",
+        "fbbee7e9-eaa8-4d15-bc0d-46a1ef459343",
+    ]
+
+    res = handle_query(
+        {"type": "GET_ENTITY_SUMMARIES_BY_GUID", "payload": {"guids": wrong_guids}}
+    )
+
+    assert res["type"] == "ENTITY_SUMMARIES_BY_GUID"
+    assert isinstance(res["payload"], dict)
+    assert len(res["payload"]["results"]) == 0
+
+
+def test_get_entity_summaries(handle_query, db_tuple):
+    _, db_dict = db_tuple
+
+    guids = db_dict["place_guids"][20:25]
+    guids.extend(db_dict["time_guids"][20:25])
+    guids.extend(db_dict["person_guids"][20:25])
+
+    res = handle_query(
+        {"type": "GET_ENTITY_SUMMARIES_BY_GUID", "payload": {"guids": guids}}
+    )
+
+    assert res["type"] == "ENTITY_SUMMARIES_BY_GUID"
+    assert isinstance(res["payload"], dict)
+    assert len(res["payload"]["results"]) == 15
+
+    for entity in res["payload"]["results"]:
+        assert entity["type"] in ["PERSON", "PLACE", "TIME"]
+        assert UUID(entity["guid"])
+        assert isinstance(entity["citation_count"], int)
+        assert isinstance(entity["names"], list)
+        for name in entity["names"]:
+            assert isinstance(name, str)
+        assert isinstance(entity["first_citation_date"], str)
+        assert isinstance(entity["last_citation_date"], str)

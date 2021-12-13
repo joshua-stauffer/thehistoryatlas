@@ -33,6 +33,7 @@ class QueryHandler:
             "GET_GUIDS_BY_NAME": self._handle_get_guids_by_name,
             "GET_GUIDS_BY_NAME_BATCH": self._handle_get_guids_by_name_batch,
             "GET_FUZZY_SEARCH_BY_NAME": self._handle_get_fuzzy_search_by_name,
+            "GET_ENTITY_SUMMARIES_BY_GUID": self._handle_get_entity_summaries_by_guid,
         }
 
     def _handle_get_summaries_by_guid(self, query):
@@ -99,4 +100,13 @@ class QueryHandler:
                 "results": self._db.get_name_by_fuzzy_search(name),
                 "name": name,
             },
+        }
+
+    def _handle_get_entity_summaries_by_guid(self, query):
+        """Resolve a list of entity GUIDs into summaries"""
+
+        guids = query["payload"]["guids"]
+        return {
+            "type": "ENTITY_SUMMARIES_BY_GUID",
+            "payload": {"results": self._db.get_entity_summary_by_guid_batch(guids)},
         }

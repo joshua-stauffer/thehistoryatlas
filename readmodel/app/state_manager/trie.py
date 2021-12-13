@@ -11,6 +11,7 @@ from typing import TypedDict
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
 
+
 class TrieResult(TypedDict):
     """The result of a trie search"""
 
@@ -54,7 +55,7 @@ class Trie:
             self.insert(name, guid)
 
     def insert(self, string: str, guid: str):
-        log.debug(f'trie: add string {string}')
+        log.debug(f"trie: add string {string}")
         processed_string = string.lower()
         node = self.root
         for char in processed_string:
@@ -67,7 +68,7 @@ class Trie:
         # this node is now a leaf
         node.ids.add(guid)
         node.name = string
-        log.debug(f'created leaf: {node.name}')
+        log.debug(f"created leaf: {node.name}")
         # debug only: self.root.print()
 
     def delete(self, string: str, guid: str) -> bool:
@@ -90,14 +91,14 @@ class Trie:
         return True
 
     def find(self, string: str, res_count=1) -> list[TrieResult]:
-        log.debug(f'searching for term {string}')
+        log.debug(f"searching for term {string}")
         processed_string = string.lower()
         node = self.root
         for char in processed_string:
             if char not in node.children:
                 break
             node = node.children[char]
-        log.debug(f'closest neighbor found is {node.name}, {node.value}')
+        log.debug(f"closest neighbor found is {node.name}, {node.value}")
         res = list()
         queue = deque([node])
         while len(queue) and res_count > 0:
@@ -106,5 +107,5 @@ class Trie:
             if current_node.name:
                 res.append({"name": current_node.name, "guids": list(current_node.ids)})
                 res_count -= 1
-        log.debug(f'result is {res}')
+        log.debug(f"result is {res}")
         return res
