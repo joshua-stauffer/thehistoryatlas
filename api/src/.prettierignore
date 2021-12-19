@@ -1,0 +1,6 @@
+# Ignore artifacts:
+dest
+node_modules
+config.ts
+apollo.config.js
+Dockerfile

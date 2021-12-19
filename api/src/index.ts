@@ -4,23 +4,22 @@ Point of entry for the GraphQL API component of the History Atlas.
 April 16th, 2021
 */
 
-const { ApolloServer } = require('apollo-server');// consider switching to apollo-server-express ?
-const { Broker } = require('./broker') ;
-const { typeDefs } = require('./schema') ;
-const { resolvers } = require('./resolvers') 
-const { Config } = require('./config') ;
-import { 
+const { ApolloServer } = require("apollo-server"); // consider switching to apollo-server-express ?
+const { Broker } = require("./broker");
+const { typeDefs } = require("./schema");
+const { resolvers } = require("./resolvers");
+const { Config } = require("./config");
+import {
   AccountsServiceQuery,
-  GeoServiceQuery, 
-  NLPServiceQuery, 
-  ReadModelQuery, 
-  WriteModelCommand 
-} from './types';
+  GeoServiceQuery,
+  NLPServiceQuery,
+  ReadModelQuery,
+  WriteModelCommand,
+} from "./types";
 
-
-const config = new Config()
-const broker = new Broker(config)
-broker.connect().then(() => console.log('Broker is ready'))
+const config = new Config();
+const broker = new Broker(config);
+broker.connect().then(() => console.log("Broker is ready"));
 
 export interface Context {
   queryReadModel: (query: ReadModelQuery) => Promise<unknown>;
@@ -35,8 +34,8 @@ const context: Context = {
   emitCommand: broker.emitCommand,
   queryNLP: broker.queryNLP,
   queryGeo: broker.queryGeo,
-  queryAccounts: broker.queryAccounts
-}
+  queryAccounts: broker.queryAccounts,
+};
 
 const server = new ApolloServer({ typeDefs, resolvers, context });
 server.listen().then(({ url }: any) => {

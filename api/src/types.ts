@@ -3,8 +3,6 @@ Collection of application-wide types
 April 16th, 2021
 */
 
-
-
 export interface Tag {
   type: EntityType;
   GUID: string;
@@ -27,6 +25,192 @@ export interface Person {
 // starting over April 19th 2021
 // anything above here is not necessarily used
 
+export namespace Readmodel {
+  // TODO: slowly moving towards all types being in namespaces
+
+  export type Query =
+    | GetEntitySummariesByGUIDRequest
+    | GetSummariesByGUIDRequest
+    | GetCitationByGUIDRequest
+    | GetManifestRequest
+    | GetGUIDsByNameRequest
+    | GetFuzzySearchByNameRequest;
+
+  export interface GetEntitySummariesByGUIDArgs {
+    guids: string[];
+  }
+
+  interface EntitySummary {
+    type: EntityType;
+    guid: string;
+    citation_count: number;
+    names: string[];
+    first_citation_date: string;
+    last_citation_date: string;
+  }
+  export interface GetEntitySummariesByGUIDRequest {
+    type: "GET_ENTITY_SUMMARIES_BY_GUID";
+    payload: GetEntitySummariesByGUIDArgs;
+  }
+
+  export interface GetEntitySummariesByGUIDResponse {
+    type: "ENTITY_SUMMARIES_BY_GUID";
+    payload: {
+      results: EntitySummary[];
+    };
+  }
+
+  export interface GetSummariesByGUIDRequest {
+    type: "GET_SUMMARIES_BY_GUID";
+    payload: {
+      summary_guids: string[];
+    };
+  }
+
+  export interface GetSummariesByGUIDArgs {
+    citationGUID: string;
+  }
+
+  export interface SummariesByGUIDResponse {
+    type: "SUMMARIES_BY_GUIDS";
+    payload: {
+      summaries: Summary[];
+    };
+  }
+
+  export interface Summary {
+    guid: string;
+    text: string;
+    tags: {
+      start_char: number;
+      stop_char: number;
+      tag_type: EntityType;
+      tag_guid: string;
+      name?: string;
+      names?: string[];
+      coords?: {
+        latitude: number;
+        longitude: number;
+        geoshape?: string;
+      };
+    };
+  }
+
+  export interface GetSummariesByGUIDsArgs {
+    summary_guids: string[];
+  }
+
+  export interface GetCitationByGUIDRequest {
+    type: "GET_CITATION_BY_GUID";
+    payload: {
+      // must redeclare this payload due to changing the variable name
+      citation_guid: string;
+    };
+  }
+
+  export interface GetCitationByGUIDsArgs {
+    citationGUID: string;
+  }
+
+  export interface GetCitationByGUIDResponse {
+    type: "CITATION_BY_GUID";
+    payload: {
+      citation: {
+        citation_guid: {
+          text: string;
+          meta: {
+            title: string;
+            author: string;
+            publisher: string;
+            pubDate?: string;
+            pageNum?: number;
+          };
+        };
+      };
+    };
+  }
+
+  export interface GetManifestRequest {
+    type: "GET_MANIFEST";
+    payload: {
+      type: EntityType;
+      guid: string;
+    };
+  }
+
+  export interface GetManifestResponse {
+    type: "MANIFEST";
+    payload: {
+      guid: string;
+      citation_guids: string[];
+      timeline: {
+        year: number;
+        count: number;
+        base_guid: string;
+      }[];
+    };
+  }
+
+  export interface GetManifestArgs {
+    entityType: EntityType;
+    GUID: string;
+  }
+
+  export interface GetGUIDsByNameRequest {
+    type: "GET_GUIDS_BY_NAME";
+    payload: GetGUIDsByNameArgs;
+  }
+
+  export interface GetGUIDsByNameArgs {
+    name: string;
+  }
+
+  export interface GUIDByNameResponse {
+    type: string;
+    payload: {
+      guids: string[];
+    };
+  }
+
+  export interface GetFuzzySearchByNameRequest {
+    type: "GET_FUZZY_SEARCH_BY_NAME";
+    payload: GetFuzzySearchByNameArgs;
+  }
+
+  export interface GetFuzzySearchByNameArgs {
+    name: string;
+  }
+
+  export interface FuzzySearchResponse {
+    type: "GET_FUZZY_SEARCH_BY_NAME";
+    payload: {
+      name: string; // original search term
+      results: {
+        name: string;
+        guids: string[];
+      }[];
+    };
+  }
+
+  export interface CitationByGUID {
+    type: string;
+    payload: {
+      citation: {
+        citation_guid: {
+          text: string;
+          meta: {
+            title: string;
+            author: string;
+            publisher: string;
+            pubDate?: string;
+            pageNum?: number;
+          };
+        };
+      };
+    };
+  }
+}
+
 export type EntityType = "TIME" | "PERSON" | "PLACE";
 
 export interface Location {
@@ -47,7 +231,7 @@ export interface CitationsByGUID {
           publisher: string;
           pubDate?: string;
           pageNum?: number;
-        }
+        };
         tags: {
           start_char: number;
           stop_char: number;
@@ -59,11 +243,11 @@ export interface CitationsByGUID {
             latitude: number;
             longitude: number;
             geoshape?: string;
-          }
-        }[]
-      }
-    }
-  }
+          };
+        }[];
+      };
+    };
+  };
 }
 
 export interface WriteModelCommand {
@@ -80,16 +264,18 @@ export interface WriteModelResponse {
   payload?: {
     reason: string;
     existing_event_guid?: string;
-  }
+  };
 }
 
-export type ReadModelResponse = FailedReadModelResponse | SuccessfulReadModelResponse;
+export type ReadModelResponse =
+  | FailedReadModelResponse
+  | SuccessfulReadModelResponse;
 
 interface FailedReadModelResponse {
   type: "ERROR";
   payload: {
     message: string;
-  }
+  };
 }
 
 interface SuccessfulReadModelResponse {
@@ -97,79 +283,65 @@ interface SuccessfulReadModelResponse {
   payload: CitationsByGUID;
 }
 
-export interface ReadModelQuery {
-  type: string;
-  payload: {
-    citation_guid?: string;
-    summary_guids?: string[];
-    entityType?: EntityType;
-    GUID?: string;
-    name?: string;
-    type?: EntityType;
-    guid?: string;
-  }
-}
+export type ReadModelQuery = Readmodel.Query;
 
 export interface NLPServiceQuery {
   type: string;
   payload: {
     text: string;
-  }
+  };
 }
 
 export interface GeoServiceQuery {
   type: string;
   payload: {
     name: string;
-  }
+  };
 }
 
-export type AccountsServiceQuery = Accounts.Query
-
+export type AccountsServiceQuery = Accounts.Query;
 
 export namespace Accounts {
-
-
   export interface Message {
     type: QueryType;
     payload: PayloadType;
   }
 
   export type Query =
-    AddUserQuery
+    | AddUserQuery
     | GetUserQuery
     | UpdateUserQuery
     | IsUsernameUniqueQuery
     | DeactivateAccountQuery
     | ConfirmAccountQuery
-    | LoginQuery
+    | LoginQuery;
 
-  export type QueryType = 
-    'LOGIN' 
-    | 'ADD_USER'
-    | 'GET_USER'
-    | 'UPDATE_USER'
-    | 'IS_USERNAME_UNIQUE'
-    | 'DEACTIVATE_ACCOUNT'
-    | 'CONFIRM_ACCOUNT';
+  export type QueryType =
+    | "LOGIN"
+    | "ADD_USER"
+    | "GET_USER"
+    | "UPDATE_USER"
+    | "IS_USERNAME_UNIQUE"
+    | "DEACTIVATE_ACCOUNT"
+    | "CONFIRM_ACCOUNT";
 
   export type PayloadType =
-    LoginPayload
+    | LoginPayload
     | AddUserPayload
     | GetUserPayload
     | IsUsernameUniquePayload
     | DeactivateAccountPayload
-    | ConfirmAccountPayload
+    | ConfirmAccountPayload;
 
-  export type ResponseType = 
-    ErrorResponse
+  export type ResponseType =
+    | ErrorResponse
     | LoginResult
     | AddUserResult
     | UpdateUserResponse
     | GetUserResult
     | IsUsernameUniqueResult
     | DeactivateAccountResult
-    | ConfirmAccountResult
+    | ConfirmAccountResult;
 
   export interface UserDetails {
     f_name: string;
@@ -205,42 +377,42 @@ export namespace Accounts {
     password: string;
   }
 
-  export type LoginPayload = Credentials
+  export type LoginPayload = Credentials;
 
   export interface LoginQuery {
-    type: 'LOGIN';
-    payload: LoginPayload
+    type: "LOGIN";
+    payload: LoginPayload;
   }
 
   export interface LoginResult {
-    type: 'LOGIN';
+    type: "LOGIN";
     payload: {
       success: boolean;
       token?: string;
-    }
+    };
   }
 
   export interface AddUserQuery {
-    type: 'ADD_USER'
+    type: "ADD_USER";
     payload: {
       token: string;
-      user_details: AddUserDetails
-    }
+      user_details: AddUserDetails;
+    };
   }
 
   export interface AddUserPayload {
     token: string;
-    user_details: AddUserDetails
+    user_details: AddUserDetails;
   }
 
   export interface AddUserResult {
-    type: 'ADD_USER'
-    payload: AccountResult
+    type: "ADD_USER";
+    payload: AccountResult;
   }
 
   export interface UpdateUserQuery {
-    type: 'UPDATE_USER'
-    payload: UpdateUserPayload
+    type: "UPDATE_USER";
+    payload: UpdateUserPayload;
   }
 
   export interface UpdateUserPayload {
@@ -250,12 +422,12 @@ export namespace Accounts {
   }
 
   export interface UpdateUserResponse {
-    type: 'UPDATE_USER';
+    type: "UPDATE_USER";
     payload: UpdateUserPayload;
   }
 
   export interface GetUserQuery {
-    type: 'GET_USER';
+    type: "GET_USER";
     payload: GetUserPayload;
   }
 
@@ -264,16 +436,16 @@ export namespace Accounts {
   }
 
   export interface GetUserResult {
-    type: 'GET_USER'
+    type: "GET_USER";
     payload: {
       token: string;
       user_details: UserDetails;
-    }
+    };
   }
 
   export interface IsUsernameUniqueQuery {
-    type: 'IS_USERNAME_UNIQUE'
-    payload: IsUsernameUniquePayload
+    type: "IS_USERNAME_UNIQUE";
+    payload: IsUsernameUniquePayload;
   }
 
   export interface IsUsernameUniquePayload {
@@ -281,16 +453,16 @@ export namespace Accounts {
   }
 
   export interface IsUsernameUniqueResult {
-    type: "IS_USERNAME_UNIQUE"
+    type: "IS_USERNAME_UNIQUE";
     payload: {
       is_unique: boolean;
       username: string;
-    }
+    };
   }
 
   export interface DeactivateAccountQuery {
-    type: 'DEACTIVATE_ACCOUNT'
-    payload: DeactivateAccountPayload
+    type: "DEACTIVATE_ACCOUNT";
+    payload: DeactivateAccountPayload;
   }
 
   export interface DeactivateAccountPayload {
@@ -299,16 +471,16 @@ export namespace Accounts {
   }
 
   export interface DeactivateAccountResult {
-    type: "DEACTIVATE_ACCOUNT"
+    type: "DEACTIVATE_ACCOUNT";
     payload: {
       token: string;
-      user_details: UserDetails
-    }
+      user_details: UserDetails;
+    };
   }
 
   export interface ConfirmAccountQuery {
-    type: 'CONFIRM_ACCOUNT'
-    payload: ConfirmAccountPayload
+    type: "CONFIRM_ACCOUNT";
+    payload: ConfirmAccountPayload;
   }
 
   export interface ConfirmAccountPayload {
@@ -316,42 +488,26 @@ export namespace Accounts {
   }
 
   export interface ConfirmAccountResult {
-    type: "CONFIRM_ACCOUNT"
+    type: "CONFIRM_ACCOUNT";
     payload: {
       token: string;
-      user_details: UserDetails
-    }
+      user_details: UserDetails;
+    };
   }
 
   export interface ErrorResponse {
-    type: "ERROR"
-    payload: ErrorPayload
+    type: "ERROR";
+    payload: ErrorPayload;
   }
 
   export interface ErrorPayload {
     error: string;
     code: string;
   }
-
 }
-
 
 // type defs for GraphQL resolvers
 export namespace Resolver {
-
-  export interface GetCitationByGUIDsArgs {
-    citationGUID: string;
-  }
-  
-  export interface GetSummariesByGUIDsArgs {
-    summary_guids: string[];
-  }
-
-  export interface GetManifestArgs {
-    entityType: EntityType;
-    GUID: string;
-  }
-
   export interface PublishNewCitationArgs {
     Annotation: {
       citation: string;
@@ -360,11 +516,7 @@ export namespace Resolver {
       summary_guid: string;
       summary: string;
       summary_tags: Tag[];
-    }
-  }
-
-  export interface GetGUIDsByNameArgs {
-    name: string;
+    };
   }
 
   export interface GetCoordinatesByNameArgs {
@@ -376,76 +528,13 @@ export namespace Resolver {
   }
   // Query results
 
-  export interface SummariesByGUID {
-    type: string;
-    payload: {
-      summaries: Summary[];
-    }
-  }
-
-  export interface Summary {
-    guid: string;
-    text: string;
-    tags: {
-      start_char: number;
-      stop_char: number;
-      tag_type: EntityType;
-      tag_guid: string;
-      name?: string;
-      names?: string[];
-      coords?: {
-        latitude: number;
-        longitude: number;
-        geoshape?: string;
-      }
-    }
-  }
-
-  export interface CitationByGUID {
-    type: string;
-    payload: {
-      citation: {
-        citation_guid: {
-          text: string;
-          meta: {
-            title: string;
-            author: string;
-            publisher: string;
-            pubDate?: string;
-            pageNum?: number;
-          }
-        }
-      }
-    }
-  }
-
-  export interface Manifest {
-    type: string;
-    payload: {
-      guid: string;
-      citation_guids: string[];
-      timeline: {
-        year: number;
-        count: number;
-        base_guid: string;
-      }[]
-    }
-  }
-
-  export interface GUIDByName {
-    type: string;
-    payload: {
-      guids: string[]
-    }
-  }
-
   export interface CoordsByName {
     type: string;
     payload: {
       coords: {
         [key: string]: Location;
-      }
-    }
+      };
+    };
   }
 
   export interface TextProcessed {
@@ -458,25 +547,9 @@ export namespace Resolver {
           start_char: number;
           stop_char: number;
           guids: string[];
-          coords?: Location[]
-        }
-      }
-    }
+          coords?: Location[];
+        };
+      };
+    };
   }
-
-  export interface GetFuzzySearchByNamePayload {
-    name: string
-  }
-
-  export interface FuzzySearchResponse {
-    type: "GET_FUZZY_SEARCH_BY_NAME";
-    payload: {
-      name: string; // original search term
-      results: {
-        name: string;
-        guids: string[]
-      }[]
-    }
-  }
-
 }

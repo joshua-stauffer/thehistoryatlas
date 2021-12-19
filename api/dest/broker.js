@@ -31,7 +31,7 @@ class Broker {
     constructor(config) {
         this.onConnectionClosed = () => {
             // handle the connection being closed unexpected, and try to reconnect.
-            console.log('connection was closed');
+            console.log("connection was closed");
             this.reconnect();
         };
         this.onConnectionError = (err) => {
@@ -43,71 +43,80 @@ class Broker {
         };
         this.onConnectionReturn = (msg) => {
             // this gets called if a message is published as mandatory and the recipient
-            // can't be found. 
+            // can't be found.
             console.warn(`message was returned: ${msg}`);
         };
         this.onConnectionDrain = () => {
             // if a connection has returned false from .publish or .sendToQueue, it will emit
             // 'drain' after it's ready for writes again.
-            console.log('drained');
+            console.log("drained");
         };
         this.openChannel = (conn) => {
             // open a new channel
-            console.log('Opening a new primary channel.');
-            conn.createChannel()
-                .then(channel => {
+            console.log("Opening a new primary channel.");
+            conn
+                .createChannel()
+                .then((channel) => {
                 // save channel for later
                 this.channel = channel;
                 // set event listeners
-                channel.on('close', this.onConnectionClosed);
-                channel.on('error', (err) => this.onConnectionError(err));
-                channel.on('return', this.onConnectionReturn);
-                channel.on('drain', this.onConnectionDrain);
+                channel.on("close", this.onConnectionClosed);
+                channel.on("error", (err) => this.onConnectionError(err));
+                channel.on("return", this.onConnectionReturn);
+                channel.on("drain", this.onConnectionDrain);
                 this.declareExchanges(channel);
-            }).catch((err) => {
-                console.log('Error while opening channel: ', err);
+            })
+                .catch((err) => {
+                console.log("Error while opening channel: ", err);
             });
         };
         this.declareExchanges = (channel) => {
             // Ensure that the exchange exists. if it does and we supply different arguments,
             // the channel will be closed.
             for (let exchConf of this.exchanges) {
-                channel.assertExchange(exchConf.name, exchConf.type, { durable: true })
+                channel
+                    .assertExchange(exchConf.name, exchConf.type, { durable: true })
                     .then(() => {
                     this.createQueue(channel, exchConf);
-                }).catch((err) => {
+                })
+                    .catch((err) => {
                     console.log(`Caught error ${err} while declaring exchange ${exchConf.name}.`);
                 });
             }
         };
         this.createQueue = (channel, exchConf) => {
             // create a queue
-            channel.assertQueue(exchConf.queueName, exchConf.queueOptions)
+            channel
+                .assertQueue(exchConf.queueName, exchConf.queueOptions)
                 .then((ok) => {
                 exchConf.queueName = ok.queue;
                 this.bindQueue(channel, exchConf);
-            }).catch((err) => {
+            })
+                .catch((err) => {
                 console.log(`Got error ${err} while creating queue ${exchConf.queueName}`);
             });
         };
         this.bindQueue = (channel, exchConf) => {
             // bind a queue to an exchange
             const { queueName, name, pattern } = exchConf;
-            channel.bindQueue(queueName, name, pattern)
+            channel
+                .bindQueue(queueName, name, pattern)
                 .then(() => {
                 this.startListening(channel, exchConf);
-            }).catch((err) => {
+            })
+                .catch((err) => {
                 console.log(`Got error ${err} while binding queue ${queueName} to ${name}`);
             });
         };
         this.startListening = (channel, exchConf) => {
             // start consuming on an exchange
             const { queueName, callBack, consumeOptions } = exchConf;
-            channel.consume(queueName, // setting this manually for now
+            channel
+                .consume(queueName, // setting this manually for now
             callBack, consumeOptions)
                 .then((ok) => {
                 exchConf.consumerTag = ok.consumerTag;
-                console.log('Ready to receive messages at queue ', queueName);
+                console.log("Ready to receive messages at queue ", queueName);
             });
         };
         this.connect = this.connect.bind(this);
@@ -122,27 +131,28 @@ class Broker {
         this.queryMap = new Map();
         const { BROKER_PASS, BROKER_USERNAME, NETWORK_HOST_NAME } = config;
         this.config = {
-            protocol: 'amqp',
+            protocol: "amqp",
             hostname: NETWORK_HOST_NAME,
             port: 5672,
             username: BROKER_USERNAME,
             password: BROKER_PASS,
-            vhost: '/',
-            timeout: 5000
+            vhost: "/",
+            timeout: 5000,
         };
-        this.exchanges = [{
+        this.exchanges = [
+            {
                 // This exchange can be used for any non-essential query
                 // RPC operations. Anything requiring delivery confirmation
                 // (like Commands) should probably a more reliable exchange.
                 // EDIT 4.21.21: I'm moving towards using a topic exchange
                 // across the board. The api will always wait for a callback,
                 // (and will eventually cancel with a timeout on long requests),
-                // and so doesn't need acks. Other services will use the same 
+                // and so doesn't need acks. Other services will use the same
                 // topic exchange but with acknowledgements if not an RPC pattern.
-                name: 'main',
-                type: 'topic',
-                queueName: 'api',
-                pattern: 'query.api',
+                name: "main",
+                type: "topic",
+                queueName: "api",
+                pattern: "query.api",
                 callBack: this.handleRPCCallback.bind(this),
                 consumeOptions: {
                     noAck: true,
@@ -153,22 +163,22 @@ class Broker {
                 },
                 exchangeOptions: {
                     // should the exchange survive a broker restart?
-                    durable: true
-                }
+                    durable: true,
+                },
             },
             // we can add additional exchanges here, if need be
         ];
     }
     publishRPC(msg, recipient, exchangeName) {
-        console.log('entering publish RPC');
+        console.log("entering publish RPC");
         if (!this.channel)
-            throw new Error('Channel doesn\'t exist');
-        const exchange = this.exchanges.find(ex => ex.name === exchangeName);
+            throw new Error("Channel doesn't exist");
+        const exchange = this.exchanges.find((ex) => ex.name === exchangeName);
         const queryID = (0, uuid_1.v4)();
-        console.log('Broker is sending message with payload of ', msg.payload);
+        console.log("Broker is sending message with payload of ", msg.payload);
         if (!this.channel.publish(exchange.name, recipient, Buffer.from(JSON.stringify(msg)), {
-            replyTo: 'query.api',
-            correlationId: queryID
+            replyTo: "query.api",
+            correlationId: queryID,
         }))
             throw new Error('Stream is full. Try again after receiving "drain" event.');
         return new Promise((resolve, reject) => {
@@ -176,39 +186,40 @@ class Broker {
             // from the queryMap.
             // TODO: emit message to affected service to cancel the task.
             this.queryMap.set(queryID, {
-                resolve: resolve, reject: reject
+                resolve: resolve,
+                reject: reject,
             });
             // call reject in TIMEOUT milliseconds.
             setTimeout(() => {
                 // calling reject is idempotent if it has already resolved
-                reject('Response timed out.');
+                reject("Response timed out.");
                 this.queryMap.delete(queryID);
             }, this.config.timeout);
         });
     }
     async queryReadModel(msg) {
         // accepts a json message and publishes it.
-        return this.publishRPC(msg, 'query.readmodel', 'main');
+        return this.publishRPC(msg, "query.readmodel", "main");
     }
     async emitCommand(msg) {
         // accepts a json message and publishes it.
-        return this.publishRPC(msg, 'command.writemodel', 'main');
+        return this.publishRPC(msg, "command.writemodel", "main");
     }
     async queryNLP(msg) {
-        return this.publishRPC(msg, 'query.nlp', 'main');
+        return this.publishRPC(msg, "query.nlp", "main");
     }
     async queryGeo(msg) {
-        console.log('Querying geo');
-        return this.publishRPC(msg, 'query.geo', 'main');
+        console.log("Querying geo");
+        return this.publishRPC(msg, "query.geo", "main");
     }
     async queryAccounts(msg) {
-        console.log('querying the accounts service');
-        return this.publishRPC(msg, 'query.accounts', 'main');
+        console.log("querying the accounts service");
+        return this.publishRPC(msg, "query.accounts", "main");
     }
     async handleRPCCallback(msg) {
         // This callback is passed to the Amqp.consume method, and will be invoked
         // whenever our application wants to query the ReadModel.
-        console.info('received RPC callback');
+        console.info("received RPC callback");
         if (!msg)
             return;
         const { content, properties } = msg;
@@ -228,14 +239,15 @@ class Broker {
     // standard amqp methods for creating and maintaining the connection
     async connect() {
         // establish connection to rabbitmq
-        console.log('Opening new connection to RabbitMQ.');
+        console.log("Opening new connection to RabbitMQ.");
         Amqp.connect(this.config)
             .then(async (conn) => {
             // save connection for later
             // this.conn = conn;
             this.openChannel(conn);
-        }).catch((err) => {
-            console.log('error in connection: ', err);
+        })
+            .catch((err) => {
+            console.log("error in connection: ", err);
             this.reconnect();
         });
     }
@@ -251,7 +263,7 @@ class Broker {
     async reconnect() {
         // called on connection failure
         // waits for restart timeout and then calls connect.
-        console.log('preparing to reconnect in 0.5 seconds');
+        console.log("preparing to reconnect in 0.5 seconds");
         setTimeout(this.connect, 500);
     }
 }
