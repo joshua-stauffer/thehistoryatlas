@@ -1,5 +1,5 @@
 module.exports = {
-    client: {
-      service: "api"
-    }
-  };
+  client: {
+    service: "api",
+  },
+};
