@@ -3,14 +3,16 @@ import { Stepper, Step, StepLabel } from '@material-ui/core'
 
 import { Source, AddSource } from './addSource'
 import { Quote, AddQuote } from './addQuote'
+import { Tag, TagEntities } from './tagEntities'
 
 
-type Step = 0 | 1 | 2 | 3;
+type CurrentStep = 0 | 1 | 2 | 3;
 
 export const AddCitationPage = () => {
   const [ source, setSource ] = useState<Source>()
   const [ quote, setQuote ] = useState<Quote>()
-  const [ step, setStep ] = useState<Step>(0)
+  const [ tags, setTags ] = useState<Tag[]>()
+  const [ step, setStep ] = useState<CurrentStep>(0)
   const addSource = (source: Source) => {
     setSource(source)
     setStep(1)
@@ -18,6 +20,10 @@ export const AddCitationPage = () => {
   const addQuote = (quote: Quote) => {
     setQuote(quote)
     setStep(2)
+  }
+  const tagEntities = (tags: Tag[]) => {
+    setTags(tags)
+    setStep(3)
   }
 
   const steps = ["Add Source", "Add Quote", "Tag Entities", "Add Summary"]
@@ -31,7 +37,8 @@ export const AddCitationPage = () => {
       child = <AddQuote addQuote={addQuote} />
       break
     case 2:
-      child = <h1>tag entities coming soon</h1>
+      const text = quote ? quote.text : ''
+      child = <TagEntities tagEntities={tagEntities} text={text}/>
       break
     case 3:
       child = <h1>add summary coming soon</h1>
