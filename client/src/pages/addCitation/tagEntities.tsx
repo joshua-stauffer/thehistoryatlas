@@ -11,7 +11,8 @@ import { TagPerson } from './tagPerson';
 export interface Tag {
   start_char: number
   stop_char: number
-  name: string
+  text: string // represents the value as it is in the citation
+  name?: string // represents the user provided label
   type: "NONE" | "PERSON" | "PLACE" | "TIME"
   guid?: string
   latitude?: number
@@ -33,23 +34,30 @@ export const TagEntities = (props: TagEntitiesProps) => {
     GET_TEXT_ANALYSIS,
     { variables: { text: text } }
   )
-  console.log(data)
+
+  const tagsAreComplete: boolean = 
+    !!tags.filter(tag => tag.type === "PERSON").length
+    && !!tags.filter(tag => tag.type === "PLACE").length
+    && !!tags.filter(tag => tag.type === "TIME").length
 
   const clearTag = (tag: Tag): void => {
+    console.log('clearing tag ', tagsAreComplete)
     setTags((tags) => {
-      const index = tags.indexOf(tag)
+      const index = tags.map(t => t.start_char).indexOf(tag.start_char)
+      console.log('index is ', index)
       if (index < 0) return tags
       tags[index].type = "NONE"
-      return tags
+      return [...tags] // force react to rerender
     })
   }
   const saveTag = (tag: Tag): void => {
+    console.log('save tag is ', tag)
     setTags((tags) => {
-      const index = tags.indexOf(tag)
+      const index = tags.map(t => t.start_char).indexOf(tag.start_char)
       if (index < 0) return tags
-      tags[index] = tag
-      return tags
+      return [...tags.slice(0, index), tag, ...tags.slice(index+1)]
     })
+    setCurrentEntity(null)
   }
   const canSaveTag = (tag: Tag): boolean => {
     if (tag.type === "TIME") {
@@ -61,7 +69,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
       return false
     }
     else if (tag.type === "PLACE") {
-      if (tag.latitude && tag.longitude) return true
+      if (tag.guid && tag.latitude && tag.longitude) return true
       return false
     }
     else { // tag is "NONE"
@@ -77,7 +85,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
       return {
         start_char: boundary.start_char,
         stop_char: boundary.stop_char,
-        name: boundary.text,
+        text: boundary.text,
         type: "NONE"
       }
     }))
@@ -85,46 +93,37 @@ export const TagEntities = (props: TagEntitiesProps) => {
   if (loading) return <h1>loading..</h1> // replace with real loading screen app wide
   if (error) return <h1>Oops, there was an error: {error}</h1>
   console.log('current entity ', currentEntity)
+  console.log('tags ', tags)
   return (
     <Box>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <Paper>
             <Typography align="center">Tag Citation</Typography>
-            {tags.map((tag) => {
-                switch (tag.type) {
-                  case "NONE":
-                    return (             
-                      <Chip 
-                        label={tag.name}
-                        clickable
-                        onClick={() => setCurrentEntity(tag)}
-                        variant='outlined'
-                      />
-                    )
-                  case "PERSON":
-                    return (             
-                      <Chip 
-                        label={tag.name}
-                        onDelete={() => clearTag(tag)}
-                      />
-                    )
-                  case "PLACE":
-                    return (             
-                      <Chip 
-                        label={tag.name}
-                        onDelete={() => clearTag(tag)}
-                      />
-                    )
-                  case "TIME":
-                    return (             
-                      <Chip 
-                        label={tag.name}
-                        onDelete={() => clearTag(tag)}
-                      />
-                    )
-                }
-              })
+            {
+              tags.map(tag =>
+                tag.type === "PERSON" 
+                ? <Chip 
+                    label={tag.text}
+                    onDelete={() => clearTag(tag)}
+                  />
+                : tag.type === "PLACE"
+                ? <Chip 
+                    label={tag.text}
+                    onDelete={() => clearTag(tag)}
+                  />
+                : tag.type === "TIME"
+                ? <Chip 
+                    label={tag.text}
+                    onDelete={() => clearTag(tag)}
+                  />
+                : <Chip 
+                    label={tag.text}
+                    clickable
+                    onClick={() => setCurrentEntity(tag)}
+                    variant='outlined'
+                  />
+              )
             }
           </Paper>
         </Grid>
@@ -133,7 +132,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
           <Paper>
             { currentEntity ? 
             <>
-            <Typography align="center">Create Tag "{currentEntity.name}"</Typography>
+            <Typography align="center">Create Tag "{currentEntity.text}"</Typography>
             <FormControl component="fieldset">
               <FormLabel component="legend">Entity Type</FormLabel>
               <RadioGroup 
@@ -155,7 +154,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
             </FormControl>
             { // render sub component based on current radio value, as saved in currentEntity.type
               currentEntity.type === "PERSON"
-              ? <TagPerson setCurrentEntity={setCurrentEntity}/>
+              ? <TagPerson currentEntity={currentEntity} setCurrentEntity={setCurrentEntity}/>
               : currentEntity.type === "PLACE"
               ? <TagPlace setCurrentEntity={setCurrentEntity}/>
               : currentEntity.type === "TIME"
@@ -174,7 +173,11 @@ export const TagEntities = (props: TagEntitiesProps) => {
           </Paper>
         </Grid>
         <Grid item xs={12}>
-          <Button>Save Tags & Continue</Button>
+          <Button
+            variant="contained"
+            onClick={() => tagEntities(tags.filter(tag => tag.type !== "NONE"))}
+            disabled={!tagsAreComplete}
+          >Save Tags & Continue</Button>
         </Grid>
       </Grid>
     </Box>
