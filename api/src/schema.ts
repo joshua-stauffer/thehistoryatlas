@@ -131,6 +131,7 @@ export const typeDefs = gql`
   type TextAnalysisResponse {
     text: String
     text_map: TextMap
+    boundaries: [TextBoundaries]
   }
 
   type TextAnalysis {
@@ -145,6 +146,12 @@ export const typeDefs = gql`
     PERSON: [TextAnalysis]
     PLACE: [TextAnalysis]
     TIME: [TextAnalysis]
+  }
+
+  type TextBoundaries {
+    text: String
+    start_char: Int
+    stop_char: Int
   }
 
   type FuzzySearchResponse {
