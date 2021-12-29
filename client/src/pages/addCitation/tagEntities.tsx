@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_TEXT_ANALYSIS, TextAnalysisResult, TextAnalysisVars } from '../../graphql/getTextAnalysis'
-import { Box, Button, Chip, Grid, Paper, TextField, Typography,
+import {
+  Box, Button, Chip, Grid, Paper, Typography,
   Radio, RadioGroup, FormLabel, FormControl, FormControlLabel
 } from "@material-ui/core";
 import { TagTime } from './tagTime';
@@ -35,7 +36,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
     { variables: { text: text } }
   )
 
-  const tagsAreComplete: boolean = 
+  const tagsAreComplete: boolean =
     !!tags.filter(tag => tag.type === "PERSON").length
     && !!tags.filter(tag => tag.type === "PLACE").length
     && !!tags.filter(tag => tag.type === "TIME").length
@@ -55,7 +56,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
     setTags((tags) => {
       const index = tags.map(t => t.start_char).indexOf(tag.start_char)
       if (index < 0) return tags
-      return [...tags.slice(0, index), tag, ...tags.slice(index+1)]
+      return [...tags.slice(0, index), tag, ...tags.slice(index + 1)]
     })
     setCurrentEntity(null)
   }
@@ -102,27 +103,27 @@ export const TagEntities = (props: TagEntitiesProps) => {
             <Typography align="center">Tag Citation</Typography>
             {
               tags.map(tag =>
-                tag.type === "PERSON" 
-                ? <Chip 
+                tag.type === "PERSON"
+                  ? <Chip
                     label={tag.text}
                     onDelete={() => clearTag(tag)}
                   />
-                : tag.type === "PLACE"
-                ? <Chip 
-                    label={tag.text}
-                    onDelete={() => clearTag(tag)}
-                  />
-                : tag.type === "TIME"
-                ? <Chip 
-                    label={tag.text}
-                    onDelete={() => clearTag(tag)}
-                  />
-                : <Chip 
-                    label={tag.text}
-                    clickable
-                    onClick={() => setCurrentEntity(tag)}
-                    variant='outlined'
-                  />
+                  : tag.type === "PLACE"
+                    ? <Chip
+                      label={tag.text}
+                      onDelete={() => clearTag(tag)}
+                    />
+                    : tag.type === "TIME"
+                      ? <Chip
+                        label={tag.text}
+                        onDelete={() => clearTag(tag)}
+                      />
+                      : <Chip
+                        label={tag.text}
+                        clickable
+                        onClick={() => setCurrentEntity(tag)}
+                        variant='outlined'
+                      />
               )
             }
           </Paper>
@@ -130,45 +131,45 @@ export const TagEntities = (props: TagEntitiesProps) => {
 
         <Grid item xs={12} sm={6}>
           <Paper>
-            { currentEntity ? 
-            <>
-            <Typography align="center">Create Tag "{currentEntity.text}"</Typography>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Entity Type</FormLabel>
-              <RadioGroup 
-                row aria-label="entity-type" 
-                name="row-radio-buttons-group"
-                onChange={(event) => setCurrentEntity(entity => {
-                  // save the currentEntity type as the value of the radio button
-                  if (!entity) return entity
-                  return {
-                    ...entity,
-                    type: event.target.value
-                  } as Tag
-                })}
-              >
-                <FormControlLabel value="PERSON" control={<Radio />} label="Person" />
-                <FormControlLabel value="PLACE" control={<Radio />} label="Place" />
-                <FormControlLabel value="TIME" control={<Radio />} label="Time" />
-              </RadioGroup>
-            </FormControl>
-            { // render sub component based on current radio value, as saved in currentEntity.type
-              currentEntity.type === "PERSON"
-              ? <TagPerson currentEntity={currentEntity} setCurrentEntity={setCurrentEntity}/>
-              : currentEntity.type === "PLACE"
-              ? <TagPlace setCurrentEntity={setCurrentEntity}/>
-              : currentEntity.type === "TIME"
-              ? <TagTime setCurrentEntity={setCurrentEntity}/>
-              : <br/>
-            }
-            <br/>
-            <Button 
-              onClick={() => saveTag(currentEntity)}
-              disabled={!canSaveTag(currentEntity)}
-            >Save</Button>
-            <Button onClick={() => setCurrentEntity(null)}>Cancel</Button>
-            </>
-            : <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
+            {currentEntity ?
+              <>
+                <Typography align="center">Create Tag "{currentEntity.text}"</Typography>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend">Entity Type</FormLabel>
+                  <RadioGroup
+                    row aria-label="entity-type"
+                    name="row-radio-buttons-group"
+                    onChange={(event) => setCurrentEntity(entity => {
+                      // save the currentEntity type as the value of the radio button
+                      if (!entity) return entity
+                      return {
+                        ...entity,
+                        type: event.target.value
+                      } as Tag
+                    })}
+                  >
+                    <FormControlLabel value="PERSON" control={<Radio />} label="Person" />
+                    <FormControlLabel value="PLACE" control={<Radio />} label="Place" />
+                    <FormControlLabel value="TIME" control={<Radio />} label="Time" />
+                  </RadioGroup>
+                </FormControl>
+                { // render sub component based on current radio value, as saved in currentEntity.type
+                  currentEntity.type === "PERSON"
+                    ? <TagPerson currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
+                    : currentEntity.type === "PLACE"
+                      ? <TagPlace setCurrentEntity={setCurrentEntity} />
+                      : currentEntity.type === "TIME"
+                        ? <TagTime setCurrentEntity={setCurrentEntity} />
+                        : <br />
+                }
+                <br />
+                <Button
+                  onClick={() => saveTag(currentEntity)}
+                  disabled={!canSaveTag(currentEntity)}
+                >Save</Button>
+                <Button onClick={() => setCurrentEntity(null)}>Cancel</Button>
+              </>
+              : <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
             }
           </Paper>
         </Grid>

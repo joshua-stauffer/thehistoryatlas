@@ -15,7 +15,7 @@ export const AddQuote = (props: AddQuoteProps) => {
   const { addQuote } = props;
   const validateInput = () => text.length > 0;
   return (
-    <Box 
+    <Box
       component="form"
       sx={{ padding: 50, maxWidth: 500 }}
     >
@@ -28,7 +28,7 @@ export const AddQuote = (props: AddQuoteProps) => {
         </Grid>
 
         <Grid item xs={12}>
-          <TextField 
+          <TextField
             multiline
             minRows={5}
             variant="filled"
@@ -47,6 +47,6 @@ export const AddQuote = (props: AddQuoteProps) => {
           Save & Continue
         </Button>
       </Grid>
-      </Box>
+    </Box>
   )
 }

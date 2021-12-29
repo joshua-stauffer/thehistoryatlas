@@ -17,14 +17,14 @@ interface AddSourceProps {
 
 export const AddSource = (props: AddSourceProps) => {
   const { addSource } = props;
-  const [ title, setTitle ] = useState<string>('')
-  const [ author, setAuthor ] = useState<string>('')
-  const [ publisher, setPublisher ] = useState<string>('')
-  const [ pageNum, setPageNum ] = useState<string>('')
-  const [ pubYear, setPubYear ] = useState('')
-  const [ pubMonth, setPubMonth ] = useState('')
-  const [ pubDay, setPubDay ] = useState('')
-  const [ GUID ] = useState(v4())
+  const [title, setTitle] = useState<string>('')
+  const [author, setAuthor] = useState<string>('')
+  const [publisher, setPublisher] = useState<string>('')
+  const [pageNum, setPageNum] = useState<string>('')
+  const [pubYear, setPubYear] = useState('')
+  const [pubMonth, setPubMonth] = useState('')
+  const [pubDay, setPubDay] = useState('')
+  const [GUID] = useState(v4())
 
   const validateInput = (): boolean => !!title && !!author && !!publisher;
   const saveSource = () => {
@@ -33,17 +33,17 @@ export const AddSource = (props: AddSourceProps) => {
       title: title,
       author: author,
       publisher: publisher,
-      pubDate: pubYear && pubMonth && pubDay 
+      pubDate: pubYear && pubMonth && pubDay
         ? `${pubYear}-${pubMonth}-${pubDay}`
         : undefined
     })
   }
-  const days = Array.from({length: 31}, (_, i) => i + 1)
-  const months = Array.from({length: 12}, (_, i) => i + 1)
-  const years = Array.from({length: 2021}, (_, i) => i + 1)
+  const days = Array.from({ length: 31 }, (_, i) => i + 1)
+  const months = Array.from({ length: 12 }, (_, i) => i + 1)
+  const years = Array.from({ length: 2021 }, (_, i) => i + 1)
 
   return (
-    <Box 
+    <Box
       component="form"
       sx={{ padding: 50, maxWidth: 500 }}
     >
@@ -56,7 +56,7 @@ export const AddSource = (props: AddSourceProps) => {
         </Grid>
 
         <Grid item xs={12}>
-          <TextField 
+          <TextField
             id="title"
             label="Title"
             value={title}
@@ -65,7 +65,7 @@ export const AddSource = (props: AddSourceProps) => {
         </Grid>
 
         <Grid item xs={12}>
-          <TextField 
+          <TextField
             id="author"
             label="Author"
             value={author}
@@ -74,7 +74,7 @@ export const AddSource = (props: AddSourceProps) => {
         </Grid>
 
         <Grid item xs={12}>
-          <TextField 
+          <TextField
             id="publisher"
             label="Publisher"
             value={publisher}
@@ -83,7 +83,7 @@ export const AddSource = (props: AddSourceProps) => {
         </Grid>
 
         <Grid item xs={12}>
-          <TextField 
+          <TextField
             id="pageNum"
             label="Page Number"
             value={pageNum}
@@ -91,74 +91,74 @@ export const AddSource = (props: AddSourceProps) => {
           />
         </Grid>
 
-      <Grid item xs={4}>
-        <TextField 
-          id="pubYear"
-          label="Year Published"
-          value={pubYear}
-          onChange={e => setPubYear(e.target.value)}
-          select
-          SelectProps={{
-            native: true,
-          }}
-        >
-          { years.reverse().map((year) => 
+        <Grid item xs={4}>
+          <TextField
+            id="pubYear"
+            label="Year Published"
+            value={pubYear}
+            onChange={e => setPubYear(e.target.value)}
+            select
+            SelectProps={{
+              native: true,
+            }}
+          >
+            {years.reverse().map((year) =>
               <option key={year} value={year}>
                 {year}
-            </option>
+              </option>
             )
-          }
-        </TextField>
-      </Grid>
+            }
+          </TextField>
+        </Grid>
 
-      <Grid item xs={4}>
-        <TextField 
-          id="pubMonth"
-          label="Month Published"
-          value={pubMonth}
-          onChange={e => setPubMonth(e.target.value)}
-          select
-          SelectProps={{
-            native: true,
-          }}
-        >
-          { months.map((month) => 
+        <Grid item xs={4}>
+          <TextField
+            id="pubMonth"
+            label="Month Published"
+            value={pubMonth}
+            onChange={e => setPubMonth(e.target.value)}
+            select
+            SelectProps={{
+              native: true,
+            }}
+          >
+            {months.map((month) =>
               <option key={month} value={month}>
                 {month}
-            </option>
+              </option>
             )
-          }
-        </TextField>
-      </Grid>
+            }
+          </TextField>
+        </Grid>
 
-      <Grid item xs={4}>
-        <TextField 
-          id="pubDay"
-          label="Day Published"
-          value={pubDay}
-          onChange={e => setPubDay(e.target.value)}
-          select
-          SelectProps={{
-            native: true,
-          }}
-        >
-          { days.map((day) => 
+        <Grid item xs={4}>
+          <TextField
+            id="pubDay"
+            label="Day Published"
+            value={pubDay}
+            onChange={e => setPubDay(e.target.value)}
+            select
+            SelectProps={{
+              native: true,
+            }}
+          >
+            {days.map((day) =>
               <option key={day} value={day}>
                 {day}
-            </option>
+              </option>
             )
-          }
-        </TextField>
+            }
+          </TextField>
         </Grid>
 
         <Grid item xs={12}>
-        <Button
-          disabled={!validateInput()}
-          variant="contained"
-          onClick={saveSource}
-        >
-          Save & Continue
-        </Button>
+          <Button
+            disabled={!validateInput()}
+            variant="contained"
+            onClick={saveSource}
+          >
+            Save & Continue
+          </Button>
         </Grid>
 
       </Grid>

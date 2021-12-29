@@ -9,10 +9,10 @@ import { Tag, TagEntities } from './tagEntities'
 type CurrentStep = 0 | 1 | 2 | 3;
 
 export const AddCitationPage = () => {
-  const [ source, setSource ] = useState<Source>()
-  const [ quote, setQuote ] = useState<Quote>()
-  const [ tags, setTags ] = useState<Tag[]>()
-  const [ step, setStep ] = useState<CurrentStep>(0)
+  const [source, setSource] = useState<Source>()
+  const [quote, setQuote] = useState<Quote>()
+  const [tags, setTags] = useState<Tag[]>()
+  const [step, setStep] = useState<CurrentStep>(0)
   const addSource = (source: Source) => {
     setSource(source)
     setStep(1)
@@ -31,14 +31,14 @@ export const AddCitationPage = () => {
   switch (step) {
 
     case 0:
-      child = <AddSource addSource={addSource}/>
+      child = <AddSource addSource={addSource} />
       break
     case 1:
       child = <AddQuote addQuote={addQuote} />
       break
     case 2:
       const text = quote ? quote.text : ''
-      child = <TagEntities tagEntities={tagEntities} text={text}/>
+      child = <TagEntities tagEntities={tagEntities} text={text} />
       break
     case 3:
       child = <h1>add summary coming soon</h1>
