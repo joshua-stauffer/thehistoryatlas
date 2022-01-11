@@ -1,6 +1,7 @@
 import L from 'leaflet';
 
 // more options at http://leaflet-extras.github.io/leaflet-providers/preview/index.html
+export type MapTyle = L.TileLayer;
 
 export const mapTiles = {
   basic: L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {

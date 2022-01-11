@@ -12,13 +12,11 @@ interface MapProps {
 
 
 export const MapView = (props: MapProps) => {
-  const {  markers, focusedGeoEntities } = props;
+  const { markers, focusedGeoEntities } = props;
 
   const markerRef = useRef<Marker[]>([])
   const mapRef = useRef<L.Map | undefined>()
   const markerLayerRef = useRef<L.LayerGroup | undefined>()
-
-
 
   // check for map's existence, and create it if need be
   useEffect(() => {
@@ -49,7 +47,7 @@ export const MapView = (props: MapProps) => {
       if (!markerLayerRef.current) throw new Error('Missing markerLayeRef!')
       const { coords, text, guid } = markerData;
       const el = new L.Marker(coords).addTo(markerLayerRef.current)
-      if (focusedGeoEntities.find(entity => entity.GUID === guid)){
+      if (focusedGeoEntities.find(entity => entity.GUID === guid)) {
         el.bindPopup(text).openPopup()
       } else {
         el.bindPopup(text)
@@ -59,6 +57,6 @@ export const MapView = (props: MapProps) => {
   }, [markers, focusedGeoEntities])
 
   return (
-    <MapContainer id={"map"}/>
+    <MapContainer id={"map"} />
   )
 }

@@ -6,7 +6,7 @@ import {
   Radio, RadioGroup, FormLabel, FormControl, FormControlLabel
 } from "@material-ui/core";
 import { TagTime } from './tagTime';
-import { TagPlace } from './tagPlace';
+import { TagPlaceWrapper } from './tagPlace';
 import { TagPerson } from './tagPerson';
 
 export interface Tag {
@@ -42,17 +42,14 @@ export const TagEntities = (props: TagEntitiesProps) => {
     && !!tags.filter(tag => tag.type === "TIME").length
 
   const clearTag = (tag: Tag): void => {
-    console.log('clearing tag ', tagsAreComplete)
     setTags((tags) => {
       const index = tags.map(t => t.start_char).indexOf(tag.start_char)
-      console.log('index is ', index)
       if (index < 0) return tags
       tags[index].type = "NONE"
       return [...tags] // force react to rerender
     })
   }
   const saveTag = (tag: Tag): void => {
-    console.log('save tag is ', tag)
     setTags((tags) => {
       const index = tags.map(t => t.start_char).indexOf(tag.start_char)
       if (index < 0) return tags
@@ -70,7 +67,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
       return false
     }
     else if (tag.type === "PLACE") {
-      if (tag.guid && tag.latitude && tag.longitude) return true
+      if (!!tag.guid && !!tag.latitude && !!tag.longitude) return true
       return false
     }
     else { // tag is "NONE"
@@ -93,8 +90,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
   }, [data, boundaries])
   if (loading) return <h1>loading..</h1> // replace with real loading screen app wide
   if (error) return <h1>Oops, there was an error: {error}</h1>
-  console.log('current entity ', currentEntity)
-  console.log('tags ', tags)
+  console.log( currentEntity ? canSaveTag(currentEntity) : null)
   return (
     <Box>
       <Grid container spacing={2}>
@@ -155,19 +151,26 @@ export const TagEntities = (props: TagEntitiesProps) => {
                 </FormControl>
                 { // render sub component based on current radio value, as saved in currentEntity.type
                   currentEntity.type === "PERSON"
-                    ? <TagPerson currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
+                    ? <TagPerson 
+                        currentEntity={currentEntity} 
+                        setCurrentEntity={setCurrentEntity}
+                      />
                     : currentEntity.type === "PLACE"
-                      ? <TagPlace setCurrentEntity={setCurrentEntity} />
+                      ? <TagPlaceWrapper currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
                       : currentEntity.type === "TIME"
                         ? <TagTime setCurrentEntity={setCurrentEntity} />
                         : <br />
                 }
                 <br />
-                <Button
-                  onClick={() => saveTag(currentEntity)}
-                  disabled={!canSaveTag(currentEntity)}
-                >Save</Button>
-                <Button onClick={() => setCurrentEntity(null)}>Cancel</Button>
+                
+                <Button onClick={() => setCurrentEntity(null)}>Reset</Button>
+                { canSaveTag(currentEntity) ?  // only show save button if complete
+                  <Button
+                    onClick={() => saveTag(currentEntity)}
+                    disabled={!canSaveTag(currentEntity)}
+                  >Save</Button>
+                  : null
+                }
               </>
               : <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
             }
