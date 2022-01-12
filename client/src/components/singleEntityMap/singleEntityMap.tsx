@@ -1,9 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import { v4 } from 'uuid';
-import { Box } from '@material-ui/core';
 
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { mapTiles } from "../map/mapTiles"
 
 type Size = "XS" | "SM" | "MD" | "LG" | "XL"
@@ -22,8 +18,6 @@ export interface SingleEntityMapProps {
 
 export const SingleEntityMap = (props: SingleEntityMapProps) => {
   const { latitude, longitude, title, zoom } = props;
-
-
   return (
       <MapContainer center={[latitude, longitude]} zoom={zoom} scrollWheelZoom={false} style={{ height: "400px"}}>
         <TileLayer
@@ -46,6 +40,7 @@ interface MapProps {
 }
 
 const MapInsides = (props: MapProps) => {
+  // if new data is provided, update the map
   const { latitude, longitude } = props;
   const map = useMap()
   map.flyTo([latitude, longitude])
