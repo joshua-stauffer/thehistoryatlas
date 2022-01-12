@@ -1,7 +1,5 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import { Box } from '@material-ui/core'
 import { useState } from 'react'
-import { v4 } from 'uuid';
 import styled from 'styled-components'
 
 interface SimpleMapProps {

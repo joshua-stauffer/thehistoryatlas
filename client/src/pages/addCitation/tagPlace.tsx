@@ -19,7 +19,7 @@ interface TagPlaceWrapperProps {
   setCurrentEntity: React.Dispatch<React.SetStateAction<Tag | null>>
 }
 
-export const TagPlaceWrapper = (props: TagPlaceWrapperProps) => {
+export const TagPlace = (props: TagPlaceWrapperProps) => {
   const { currentEntity, setCurrentEntity } = props;
   const [placeName, setPlaceName] = useState<string>(currentEntity?.text ?? '')
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false)
@@ -46,12 +46,12 @@ export const TagPlaceWrapper = (props: TagPlaceWrapperProps) => {
       </>
     )
   } else {
-    return <TagPlace currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} placeName={placeName} />
+    return <TagPlaceHelper currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} placeName={placeName} />
   }
 }
 
 
-export const TagPlace = (props: TagPlaceProps) => {
+export const TagPlaceHelper = (props: TagPlaceProps) => {
   const { currentEntity, setCurrentEntity, placeName } = props;
   const [newPlaceGUID] = useState<string>(v4())
   const [latitude, setLatitude] = useState<number>(0)

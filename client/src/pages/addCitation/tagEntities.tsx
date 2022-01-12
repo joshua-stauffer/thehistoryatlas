@@ -6,7 +6,7 @@ import {
   Radio, RadioGroup, FormLabel, FormControl, FormControlLabel
 } from "@material-ui/core";
 import { TagTime } from './tagTime';
-import { TagPlaceWrapper } from './tagPlace';
+import { TagPlace } from './tagPlace';
 import { TagPerson } from './tagPerson';
 
 export interface Tag {
@@ -156,7 +156,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
                         setCurrentEntity={setCurrentEntity}
                       />
                     : currentEntity.type === "PLACE"
-                      ? <TagPlaceWrapper currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
+                      ? <TagPlace currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
                       : currentEntity.type === "TIME"
                         ? <TagTime setCurrentEntity={setCurrentEntity} />
                         : <br />
