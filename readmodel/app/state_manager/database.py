@@ -208,7 +208,7 @@ class Database:
         """Search for possible completions to a given string from known entity names."""
         return self._trie.find(name, res_count=10)
 
-    def get_place_by_coords(self, latitude: float, longitude: float) -> str:
+    def get_place_by_coords(self, latitude: float, longitude: float) -> Union[str, None]:
         """Search for a place by latitude or longitude and receive a GUID in return"""
     
         with Session(self._engine, future=True) as session:
