@@ -114,13 +114,15 @@ class QueryHandler:
 
     def _handle_get_place_by_coords(self, query):
         """Resolve a place, if any, from a set of latitude and longitude"""
-        latitude = query["payload"]["latitude"]     
+        latitude = query["payload"]["latitude"]
         longitude = query["payload"]["longitude"]
-        return  {
+        return {
             "type": "PLACE_BY_COORDS",
             "payload": {
                 "latitude": latitude,
                 "longitude": longitude,
-                "guid": self._db.get_place_by_coords(latitude=latitude, longitude=longitude)
-            }
+                "guid": self._db.get_place_by_coords(
+                    latitude=latitude, longitude=longitude
+                ),
+            },
         }

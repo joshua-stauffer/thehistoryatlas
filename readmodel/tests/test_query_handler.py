@@ -330,26 +330,30 @@ def test_get_entity_summaries(handle_query, db_tuple):
         assert isinstance(entity["first_citation_date"], str)
         assert isinstance(entity["last_citation_date"], str)
 
+
 def test_get_place_by_coords_success(handle_query, db_tuple):
     db, db_dict = db_tuple
     # find a set of coordinates to query
     place_guid = db_dict["place_guids"][0]
     with Session(db._engine, future=True) as session:
         res = session.execute(
-            select(Place).where(Place.guid==place_guid)
+            select(Place).where(Place.guid == place_guid)
         ).scalar_one()
         latitude = res.latitude
         longitude = res.longitude
 
     res = handle_query(
-        {"type": "GET_PLACE_BY_COORDS", "payload": {
-            "latitude": latitude,
-            "longitude": longitude,
-        } }
+        {
+            "type": "GET_PLACE_BY_COORDS",
+            "payload": {
+                "latitude": latitude,
+                "longitude": longitude,
+            },
+        }
     )
     assert res["type"] == "PLACE_BY_COORDS"
     assert res["payload"]["guid"] == place_guid
-    assert res["payload"]["latitude"] == latitude    
+    assert res["payload"]["latitude"] == latitude
     assert res["payload"]["longitude"] == longitude
 
 
@@ -357,12 +361,15 @@ def test_get_place_by_coords_failure(handle_query, db_tuple):
     latitude = 1 + random.random()
     longitude = 1 - random.random()
     res = handle_query(
-        {"type": "GET_PLACE_BY_COORDS", "payload": {
-            "latitude": latitude,
-            "longitude": longitude,
-        } }
+        {
+            "type": "GET_PLACE_BY_COORDS",
+            "payload": {
+                "latitude": latitude,
+                "longitude": longitude,
+            },
+        }
     )
     assert res["type"] == "PLACE_BY_COORDS"
     assert res["payload"]["guid"] == None
-    assert res["payload"]["latitude"] == latitude    
+    assert res["payload"]["latitude"] == latitude
     assert res["payload"]["longitude"] == longitude
