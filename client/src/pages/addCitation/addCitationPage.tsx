@@ -76,6 +76,10 @@ export const AddCitationPage = () => {
     setSummary(summary)
     setStep(4)
   }
+  const handleStepClick = (index: number): void => {
+    if (index >= step) return;
+    setStep(index as CurrentStep)
+  }
 
   const steps = ["Add Source", "Add Quote", "Tag Entities", "Add Summary"]
   let child;
@@ -139,7 +143,7 @@ export const AddCitationPage = () => {
     <>
       <Stepper activeStep={step}>
         {steps.map((label, index) => (
-          <Step key={index}>
+          <Step key={index} onClick={() => handleStepClick(index)}>
             <StepLabel>{label}</StepLabel>
           </Step>
         ))}

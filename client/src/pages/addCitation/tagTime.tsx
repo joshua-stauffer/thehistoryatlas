@@ -8,21 +8,29 @@ import { v4 } from 'uuid';
 import { useEffect } from 'react';
 
 interface TagTimeProps {
-  setCurrentEntity: React.Dispatch<React.SetStateAction<Tag | null>>
+  text: string;
+  setCurrentEntity: React.Dispatch<React.SetStateAction<Tag | null>>;
 }
 
 const days = Array.from({ length: 31 }, (_, i) => i + 1)
 const months = Array.from({ length: 12 }, (_, i) => i + 1)
 const years = Array.from({ length: 2021 }, (_, i) => i + 1).reverse()
+const getDefaultYear = (text: string): string | null  => {
+  for (const year of years) {
+    if (text.includes(String(year))) {
+      return String(year)
+    }
+  }
+  return null
+}
 
 export const TagTime = (props: TagTimeProps) => {
-  const { setCurrentEntity } = props;
-  const [year, setYear] = useState<string | null>(null)
+  const { text, setCurrentEntity } = props;
+  const [year, setYear] = useState<string | null>(getDefaultYear(text))
   const [month, setMonth] = useState<string | null>(null)
   const [day, setDay] = useState<string | null>(null)
   const [specificity, setSpecificity] = useState<0 | 1 | 2>(0)
 
-  console.log('year is ', year)
   // check backend for a guid associated with this time tag
   const timeTagName =
     day ? `${year}|${month}|${day}`
@@ -33,6 +41,18 @@ export const TagTime = (props: TagTimeProps) => {
   } = useQuery<GUIDsByNameResult, GUIDsByNameVars>(GET_GUIDS_BY_NAME,
     { variables: { name: timeTagName } }
   )
+
+  useEffect(() => {
+    // on load, update entity to have year
+    setCurrentEntity(entity => {
+      if (!entity) return entity
+      if (!year) return entity
+      return {
+        ...entity,
+        name: year
+      }
+    })
+  }, [])
 
   useEffect(() => {
     if (loading || error || !data) return
@@ -58,8 +78,6 @@ export const TagTime = (props: TagTimeProps) => {
       })
     }
   }, [data, loading, error, year])
-
-
 
   const handleYear = (year: string): void => {
     setYear(year)

@@ -90,7 +90,6 @@ export const TagEntities = (props: TagEntitiesProps) => {
   }, [data, boundaries])
   if (loading) return <h1>loading..</h1> // replace with real loading screen app wide
   if (error) return <h1>Oops, there was an error: {error}</h1>
-  console.log( currentEntity ? canSaveTag(currentEntity) : null)
   return (
     <Box>
       <Grid container spacing={2}>
@@ -158,7 +157,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
                     : currentEntity.type === "PLACE"
                       ? <TagPlace currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
                       : currentEntity.type === "TIME"
-                        ? <TagTime setCurrentEntity={setCurrentEntity} />
+                        ? <TagTime text={currentEntity.text} setCurrentEntity={setCurrentEntity} />
                         : <br />
                 }
                 <br />
