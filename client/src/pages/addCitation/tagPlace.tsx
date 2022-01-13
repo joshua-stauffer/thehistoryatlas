@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useQuery } from '@apollo/client'
 import { Box, Button, Paper, TextField, Typography } from '@material-ui/core'
 import { GET_COORDINATES_BY_NAME, CoordinatesByNameResult, CoordinatesByNameVars } from '../../graphql/getCoordinatesByName'
+import { GET_PLACE_BY_COORDS, GetPlaceByCoordsResult, GetPlaceByCoordsVars } from '../../graphql/getPlaceByCoords'
 import { SingleEntityMap } from '../../components/singleEntityMap';
 import { v4 } from 'uuid';
 import { useEffect } from 'react';
@@ -76,17 +77,18 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
       setLongitude(Number.parseFloat(longitude))
     }
   }
+
+  // look up coordinates for the text provided by user
   const {
-    data,
-    loading,
-    error
+    data: coordinatesByNameData,
+    loading: coordinatesByNameLoading,
+    error: coordinatesByNameError
   } = useQuery<CoordinatesByNameResult, CoordinatesByNameVars>(
     GET_COORDINATES_BY_NAME, {
     variables: { name: currentEntity?.name ?? "" }
   })
 
-
-  const results = data?.GetCoordinatesByName ?? []
+  const results = coordinatesByNameData?.GetCoordinatesByName ?? []
 
   useEffect(() => {
     if (!!results.length && searchIndex < results.length) {
@@ -111,6 +113,31 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
       })
     }
   }, [searchIndex, latitude, longitude, results])
+
+  // given coordinates, look up if the current chosen place exists in the DB
+  const {
+    data: placeByCoordsData,
+    loading: placeByCoordsLoading,
+    error: placeByCoordsError
+  } = useQuery<GetPlaceByCoordsResult, GetPlaceByCoordsVars>(
+    GET_PLACE_BY_COORDS, {
+    variables: { 
+      latitude: currentEntity?.latitude ? currentEntity.latitude : latitude,
+      longitude: currentEntity?.longitude ? currentEntity.longitude : longitude,
+     }
+  })
+  // keep currentEntity GUID in sync
+  useEffect(() => {
+    if (!placeByCoordsData) return;
+    setCurrentEntity(entity => {
+      if (!entity) return entity;
+      const guid = placeByCoordsData.GetPlaceByCoords.guid ? placeByCoordsData.GetPlaceByCoords.guid : newPlaceGUID
+      return {
+        ...entity,
+        guid: guid
+      }
+    })
+  })
 
 
   const getSearchResult = () => {
@@ -187,7 +214,14 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
   return (
     <Box>
       <Paper>
-        {getSearchResult()}
+
+        {
+          placeByCoordsLoading || coordinatesByNameLoading 
+          ?
+          <Typography variant="h2">Loading...</Typography>
+          :
+          getSearchResult()
+        }
       </Paper>
     </Box>
   )
