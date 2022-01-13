@@ -2,7 +2,7 @@
 import { ApolloError } from "apollo-server-errors";
 
 import { Context } from "./index";
-import { Resolver, WriteModelResponse, Accounts, Readmodel } from "./types";
+import { Resolver, WriteModelResponse, Accounts, ReadModel } from "./types";
 
 const APP_VERSION = "0.1.0";
 
@@ -32,10 +32,10 @@ export const resolvers: Resolvers = {
 
     GetSummariesByGUID: async (
       _,
-      { summary_guids }: Readmodel.GetSummariesByGUIDsArgs,
+      { summary_guids }: ReadModel.GetSummariesByGUIDsArgs,
       { queryReadModel }: Context
     ) => {
-      const msg: Readmodel.GetSummariesByGUIDRequest = {
+      const msg: ReadModel.GetSummariesByGUIDRequest = {
         type: "GET_SUMMARIES_BY_GUID",
         payload: {
           summary_guids: summary_guids,
@@ -45,7 +45,7 @@ export const resolvers: Resolvers = {
         console.debug(`Publishing query`, msg);
         const { payload } = (await queryReadModel(
           msg
-        )) as Readmodel.SummariesByGUIDResponse;
+        )) as ReadModel.SummariesByGUIDResponse;
         console.debug("received result: ", payload);
         return payload.summaries;
       } catch (err) {
@@ -59,10 +59,10 @@ export const resolvers: Resolvers = {
 
     GetEntitySummariesByGUID: async (
       _,
-      { guids }: Readmodel.GetEntitySummariesByGUIDArgs,
+      { guids }: ReadModel.GetEntitySummariesByGUIDArgs,
       { queryReadModel }: Context
     ) => {
-      const msg: Readmodel.GetEntitySummariesByGUIDRequest = {
+      const msg: ReadModel.GetEntitySummariesByGUIDRequest = {
         type: "GET_ENTITY_SUMMARIES_BY_GUID",
         payload: {
           guids: guids,
@@ -72,7 +72,7 @@ export const resolvers: Resolvers = {
         console.debug(`Publishing query`, msg);
         const { payload } = (await queryReadModel(
           msg
-        )) as Readmodel.GetEntitySummariesByGUIDResponse;
+        )) as ReadModel.GetEntitySummariesByGUIDResponse;
         console.debug("received result: ", payload);
         return payload.results;
       } catch (err) {
@@ -86,10 +86,10 @@ export const resolvers: Resolvers = {
 
     GetCitationByGUID: async (
       _,
-      { citationGUID }: Readmodel.GetCitationByGUIDsArgs,
+      { citationGUID }: ReadModel.GetCitationByGUIDsArgs,
       { queryReadModel }: Context
     ) => {
-      const msg: Readmodel.GetCitationByGUIDRequest = {
+      const msg: ReadModel.GetCitationByGUIDRequest = {
         type: "GET_CITATION_BY_GUID",
         payload: {
           citation_guid: citationGUID,
@@ -99,7 +99,7 @@ export const resolvers: Resolvers = {
         console.debug(`Publishing query`, msg);
         const { payload } = (await queryReadModel(
           msg
-        )) as Readmodel.GetCitationByGUIDResponse;
+        )) as ReadModel.GetCitationByGUIDResponse;
         console.debug("received result: ", payload);
         return payload.citation;
       } catch (err) {
@@ -112,10 +112,10 @@ export const resolvers: Resolvers = {
     },
     GetManifest: async (
       _,
-      { entityType, GUID }: Readmodel.GetManifestArgs,
+      { entityType, GUID }: ReadModel.GetManifestArgs,
       { queryReadModel }: Context
     ) => {
-      const msg: Readmodel.GetManifestRequest = {
+      const msg: ReadModel.GetManifestRequest = {
         type: "GET_MANIFEST",
         payload: {
           type: entityType,
@@ -128,7 +128,7 @@ export const resolvers: Resolvers = {
 
         const { payload } = (await queryReadModel(
           msg
-        )) as Readmodel.GetManifestResponse;
+        )) as ReadModel.GetManifestResponse;
         console.debug("received result: ", payload);
         return payload;
       } catch (err) {
@@ -141,10 +141,10 @@ export const resolvers: Resolvers = {
     },
     GetGUIDsByName: async (
       _,
-      { name }: Readmodel.GetGUIDsByNameArgs,
+      { name }: ReadModel.GetGUIDsByNameArgs,
       { queryReadModel }: Context
     ) => {
-      const msg: Readmodel.GetGUIDsByNameRequest = {
+      const msg: ReadModel.GetGUIDsByNameRequest = {
         type: "GET_GUIDS_BY_NAME",
         payload: {
           name: name,
@@ -154,7 +154,7 @@ export const resolvers: Resolvers = {
         console.debug(`Publishing query ${msg}`);
         const { payload } = (await queryReadModel(
           msg
-        )) as Readmodel.GUIDByNameResponse;
+        )) as ReadModel.GUIDByNameResponse;
         console.debug("received result: ", payload);
         console.debug("payload.guids is ", payload.guids);
         return payload;
@@ -169,10 +169,10 @@ export const resolvers: Resolvers = {
 
     GetFuzzySearchByName: async (
       _,
-      { name }: Readmodel.GetFuzzySearchByNameArgs,
+      { name }: ReadModel.GetFuzzySearchByNameArgs,
       { queryReadModel }: Context
     ) => {
-      const msg: Readmodel.GetFuzzySearchByNameRequest = {
+      const msg: ReadModel.GetFuzzySearchByNameRequest = {
         type: "GET_FUZZY_SEARCH_BY_NAME",
         payload: {
           name: name,
@@ -182,9 +182,34 @@ export const resolvers: Resolvers = {
         console.debug(`Publishing query ${msg}`);
         const { payload } = (await queryReadModel(
           msg
-        )) as Readmodel.FuzzySearchResponse;
+        )) as ReadModel.FuzzySearchResponse;
         console.debug("received result: ", payload);
         return payload.results;
+      } catch (err) {
+        return {
+          code: "Error",
+          success: false,
+          message: err,
+        };
+      }
+    },
+
+    GetPlaceByCoords: async (
+      _,
+      { latitude, longitude }: ReadModel.GetPlaceByCoordsArgs,
+      { queryReadModel }: Context
+    ) => {
+      const msg: ReadModel.GetPlaceByCoordsRequest = {
+        type: "GET_PLACE_BY_COORDS",
+        payload: { latitude, longitude },
+      };
+      try {
+        console.debug(`Publishing query ${msg}`);
+        const { payload } = (await queryReadModel(
+          msg
+        )) as ReadModel.PlaceByCoordsResponse;
+        console.debug("received result: ", payload);
+        return payload;
       } catch (err) {
         return {
           code: "Error",

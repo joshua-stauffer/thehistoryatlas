@@ -25,7 +25,7 @@ export interface Person {
 // starting over April 19th 2021
 // anything above here is not necessarily used
 
-export namespace Readmodel {
+export namespace ReadModel {
   // TODO: slowly moving towards all types being in namespaces
 
   export type Query =
@@ -34,7 +34,8 @@ export namespace Readmodel {
     | GetCitationByGUIDRequest
     | GetManifestRequest
     | GetGUIDsByNameRequest
-    | GetFuzzySearchByNameRequest;
+    | GetFuzzySearchByNameRequest
+    | GetPlaceByCoordsRequest;
 
   export interface GetEntitySummariesByGUIDArgs {
     guids: string[];
@@ -209,6 +210,28 @@ export namespace Readmodel {
       };
     };
   }
+
+  export interface GetPlaceByCoordsRequest {
+    type: "GET_PLACE_BY_COORDS";
+    payload: {
+      latitude: number;
+      longitude: number;
+    };
+  }
+
+  export interface GetPlaceByCoordsArgs {
+    latitude: number;
+    longitude: number;
+  }
+
+  export interface PlaceByCoordsResponse {
+    type: "PLACE_BY_COORDS";
+    payload: {
+      latitude: number;
+      longitude: number;
+      guid: string | null;
+    };
+  }
 }
 
 export type EntityType = "TIME" | "PERSON" | "PLACE";
@@ -283,7 +306,7 @@ interface SuccessfulReadModelResponse {
   payload: CitationsByGUID;
 }
 
-export type ReadModelQuery = Readmodel.Query;
+export type ReadModelQuery = ReadModel.Query;
 
 export interface NLPServiceQuery {
   type: string;
@@ -302,6 +325,7 @@ export interface GeoServiceQuery {
 export type AccountsServiceQuery = Accounts.Query;
 
 export namespace Accounts {
+  
   export interface Message {
     type: QueryType;
     payload: PayloadType;
