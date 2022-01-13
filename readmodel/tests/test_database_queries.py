@@ -420,3 +420,30 @@ def test_get_name_by_fuzzy_search(db_tuple):
     assert isinstance(trie_result["guids"], list)
     for id_ in trie_result["guids"]:
         assert isinstance(id_, str)
+
+
+def test_get_place_by_coords(db_tuple):
+    """Cover successful path - coordinates are found"""
+    db, db_dict = db_tuple
+    # find a set of coordinates to query
+    place_guid = db_dict["place_guids"][0]
+    with Session(db._engine, future=True) as session:
+        res = session.execute(
+            select(Place).where(Place.guid == place_guid)
+        ).scalar_one()
+        latitude = res.latitude
+        longitude = res.longitude
+
+    guid = db.get_place_by_coords(latitude=latitude, longitude=longitude)
+    assert guid == place_guid
+
+
+def test_get_place_by_coords_with_new_coords(db_tuple):
+    """Cover failed path -- no coordinates are found"""
+    db, _ = db_tuple
+    # coords are set by random.random(), which is less than one.
+    latitude = 1 + random.random()
+    longitude = 1 - random.random()
+
+    guid = db.get_place_by_coords(latitude=latitude, longitude=longitude)
+    assert guid == None

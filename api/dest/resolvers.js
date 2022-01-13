@@ -146,6 +146,25 @@ exports.resolvers = {
                 };
             }
         },
+        GetPlaceByCoords: async (_, { latitude, longitude }, { queryReadModel }) => {
+            const msg = {
+                type: "GET_PLACE_BY_COORDS",
+                payload: { latitude, longitude },
+            };
+            try {
+                console.debug(`Publishing query ${msg}`);
+                const { payload } = (await queryReadModel(msg));
+                console.debug("received result: ", payload);
+                return payload;
+            }
+            catch (err) {
+                return {
+                    code: "Error",
+                    success: false,
+                    message: err,
+                };
+            }
+        },
         // GEO Queries
         GetCoordinatesByName: async (_, { name }, { queryGeo }) => {
             const msg = {
