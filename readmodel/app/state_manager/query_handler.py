@@ -34,6 +34,7 @@ class QueryHandler:
             "GET_GUIDS_BY_NAME_BATCH": self._handle_get_guids_by_name_batch,
             "GET_FUZZY_SEARCH_BY_NAME": self._handle_get_fuzzy_search_by_name,
             "GET_ENTITY_SUMMARIES_BY_GUID": self._handle_get_entity_summaries_by_guid,
+            "GET_PLACE_BY_COORDS": self._handle_get_place_by_coords,
         }
 
     def _handle_get_summaries_by_guid(self, query):
@@ -109,4 +110,19 @@ class QueryHandler:
         return {
             "type": "ENTITY_SUMMARIES_BY_GUID",
             "payload": {"results": self._db.get_entity_summary_by_guid_batch(guids)},
+        }
+
+    def _handle_get_place_by_coords(self, query):
+        """Resolve a place, if any, from a set of latitude and longitude"""
+        latitude = query["payload"]["latitude"]
+        longitude = query["payload"]["longitude"]
+        return {
+            "type": "PLACE_BY_COORDS",
+            "payload": {
+                "latitude": latitude,
+                "longitude": longitude,
+                "guid": self._db.get_place_by_coords(
+                    latitude=latitude, longitude=longitude
+                ),
+            },
         }

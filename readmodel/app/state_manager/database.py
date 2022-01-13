@@ -208,6 +208,22 @@ class Database:
         """Search for possible completions to a given string from known entity names."""
         return self._trie.find(name, res_count=10)
 
+    def get_place_by_coords(
+        self, latitude: float, longitude: float
+    ) -> Union[str, None]:
+        """Search for a place by latitude or longitude and receive a GUID in return"""
+
+        with Session(self._engine, future=True) as session:
+            res = session.execute(
+                select(Place)
+                .where(Place.latitude == latitude)
+                .where(Place.longitude == longitude)
+            ).scalar_one_or_none()
+
+            if res:
+                return res.guid
+            return None
+
     # MUTATIONS
 
     def create_summary(self, summary_guid: str, text: str) -> None:

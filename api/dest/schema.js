@@ -23,6 +23,8 @@ exports.typeDefs = gql `
     IsUsernameUnique(username: String!): IsUsernameUniqueResponse!
 
     GetUser(token: String!): AccountsGenericResponse!
+
+    GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse!
   }
 
   type Mutation {
@@ -172,6 +174,12 @@ exports.typeDefs = gql `
     longitude: Float
     latitude: Float
     geoshape: String
+  }
+
+  type PlaceByCoordsResponse {
+    latitude: Float!
+    longitude: Float!
+    guid: String
   }
 
   # mutation types
