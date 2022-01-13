@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Box, Chip, Grid, Paper, Typography, Button, TextField } from '@material-ui/core'
 
-import { PUBLISH_NEW_CITATION, PublishNewCitationResult, PublishNewCitationVars } from '../../graphql/publishNewCitation';
 import { Source } from './addSource'
 import { Quote } from './addQuote'
 import { Tag } from './tagEntities'
@@ -56,11 +55,7 @@ export const AddSummary = (props: AddSummaryProps) => {
     setAddedTags(tags => [...tags, tag])
     setSummaryText(text => text + tag.name)
   }
-  console.log({ addedTags })
-  console.log({ tagsToUse })
-  // create tag pool
-  // on click, add tag to summary
-  // after all tags have been added, allow submit
+
   return (
     <Box
       component="form"
@@ -111,6 +106,3 @@ export const AddSummary = (props: AddSummaryProps) => {
   )
 }
 
-const SaveSummary = (annotation: PublishNewCitationVars) => {
-  return null
-}
