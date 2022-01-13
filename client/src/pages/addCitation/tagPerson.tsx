@@ -23,8 +23,9 @@ export const TagPerson = (props: TagPersonProps) => {
   const {
     data, loading, error
   } = useQuery<GUIDsByNameResult, GUIDsByNameVars>(GET_GUIDS_BY_NAME,
-    { variables: { name: currentEntity?.name ?? "" } }
+    { variables: { name: personTagName } }
   )
+  console.log({data})
   const results = data?.GetGUIDsByName.summaries.filter(entity => entity.type === "PERSON") ?? []
   results.push({
     type: "PERSON",
@@ -34,7 +35,7 @@ export const TagPerson = (props: TagPersonProps) => {
     first_citation_date: "This is a new entity",
     last_citation_date: "and doesn't have any citations yet."
   })
-  console.log(currentEntity)
+  console.log({currentEntity})
 
   const searchBar = (
       <Paper>

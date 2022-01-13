@@ -1,16 +1,28 @@
+import { Paper, Button, Typography } from '@material-ui/core'
+
 import { PUBLISH_NEW_CITATION, PublishNewCitationResult, PublishNewCitationVars } from '../../graphql/publishNewCitation';
-import { useQuery } from '@apollo/client'
+import { useMutation } from '@apollo/client'
 
+interface SaveSummaryProps {
+  annotation: PublishNewCitationVars["Annotation"]
+}
 
-export const SaveSummary = (annotation: PublishNewCitationVars) => {
-    const {
-      data, loading, error
-    } = useQuery<PublishNewCitationResult, PublishNewCitationVars>(PUBLISH_NEW_CITATION,
-      { variables: {...annotation} }
-    )
-    if (loading) {
-        return <h1>Loading</h1>
-    } else if (error) {
-        return <h1>{error}</h1>
-    }
+export const SaveSummary = (props: SaveSummaryProps) => {
+  const {annotation: Annotation} = props;
+  const [
+    uploadSummary,
+    { data, loading, error }
+   ] = useMutation<PublishNewCitationResult, PublishNewCitationVars>(PUBLISH_NEW_CITATION)
+  console.log({data})
+  console.log({loading})
+  console.log({error})
+  if (loading) {
+      return <Typography variant="h2">Loading</Typography>
+  } else if (error) {
+      return <Typography variant="h2">there was an error</Typography>
+  } else if (data) {
+    return <Typography variant="h2">Success!</Typography>
+  } else {
+    return <Paper><Button onClick={() => uploadSummary({ variables: { Annotation } })}>Upload</Button></Paper>
   }
+}

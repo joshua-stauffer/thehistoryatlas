@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Stepper, Step, StepLabel } from '@material-ui/core'
+import { v4 } from 'uuid';
 
+import { PublishNewCitationVars } from '../../graphql/publishNewCitation';
 import { Source, AddSource } from './addSource'
 import { Quote, AddQuote } from './addQuote'
 import { Tag, TagEntities } from './tagEntities'
-import { AddSummary } from './addSummary'
+import { Summary, AddSummary } from './addSummary'
+import { SaveSummary } from './saveAnnotatedCitation';
 
 const mockSource: Source = {
   GUID: "143e08b2-8ed7-4289-894a-bad9d753cafd",
@@ -47,12 +50,15 @@ const mockTags: Tag[] = [
   }
 ]
 
-type CurrentStep = 0 | 1 | 2 | 3;
+type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
 export const AddCitationPage = () => {
+  const [citationGUID, ] = useState<string>(v4())
+  const [summaryGUID, ] = useState<string>(v4())
   const [source, setSource] = useState<Source>()
   const [quote, setQuote] = useState<Quote>()
   const [tags, setTags] = useState<Tag[]>()
+  const [summary, setSummary] = useState<Summary>()
   const [step, setStep] = useState<CurrentStep>(0)
   const addSource = (source: Source) => {
     setSource(source)
@@ -65,6 +71,10 @@ export const AddCitationPage = () => {
   const tagEntities = (tags: Tag[]) => {
     setTags(tags)
     setStep(3)
+  }
+  const addSummary = (summary: Summary) => {
+    setSummary(summary)
+    setStep(4)
   }
 
   const steps = ["Add Source", "Add Quote", "Tag Entities", "Add Summary"]
@@ -87,8 +97,43 @@ export const AddCitationPage = () => {
         child = <h1>unexpected error</h1>; 
         break
       }
-      child = <AddSummary tags={tags} quote={quote} source={source}/>
+      child = <AddSummary addSummary={addSummary} tags={tags} quote={quote} source={source}/>
       break
+    case 4:
+      if (!quote || !summary || !tags || !source) return <h1>Oops, shouldnt be here..</h1>
+      const verifiedTags = tags.filter(tag => tag.type !== "NONE").map(tag => {
+        if (!tag.guid) throw new Error("Tag found without GUID")
+        if (tag.type === "PLACE") {
+          return {
+            type: tag.type,
+            GUID: tag.guid,
+            name: tag.name,
+            start_char: tag.start_char,
+            stop_char: tag.stop_char,
+            latitude: tag.latitude,
+            longitude: tag.longitude
+          }
+        }
+        return {
+          type: tag.type,
+          GUID: tag.guid,
+          name: tag.name,
+          start_char: tag.start_char,
+          stop_char: tag.stop_char
+        }
+      })
+      return (
+        <SaveSummary 
+          annotation={{
+            citation_guid: citationGUID,
+            citation: quote.text,
+            summary_guid: summaryGUID,
+            summary: summary.text,
+            summary_tags: verifiedTags as PublishNewCitationVars["Annotation"]["summary_tags"],
+            meta: source
+          }}
+        />
+          )
   }
   return (
     <>

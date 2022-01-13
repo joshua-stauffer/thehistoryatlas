@@ -9,13 +9,18 @@ interface AddSummaryProps {
   source: Source
   quote: Quote
   tags: Tag[]
+  addSummary: (summary: Summary) => void
+}
+
+export interface Summary {
+  text: string;
 }
 
 const MAX_SUMMARY_LENGTH = 256
 
 
 export const AddSummary = (props: AddSummaryProps) => {
-  const { source, quote, tags } = props
+  const { source, quote, tags, addSummary } = props
   const [tagsToUse, setTagsToUse] = useState<Tag[]>(tags)
   const [addedTags, setAddedTags] = useState<Tag[]>([])
   const [summaryText, setSummaryText] = useState<string>('')
@@ -31,7 +36,6 @@ export const AddSummary = (props: AddSummaryProps) => {
       // double check that all our tags are still there
       if (!tag.name) continue
       if (!value.includes(tag.name)) {
-        console.log('found tag ', tag, ' in addedTags, moving now')
         // add this back to tags to use
         setAddedTags(tags => tags.filter(t => t.guid !== tag.guid))
         setTagsToUse(tags => [...tags, tag])
@@ -41,7 +45,6 @@ export const AddSummary = (props: AddSummaryProps) => {
       // double check that a tag hasn't been added by hand
       if (!tag.name) continue
       if (value.includes(tag.name)) {
-        console.log('found tag ', tag, ' in tagsToUse, moving now')
         // add this to addedTags
         setTagsToUse(tags => tags.filter(t => t.guid !== tag.guid))
         setAddedTags(tags => [...tags, tag])
@@ -84,7 +87,11 @@ export const AddSummary = (props: AddSummaryProps) => {
               color={summaryText.length === MAX_SUMMARY_LENGTH ? "secondary" : "primary"}
             />
             <Typography>{summaryText.length}/{MAX_SUMMARY_LENGTH} characters remaining</Typography>
-            <Button variant="contained" color="primary">Upload Citation</Button>
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => addSummary({text: summaryText})}
+            >Upload Citation</Button>
           </Paper>
         </Grid>
 
