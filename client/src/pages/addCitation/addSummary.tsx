@@ -91,7 +91,7 @@ export const AddSummary = (props: AddSummaryProps) => {
               variant="contained" 
               color="primary"
               onClick={() => addSummary({text: summaryText})}
-            >Upload Citation</Button>
+            >Save Summary</Button>
           </Paper>
         </Grid>
 
