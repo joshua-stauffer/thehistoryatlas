@@ -30,6 +30,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
   const [tags, setTags] = useState<Tag[]>([])
   const [currentEntity, setCurrentEntity] = useState<Tag | null>(null)
   const [focusedEntity, setFocusedEntity] = useState<Tag | null>(null)
+  const [restoreState, setRestoreState] = useState<Tag[] | null>(null)
   const { tagEntities, text } = props;
   const {
     loading, error, data
@@ -64,7 +65,9 @@ export const TagEntities = (props: TagEntitiesProps) => {
       return [...tags.slice(0, index), tag, ...tags.slice(index + 1)]
     })
     setCurrentEntity(null)
+    setRestoreState(null) // can't undo anymore
   }
+
   const canSaveTag = (tag: Tag): boolean => {
     if (tag.type === "TIME") {
       if (tag.guid) return true
@@ -91,6 +94,46 @@ export const TagEntities = (props: TagEntitiesProps) => {
       stop_char: text.length
     }
     setCurrentEntity(newTag)
+  }
+
+  const extendTagLeft = (): void => {
+    const tag = currentEntity;
+    if (!tag) return;
+    // save state for easy undo
+    if (!restoreState) {
+      setRestoreState(tags)
+    }
+    const tagIndex = tags.map(tag => tag.start_char).indexOf(tag.start_char)
+    if (tagIndex <= 0) return; // can't extend left
+    const leftTag = tags[tagIndex - 1]
+    const newTag: Tag = {
+      ...tag,
+      start_char: leftTag.start_char,
+      stop_char: tag.stop_char,
+      text: `${leftTag.text} ${tag.text}`,
+      name: `${leftTag.text} ${tag.name}`,
+    }
+    setTags(tags => [...tags.slice(0, tagIndex - 1), newTag, ...tags.slice(tagIndex +1)])
+  }
+
+  const extendTagRight = (): void => {
+    const tag = currentEntity;
+    if (!tag) return;
+        // save state for easy undo
+        if (!restoreState) {
+          setRestoreState(tags)
+      }
+    const tagIndex = tags.map(tag => tag.start_char).indexOf(tag.start_char)
+    if (tagIndex === tags.length) return; // can't extend right
+    const rightTag = tags[tagIndex + 1]
+    const newTag: Tag = {
+      ...tag,
+      start_char: tag.start_char,
+      stop_char: rightTag.stop_char,
+      text: `${tag.text} ${rightTag.text}`,
+      name: `${tag.text} ${rightTag.text}`,
+    }
+    setTags(tags => [...tags.slice(0, tagIndex), newTag, ...tags.slice(tagIndex +2)])
   }
 
   console.log({tags})
@@ -203,6 +246,8 @@ export const TagEntities = (props: TagEntitiesProps) => {
                     <FormControlLabel value="PLACE" control={<Radio />} label="Place" />
                     <FormControlLabel value="TIME" control={<Radio />} label="Time" />
                   </RadioGroup>
+                  <Button onClick={extendTagLeft}>Extend tag left</Button>
+                  <Button onClick={extendTagRight}>Extend tag right</Button>
                 </FormControl>
                 { // render sub component based on current radio value, as saved in currentEntity.type
                   currentEntity.type === "PERSON"
@@ -218,7 +263,13 @@ export const TagEntities = (props: TagEntitiesProps) => {
                 }
                 <br />
 
-                <Button onClick={() => setCurrentEntity(null)}>Reset</Button>
+                <Button onClick={() => {
+                  setCurrentEntity(null)
+                  if (restoreState) {
+                    setTags(restoreState)
+                    setRestoreState(null)
+                  }
+                }}>Reset</Button>
                 {canSaveTag(currentEntity) ?  // only show save button if complete
                   <Button
                     onClick={() => saveTag(currentEntity)}
