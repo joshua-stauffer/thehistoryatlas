@@ -50,7 +50,8 @@ export const ViewEntity = (props: ViewEntityProps) => {
   } else {
     map = null;
   }
-  const entity = data.GetEntitySummariesByGUID[0]
+  const entity = data.GetEntitySummariesByGUID.find(ent => ent.guid === tag.guid)
+  if (!entity) return <h1>Error!</h1>
   return (
     <>
       {map ?? <Typography variant="h3">{tag.name} - ({tag.type.toLowerCase()})</Typography>}

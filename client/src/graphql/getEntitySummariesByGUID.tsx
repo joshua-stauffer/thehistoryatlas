@@ -8,6 +8,7 @@ export const GET_ENTITY_SUMMARIES_BY_GUID = gql`
       names
       citation_count
       type
+      guid
     }
   }
 `;
@@ -19,6 +20,7 @@ export interface GetEntitySummariesByGUIDResult {
     names: string[];
     citation_count: number;
     type: "PERSON" | "PLACE" | "TIME"
+    guid: string;
   }[]
 }
 
