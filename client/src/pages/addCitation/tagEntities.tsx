@@ -21,6 +21,21 @@ export interface Tag {
   longitude?: number
 }
 
+// type DiscoveredEntity = TextAnalysisResult["GetTextAnalysis"]["text_map"]["PERSON"]
+//   | TextAnalysisResult["GetTextAnalysis"]["text_map"]["PLACE"]
+//   |TextAnalysisResult["GetTextAnalysis"]["text_map"]["TIME"]
+
+interface DiscoveredEntity {
+  text: string;
+  start_char: number;
+  stop_char: number;
+  guids: string[];
+  coords?: {
+      latitude: number;
+      longitude: number;
+  }[]
+}
+
 export interface TagEntitiesProps {
   tagEntities: (tags: Tag[]) => void;
   text: string;
@@ -38,6 +53,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
     GET_TEXT_ANALYSIS,
     { variables: { text: text } }
   )
+  console.log({data})
 
   const tagsAreComplete: boolean =
     !!tags.filter(tag => tag.type === "PERSON").length
@@ -113,16 +129,16 @@ export const TagEntities = (props: TagEntitiesProps) => {
       text: `${leftTag.text} ${tag.text}`,
       name: `${leftTag.text} ${tag.name}`,
     }
-    setTags(tags => [...tags.slice(0, tagIndex - 1), newTag, ...tags.slice(tagIndex +1)])
+    setTags(tags => [...tags.slice(0, tagIndex - 1), newTag, ...tags.slice(tagIndex + 1)])
   }
 
   const extendTagRight = (): void => {
     const tag = currentEntity;
     if (!tag) return;
-        // save state for easy undo
-        if (!restoreState) {
-          setRestoreState(tags)
-      }
+    // save state for easy undo
+    if (!restoreState) {
+      setRestoreState(tags)
+    }
     const tagIndex = tags.map(tag => tag.start_char).indexOf(tag.start_char)
     if (tagIndex === tags.length) return; // can't extend right
     const rightTag = tags[tagIndex + 1]
@@ -133,10 +149,10 @@ export const TagEntities = (props: TagEntitiesProps) => {
       text: `${tag.text} ${rightTag.text}`,
       name: `${tag.text} ${rightTag.text}`,
     }
-    setTags(tags => [...tags.slice(0, tagIndex), newTag, ...tags.slice(tagIndex +2)])
+    setTags(tags => [...tags.slice(0, tagIndex), newTag, ...tags.slice(tagIndex + 2)])
   }
 
-  console.log({tags})
+  console.log({ tags })
 
   useEffect(() => {
     if (!data) return;
@@ -145,20 +161,30 @@ export const TagEntities = (props: TagEntitiesProps) => {
     const people = data?.GetTextAnalysis.text_map.PERSON ?? []
     const places = data?.GetTextAnalysis.text_map.PLACE ?? []
     const times = data?.GetTextAnalysis.text_map.TIME ?? []
-    const discoveredEntities = [
-      ...people, 
-      ...places, 
-      ...times, 
+    const discoveredEntities: DiscoveredEntity[] = [
+      ...people,
+      ...places,
+      ...times,
     ].sort((a, b) => a.start_char - b.start_char)
     setTags(boundaries.map((boundary) => {
       if (discoveredEntities.length && boundary.start_char === discoveredEntities[0].start_char) {
         const ent = discoveredEntities.shift()
-        if (!ent || !ent.guids.length) return {  
+        if (!ent || !ent.guids.length) return {
           // for now, only tag entities which already exist in the system
           start_char: boundary.start_char,
           stop_char: boundary.stop_char,
           text: boundary.text,
           type: "NONE"
+        }
+        if (ent.coords) return {
+          start_char: ent.start_char,
+          stop_char: ent.stop_char,
+          text: ent.text,
+          name: ent.text,
+          guid: ent.guids[0],
+          type: "PLACE",
+          latitude: ent.coords[0].latitude,
+          longitude: ent.coords[0].longitude
         }
         return {
           start_char: ent.start_char,
@@ -166,13 +192,11 @@ export const TagEntities = (props: TagEntitiesProps) => {
           text: ent.text,
           name: ent.text,
           guid: ent.guids[0],
-          type: people.includes(ent) 
-          ? "PERSON" 
-          : times.includes(ent)
-          ? "TIME"
-          : "PLACE"
+          type: people.includes(ent)
+            ? "PERSON"
+            :  "TIME"
         }
-      } 
+      }
       return {
         start_char: boundary.start_char,
         stop_char: boundary.stop_char,
@@ -280,14 +304,14 @@ export const TagEntities = (props: TagEntitiesProps) => {
               </>
               : focusedEntity ?
                 <ViewEntity tag={focusedEntity} />
-              :
-              <>
-              <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
-              <Button 
-              variant="contained"
-              onClick={addNewTag}
-              >Tag Entity without reference.</Button>
-              </>
+                :
+                <>
+                  <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
+                  <Button
+                    variant="contained"
+                    onClick={addNewTag}
+                  >Tag Entity without reference.</Button>
+                </>
             }
           </Paper>
         </Grid>

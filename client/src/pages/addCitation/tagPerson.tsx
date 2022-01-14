@@ -25,7 +25,6 @@ export const TagPerson = (props: TagPersonProps) => {
   } = useQuery<GUIDsByNameResult, GUIDsByNameVars>(GET_GUIDS_BY_NAME,
     { variables: { name: personTagName } }
   )
-  console.log({data})
   const results = data?.GetGUIDsByName.summaries.filter(entity => entity.type === "PERSON") ?? []
   results.push({
     type: "PERSON",

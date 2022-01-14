@@ -1,5 +1,5 @@
 import { Tag } from './tagEntities'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@apollo/client'
 import { Box, Button, Paper, TextField, Typography } from '@material-ui/core'
 import { GET_COORDINATES_BY_NAME, CoordinatesByNameResult, CoordinatesByNameVars } from '../../graphql/getCoordinatesByName'
@@ -88,7 +88,10 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
     variables: { name: currentEntity?.name ?? "" }
   })
 
-  const results = coordinatesByNameData?.GetCoordinatesByName ?? []
+  const results = useMemo(
+    () => coordinatesByNameData?.GetCoordinatesByName ?? [], 
+    [coordinatesByNameData?.GetCoordinatesByName]
+  )
 
   useEffect(() => {
     if (!!results.length && searchIndex < results.length) {
