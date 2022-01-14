@@ -112,7 +112,7 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
         }
       })
     }
-  }, [searchIndex, latitude, longitude, results])
+  }, [searchIndex, latitude, longitude, results, newPlaceGUID, setCurrentEntity])
 
   // given coordinates, look up if the current chosen place exists in the DB
   const {

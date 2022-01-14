@@ -8,6 +8,7 @@ import {
 import { TagTime } from './tagTime';
 import { TagPlace } from './tagPlace';
 import { TagPerson } from './tagPerson';
+import { ViewEntity } from './viewEntity';
 
 export interface Tag {
   start_char: number
@@ -28,6 +29,7 @@ export interface TagEntitiesProps {
 export const TagEntities = (props: TagEntitiesProps) => {
   const [tags, setTags] = useState<Tag[]>([])
   const [currentEntity, setCurrentEntity] = useState<Tag | null>(null)
+  const [focusedEntity, setFocusedEntity] = useState<Tag | null>(null)
   const { tagEntities, text } = props;
   const {
     loading, error, data
@@ -50,6 +52,12 @@ export const TagEntities = (props: TagEntitiesProps) => {
     })
   }
   const saveTag = (tag: Tag): void => {
+    // handle tags without text
+    if (tag.text === '') {
+      setTags(tags => [...tags, tag])
+      setCurrentEntity(null)
+      return;
+    }
     setTags((tags) => {
       const index = tags.map(t => t.start_char).indexOf(tag.start_char)
       if (index < 0) return tags
@@ -73,13 +81,55 @@ export const TagEntities = (props: TagEntitiesProps) => {
     else { // tag is "NONE"
       return false
     }
-
   }
 
-  const boundaries = data?.GetTextAnalysis.boundaries
+  const addNewTag = () => {
+    const newTag: Tag = {
+      text: '',
+      type: "NONE",
+      start_char: text.length,
+      stop_char: text.length
+    }
+    setCurrentEntity(newTag)
+  }
+
+  console.log({tags})
+
   useEffect(() => {
-    if (!boundaries) return
+    if (!data) return;
+    const boundaries = data?.GetTextAnalysis.boundaries
+    if (!boundaries) return;
+    const people = data?.GetTextAnalysis.text_map.PERSON ?? []
+    const places = data?.GetTextAnalysis.text_map.PLACE ?? []
+    const times = data?.GetTextAnalysis.text_map.TIME ?? []
+    const discoveredEntities = [
+      ...people, 
+      ...places, 
+      ...times, 
+    ].sort((a, b) => a.start_char - b.start_char)
     setTags(boundaries.map((boundary) => {
+      if (discoveredEntities.length && boundary.start_char === discoveredEntities[0].start_char) {
+        const ent = discoveredEntities.shift()
+        if (!ent || !ent.guids.length) return {  
+          // for now, only tag entities which already exist in the system
+          start_char: boundary.start_char,
+          stop_char: boundary.stop_char,
+          text: boundary.text,
+          type: "NONE"
+        }
+        return {
+          start_char: ent.start_char,
+          stop_char: ent.stop_char,
+          text: ent.text,
+          name: ent.text,
+          guid: ent.guids[0],
+          type: people.includes(ent) 
+          ? "PERSON" 
+          : times.includes(ent)
+          ? "TIME"
+          : "PLACE"
+        }
+      } 
       return {
         start_char: boundary.start_char,
         stop_char: boundary.stop_char,
@@ -87,7 +137,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
         type: "NONE"
       }
     }))
-  }, [data, boundaries])
+  }, [data])
   if (loading) return <h1>loading..</h1> // replace with real loading screen app wide
   if (error) return <h1>Oops, there was an error: {error}</h1>
   return (
@@ -100,23 +150,29 @@ export const TagEntities = (props: TagEntitiesProps) => {
               tags.map(tag =>
                 tag.type === "PERSON"
                   ? <Chip
-                    label={tag.text}
+                    label={tag.text ? tag.text : tag.name}
                     onDelete={() => clearTag(tag)}
+                    onClick={() => setFocusedEntity(tag)}
                   />
                   : tag.type === "PLACE"
                     ? <Chip
-                      label={tag.text}
+                      label={tag.text ? tag.text : tag.name}
                       onDelete={() => clearTag(tag)}
+                      onClick={() => setFocusedEntity(tag)}
                     />
                     : tag.type === "TIME"
                       ? <Chip
-                        label={tag.text}
+                        label={tag.text ? tag.text : tag.name}
                         onDelete={() => clearTag(tag)}
+                        onClick={() => setFocusedEntity(tag)}
                       />
                       : <Chip
                         label={tag.text}
                         clickable
-                        onClick={() => setCurrentEntity(tag)}
+                        onClick={() => {
+                          setCurrentEntity(tag)
+                          setFocusedEntity(null)
+                        }}
                         variant='outlined'
                       />
               )
@@ -150,10 +206,10 @@ export const TagEntities = (props: TagEntitiesProps) => {
                 </FormControl>
                 { // render sub component based on current radio value, as saved in currentEntity.type
                   currentEntity.type === "PERSON"
-                    ? <TagPerson 
-                        currentEntity={currentEntity} 
-                        setCurrentEntity={setCurrentEntity}
-                      />
+                    ? <TagPerson
+                      currentEntity={currentEntity}
+                      setCurrentEntity={setCurrentEntity}
+                    />
                     : currentEntity.type === "PLACE"
                       ? <TagPlace currentEntity={currentEntity} setCurrentEntity={setCurrentEntity} />
                       : currentEntity.type === "TIME"
@@ -161,9 +217,9 @@ export const TagEntities = (props: TagEntitiesProps) => {
                         : <br />
                 }
                 <br />
-                
+
                 <Button onClick={() => setCurrentEntity(null)}>Reset</Button>
-                { canSaveTag(currentEntity) ?  // only show save button if complete
+                {canSaveTag(currentEntity) ?  // only show save button if complete
                   <Button
                     onClick={() => saveTag(currentEntity)}
                     disabled={!canSaveTag(currentEntity)}
@@ -171,7 +227,16 @@ export const TagEntities = (props: TagEntitiesProps) => {
                   : null
                 }
               </>
-              : <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
+              : focusedEntity ?
+                <ViewEntity tag={focusedEntity} />
+              :
+              <>
+              <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
+              <Button 
+              variant="contained"
+              onClick={addNewTag}
+              >Tag Entity without reference.</Button>
+              </>
             }
           </Paper>
         </Grid>
