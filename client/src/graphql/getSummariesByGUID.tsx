@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { Tag } from '../types';
 
 export const GET_SUMMARIES_BY_GUID = gql`
   query SummaryQuery($summary_guids: [String!]!) {
@@ -23,25 +24,16 @@ export const GET_SUMMARIES_BY_GUID = gql`
 `;
 
 export interface GetSummariesByGUIDResult {
-  GetSummariesByGUID: {
-    guid: string;
-    text: string;
-    tags: {
-      tag_type: string;
-      tag_guid: string;
-      start_char: number;
-      stop_char: number;
-      name?: string;
-      names?: string[];
-      coords?: {
-        latitude: number;
-        longitude: number;
-      }
-    }[]
-    citation_guids: string[];
-  }[]
+  GetSummariesByGUID: Summary[]
 }
 
 export interface GetSummariesByGUIDVars {
   summary_guids: string[];
+}
+
+export interface Summary {
+  guid: string;
+  text: string;
+  tags: Tag[]
+  citation_guids: string[];
 }

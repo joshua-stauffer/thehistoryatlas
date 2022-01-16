@@ -33,3 +33,33 @@ export interface CurrentFocus {
   focusedGUID: string;
   scrollIntoView: boolean;
 }
+
+export type Tag = PlaceTag | TimeTag | PersonTag;
+
+export interface PlaceTag {
+  tag_type: "PLACE";
+  tag_guid: string;
+  start_char: number;
+  stop_char: number;
+  names: string[];
+  coords: {
+    latitude: number;
+    longitude: number;
+  }
+}
+
+export interface TimeTag {
+  tag_type: "TIME";
+  tag_guid: string;
+  start_char: number;
+  stop_char: number;
+  name: string;
+}
+
+export interface PersonTag {
+  tag_type: "PERSON";
+  tag_guid: string;
+  start_char: number;
+  stop_char: number;
+  names: string[];
+}

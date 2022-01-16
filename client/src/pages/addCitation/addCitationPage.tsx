@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { Stepper, Step, StepLabel } from '@material-ui/core'
+import { Box } from '@mui/material';
 import { v4 } from 'uuid';
 
+import { ExploreButton, SettingsButton } from '../../components/navBar';
 import { PublishNewCitationVars } from '../../graphql/publishNewCitation';
 import { Source, AddSource } from './addSource'
 import { Quote, AddQuote } from './addQuote'
 import { Tag, TagEntities } from './tagEntities'
 import { Summary, AddSummary } from './addSummary'
 import { SaveSummary } from './saveAnnotatedCitation';
+import { NavBar } from '../../components/navBar';
+
 
 
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
@@ -101,7 +105,12 @@ export const AddCitationPage = () => {
           )
   }
   return (
-    <>
+    <Box>
+      <NavBar children={[
+        <ExploreButton />,
+        <SettingsButton />
+      ]}
+      />
       <Stepper activeStep={step}>
         {steps.map((label, index) => (
           <Step key={index} onClick={() => handleStepClick(index)}>
@@ -110,6 +119,6 @@ export const AddCitationPage = () => {
         ))}
       </Stepper>
       {child}
-    </>
+    </Box>
   )
 }

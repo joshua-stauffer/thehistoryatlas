@@ -16,9 +16,8 @@ export const getCoords = (props: GetCoordsProps ): GetCoordsResult => {
   for (const index of indices) {
     const event = currentSummaries[index]
     if (event) {
-      const placeTags = event.tags.filter(tag => tag.tag_type === 'PLACE')
-      for (const tag of placeTags) {
-        if (tag.coords && tag.names) {
+      for (const tag of event.tags) {
+        if (tag.tag_type === "PLACE") {
           markerData.push({
             coords: [tag.coords.latitude, tag.coords.longitude],
             text: tag.names[0],

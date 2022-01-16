@@ -11,8 +11,7 @@ import { HomePage } from './pages/home';
 import { SearchPage } from './pages/search';
 import { AddCitationPage } from './pages/addCitation'
 import { LoginPage } from './pages/login';
-import { MainNav } from './components/mainNav';
-import { Background } from './baseStyle';
+import { FeedPage } from './pages/feed';
 import { isLoggedIn } from './hooks/user';
 
 import DateAdapter from '@mui/lab/AdapterLuxon';
@@ -39,7 +38,9 @@ function App() {
                   : <LoginPage />
 
               }
-              
+            </Route>
+            <Route path='/feed'>
+              <FeedPage />
             </Route>
             <Route path='/'>
               {entity ? <HomePage /> : <SearchPage/>}

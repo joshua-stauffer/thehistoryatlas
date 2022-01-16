@@ -1,11 +1,6 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { useHistory } from 'react-router';
-import {  FeedAndMap, NavAndTimeline } from './style';
-import { EventFeed } from '../../components/eventFeed';
-import { MapView } from '../../components/map';
-import { HistoryNavBar } from '../../components/historyNavigation';
-import { BarTimeline } from '../../components/barTimeline';
 import { handleFeedScroll } from '../../pureFunctions/scrollLogic';
 import { sliceManifest } from '../../pureFunctions/sliceManifest';
 import { initManifestSubset } from '../../pureFunctions/initializeManifestSubset';
@@ -15,16 +10,12 @@ import {
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from '../../graphql/queries';
 import { readHistory, addToHistory, addToHistoryProps, updateRootSummary } from '../../hooks/history';
-import { MarkerData, FocusedGeoEntity, CurrentFocus } from '../../types';
+import { MarkerData, FocusedGeoEntity, CurrentFocus, TimeTag } from '../../types';
 import { getCoords } from '../../pureFunctions/getCoords';
 import { getFocusedGeoData } from '../../pureFunctions/getFocusedGeoData';
-import { TimeTag } from '../../types';
 
-interface HomePageProps {
 
-}
-
-export const HomePage = (props: HomePageProps) => {
+export const useFeedLogic = () => {
   // state
   const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
   const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
@@ -35,13 +26,12 @@ export const HomePage = (props: HomePageProps) => {
     scrollIntoView: false
   })
 
-
   // hooks & utility functions for state
   const { currentEntity } = readHistory()
   const history = useHistory();
   if (!currentEntity) history.push('/search')
   // add a little check for TypeScript's sake..
-  if (!currentEntity) throw new Error()
+  if (!currentEntity) throw new Error('No entity selected')
 
   // create an onClick handler for navigating between entities
   const setCurrentEntity = (props: addToHistoryProps): void => {
@@ -115,8 +105,8 @@ export const HomePage = (props: HomePageProps) => {
     const { markerData } = getCoords({
       indices: indicesInCurrentPage,
       currentSummaries: currentSummaries
-     })
-     setCurrentCoords(markerData)
+      })
+      setCurrentCoords(markerData)
   }, [feedRef, currentEvents.length, currentSummaries])
 
   // feed logic
@@ -173,13 +163,13 @@ export const HomePage = (props: HomePageProps) => {
     const { markerData } = getCoords({
       indices: indicesInCurrentPage,
       currentSummaries: currentSummaries
-     })
-     setCurrentCoords(markerData)
-     const focusedGeoEntities = getFocusedGeoData({
-       currentSummaries: currentSummaries,
-       focusIndex: focusIndex
-     })
-     setFocusedGeoEntities(focusedGeoEntities);
+      })
+      setCurrentCoords(markerData)
+      const focusedGeoEntities = getFocusedGeoData({
+        currentSummaries: currentSummaries,
+        focusIndex: focusIndex
+      })
+      setFocusedGeoEntities(focusedGeoEntities);
   }
 
   // add handleScroll to the dom as an event listener
@@ -197,31 +187,18 @@ export const HomePage = (props: HomePageProps) => {
       const timeTag = focusedSummary.tags.find(tag => tag.tag_type === 'TIME') as TimeTag;
       currentDate = timeTag && timeTag.name ? timeTag.name : null;
     }
-  }
 
-  return (
-      <>
-      <NavAndTimeline>
-        <BarTimeline
-          data={manifestData ? manifestData.GetManifest.timeline : []}
-          currentDate={currentDate}
-          handleTimelineClick={handleTimelineClick}
-        />
-        <HistoryNavBar resetCurrentEvents={resetCurrentEvents}/>
-      </NavAndTimeline>
-      <FeedAndMap>
-        <EventFeed 
-          summaryList={(!manifestLoading && !manifestError) ? currentSummaries : []}
-          eventManifest={manifestData ? manifestData.GetManifest.citation_guids : []}
-          feedRef={feedRef}
-          setCurrentEntity={setCurrentEntity}
-          currentFocus={currentFocus}
-        />
-        <MapView 
-          markers={currentCoords}
-          focusedGeoEntities={focusedGeoEntities}
-        />
-      </FeedAndMap>
-      </>
-  )
+    const summaryList = (!manifestLoading && !manifestError) ? currentSummaries : []
+  }
+  return { 
+    feedRef, 
+    currentDate, 
+    handleTimelineClick,
+    resetCurrentEvents,
+    setCurrentEntity,
+    currentFocus,
+    currentCoords,
+    focusedGeoEntities,
+    currentSummaries
+  }
 }
