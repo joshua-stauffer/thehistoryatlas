@@ -166,7 +166,7 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
             zoom={5}
             title={placeName}
             mapTyle={"basic"}
-            size={"XS"}
+            size={"SM"}
           />
         </Paper>
       )
@@ -208,7 +208,7 @@ export const TagPlaceHelper = (props: TagPlaceProps) => {
             zoom={5}
             title={placeName}
             mapTyle={"basic"}
-            size={"XS"}
+            size={"SM"}
           />
         </Paper>
       )

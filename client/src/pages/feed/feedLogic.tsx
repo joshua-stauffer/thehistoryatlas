@@ -96,7 +96,7 @@ export const useFeedLogic = () => {
     if (!feedRef.current) return;
     if (!currentSummaries) return;
     const indicesInCurrentPage = paginateFeed({
-      elementHeight: 220,
+      elementHeight: 100,
       listLength: currentEvents.length,
       offsetHeight: feedRef.current.offsetHeight,
       scrollHeight: feedRef.current.scrollHeight,
@@ -153,7 +153,7 @@ export const useFeedLogic = () => {
     })
     // find indices for summaries on this data page (events in view plus one view on either side)
     const indicesInCurrentPage = paginateFeed({
-      elementHeight: 220,
+      elementHeight: 200,
       listLength: currentEvents.length,
       offsetHeight: feedRef.current.offsetHeight,
       scrollHeight: feedRef.current.scrollHeight,
@@ -190,6 +190,10 @@ export const useFeedLogic = () => {
 
     const summaryList = (!manifestLoading && !manifestError) ? currentSummaries : []
   }
+  useEffect(() => console.log({currentFocus}))
+  useEffect(() => console.log({currentCoords}))
+  
+
   return { 
     feedRef, 
     currentDate, 

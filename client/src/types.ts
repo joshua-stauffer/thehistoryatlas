@@ -17,6 +17,10 @@ export interface MarkerData {
   coords: [number, number],
   text: string;
   guid: string;
+  coordsObj: {
+    latitude: number;
+    longitude: number;
+  }
 }
 
 export interface Coordinates {

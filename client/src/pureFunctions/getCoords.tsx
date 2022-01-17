@@ -21,7 +21,11 @@ export const getCoords = (props: GetCoordsProps ): GetCoordsResult => {
           markerData.push({
             coords: [tag.coords.latitude, tag.coords.longitude],
             text: tag.names[0],
-            guid: tag.tag_guid
+            guid: tag.tag_guid,
+            coordsObj: {
+              latitude: tag.coords.latitude,
+              longitude: tag.coords.longitude
+            }
           })
         }
       }

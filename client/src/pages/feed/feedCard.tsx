@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Card, CardContent } from '@mui/material'
+import { Card, CardContent, Typography } from '@mui/material'
 
 import { CurrentFocus } from '../../types';
 
@@ -31,10 +31,17 @@ export const FeedCard = (props: FeedCardProps) => {
   if (ref.current && guid === focusedGUID) {
     if (scrollIntoView) ref.current.scrollIntoView()
   }
+  // console.log({props})
 
   return (
-    <Card ref={ref} variant={"outlined"}>
-      <CardContent>{text}</CardContent>
+    <Card 
+      ref={ref} 
+      variant={"outlined"}
+      sx={{
+        height: 150
+      }}
+    >
+      <CardContent><Typography variant="h6">{text}</Typography></CardContent>
     </Card>
   )
 }

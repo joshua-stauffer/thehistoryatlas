@@ -2,9 +2,28 @@ import { Skeleton } from '@mui/material'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { mapTiles } from "../map/mapTiles"
 
-type Size = "XS" | "SM" | "MD" | "LG" | "XL"
+type Size = "SM" | "MD" | "LG"
+
 
 type tyleStyle = keyof(typeof mapTiles)
+
+const mapDimensions = {
+  SM: {
+    height: "300px",
+    width: "300px",
+    margin: "10px"
+  },
+  MD: {
+    height: "80vh",
+    width: "100%",
+    margin: "20px"
+  },
+  LG: {
+    height: "90vh",
+    width: "100%",
+    margin: "30px"
+  }
+}
 
 export interface SingleEntityMapProps {
   mapTyle: tyleStyle;
@@ -21,7 +40,7 @@ export interface SingleEntityMapProps {
 
 
 export const SingleEntityMap = (props: SingleEntityMapProps) => {
-  const { latitude, longitude, coords, title, zoom } = props;
+  const { size, latitude, longitude, coords, title, zoom } = props;
   let lat: number, long: number;
   let markers;
   if (!latitude || !longitude) {
@@ -40,9 +59,9 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
       </Marker>
       )
     )
-    // temporarily only considering the first place
-    lat = coords[0].latitude
-    long = coords[0].longitude
+    // only considering the first place
+    lat = coords.length ? coords[0].latitude : 0
+    long = coords.length ? coords[0].longitude : 0
   } else {
     lat = latitude
     long = longitude
@@ -54,9 +73,9 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
         zoom={zoom} 
         scrollWheelZoom={false} 
         style={{ 
-          height: "300px", 
-          width: "300px",
-          margin: "10px"
+          height: mapDimensions[size].height, 
+          width: mapDimensions[size].width,
+          margin: mapDimensions[size].margin
         }}>
         <TileLayer
           attribution='&copy; update'
