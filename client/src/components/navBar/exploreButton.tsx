@@ -1,8 +1,11 @@
 import { Button } from '@mui/material'
+import { Link } from 'react-router-dom'
 
 
 export const ExploreButton = () => {
   return (
-    <Button color="inherit">Explore</Button>
+    <Link to="/">
+      <Button color="inherit">Explore</Button>
+    </Link>
   )
 }

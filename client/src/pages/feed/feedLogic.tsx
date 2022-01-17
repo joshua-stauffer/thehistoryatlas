@@ -29,7 +29,7 @@ export const useFeedLogic = () => {
   // hooks & utility functions for state
   const { currentEntity } = readHistory()
   const history = useHistory();
-  if (!currentEntity) history.push('/search')
+  if (!currentEntity) history.push('/')
   // add a little check for TypeScript's sake..
   if (!currentEntity) throw new Error('No entity selected')
 

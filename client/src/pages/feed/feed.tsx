@@ -35,7 +35,7 @@ export const FeedPage = (props: FeedProps) => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <NavBar children={[
-        <SearchBar />,
+        <SearchBar setCurrentEntity={setCurrentEntity}/>,
         <AddCitationButton />,
         <LoginButton />,
         <SettingsButton />
@@ -67,10 +67,7 @@ export const FeedPage = (props: FeedProps) => {
                   xs={12}
                   md={12}
                 >
-                  <Paper
-                    sx={{
-                      border: currentFocus.focusedGUID === summary.guid ? "solid red 1px" : null
-                    }}>
+                  <Paper>
                     <FeedCard
                       summary={summary}
                       currentFocus={currentFocus}
@@ -147,6 +144,5 @@ const getCoordsFromSummary = (summary: Summary): Coords => {
 }
 
 const getCoordsFromCurrentCoords = (markerData: MarkerData[]): Coords => {
-  console.log({ markerData })
   return markerData.map(marker => marker.coordsObj)
 }

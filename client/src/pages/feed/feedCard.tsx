@@ -41,7 +41,7 @@ export const FeedCard = (props: FeedCardProps) => {
         height: 150
       }}
     >
-      <CardContent><Typography variant="h6">{text}</Typography></CardContent>
+      <CardContent><Typography variant="h6" gutterBottom textAlign="center">{text}</Typography></CardContent>
     </Card>
   )
 }

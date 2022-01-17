@@ -28,9 +28,9 @@ function App() {
             <Route path='/login'>
               <LoginPage />
             </Route>
-            <Route path='/search'>
+            {/* <Route path='/search'>
               <SearchPage />
-            </Route>
+            </Route> */}
             <Route path='/add-citation'>
               {
                 true ?? isLoggedIn() 
@@ -39,12 +39,12 @@ function App() {
 
               }
             </Route>
-            <Route path='/feed'>
+            <Route path='/'>
               <FeedPage />
             </Route>
-            <Route path='/'>
+            {/* <Route path='/'>
               {entity ? <HomePage /> : <SearchPage/>}
-            </Route>
+            </Route> */}
           </Switch>
       </Router>
     </LocalizationProvider>
