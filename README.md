@@ -27,7 +27,7 @@ The project is built as a series of microservices which communicate asynchronous
   - [build_geo_src](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/build_geo_src.py): sources geo data from geonames.org and saves it to disk for the use by other scripts.
   - [build_fake_data](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/build_fake_data.py): a script to generate a large amount of fake (but realistically interconnected) related data.
   - [mock_client](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/mockclient.py): a tool to programmatically publish data from json files to the GraphQL API endpoint.
-- User Service: Manages user information (in progress)
+- [User Accounts Service](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/accounts): Manages user information
 - Email Service: Provides email services across the application (in progress)
 - Logging Service: Tracks query/response times and application traffic patterns (in progress)
 
