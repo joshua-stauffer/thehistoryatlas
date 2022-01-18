@@ -1,11 +1,11 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
-import { useHistory } from 'react-router';
+import { useHistory, useParams } from 'react-router';
 import { handleFeedScroll } from '../../pureFunctions/scrollLogic';
 import { sliceManifest } from '../../pureFunctions/sliceManifest';
 import { initManifestSubset } from '../../pureFunctions/initializeManifestSubset';
 import { paginateFeed } from '../../pureFunctions/paginateFeed';
-import { 
+import {
   GET_MANIFEST, GetManifestResult, GetManifestVars,
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from '../../graphql/queries';
@@ -17,11 +17,12 @@ import { getFocusedGeoData } from '../../pureFunctions/getFocusedGeoData';
 
 export const useFeedLogic = () => {
   // state
-  const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
-  const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
-  const [ currentCoords, setCurrentCoords ] = useState<MarkerData[]>([])
-  const [ focusedGeoEntities, setFocusedGeoEntities] = useState<FocusedGeoEntity[]>([])
-  const [ currentFocus, setCurrentFocus ] = useState<CurrentFocus>({
+  const params = useParams()
+  const [currentEvents, setCurrentEvents] = useState<string[]>([])
+  const [currentSummaries, setCurrentSummaries] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
+  const [currentCoords, setCurrentCoords] = useState<MarkerData[]>([])
+  const [focusedGeoEntities, setFocusedGeoEntities] = useState<FocusedGeoEntity[]>([])
+  const [currentFocus, setCurrentFocus] = useState<CurrentFocus>({
     focusedGUID: 'not a guid',
     scrollIntoView: false
   })
@@ -37,7 +38,7 @@ export const useFeedLogic = () => {
   const setCurrentEntity = (props: addToHistoryProps): void => {
     const { entity, lastSummaryGUID } = props;
     setCurrentEvents([])
-    addToHistory( { entity, lastSummaryGUID } )
+    addToHistory({ entity, lastSummaryGUID })
     if (lastSummaryGUID) {
       setCurrentFocus(currentFocus => {
         return {
@@ -59,20 +60,20 @@ export const useFeedLogic = () => {
   // API Calls
   //  -- load manifest on current entity
   const {
-    loading: manifestLoading, 
-    error: manifestError, 
-    data: manifestData 
+    loading: manifestLoading,
+    error: manifestError,
+    data: manifestData
   } = useQuery<GetManifestResult, GetManifestVars>(
     GET_MANIFEST,
-    { variables: { GUID: currentEntity.entity.guid, entityType: currentEntity.entity.type} }
+    { variables: { GUID: currentEntity.entity.guid, entityType: currentEntity.entity.type } }
   )
   //  -- load summaries for slice of manifest currently in event feed
   const {
     loading: summariesLoading,
-    data: summariesData 
+    data: summariesData
   } = useQuery<GetSummariesByGUIDResult, GetSummariesByGUIDVars>(
-      GET_SUMMARIES_BY_GUID,
-      { variables: { summary_guids: currentEvents } }
+    GET_SUMMARIES_BY_GUID,
+    { variables: { summary_guids: currentEvents } }
   )
 
   // create a ref for interacting with event feed
@@ -105,8 +106,8 @@ export const useFeedLogic = () => {
     const { markerData } = getCoords({
       indices: indicesInCurrentPage,
       currentSummaries: currentSummaries
-      })
-      setCurrentCoords(markerData)
+    })
+    setCurrentCoords(markerData)
   }, [feedRef, currentEvents.length, currentSummaries])
 
   // feed logic
@@ -163,13 +164,13 @@ export const useFeedLogic = () => {
     const { markerData } = getCoords({
       indices: indicesInCurrentPage,
       currentSummaries: currentSummaries
-      })
-      setCurrentCoords(markerData)
-      const focusedGeoEntities = getFocusedGeoData({
-        currentSummaries: currentSummaries,
-        focusIndex: focusIndex
-      })
-      setFocusedGeoEntities(focusedGeoEntities);
+    })
+    setCurrentCoords(markerData)
+    const focusedGeoEntities = getFocusedGeoData({
+      currentSummaries: currentSummaries,
+      focusIndex: focusIndex
+    })
+    setFocusedGeoEntities(focusedGeoEntities);
   }
 
   // add handleScroll to the dom as an event listener
@@ -190,13 +191,13 @@ export const useFeedLogic = () => {
 
     const summaryList = (!manifestLoading && !manifestError) ? currentSummaries : []
   }
-  useEffect(() => console.log({currentFocus}))
-  useEffect(() => console.log({currentCoords}))
-  
+  useEffect(() => console.log({ currentFocus }))
+  useEffect(() => console.log({ currentCoords }))
 
-  return { 
-    feedRef, 
-    currentDate, 
+
+  return {
+    feedRef,
+    currentDate,
     handleTimelineClick,
     resetCurrentEvents,
     setCurrentEntity,

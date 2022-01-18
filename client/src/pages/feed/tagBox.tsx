@@ -1,5 +1,5 @@
-import {Paper, Chip} from '@mui/material'
-import { Person, Place, LockClockRounded } from '@mui/icons-material'
+import { Grid, Chip} from '@mui/material'
+import { Person, Place, Timer } from '@mui/icons-material'
 
 import { addToHistoryProps } from '../../hooks/history';
 import { EntityType } from '../../types'
@@ -21,27 +21,41 @@ interface TagBoxProps {
 export const TagBox = (props: TagBoxProps) => {
   const { tags, setCurrentEntity } = props;
   return (
-      <>
-      {tags.map(tag => 
-        <Chip 
-          variant={"filled"}
-          onClick={() => setCurrentEntity({ 
-            entity: { 
-              name: tag.name ?? 'NO NAME',
-              guid: tag.tag_guid, 
-              type: tag.tag_type 
-            } })}
-          icon={ tag.tag_type === 'PERSON'
-            ? <Person />
-            : tag.tag_type === 'PLACE'
-            ? <Place />
-            : <LockClockRounded />
-          }
-          title={tag.names?.join(' ') ?? tag.name ?? ''}
-          label={tag.names?.join(' ') ?? tag.name ?? ''}
-        />
-      )
-    }
-    </>
+      <Grid 
+        container 
+        justifyContent={"space-around"}
+      >
+        {tags.map(tag => 
+          <Grid item xs>
+            <Chip 
+              variant={"filled"}
+              onClick={() => setCurrentEntity({ 
+                entity: { 
+                  name: tag.name ?? 'NO NAME',
+                  guid: tag.tag_guid, 
+                  type: tag.tag_type 
+                } })}
+              icon={ tag.tag_type === 'PERSON'
+                ? <Person />
+                : tag.tag_type === 'PLACE'
+                ? <Place />
+                : <Timer />
+              }
+              title={tag.names?.join(' ') ?? tag.name ?? ''}
+              label={tag.names?.join(' ') ?? tag.name ?? ''}
+              color={getChipColor(tag)}
+            />
+          </Grid>
+        )
+      }
+    </Grid>
   )
+}
+
+
+type colorOptions = "primary" | "secondary" | "success"
+const getChipColor = (tag: Tag): colorOptions => {
+  if (tag.tag_type === "PERSON") return "primary"
+  if (tag.tag_type === "PLACE") return "secondary"
+  return "success"
 }

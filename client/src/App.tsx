@@ -5,10 +5,14 @@ import {
   Switch,
   Route,
 } from 'react-router-dom';
+import {
+  useTheme,
+  createTheme,
+  ThemeProvider
+} from '@mui/material/styles'
 import { useReactiveVar } from '@apollo/client';
 import { currentEntity } from './hooks/history'
-import { HomePage } from './pages/home';
-import { SearchPage } from './pages/search';
+import { ResourceNotFoundError } from './pages/errorPages';
 import { AddCitationPage } from './pages/addCitation'
 import { LoginPage } from './pages/login';
 import { FeedPage } from './pages/feed';
@@ -19,19 +23,22 @@ import LocalizationProvider from '@mui/lab/LocalizationProvider';
 
 function App() {
   const entity = useReactiveVar(currentEntity)
-  useEffect(() => console.log('current entity is ', entity))
+  const darkTheme = createTheme({
+    palette: {
+      mode: "light"
+    }
+  })
 
   return (
-    <LocalizationProvider dateAdapter={DateAdapter}>
+    <ThemeProvider theme={darkTheme}>
       <Router>
           <Switch>
             <Route path='/login'>
               <LoginPage />
             </Route>
-            {/* <Route path='/search'>
-              <SearchPage />
-            </Route> */}
-            <Route path='/add-citation'>
+            <Route 
+              path='/add-citation'
+            >
               {
                 true ?? isLoggedIn() 
                   ? <AddCitationPage />
@@ -42,12 +49,12 @@ function App() {
             <Route path='/'>
               <FeedPage />
             </Route>
-            {/* <Route path='/'>
-              {entity ? <HomePage /> : <SearchPage/>}
-            </Route> */}
+            <Route path='*'>
+              <ResourceNotFoundError />
+            </Route>  
           </Switch>
       </Router>
-    </LocalizationProvider>
+    </ThemeProvider>
   );
 }
 

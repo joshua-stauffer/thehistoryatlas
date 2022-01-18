@@ -1,7 +1,10 @@
-import { useRef } from 'react';
-import { Card, CardContent, Typography } from '@mui/material'
+import { useRef, useState } from 'react';
+import { Card, CardContent, CardActions, Typography, Collapse, IconButton } from '@mui/material'
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore'
+import ShareIcon from '@material-ui/icons/Share'
 
 import { CurrentFocus } from '../../types';
+import { SourceContent } from './sourceContent';
 
 
 interface FeedCardProps {
@@ -22,26 +25,42 @@ interface FeedCardProps {
 }
 
 export const FeedCard = (props: FeedCardProps) => {
+  const [isOpen, setIsOpen] = useState<boolean>(false)
+  const toggleIsOpen = () => setIsOpen(current => !current)
   const { 
-    summary: { guid, text }, 
-    currentFocus: { focusedGUID, scrollIntoView } 
+    summary: { guid, text, citation_guids }, 
+    currentFocus: { focusedGUID, scrollIntoView },
   } = props;
 
   const ref = useRef<HTMLDivElement>(null)
   if (ref.current && guid === focusedGUID) {
     if (scrollIntoView) ref.current.scrollIntoView()
   }
-  // console.log({props})
 
   return (
     <Card 
       ref={ref} 
       variant={"outlined"}
       sx={{
-        height: 150
+        minHeight: 150
       }}
     >
       <CardContent><Typography variant="h6" gutterBottom textAlign="center">{text}</Typography></CardContent>
+      <CardActions>
+        <IconButton>
+          <ShareIcon />
+        </IconButton>
+        <IconButton
+          onClick={toggleIsOpen}
+        >
+          <Typography variant="button">Source</Typography>
+          <ExpandMoreIcon />
+        </IconButton>
+      </CardActions>
+      <Collapse in={isOpen} timeout="auto">
+        <Typography>Hi! Citation here soon.</Typography>
+      </Collapse>
     </Card>
   )
 }
+// <SourceContent citationGUIDs={citation_guids} isOpen={isOpen} />
