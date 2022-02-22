@@ -31,6 +31,7 @@ class GeoService:
             self.query_handler.handle_query)
         db_update_timestamp = self.db.get_last_update_timestamp()
         if db_update_timestamp is None:
+            return # don't build for now
             # the geo database is empty, fill it!
             log.info('The Geo database is empty, filling it now')
             geo = GeoNames(self.config.GEONAMES_URL)

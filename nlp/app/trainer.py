@@ -17,7 +17,7 @@ class Trainer:
         self._OUT_DIR = config.TRAIN_DIR
 
     def build_training_file(self):
-        # TODO: divide into training/dev
+        # TODO: divide into training/devd
         nlp = spacy.blank('en')
         doc_bin = DocBin()
         annotated_text = self._db.get_training_corpus()

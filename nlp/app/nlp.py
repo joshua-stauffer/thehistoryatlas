@@ -5,18 +5,19 @@ May 13th, 2021
 """
 
 import asyncio
-from functools import partial
 import logging
 import os
-from shutil import copytree
 import signal
-from app.broker import Broker
+from functools import partial
+from shutil import copytree
+
 from tha_config import Config
-from app.state.database import Database
+
+from app.broker import Broker
 from app.processor import Processor
 from app.resolver import Resolver
+from app.state.database import Database
 from app.trainer import Trainer
-
 
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class NLPService:
         self.config.TRAIN_DIR = TRAIN_DIR    # directory for database to find training data
         self.config.OUT_DIR = MODEL_DIR     # directory for processor to find spaCy model
         self.config.DB_URI = 'sqlite+pysqlite:///:memory:'   # for now always use in memory db
-        # setup communication with the rest of teh application
+        # setup communication with the rest of the application
         self.broker = Broker(
             self.config,
             self.process_query,                 # single point of entry to NLP services
