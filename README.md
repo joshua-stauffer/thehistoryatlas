@@ -34,7 +34,7 @@ The project is built as a series of microservices which communicate asynchronous
 ## Local project setup
 - [install/setup docker](https://docs.docker.com/get-docker/)
 - fork/clone the repo, and navigate to the project root directory
-- Build the project with ``` sudo bash build.sh```
+- Build the project with ``` bash build.sh```
 - Run the project with ``` docker-compose up```
 - Generate fake data (or create your own real data) and publish it to the application using the scripts in the [builder](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/builder) directory.
 - Stop the project with ctl-C in the same terminal or with ```docker-compose down``` in a separate tab.
