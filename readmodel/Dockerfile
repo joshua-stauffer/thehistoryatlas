@@ -2,7 +2,7 @@ FROM python:3.9-slim-buster
 WORKDIR /app
 
 # get local python packages
-COPY --from=pylib /lib /lib
+COPY --from=ilriccio/thehistoryatlas:pylib /lib /lib
 
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
