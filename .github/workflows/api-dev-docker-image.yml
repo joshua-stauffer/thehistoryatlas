@@ -3,6 +3,8 @@ name: Docker Image CI
 on:
   push:
     branches: [ dev ]
+    paths:
+      - 'api/**'
 #   pull_request:
 #     branches: [ dev ]
 
@@ -25,7 +27,7 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./api
+        context: /api
         file: ./Dockerfile
         push: true
         tags: ilriccio/thehistoryatlas:api-dev
