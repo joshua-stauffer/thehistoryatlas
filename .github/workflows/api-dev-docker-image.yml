@@ -28,7 +28,7 @@ jobs:
       uses: docker/build-push-action@v2
       with:
         context: ./api
-        file: ./Dockerfile
+        file: ./api/Dockerfile
         push: true
         tags: ilriccio/thehistoryatlas:api-dev
     -
