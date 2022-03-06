@@ -1,0 +1,34 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ dev ]
+#   pull_request:
+#     branches: [ dev ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    -
+      name: Login to DockerHub
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        
+    -
+      name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: ./api
+        file: ./Dockerfile
+        push: true
+        tags: ilriccio/thehistoryatlas:api-dev
+    -
+      name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
