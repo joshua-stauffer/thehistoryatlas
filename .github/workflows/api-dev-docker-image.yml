@@ -5,8 +5,8 @@ on:
     branches: [ dev ]
     paths:
       - 'api/**'
-#   pull_request:
-#     branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
 
 jobs:
 

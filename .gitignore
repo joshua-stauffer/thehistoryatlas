@@ -41,3 +41,7 @@ yarn-error.log*
 
 # builder
 /builder/data/fake
+nlp/app/models/
+
+# IDE configs
+.vscode/
