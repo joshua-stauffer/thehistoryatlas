@@ -1,10 +1,8 @@
-name: API Dev Docker Image CI
+name: Readmodel Dev Docker Image CI
 
 on:
   push:
     branches: [ dev ]
-    # paths:
-    #   - 'api/**'
   pull_request:
     branches: [ dev ]
 
@@ -15,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    -
+      name: Checkout
+      uses: actions/checkout@v2
+    -
+      name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
     -
       name: Login to DockerHub
       uses: docker/login-action@v1
@@ -27,10 +31,11 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: /api
+        context: /readmodel
+        platforms: linux/amd64,linux/arm64
         file: ./Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:api-dev
+        tags: ilriccio/thehistoryatlas:readmodel-dev
     -
       name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
