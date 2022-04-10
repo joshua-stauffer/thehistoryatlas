@@ -9,7 +9,8 @@ COPY --from=0 /app/train /app/train
 
 WORKDIR /app
 # get local python packages
-COPY --from=pylib /lib /lib
+COPY --from=ilriccio/thehistoryatlas:pylib /lib /lib
+
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
 RUN pip3 install sqlalchemy
