@@ -2,6 +2,7 @@ FROM node:14 as build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+RUN npm install react-scripts
 ENV PATH /app/node_modules/.bin:$PATH
 RUN npm run build
 
