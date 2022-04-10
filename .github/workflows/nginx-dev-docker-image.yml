@@ -3,8 +3,12 @@ name: NGINX Dev Docker Image CI
 on:
   push:
     branches: [ dev ]
+    paths:
+      - ./client
   pull_request:
     branches: [ dev ]
+    paths:
+      - ./client
 
 jobs:
 

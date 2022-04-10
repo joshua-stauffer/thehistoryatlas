@@ -3,8 +3,12 @@ name: Writemodel Dev Docker Image CI
 on:
   push:
     branches: [ dev ]
+    paths:
+      - ./writemodel
   pull_request:
     branches: [ dev ]
+    paths:
+      - ./writemodel
 
 jobs:
 
