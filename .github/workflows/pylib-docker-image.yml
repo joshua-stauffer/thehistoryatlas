@@ -3,12 +3,8 @@ name: Pylib Docker Image CI
 on:
   push:
     branches: [ dev ]
-    paths:
-      - ./pylib
   pull_request:
     branches: [ dev ]
-    paths:
-      - ./pylib
 
 jobs:
 
