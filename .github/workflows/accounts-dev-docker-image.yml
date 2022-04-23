@@ -3,12 +3,8 @@ name: Accounts Dev Docker Image CI
 on:
   push:
     branches: [ dev ]
-    paths:
-      - ./accounts
   pull_request:
     branches: [ dev ]
-    paths:
-      - ./accounts
 
 jobs:
 

@@ -3,12 +3,8 @@ name: API Dev Docker Image CI
 on:
   push:
     branches: [ dev ]
-    paths:
-      - ./api
   pull_request:
     branches: [ dev ]
-    paths:
-      - ./api
 
 jobs:
 

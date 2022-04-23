@@ -3,12 +3,8 @@ name: History Dev Docker Image CI
 on:
   push:
     branches: [ dev ]
-    paths:
-      - ./history
   pull_request:
     branches: [ dev ]
-    paths:
-      - ./history
 
 jobs:
 
