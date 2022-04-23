@@ -45,5 +45,4 @@ nlp/app/models/
 
 # IDE configs
 .vscode/
-
 .idea/
