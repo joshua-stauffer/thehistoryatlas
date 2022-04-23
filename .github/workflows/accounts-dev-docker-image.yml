@@ -1,4 +1,4 @@
-name: API Dev Docker Image CI
+name: Accounts Dev Docker Image CI
 
 on:
   push:
@@ -46,11 +46,11 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./api
+        context: ./accounts
         platforms: linux/amd64,linux/arm64
-        file: ./api/Dockerfile
+        file: ./accounts/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:api-dev
+        tags: ilriccio/thehistoryatlas:accounts-dev
 
     -
       name: Image digest

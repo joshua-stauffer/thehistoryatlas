@@ -9,6 +9,13 @@ services:
             - "15672:15672"
         # volumes: 
         #    - broker:/var/lib/rabbitmq
+    nginx:
+        build:
+            context: ./client
+        networks:
+            - tha-connect
+        ports:
+            - "5055:80"
     api:
         depends_on:
             - broker
