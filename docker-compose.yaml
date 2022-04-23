@@ -7,15 +7,6 @@ services:
         ports:
             - "5672:5672"
             - "15672:15672"
-        # volumes: 
-        #    - broker:/var/lib/rabbitmq
-    nginx:
-        build:
-            context: ./client
-        networks:
-            - tha-connect
-        ports:
-            - "5055:80"
     api:
         depends_on:
             - broker
@@ -115,6 +106,23 @@ services:
             - tha-connect
         volumes:
             - accounts:/etc/db
+    db:
+        image: postgres
+        restart: always
+        environment:
+            - POSGRES_PASSWORD=hardpass123
+        networks:
+            - tha-connect
+
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+            - 8080:8080
+        networks:
+            - tha-connect
+        volumes:
+            - db:/var/lib/postgresql/data
 volumes:
     # broker:
     teststore:
@@ -123,5 +131,6 @@ volumes:
     readmodel:
     writemodel:
     accounts:
+    db:      # postgres
 networks:
     tha-connect:
