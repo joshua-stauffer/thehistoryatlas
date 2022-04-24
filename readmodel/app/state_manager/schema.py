@@ -76,7 +76,7 @@ class Tag(Base):
     """Base class for time, person, and place tags"""
 
     __tablename__ = "tags"
-    id = Column(VARCHAR, primary_key=True)
+    id = Column(INTEGER, primary_key=True)
     guid = Column(VARCHAR)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")

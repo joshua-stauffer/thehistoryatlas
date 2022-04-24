@@ -20,9 +20,9 @@ services:
             - tha-connect
     readmodel:
         depends_on:
+            - db
             - broker
             - history
-            - db
         build:
             context: ./readmodel
             args:
@@ -37,6 +37,7 @@ services:
 
     writemodel:
         depends_on:
+            - db
             - broker
             - history
             - eventstore
@@ -46,8 +47,11 @@ services:
                 test: "True"
         networks:
             - tha-connect
-        volumes:
-            - writemodel:/data/db
+        environment:
+            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/postgres
+            - CONFIG=PRODUCTION
+        # volumes:
+        #     - writemodel:/data/db
     eventstore:
         depends_on:
             - broker
@@ -120,6 +124,8 @@ services:
             - tha-connect
         ports:
             - 5432:5432
+        volumes:
+            - db:/var/lib/postgresql/data
 
     adminer:
         image: adminer
@@ -128,8 +134,7 @@ services:
             - 8080:8080
         networks:
             - tha-connect
-        volumes:
-            - db:/var/lib/postgresql/data
+
 volumes:
     # broker:
     teststore:

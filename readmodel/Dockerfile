@@ -1,11 +1,11 @@
 FROM python:3.9-slim-buster
 
 ## install dependencies
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y netcat-openbsd gcc && \
-    apt-get clean && \
-    apt install -y build-essential libpq-dev
+# RUN apt-get update && \
+#     apt-get upgrade -y && \
+#     apt-get install -y netcat-openbsd gcc && \
+#     apt-get clean && \
+#     apt install -y build-essential libpq-dev
 
 
 ## set environment variables
