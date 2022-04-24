@@ -32,7 +32,7 @@ class GeoNames:
         resource_url: str
     ) -> None:
         self._resource_url = resource_url
-        self._basedir = '/app/data/'
+        self._basedir = '.'
         self.RETRIES_ALLOWED = 3
         self.RETRY_TIMEOUT = 0.5
 

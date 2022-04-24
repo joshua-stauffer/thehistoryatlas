@@ -28,7 +28,7 @@ services:
             args:
                 test: "True"
         environment:
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/postgres
+            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
             - CONFIG=PRODUCTION
         networks:
             - tha-connect
@@ -48,7 +48,7 @@ services:
         networks:
             - tha-connect
         environment:
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/postgres
+            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
             - CONFIG=PRODUCTION
         # volumes:
         #     - writemodel:/data/db
@@ -93,6 +93,8 @@ services:
             args:
                 test: "False"
         environment:
+            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
+            - CONFIG=PRODUCTION
             - DEV_DB_URI=sqlite:////etc/db/geo.db
             # choose between one of the following two city lists:
             # cities500 is much more comprehensive, and also requires a much longer build.
@@ -100,8 +102,8 @@ services:
             # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
         networks: 
             - tha-connect
-        volumes:
-            - geodb:/etc/db
+        # volumes:
+        #     - geodb:/etc/db
     accounts:
         depends_on:
             -   broker
