@@ -1,7 +1,7 @@
 FROM python:3.9-slim-buster
 WORKDIR /app
 
-## set environment variables
+# set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 

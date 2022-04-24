@@ -3,10 +3,12 @@
 October 16th 2021
 """
 
+from ctypes.wintypes import BOOL
 from sqlalchemy import Column
 from sqlalchemy import String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.sqltypes import Boolean
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, BOOLEAN
 from app.types import UserDetails
 from app.utils import update_last_login
 
@@ -20,18 +22,18 @@ class User(Base):
     """Model representing Users and their data"""
 
     __tablename__ = "users"
-    id = Column(String(64), primary_key=True)
-    email = Column(String(128))
-    f_name = Column(String(64))
-    l_name = Column(String(64))
-    username = Column(String(64), unique=True)
-    password = Column(String(128))
-    type = Column(String(8), default="contrib")  # "admin" or "contrib"
+    id = Column(VARCHAR, primary_key=True)
+    email = Column(VARCHAR)
+    f_name = Column(VARCHAR)
+    l_name = Column(VARCHAR)
+    username = Column(VARCHAR, unique=True)
+    password = Column(VARCHAR)
+    type = Column(VARCHAR, default="contrib")  # "admin" or "contrib"
     last_login = Column(
-        String(32), onupdate=update_last_login, default=update_last_login
+        VARCHAR, onupdate=update_last_login, default=update_last_login
     )
-    deactivated = Column(Boolean, default=False)
-    confirmed = Column(Boolean, default=False)
+    deactivated = Column(BOOLEAN, default=False)
+    confirmed = Column(BOOLEAN, default=False)
 
     @property
     def is_admin(self):
