@@ -2,6 +2,7 @@ version: "3"
 services:
     broker:
         image: "rabbitmq:3-management"
+        restart: always
         networks:
             - tha-connect
         ports:
@@ -9,26 +10,28 @@ services:
             - "15672:15672"
     api:
         image: ilriccio/thehistoryatlas:api-dev
+        restart: always
         depends_on:
             - broker
             - writemodel
             - readmodel
             - eventstore
-        build: ./api
+#        build: ./api
         ports:
             - "4000:4000"
         networks:
             - tha-connect
     readmodel:
         image: ilriccio/thehistoryatlas:readmodel-dev
+        restart: always
         depends_on:
             - db
             - broker
             - history
-        build:
-            context: ./readmodel
-            args:
-                test: "True"
+#        build:
+#            context: ./readmodel
+#            args:
+#                test: "True"
         environment:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
@@ -38,15 +41,16 @@ services:
 
     writemodel:
         image: ilriccio/thehistoryatlas:writemodel-dev
+        restart: always
         depends_on:
             - db
             - broker
             - history
             - eventstore
-        build: 
-            context: ./writemodel
-            args:
-                test: "True"
+#        build:
+#            context: ./writemodel
+#            args:
+#                test: "True"
         networks:
             - tha-connect
         environment:
@@ -56,12 +60,14 @@ services:
 
     eventstore:
         image: ilriccio/thehistoryatlas:eventstore-dev
+        restart: always
         depends_on:
             - broker
-        build:
-            context: ./eventstore
-            args:
-                test: "False"
+            - db
+#        build:
+#            context: ./eventstore
+#            args:
+#                test: "False"
         networks:
             - tha-connect
         environment:
@@ -71,12 +77,14 @@ services:
 
     history:
         image: ilriccio/thehistoryatlas:history-dev
+        restart: always
         depends_on: 
             - broker
-        build:
-            context: ./history
-            args:
-                test: "False"
+            - db
+#        build:
+#            context: ./history
+#            args:
+#                test: "False"
         networks: 
             - tha-connect
         environment:
@@ -86,11 +94,12 @@ services:
 
     nlp:
         image: ilriccio/thehistoryatlas:nlp-dev
+        restart: always
         depends_on: 
             - broker
             - db
-        build:
-            context: ./nlp
+#        build:
+#            context: ./nlp
         environment: 
             - TESTING=False
             - PROD_DB_URI=
@@ -101,13 +110,14 @@ services:
 
     geo:
         image: ilriccio/thehistoryatlas:geo-dev
+        restart: always
         depends_on: 
             - db
             - broker
-        build:
-            context: ./geo
-            args:
-                test: "False"
+#        build:
+#            context: ./geo
+#            args:
+#                test: "False"
         environment:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
@@ -121,13 +131,14 @@ services:
 
     accounts:
         image: ilriccio/thehistoryatlas:accounts-dev
+        restart: always
         depends_on:
             - broker
             - db
-        build:
-            context: ./accounts
-            args:
-                test: "False"
+#        build:
+#            context: ./accounts
+#            args:
+#                test: "False"
         environment:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
