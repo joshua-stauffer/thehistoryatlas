@@ -16,7 +16,6 @@ from app.state.database import Database
 from app.processor import Processor
 from app.resolver import Resolver
 from app.trainer import Trainer
-from time import sleep
 
 
 logging.basicConfig(level='DEBUG')
@@ -24,7 +23,7 @@ log = logging.getLogger(__name__)
 
 BASE_MODEL_DIR = '/app/base-models'
 MODEL_DIR = './models'
-TRAIN_DIR = '/app/train'
+TRAIN_DIR = './train'
 
 class NLPService:
 

@@ -3,7 +3,7 @@
 May 21st 2021
 """
 
-from sqlalchemy import FLOAT, Column
+from sqlalchemy import Column
 from sqlalchemy import Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base

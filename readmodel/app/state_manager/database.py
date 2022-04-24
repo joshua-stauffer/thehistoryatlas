@@ -10,7 +10,6 @@ from time import sleep
 from typing import Tuple, Union
 
 from sqlalchemy import create_engine, select
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.state_manager.schema import (

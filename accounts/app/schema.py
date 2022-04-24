@@ -3,12 +3,9 @@
 October 16th 2021
 """
 
-from ctypes.wintypes import BOOL
 from sqlalchemy import Column
-from sqlalchemy import String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.sqltypes import Boolean
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, BOOLEAN
+from sqlalchemy.dialects.postgresql import VARCHAR, BOOLEAN
 from app.types import UserDetails
 from app.utils import update_last_login
 
