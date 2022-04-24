@@ -33,8 +33,6 @@ services:
             - CONFIG=DEVELOPMENT
         networks:
             - tha-connect
-#        volumes:
-#            - readmodel:/data/db
 
     writemodel:
         depends_on:
@@ -52,8 +50,7 @@ services:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
             - CONFIG=DEVELOPMENT
-        # volumes:
-        #     - writemodel:/data/db
+
     eventstore:
         depends_on:
             - broker
@@ -67,8 +64,7 @@ services:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
             - CONFIG=DEVELOPMENT
-        # volumes:
-        #     - teststore:/data/db
+
     history:
         depends_on: 
             - broker
@@ -82,8 +78,7 @@ services:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
             - CONFIG=DEVELOPMENT
-        # volumes:
-        #     - teststore:/data/db
+
     nlp:
         depends_on: 
             - broker
@@ -97,8 +92,7 @@ services:
             - CONFIG=DEVELOPMENT
         networks: 
             - tha-connect
-        # volumes:
-        #     - models:/app/models
+
     geo:
         depends_on: 
             - db
@@ -117,8 +111,7 @@ services:
             # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
         networks: 
             - tha-connect
-        # volumes:
-        #     - geodb:/etc/db
+
     accounts:
         depends_on:
             - broker
@@ -136,8 +129,7 @@ services:
             - REFRESH_BY=7200
         networks:
             - tha-connect
-        # volumes:
-        #     - accounts:/etc/db
+
     db:
         image: postgres
         restart: always
@@ -159,13 +151,6 @@ services:
             - tha-connect
 
 volumes:
-    # broker:
-    teststore:
-    models:
-    geodb:
-    readmodel:
-    writemodel:
-    accounts:
-    db:      # postgres
+    db:
 networks:
     tha-connect:
