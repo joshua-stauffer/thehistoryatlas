@@ -77,16 +77,20 @@ services:
     nlp:
         depends_on: 
             - broker
+            - db
         build:
             context: ./nlp
         environment: 
             - TESTING=False
+            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/nlp
+            - CONFIG=PRODUCTION
         networks: 
             - tha-connect
-        volumes:
-            - models:/app/models
+        # volumes:
+        #     - models:/app/models
     geo:
         depends_on: 
+            - db
             - broker
         build:
             context: ./geo

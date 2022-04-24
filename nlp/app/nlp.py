@@ -16,13 +16,14 @@ from app.state.database import Database
 from app.processor import Processor
 from app.resolver import Resolver
 from app.trainer import Trainer
+from time import sleep
 
 
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
 
 BASE_MODEL_DIR = '/app/base-models'
-MODEL_DIR = '/app/models'
+MODEL_DIR = './models'
 TRAIN_DIR = '/app/train'
 
 class NLPService:
@@ -31,8 +32,6 @@ class NLPService:
         self.config = Config()
         self.config.TRAIN_DIR = TRAIN_DIR    # directory for database to find training data
         self.config.OUT_DIR = MODEL_DIR     # directory for processor to find spaCy model
-        self.config.DB_URI = 'sqlite+pysqlite:///:memory:'   # for now always use in memory db
-        # setup communication with the rest of teh application
         self.broker = Broker(
             self.config,
             self.process_query,                 # single point of entry to NLP services

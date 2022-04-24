@@ -7,6 +7,7 @@ from sqlalchemy import Column
 from sqlalchemy import String
 from sqlalchemy import Integer
 from sqlalchemy import Boolean
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, BOOLEAN
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
@@ -16,10 +17,10 @@ Base = declarative_base()
 class AnnotatedCitation(Base):
     """Model representing a single annotated citation."""
 
-    __tablename__ = 'annotatedcitation'
+    __tablename__ = 'annotated_citation'
 
-    id = Column(Integer, primary_key=True)
-    text = Column(String)
+    id = Column(INTEGER, primary_key=True)
+    text = Column(VARCHAR)
     entities = relationship('Entity', back_populates='annotated_citation')
 
     def __repr__(self):
@@ -30,11 +31,11 @@ class Entity(Base):
 
     __tablename__ = 'entity'
 
-    id = Column(Integer, primary_key=True)
-    type = Column(String(16))               # PERSON PLACE TIME
-    start_char = Column(Integer)
-    stop_char = Column(Integer)
-    annotated_citation_id = Column(Integer, ForeignKey('annotatedcitation.id'))
+    id = Column(INTEGER, primary_key=True)
+    type = Column(VARCHAR)               # PERSON PLACE TIME
+    start_char = Column(INTEGER)
+    stop_char = Column(INTEGER)
+    annotated_citation_id = Column(INTEGER, ForeignKey('annotated_citation.id'))
     annotated_citation = relationship('AnnotatedCitation', back_populates='entities')
 
     def __repr__(self):
@@ -46,8 +47,8 @@ class Init(Base):
 
     __tablename__ = 'init'
 
-    id = Column(Integer, primary_key=True)
-    is_initialized = Column(Boolean)
+    id = Column(INTEGER, primary_key=True)
+    is_initialized = Column(BOOLEAN)
 
     def __repr__(self):
         if self.is_initialized:
