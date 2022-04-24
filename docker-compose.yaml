@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3"
 services:
     broker:
         image: "rabbitmq:3-management"
@@ -8,6 +8,7 @@ services:
             - "5672:5672"
             - "15672:15672"
     api:
+        image: ilriccio/thehistoryatlas:api-dev
         depends_on:
             - broker
             - writemodel
@@ -19,6 +20,7 @@ services:
         networks:
             - tha-connect
     readmodel:
+        image: ilriccio/thehistoryatlas:readmodel-dev
         depends_on:
             - db
             - broker
@@ -35,6 +37,7 @@ services:
             - tha-connect
 
     writemodel:
+        image: ilriccio/thehistoryatlas:writemodel-dev
         depends_on:
             - db
             - broker
@@ -52,6 +55,7 @@ services:
             - CONFIG=DEVELOPMENT
 
     eventstore:
+        image: ilriccio/thehistoryatlas:eventstore-dev
         depends_on:
             - broker
         build:
@@ -66,6 +70,7 @@ services:
             - CONFIG=DEVELOPMENT
 
     history:
+        image: ilriccio/thehistoryatlas:history-dev
         depends_on: 
             - broker
         build:
@@ -80,6 +85,7 @@ services:
             - CONFIG=DEVELOPMENT
 
     nlp:
+        image: ilriccio/thehistoryatlas:nlp-dev
         depends_on: 
             - broker
             - db
@@ -94,6 +100,7 @@ services:
             - tha-connect
 
     geo:
+        image: ilriccio/thehistoryatlas:geo-dev
         depends_on: 
             - db
             - broker
@@ -113,6 +120,7 @@ services:
             - tha-connect
 
     accounts:
+        image: ilriccio/thehistoryatlas:accounts-dev
         depends_on:
             - broker
             - db
