@@ -6,9 +6,11 @@ Provides read and write access to the Query database.
 import asyncio
 import json
 import logging
+from time import sleep
 from typing import Tuple, Union
 
 from sqlalchemy import create_engine, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.state_manager.schema import (
@@ -29,14 +31,35 @@ log = logging.getLogger(__name__)
 
 
 class Database:
+
     def __init__(self, config, stm_timeout: int = 5):
-        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+        self._engine = self._connect(
+            uri=config.DB_URI,
+            debug=config.DEBUG,
+            retries=-1,  # infinite
+            timeout=1
+        )
         # initialize the db
         Base.metadata.create_all(self._engine)
         self.__short_term_memory = dict()
         self.__stm_timeout = stm_timeout
         # intialize the search trie
         self._trie = Trie(self.get_all_entity_names())
+
+    def _connect(self, uri: str, debug: bool, retries: int = -1, timeout=30):
+
+        while True:
+        # while retries != 0:  # negative number allows infinite retries
+            try:
+                eng = create_engine(uri, echo=debug, echo_pool=True, future=True)
+                return eng
+            except BaseException:
+                print(f"hit exception {e}")
+                retries -= 1
+                sleep(timeout)
+
+
+        raise Exception("Exceeded max retries -- cannot connect to database.")
 
     # QUERIES
 
