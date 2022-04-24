@@ -22,14 +22,19 @@ services:
         depends_on:
             - broker
             - history
+            - db
         build:
             context: ./readmodel
             args:
                 test: "True"
+        environment:
+            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/postgres
+            - CONFIG=PRODUCTION
         networks:
             - tha-connect
-        volumes:
-            - readmodel:/data/db
+#        volumes:
+#            - readmodel:/data/db
+
     writemodel:
         depends_on:
             - broker
@@ -110,9 +115,11 @@ services:
         image: postgres
         restart: always
         environment:
-            - POSGRES_PASSWORD=hardpass123
+            - POSTGRES_PASSWORD=hardpass123
         networks:
             - tha-connect
+        ports:
+            - 5432:5432
 
     adminer:
         image: adminer
