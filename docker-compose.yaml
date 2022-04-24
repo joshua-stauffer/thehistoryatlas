@@ -28,8 +28,9 @@ services:
             args:
                 test: "True"
         environment:
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
-            - CONFIG=PRODUCTION
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
+            - CONFIG=DEVELOPMENT
         networks:
             - tha-connect
 #        volumes:
@@ -48,8 +49,9 @@ services:
         networks:
             - tha-connect
         environment:
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
-            - CONFIG=PRODUCTION
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
+            - CONFIG=DEVELOPMENT
         # volumes:
         #     - writemodel:/data/db
     eventstore:
@@ -61,8 +63,12 @@ services:
                 test: "False"
         networks:
             - tha-connect
-        volumes:
-            - teststore:/data/db
+        environment:
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
+            - CONFIG=DEVELOPMENT
+        # volumes:
+        #     - teststore:/data/db
     history:
         depends_on: 
             - broker
@@ -72,8 +78,12 @@ services:
                 test: "False"
         networks: 
             - tha-connect
-        volumes:
-            - teststore:/data/db
+        environment:
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
+            - CONFIG=DEVELOPMENT
+        # volumes:
+        #     - teststore:/data/db
     nlp:
         depends_on: 
             - broker
@@ -82,8 +92,9 @@ services:
             context: ./nlp
         environment: 
             - TESTING=False
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/nlp
-            - CONFIG=PRODUCTION
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/nlp
+            - CONFIG=DEVELOPMENT
         networks: 
             - tha-connect
         # volumes:
@@ -97,9 +108,9 @@ services:
             args:
                 test: "False"
         environment:
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
-            - CONFIG=PRODUCTION
-            - DEV_DB_URI=sqlite:////etc/db/geo.db
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
+            - CONFIG=DEVELOPMENT
             # choose between one of the following two city lists:
             # cities500 is much more comprehensive, and also requires a much longer build.
             - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
@@ -117,9 +128,12 @@ services:
             args:
                 test: "False"
         environment:
-            - PROD_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
-            - CONFIG=PRODUCTION
-            - DEV_DB_URI=sqlite:////etc/db/accounts.db
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
+            - CONFIG=DEVELOPMENT
+            - SEC_KEY=nHECungBxXETr9hdYml6sik9Eb368q0cm2wutp644oQ=
+            - TTL=28800
+            - REFRESH_BY=7200
         networks:
             - tha-connect
         # volumes:
