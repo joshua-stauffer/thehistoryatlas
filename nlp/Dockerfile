@@ -4,7 +4,7 @@ COPY /app /app
 FROM python:3.9-slim-buster
 
 RUN pip3 install spacy
-COPY --from=0 /app/base-models /app/base-models
+COPY --from=0 /app/base-models /app/base-models/model-best
 COPY --from=0 /app/train /app/train
 
 WORKDIR /app
