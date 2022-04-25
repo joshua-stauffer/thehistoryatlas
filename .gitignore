@@ -47,3 +47,4 @@ nlp/app/models/
 .vscode/
 .idea/
 geo/app/data/
+secrets.yaml
