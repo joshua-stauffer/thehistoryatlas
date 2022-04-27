@@ -10,6 +10,7 @@ from sqlalchemy import Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT
 from app.errors import EmptyNameError
 
 Base = declarative_base()
@@ -19,16 +20,16 @@ class Summary(Base):
     """Model representing a user-created event summary"""
 
     __tablename__ = "summaries"
-    id = Column(Integer, primary_key=True)
-    guid = Column(String(36))
-    text = Column(String)
+    id = Column(INTEGER, primary_key=True)
+    guid = Column(VARCHAR)
+    text = Column(VARCHAR)
 
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
 
     # TODO: this won't work with multiple time tags, gotta figure out a more
     #       efficient way to calculate the correct time
-    time_tag = Column(String(32))  # cache timetag name for sorting
+    time_tag = Column(VARCHAR)  # cache timetag name for sorting
 
     # each summary may have multiple citations
     citations = relationship("Citation", back_populates="summary")
@@ -39,13 +40,13 @@ class Citation(Base):
     their tags"""
 
     __tablename__ = "citations"
-    id = Column(Integer, primary_key=True)
-    guid = Column(String(36))
-    text = Column(String)
+    id = Column(INTEGER, primary_key=True)
+    guid = Column(VARCHAR(36))
+    text = Column(VARCHAR)
     # meta data stored as json string with arbitrary fields
     # not planning on querying against this, just need it available
-    meta = Column(String)
-    summary_id = Column(Integer, ForeignKey("summaries.id"))
+    meta = Column(VARCHAR)
+    summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="citations")
 
     def __repr__(self):
@@ -57,14 +58,14 @@ class TagInstance(Base):
     a tag."""
 
     __tablename__ = "taginstances"
-    id = Column(Integer, primary_key=True)
-    start_char = Column(Integer)
-    stop_char = Column(Integer)
+    id = Column(INTEGER, primary_key=True)
+    start_char = Column(INTEGER)
+    stop_char = Column(INTEGER)
     # parent summary
-    summary_id = Column(Integer, ForeignKey("summaries.id"))
+    summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="tags")
     # parent tag
-    tag_id = Column(Integer, ForeignKey("tags.id"))
+    tag_id = Column(INTEGER, ForeignKey("tags.id"))
     tag = relationship("Tag", back_populates="tag_instances")
 
     def __repr__(self):
@@ -75,9 +76,9 @@ class Tag(Base):
     """Base class for time, person, and place tags"""
 
     __tablename__ = "tags"
-    id = Column(Integer, primary_key=True)
-    guid = Column(String(36))
-    type = Column(String(8))  # 'TIME' | 'PERSON' | 'PLACE'
+    id = Column(INTEGER, primary_key=True)
+    guid = Column(VARCHAR)
+    type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
@@ -86,8 +87,8 @@ class Tag(Base):
 class Time(Tag):
 
     __tablename__ = "time"
-    id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
-    name = Column(String(32))
+    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
+    name = Column(VARCHAR)
 
     __mapper_args__ = {"polymorphic_identity": "TIME"}
 
@@ -98,8 +99,8 @@ class Time(Tag):
 class Person(Tag):
 
     __tablename__ = "person"
-    id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
-    names = Column(String)
+    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
+    names = Column(VARCHAR)
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
 
@@ -111,11 +112,11 @@ class Place(Tag):
 
     __tablename__ = "place"
 
-    id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
-    names = Column(String)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    geoshape = Column(String)
+    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
+    names = Column(VARCHAR)
+    latitude = Column(FLOAT)
+    longitude = Column(FLOAT)
+    geoshape = Column(VARCHAR)
 
     __mapper_args__ = {"polymorphic_identity": "PLACE"}
 
@@ -127,9 +128,9 @@ class Name(Base):
 
     __tablename__ = "name"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    _guids = Column(String)  # save as | separated values and parse on exit
+    id = Column(INTEGER, primary_key=True)
+    name = Column(VARCHAR)
+    _guids = Column(VARCHAR)  # save as | separated values and parse on exit
 
     @property
     def guids(self):
@@ -166,5 +167,5 @@ class History(Base):
 
     __tablename__ = "history"
 
-    id = Column(Integer, primary_key=True)
-    latest_event_id = Column(Integer, default=0)
+    id = Column(INTEGER, primary_key=True)
+    latest_event_id = Column(INTEGER, default=0)

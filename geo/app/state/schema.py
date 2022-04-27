@@ -4,19 +4,17 @@ May 21st 2021
 """
 
 from sqlalchemy import Column
-from sqlalchemy import String
-from sqlalchemy import Integer
-from sqlalchemy import Float
 from sqlalchemy import Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT
 
 Base = declarative_base()
 
 association_table = Table('association', Base.metadata,
-    Column('place_id', Integer, ForeignKey('places.id')),
-    Column('name_id', Integer, ForeignKey('names.id'))
+    Column('place_id', INTEGER, ForeignKey('places.id')),
+    Column('name_id', INTEGER, ForeignKey('names.id'))
 )
 
 class Name(Base):
@@ -24,8 +22,8 @@ class Name(Base):
 
     __tablename__ = 'names'
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, unique=True)
+    id = Column(INTEGER, primary_key=True)
+    name = Column(VARCHAR, unique=True)
     places = relationship(
         "Place",
         secondary=association_table,
@@ -39,12 +37,12 @@ class Place(Base):
 
     __tablename__ = 'places'
 
-    id = Column(Integer, primary_key=True)
-    geoname_id = Column(Integer)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    geoshape = Column(String)
-    modification_date = Column(String)
+    id = Column(INTEGER, primary_key=True)
+    geoname_id = Column(INTEGER)
+    latitude = Column(FLOAT)
+    longitude = Column(FLOAT)
+    geoshape = Column(VARCHAR)
+    modification_date = Column(VARCHAR)
 
     names = relationship(
         "Name",
@@ -59,8 +57,8 @@ class UpdateTracker(Base):
 
     __tablename__ = 'update_tracker'
 
-    id = Column(Integer, primary_key=True)
-    timestamp = Column(String(36))          # time accessed
+    id = Column(INTEGER, primary_key=True)
+    timestamp = Column(VARCHAR)          # time accessed
 
     def __repr__(self) -> str:
         return f'UpdateTracker( id: {self.id}, timestamp: {self.timestamp})'

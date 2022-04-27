@@ -1,127 +1,175 @@
-version: "3.9"
+version: "3"
 services:
     broker:
         image: "rabbitmq:3-management"
+        restart: always
         networks:
             - tha-connect
         ports:
             - "5672:5672"
             - "15672:15672"
-        # volumes: 
-        #    - broker:/var/lib/rabbitmq
-    nginx:
-        build:
-            context: ./client
-        networks:
-            - tha-connect
-        ports:
-            - "5055:80"
     api:
+        image: ilriccio/thehistoryatlas:api-dev
+        restart: always
         depends_on:
             - broker
             - writemodel
             - readmodel
             - eventstore
-        build: ./api
+#        build: ./api
         ports:
             - "4000:4000"
         networks:
             - tha-connect
     readmodel:
+        image: ilriccio/thehistoryatlas:readmodel-dev
+        restart: always
         depends_on:
+            - db
             - broker
             - history
-        build:
-            context: ./readmodel
-            args:
-                test: "True"
+#        build:
+#            context: ./readmodel
+#            args:
+#                test: "True"
+        environment:
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
+            - CONFIG=DEVELOPMENT
         networks:
             - tha-connect
-        volumes:
-            - readmodel:/data/db
+
     writemodel:
+        image: ilriccio/thehistoryatlas:writemodel-dev
+        restart: always
         depends_on:
+            - db
             - broker
             - history
             - eventstore
-        build: 
-            context: ./writemodel
-            args:
-                test: "True"
+#        build:
+#            context: ./writemodel
+#            args:
+#                test: "True"
         networks:
             - tha-connect
-        volumes:
-            - writemodel:/data/db
+        environment:
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
+            - CONFIG=DEVELOPMENT
+
     eventstore:
+        image: ilriccio/thehistoryatlas:eventstore-dev
+        restart: always
         depends_on:
             - broker
-        build:
-            context: ./eventstore
-            args:
-                test: "False"
+            - db
+#        build:
+#            context: ./eventstore
+#            args:
+#                test: "False"
         networks:
             - tha-connect
-        volumes:
-            - teststore:/data/db
+        environment:
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
+            - CONFIG=DEVELOPMENT
+
     history:
+        image: ilriccio/thehistoryatlas:history-dev
+        restart: always
         depends_on: 
             - broker
-        build:
-            context: ./history
-            args:
-                test: "False"
+            - db
+#        build:
+#            context: ./history
+#            args:
+#                test: "False"
         networks: 
             - tha-connect
-        volumes:
-            - teststore:/data/db
+        environment:
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
+            - CONFIG=DEVELOPMENT
+
     nlp:
+        image: ilriccio/thehistoryatlas:nlp-dev
+        restart: always
         depends_on: 
             - broker
-        build:
-            context: ./nlp
+            - db
+#        build:
+#            context: ./nlp
         environment: 
             - TESTING=False
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/nlp
+            - CONFIG=DEVELOPMENT
         networks: 
             - tha-connect
-        volumes:
-            - models:/app/models
+
     geo:
+        image: ilriccio/thehistoryatlas:geo-dev
+        restart: always
         depends_on: 
+            - db
             - broker
-        build:
-            context: ./geo
-            args:
-                test: "False"
+#        build:
+#            context: ./geo
+#            args:
+#                test: "False"
         environment:
-            - DEV_DB_URI=sqlite:////etc/db/geo.db
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
+            - CONFIG=DEVELOPMENT
             # choose between one of the following two city lists:
             # cities500 is much more comprehensive, and also requires a much longer build.
             - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
             # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
         networks: 
             - tha-connect
-        volumes:
-            - geodb:/etc/db
+
     accounts:
+        image: ilriccio/thehistoryatlas:accounts-dev
+        restart: always
         depends_on:
-            -   broker
-        build:
-            context: ./accounts
-            args:
-                test: "False"
+            - broker
+            - db
+#        build:
+#            context: ./accounts
+#            args:
+#                test: "False"
         environment:
-            - DEV_DB_URI=sqlite:////etc/db/accounts.db
+            - PROD_DB_URI=
+            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
+            - CONFIG=DEVELOPMENT
+            - SEC_KEY=nHECungBxXETr9hdYml6sik9Eb368q0cm2wutp644oQ=
+            - TTL=28800
+            - REFRESH_BY=7200
         networks:
             - tha-connect
+
+    db:
+        image: postgres
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=hardpass123
+        networks:
+            - tha-connect
+        ports:
+            - 5432:5432
         volumes:
-            - accounts:/etc/db
+            - db:/var/lib/postgresql/data
+
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+            - 8080:8080
+        networks:
+            - tha-connect
+
 volumes:
-    # broker:
-    teststore:
-    models:
-    geodb:
-    readmodel:
-    writemodel:
-    accounts:
+    db:
 networks:
     tha-connect:

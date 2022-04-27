@@ -46,3 +46,5 @@ nlp/app/models/
 # IDE configs
 .vscode/
 .idea/
+geo/app/data/
+secrets.yaml

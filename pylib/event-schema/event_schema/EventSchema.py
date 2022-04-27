@@ -6,7 +6,8 @@ Used by both the History service and the EventStore.
 #      this is no longer the case.
 
 import json
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import INTEGER, Column
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -14,14 +15,14 @@ Base = declarative_base()
 class Event(Base):
     __tablename__ = 'events'
 
-    id = Column(Integer, primary_key=True)
-    type = Column(String(36), nullable=False)               # string
-    transaction_guid = Column(String(36), nullable=False)   # group atomic events together if necessary
-    app_version = Column(String(8), nullable=False)         # keep track of which version created this event
+    id = Column(INTEGER, primary_key=True)
+    type = Column(VARCHAR, nullable=False)               # string
+    transaction_guid = Column(VARCHAR, nullable=False)   # group atomic events together if necessary
+    app_version = Column(VARCHAR, nullable=False)         # keep track of which version created this event
                                                             # to help with future compatability
-    timestamp = Column(String(32), nullable=False)          # Www, dd Mmm yyyy hh:mm:ss GMT
-    user = Column(String(36), nullable=False)               # user guid
-    payload = Column(String, nullable=False)                # arbitrary length string
+    timestamp = Column(VARCHAR, nullable=False)          # Www, dd Mmm yyyy hh:mm:ss GMT
+    user = Column(VARCHAR, nullable=False)               # user guid
+    payload = Column(VARCHAR, nullable=False)                # arbitrary length string
 
 
     def __repr__(self):

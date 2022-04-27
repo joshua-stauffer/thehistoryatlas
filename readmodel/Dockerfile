@@ -1,4 +1,9 @@
 FROM python:3.9-slim-buster
+
+## set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 WORKDIR /app
 
 # get local python packages

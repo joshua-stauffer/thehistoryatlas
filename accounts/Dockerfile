@@ -1,6 +1,10 @@
 FROM python:3.9-slim-buster
 WORKDIR /app
 
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 # get local python packages
 COPY --from=ilriccio/thehistoryatlas:pylib /lib /lib
 
@@ -16,7 +20,7 @@ ENV TESTING=False
 ENV DEBUG=True
 ENV CONFIG=DEV
 ENV PROD_DB_URI=
-ENV DEV_DB_URI=sqlite:////data/db/accounts.db
+ENV DEV_DB_URI=sqlite:////etc/db/accounts.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
