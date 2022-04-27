@@ -22,8 +22,8 @@ logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)
 
 BASE_MODEL_DIR = '/app/base-models'
-MODEL_DIR = './models'
-TRAIN_DIR = './train'
+MODEL_DIR = '/app/models'
+TRAIN_DIR = '/app/train'
 
 class NLPService:
 
