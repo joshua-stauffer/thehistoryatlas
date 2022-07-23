@@ -16,7 +16,7 @@ services:
             - writemodel
             - readmodel
             - eventstore
-#        build: ./api
+        build: ./api
         ports:
             - "4000:4000"
         networks:
@@ -28,10 +28,10 @@ services:
             - db
             - broker
             - history
-#        build:
-#            context: ./readmodel
-#            args:
-#                test: "True"
+        build:
+            context: ./readmodel
+            args:
+                test: "True"
         environment:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
@@ -47,10 +47,10 @@ services:
             - broker
             - history
             - eventstore
-#        build:
-#            context: ./writemodel
-#            args:
-#                test: "True"
+        build:
+            context: ./writemodel
+            args:
+                test: "True"
         networks:
             - tha-connect
         environment:
@@ -64,10 +64,10 @@ services:
         depends_on:
             - broker
             - db
-#        build:
-#            context: ./eventstore
-#            args:
-#                test: "False"
+        build:
+            context: ./eventstore
+            args:
+                test: "False"
         networks:
             - tha-connect
         environment:
@@ -81,10 +81,10 @@ services:
         depends_on: 
             - broker
             - db
-#        build:
-#            context: ./history
-#            args:
-#                test: "False"
+        build:
+            context: ./history
+            args:
+                test: "False"
         networks: 
             - tha-connect
         environment:
@@ -98,8 +98,8 @@ services:
         depends_on: 
             - broker
             - db
-#        build:
-#            context: ./nlp
+        build:
+            context: ./nlp
         environment: 
             - TESTING=False
             - PROD_DB_URI=
@@ -114,10 +114,10 @@ services:
         depends_on: 
             - db
             - broker
-#        build:
-#            context: ./geo
-#            args:
-#                test: "False"
+        build:
+            context: ./geo
+            args:
+                test: "False"
         environment:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
@@ -135,10 +135,10 @@ services:
         depends_on:
             - broker
             - db
-#        build:
-#            context: ./accounts
-#            args:
-#                test: "False"
+        build:
+            context: ./accounts
+            args:
+                test: "False"
         environment:
             - PROD_DB_URI=
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
