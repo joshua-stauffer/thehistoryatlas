@@ -21,6 +21,7 @@ services:
             - "4000:4000"
         networks:
             - tha-connect
+
     readmodel:
         image: ilriccio/thehistoryatlas:readmodel-dev
         restart: always
@@ -33,9 +34,10 @@ services:
             args:
                 test: "True"
         environment:
-            - PROD_DB_URI=
+            - PROD_DB_URI=${READMODEL_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
-            - CONFIG=DEVELOPMENT
+            - TESTING=False
+            - CONFIG=${CONFIG}
         networks:
             - tha-connect
 
@@ -54,9 +56,10 @@ services:
         networks:
             - tha-connect
         environment:
-            - PROD_DB_URI=
+            - PROD_DB_URI=${WRITEMODEL_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
-            - CONFIG=DEVELOPMENT
+            - CONFIG=${CONFIG}
+            - TESTING=False
 
     eventstore:
         image: ilriccio/thehistoryatlas:eventstore-dev
@@ -71,9 +74,10 @@ services:
         networks:
             - tha-connect
         environment:
-            - PROD_DB_URI=
+            - PROD_DB_URI=${EVENTSTORE_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
-            - CONFIG=DEVELOPMENT
+            - CONFIG=${CONFIG}
+            - TESTING=False
 
     history:
         image: ilriccio/thehistoryatlas:history-dev
@@ -88,9 +92,10 @@ services:
         networks: 
             - tha-connect
         environment:
-            - PROD_DB_URI=
+            - PROD_DB_URI=${EVENTSTORE_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
-            - CONFIG=DEVELOPMENT
+            - CONFIG=${CONFIG}
+            - TESTING=False
 
     nlp:
         image: ilriccio/thehistoryatlas:nlp-dev
@@ -102,10 +107,11 @@ services:
             context: ./nlp
         environment: 
             - TESTING=False
-            - PROD_DB_URI=
+            - PROD_DB_URI=${NLP_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/nlp
-            - CONFIG=DEVELOPMENT
-        networks: 
+            - CONFIG=${CONFIG}
+
+        networks:
             - tha-connect
 
     geo:
@@ -119,13 +125,15 @@ services:
             args:
                 test: "False"
         environment:
-            - PROD_DB_URI=
+            - PROD_DB_URI=${GEO_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
-            - CONFIG=DEVELOPMENT
+            - TESTING=False
             # choose between one of the following two city lists:
             # cities500 is much more comprehensive, and also requires a much longer build.
-            - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
-            # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
+            # - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
+            - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
+            - CONFIG=${CONFIG}
+
         networks: 
             - tha-connect
 
@@ -140,34 +148,38 @@ services:
             args:
                 test: "False"
         environment:
-            - PROD_DB_URI=
+            - PROD_DB_URI=${ACCOUNTS_CONN_STR}
             - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
-            - CONFIG=DEVELOPMENT
-            - SEC_KEY=nHECungBxXETr9hdYml6sik9Eb368q0cm2wutp644oQ=
+            - SEC_KEY=${ACCOUNTS_SEC_KEY}
             - TTL=28800
+            - TESTING=False
             - REFRESH_BY=7200
+            - CONFIG=${CONFIG}
+
         networks:
             - tha-connect
 
-    db:
-        image: postgres
-        restart: always
-        environment:
-            - POSTGRES_PASSWORD=hardpass123
-        networks:
-            - tha-connect
-        ports:
-            - 5432:5432
-        volumes:
-            - db:/var/lib/postgresql/data
-
-    adminer:
-        image: adminer
-        restart: always
-        ports:
-            - 8080:8080
-        networks:
-            - tha-connect
+#    # Note: used for local dev only
+#    db:
+#
+#        image: postgres
+#        restart: always
+#        environment:
+#            - POSTGRES_PASSWORD=hardpass123
+#        networks:
+#            - tha-connect
+#        ports:
+#            - 5432:5432
+#        volumes:
+#            - db:/var/lib/postgresql/data
+#
+#    adminer:
+#        image: adminer
+#        restart: always
+#        ports:
+#            - 8080:8080
+#        networks:
+#            - tha-connect
 
 volumes:
     db:
