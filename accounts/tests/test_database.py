@@ -10,24 +10,16 @@ from app.errors import MissingFieldsError
 from app.encryption import fernet
 
 
-def test_default_user(bare_db):
-    with Session(bare_db._engine, future=True) as session:
-        res = session.execute(select(User)).scalars()
-        assert (
-            len([r for r in res]) == 1
-        ), "If database is empty, expect one default admin user."
-
-
 def test_db_has_one_user(db):
     with Session(db._engine, future=True) as session:
         res = session.execute(select(User)).scalars()
-        assert len([r for r in res]) == 2, "Created an extra admin."
+        assert len([r for r in res]) == 1, "Created an extra admin."
 
 
 def test_loaded_db_has_three_users(loaded_db):
     with Session(loaded_db._engine, future=True) as session:
         res = session.execute(select(User)).scalars()
-        assert len([r for r in res]) == 4, "Three users to start, plus a default user."
+        assert len([r for r in res]) == 3, "Three users to start."
 
 
 def test_admin_can_add_user(db, other_user_details, active_admin_token):
