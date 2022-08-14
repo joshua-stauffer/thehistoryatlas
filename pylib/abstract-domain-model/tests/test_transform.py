@@ -287,7 +287,7 @@ def test_transform_meta_added(meta_added_data):
 
 def test_transform_without_type_raises_exception():
     with pytest.raises(UnknownMessageError):
-        from_dict({})
+        _ = from_dict({})
 
 
 def test_transform_with_missing_fields_raises_exception():
