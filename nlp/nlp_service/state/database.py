@@ -6,15 +6,15 @@ import logging
 import json
 import os
 from typing import Union, get_args, Literal
+from uuid import uuid4
 
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.state.schema import AnnotatedCitation
-from app.state.schema import Base
-from app.state.schema import Entity
-from app.state.schema import Init
+from nlp_service.state.schema import AnnotatedCitation
+from nlp_service.state.schema import Base
+from nlp_service.state.schema import Entity
 
 from abstract_domain_model.models import (
     CitationAdded,
@@ -42,52 +42,6 @@ class Database:
         self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
         # initialize the db
         Base.metadata.create_all(self._engine)
-        self.last_event_id = 0
-        if self._db_is_empty():
-            self._fill_db()
-
-    def _db_is_empty(self) -> bool:
-        """Checks to see if database is empty."""
-        with Session(self._engine, future=True) as session:
-            res = session.execute(select(Init).where(Init.id == 1)).scalar_one_or_none()
-            if res == None:
-                return True
-            else:
-                return False
-
-    def _fill_db(self):
-        """Loads database with files found in base_training_data"""
-        log.info("Filling the DB with initial training data")
-        training_data = list()
-        for file in os.scandir(self._config.TRAIN_DIR):
-            if os.path.isfile(file) and file.name.endswith(".json"):
-                with open(file.path, "r") as f:
-                    json_file = json.load(f)
-                    for entry in json_file:
-                        training_data.append(entry)
-        to_commit = list()
-        for citation in training_data:
-            content = citation.get("content")
-            entities = citation.get("entities")
-            annotated_citation = AnnotatedCitation(text=content)
-            to_commit.append(annotated_citation)
-            entity_list = [
-                Entity(
-                    start_char=e[0],
-                    stop_char=e[1],
-                    type=e[2],
-                    annotated_citation=annotated_citation,
-                )
-                for e in entities
-            ]
-            to_commit.extend(entity_list)
-
-        init = Init(is_initialized=True)
-        to_commit.append(init)
-        log.info(f"Initializing DB with {len(to_commit)} objects")
-        with Session(self._engine, future=True) as session:
-            session.add_all(to_commit)
-            session.commit()
 
     def get_training_corpus(self):
         """"""

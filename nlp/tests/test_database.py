@@ -1,20 +1,67 @@
+import json
 import os
+from logging import getLogger
+from uuid import uuid4
+
 import pytest
 from sqlalchemy import select
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
-from app.state.database import Database
-from app.state.schema import AnnotatedCitation
-from app.state.schema import Entity
+from nlp_service.state.database import Database
+from nlp_service.state.schema import AnnotatedCitation
+from nlp_service.state.schema import Entity
 
-ENTITIES = set(["PERSON", "PLACE", "TIME"])
+log = getLogger(__name__)
+
+ENTITIES = {"PERSON", "PLACE", "TIME"}
 
 
 class Config:
     """minimal class for setting up an in memory db for this test"""
 
     def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
+        self.DB_URI = "postgresql+psycopg2://postgres:hardpass123@localhost:5432/nlp"
         self.DEBUG = False  # outputs all activity
+        # TODO: make this dynamic
+        self.TRAIN_DIR = (
+            "/Users/josh/dev/thehistoryatlas/nlp/tests/test_train_dir/train.json"
+        )
+
+
+def fill_db(config: Config, engine: Engine):
+    """Loads database with files found in base_training_data"""
+    log.info("Filling the DB with initial training data")
+    training_data = list()
+    for file in os.scandir(config.TRAIN_DIR):
+        if os.path.isfile(file) and file.name.endswith(".json"):
+            with open(file.path, "r") as f:
+                json_file = json.load(f)
+                for entry in json_file:
+                    training_data.append(entry)
+    to_commit = list()
+    for citation in training_data:
+        citation_id = str(uuid4())
+        content = citation.get("content")
+        entities = citation.get("entities")
+        annotated_citation = AnnotatedCitation(text=content, id=citation_id)
+        to_commit.append(annotated_citation)
+        entity_list = [
+            Entity(
+                id=str(uuid4()),
+                start_char=e[0],
+                stop_char=e[1],
+                type=e[2],
+                annotated_citation=annotated_citation,
+            )
+            for e in entities
+        ]
+        to_commit.extend(entity_list)
+
+    to_commit.append(init)
+    log.info(f"Initializing DB with {len(to_commit)} objects")
+    with Session(self._engine, future=True) as session:
+        session.add_all(to_commit)
+        session.commit()
 
 
 @pytest.fixture
@@ -28,6 +75,7 @@ def db(config):
     config.TRAIN_DIR = root + "/tests/test_train_dir"
     config.debug = True
     db = Database(config)
+
     return db
 
 

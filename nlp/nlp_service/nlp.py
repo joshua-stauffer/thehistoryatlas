@@ -10,12 +10,12 @@ import logging
 import os
 from shutil import copytree
 import signal
-from app.broker import Broker
+from nlp_service.broker import Broker
 from tha_config import Config
-from app.state.database import Database
-from app.processor import Processor
-from app.resolver import Resolver
-from app.trainer import Trainer
+from nlp_service.state.database import Database
+from nlp_service.processor import Processor
+from nlp_service.resolver import Resolver
+from nlp_service.trainer import Trainer
 from abstract_domain_model.transform import from_dict
 
 

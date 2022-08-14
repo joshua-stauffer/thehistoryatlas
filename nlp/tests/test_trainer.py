@@ -1,6 +1,6 @@
 import os
 import pytest
-from app.trainer import Trainer
+from nlp_service.trainer import Trainer
 
 
 @pytest.fixture

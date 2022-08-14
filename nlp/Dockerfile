@@ -34,4 +34,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=nlp
-CMD ["python3", "-m", "app.nlp"]
+CMD ["python3", "-m", "nlp_service.nlp"]

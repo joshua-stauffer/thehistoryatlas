@@ -1,7 +1,7 @@
 from random import random
 from uuid import uuid4
 import pytest
-from app.resolver import Resolver
+from nlp_service.resolver import Resolver
 
 
 @pytest.fixture

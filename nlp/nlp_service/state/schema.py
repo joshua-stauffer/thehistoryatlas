@@ -3,6 +3,7 @@
 May 19th 2021
 """
 
+from uuid import uuid4
 from sqlalchemy import Column, Enum
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, BOOLEAN, UUID
 from sqlalchemy.orm import relationship
@@ -44,19 +45,3 @@ class Entity(Base):
             f"Entity(id: {self.id}, type: {self.type}, start_char: {self.start_char}, "
             + f"stop_char: {self.stop_char})"
         )
-
-
-class Init(Base):
-    """Model which tracks if this database instance has been initialized or not."""
-
-    __tablename__ = "init"
-
-    id = Column(INTEGER, primary_key=True)
-    is_initialized = Column(BOOLEAN)
-
-    def __repr__(self):
-        if self.is_initialized:
-            answer = "is"
-        else:
-            answer = "is not"
-        return f"This database {answer} initialized."
