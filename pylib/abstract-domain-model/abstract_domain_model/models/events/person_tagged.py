@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from typing import Literal
 
 
 @dataclass(frozen=True)
 class PersonTaggedPayload:
     summary_id: str
-    person_id: str
-    person_name: str
+    id: str
+    name: str
     citation_start: int
     citation_end: int
 

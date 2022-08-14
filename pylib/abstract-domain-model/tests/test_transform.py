@@ -43,7 +43,7 @@ def summary_added_data(baseline_event_data):
         "type": "SUMMARY_ADDED",
         "payload": {
             "citation_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "summary_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "text": "some text here please",
         },
     }
@@ -56,7 +56,7 @@ def summary_tagged_data(baseline_event_data):
         "type": "SUMMARY_TAGGED",
         "payload": {
             "citation_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "summary_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
         },
     }
 
@@ -68,8 +68,8 @@ def time_added_data(baseline_event_data):
         "type": "TIME_ADDED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "time_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "time_name": "name",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "name": "name",
             "citation_start": 10,
             "citation_end": 20,
         },
@@ -83,8 +83,8 @@ def time_tagged_data(baseline_event_data):
         "type": "TIME_TAGGED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "time_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "time_name": "name",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "name": "name",
             "citation_start": 10,
             "citation_end": 20,
         },
@@ -98,8 +98,8 @@ def place_added_data(baseline_event_data):
         "type": "PLACE_ADDED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "place_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "place_name": "name",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "name": "name",
             "citation_start": 10,
             "citation_end": 20,
             "latitude": 50.12345,
@@ -116,8 +116,8 @@ def place_tagged_data(baseline_event_data):
         "type": "PLACE_TAGGED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "place_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "place_name": "name",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "name": "name",
             "citation_start": 10,
             "citation_end": 20,
         },
@@ -131,8 +131,8 @@ def person_added_data(baseline_event_data):
         "type": "PERSON_ADDED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "person_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "person_name": "name",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "name": "name",
             "citation_start": 10,
             "citation_end": 20,
         },
@@ -146,8 +146,8 @@ def person_tagged_data(baseline_event_data):
         "type": "PERSON_TAGGED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "person_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "person_name": "name",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "name": "name",
             "citation_start": 10,
             "citation_end": 20,
         },
@@ -161,7 +161,7 @@ def citation_added_data(baseline_event_data):
         "type": "CITATION_ADDED",
         "payload": {
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "citation_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "text": "name",
             "tags": ["one", "two", "three"],
             "meta": "arbitrary value here",
@@ -176,7 +176,7 @@ def meta_added_data(baseline_event_data):
         "type": "META_ADDED",
         "payload": {
             "citation_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
-            "meta_id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "title": "name",
             "author": "name",
             "publisher": "some publisher",
