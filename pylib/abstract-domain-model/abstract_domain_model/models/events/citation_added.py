@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Literal, TypedDict, List
 
 
-class CitationAddedPayload(TypedDict):
+@dataclass(frozen=True)
+class CitationAddedPayload:
     summary_id: str
     citation_id: str
     text: str
