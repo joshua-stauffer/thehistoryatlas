@@ -5,6 +5,7 @@ from typing import Literal
 @dataclass(frozen=True)
 class PlaceTaggedPayload:
     summary_id: str
+    citation_id: str
     id: str
     name: str
     citation_start: int

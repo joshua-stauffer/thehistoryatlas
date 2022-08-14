@@ -5,6 +5,7 @@ from typing import Literal, Optional
 @dataclass(frozen=True)
 class PlaceAddedPayload:
     summary_id: str
+    citation_id: str
     id: str
     name: str
     citation_start: int

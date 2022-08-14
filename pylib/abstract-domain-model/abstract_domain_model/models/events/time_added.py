@@ -5,6 +5,7 @@ from typing import Literal, TypedDict
 @dataclass(frozen=True)
 class TimeAddedPayload:
     summary_id: str
+    citation_id: str
     id: str
     name: str
     citation_start: int
