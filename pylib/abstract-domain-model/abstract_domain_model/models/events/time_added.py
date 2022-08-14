@@ -5,8 +5,8 @@ from typing import Literal, TypedDict
 @dataclass(frozen=True)
 class TimeAddedPayload:
     summary_id: str
-    time_id: str
-    time_name: str
+    id: str
+    name: str
     citation_start: int
     citation_end: int
 
