@@ -3,8 +3,8 @@ from typing import Literal, TypedDict
 
 
 class PersonAddedPayload(TypedDict):
-    summary_guid: str
-    person_guid: str
+    summary_id: str
+    person_id: str
     person_name: str
     citation_start: int
     citation_end: int
@@ -12,7 +12,7 @@ class PersonAddedPayload(TypedDict):
 
 @dataclass(frozen=True)
 class PersonAdded:
-    transaction_guid: str
+    transaction_id: str
     app_version: str
     timestamp: str
     user: str

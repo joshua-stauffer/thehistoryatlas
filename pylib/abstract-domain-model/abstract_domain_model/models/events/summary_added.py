@@ -3,14 +3,14 @@ from typing import Literal, TypedDict
 
 
 class SummaryAddedPayload(TypedDict):
-    citation_guid: str
-    summary_guid: str
+    citation_id: str
+    summary_id: str
     text: str
 
 
 @dataclass(frozen=True)
 class SummaryAdded:
-    transaction_guid: str
+    transaction_id: str
     app_version: str
     timestamp: str
     user: str

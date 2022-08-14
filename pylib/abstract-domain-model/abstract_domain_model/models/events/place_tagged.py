@@ -3,8 +3,8 @@ from typing import Literal, TypedDict
 
 
 class PlaceTaggedPayload(TypedDict):
-    summary_guid: str
-    place_guid: str
+    summary_id: str
+    place_id: str
     place_name: str
     citation_start: int
     citation_end: int
@@ -12,7 +12,7 @@ class PlaceTaggedPayload(TypedDict):
 
 @dataclass(frozen=True)
 class PlaceTagged:
-    transaction_guid: str
+    transaction_id: str
     app_version: str
     timestamp: str
     user: str

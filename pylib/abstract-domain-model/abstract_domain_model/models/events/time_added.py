@@ -3,8 +3,8 @@ from typing import Literal, TypedDict
 
 
 class TimeAddedPayload(TypedDict):
-    summary_guid: str
-    time_guid: str
+    summary_id: str
+    time_id: str
     time_name: str
     citation_start: int
     citation_end: int
@@ -12,7 +12,7 @@ class TimeAddedPayload(TypedDict):
 
 @dataclass(frozen=True)
 class TimeAdded:
-    transaction_guid: str
+    transaction_id: str
     app_version: str
     timestamp: str
     user: str

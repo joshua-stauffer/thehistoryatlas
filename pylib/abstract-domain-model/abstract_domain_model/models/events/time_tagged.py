@@ -12,7 +12,7 @@ class TimeTaggedPayload(TypedDict):
 
 @dataclass(frozen=True)
 class TimeTagged:
-    transaction_guid: str
+    transaction_id: str
     app_version: str
     timestamp: str
     user: str

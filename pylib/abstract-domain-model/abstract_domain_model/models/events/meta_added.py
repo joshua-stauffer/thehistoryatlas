@@ -3,8 +3,8 @@ from typing import Literal, TypedDict
 
 
 class MetaAddedPayload(TypedDict):
-    citation_guid: str
-    meta_guid: str
+    citation_id: str
+    meta_id: str
     title: str
     author: str
     publisher: int
@@ -13,7 +13,7 @@ class MetaAddedPayload(TypedDict):
 
 @dataclass(frozen=True)
 class MetaAdded:
-    transaction_guid: str
+    transaction_id: str
     app_version: str
     timestamp: str
     user: str
