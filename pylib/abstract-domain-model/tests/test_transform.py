@@ -11,6 +11,16 @@ from abstract_domain_model.models import (
     PersonTagged,
     CitationAdded,
     MetaAdded,
+    TimeAddedPayload,
+    SummaryAddedPayload,
+    SummaryTaggedPayload,
+    TimeTaggedPayload,
+    PlaceAddedPayload,
+    PlaceTaggedPayload,
+    PersonAddedPayload,
+    PersonTaggedPayload,
+    CitationAddedPayload,
+    MetaAddedPayload,
 )
 from abstract_domain_model.transform import from_dict
 
@@ -177,68 +187,98 @@ def meta_added_data(baseline_event_data):
 def test_transform_summary_added(summary_added_data):
     res = from_dict(summary_added_data)
     assert isinstance(res, SummaryAdded)
+    assert isinstance(res.payload, SummaryAddedPayload)
     for key, value in summary_added_data.items():
+        if isinstance(value, dict):
+            value = SummaryAddedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_summary_tagged(summary_tagged_data):
     res = from_dict(summary_tagged_data)
     assert isinstance(res, SummaryTagged)
+    assert isinstance(res.payload, SummaryTaggedPayload)
     for key, value in summary_tagged_data.items():
+        if isinstance(value, dict):
+            value = SummaryTaggedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_time_added(time_added_data):
     res = from_dict(time_added_data)
     assert isinstance(res, TimeAdded)
+    assert isinstance(res.payload, TimeAddedPayload)
     for key, value in time_added_data.items():
+        if isinstance(value, dict):
+            value = TimeAddedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_time_tagged(time_tagged_data):
     res = from_dict(time_tagged_data)
     assert isinstance(res, TimeTagged)
+    assert isinstance(res.payload, TimeTaggedPayload)
     for key, value in time_tagged_data.items():
+        if isinstance(value, dict):
+            value = TimeTaggedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_place_added(place_added_data):
     res = from_dict(place_added_data)
     assert isinstance(res, PlaceAdded)
+    assert isinstance(res.payload, PlaceAddedPayload)
     for key, value in place_added_data.items():
+        if isinstance(value, dict):
+            value = PlaceAddedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_place_tagged(place_tagged_data):
     res = from_dict(place_tagged_data)
     assert isinstance(res, PlaceTagged)
+    assert isinstance(res.payload, PlaceTaggedPayload)
     for key, value in place_tagged_data.items():
+        if isinstance(value, dict):
+            value = PlaceTaggedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_person_added(person_added_data):
     res = from_dict(person_added_data)
     assert isinstance(res, PersonAdded)
+    assert isinstance(res.payload, PersonAddedPayload)
     for key, value in person_added_data.items():
+        if isinstance(value, dict):
+            value = PersonAddedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_person_tagged(person_tagged_data):
     res = from_dict(person_tagged_data)
     assert isinstance(res, PersonTagged)
+    assert isinstance(res.payload, PersonTaggedPayload)
     for key, value in person_tagged_data.items():
+        if isinstance(value, dict):
+            value = PersonTaggedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_citation_added(citation_added_data):
     res = from_dict(citation_added_data)
     assert isinstance(res, CitationAdded)
+    assert isinstance(res.payload, CitationAddedPayload)
     for key, value in citation_added_data.items():
+        if isinstance(value, dict):
+            value = CitationAddedPayload(**value)
         assert getattr(res, key) == value
 
 
 def test_transform_meta_added(meta_added_data):
     res = from_dict(meta_added_data)
     assert isinstance(res, MetaAdded)
+    assert isinstance(res.payload, MetaAddedPayload)
     for key, value in meta_added_data.items():
+        if isinstance(value, dict):
+            value = MetaAddedPayload(**value)
         assert getattr(res, key) == value
