@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Literal, TypedDict
 
 
-class TimeTaggedPayload(TypedDict):
+@dataclass(frozen=True)
+class TimeTaggedPayload:
     summary_id: str
     time_id: str
     time_name: str

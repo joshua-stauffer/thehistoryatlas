@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from typing import Literal, TypedDict, Optional
 
 
-class PlaceAddedPayload(TypedDict):
+@dataclass(frozen=True)
+class PlaceAddedPayload:
     summary_id: str
     place_id: str
     place_name: str

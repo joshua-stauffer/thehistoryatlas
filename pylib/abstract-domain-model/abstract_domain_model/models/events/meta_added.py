@@ -2,12 +2,13 @@ from dataclasses import dataclass
 from typing import Literal, TypedDict
 
 
-class MetaAddedPayload(TypedDict):
+@dataclass(frozen=True)
+class MetaAddedPayload:
     citation_id: str
     meta_id: str
     title: str
     author: str
-    publisher: int
+    publisher: str
     kwargs: dict
 
 
