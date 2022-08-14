@@ -16,6 +16,7 @@ from app.state.database import Database
 from app.processor import Processor
 from app.resolver import Resolver
 from app.trainer import Trainer
+from abstract_domain_model.transform import from_dict
 
 
 logging.basicConfig(level="DEBUG")
@@ -89,7 +90,8 @@ class NLPService:
 
     def process_event_stream(self, message):
         """Callback which handles events published to the emitted events stream."""
-        self.db.handle_event(message)
+        event = from_dict(message)
+        self.db.handle_event(event)
 
     def get_latest_event_id(self):
         """Returns the last event processed by the database"""

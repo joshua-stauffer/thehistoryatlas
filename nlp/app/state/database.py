@@ -5,6 +5,8 @@ from collections import namedtuple
 import logging
 import json
 import os
+from typing import Union, get_args
+
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -13,10 +15,24 @@ from app.state.schema import Base
 from app.state.schema import Entity
 from app.state.schema import Init
 
+from abstract_domain_model.models import (
+    CitationAdded,
+    PersonAdded,
+    PersonTagged,
+    PlaceAdded,
+    PlaceTagged,
+    TimeAdded,
+    TimeTagged,
+)
+from abstract_domain_model.types import Model
+
 
 log = logging.getLogger(__name__)
 
 CitationEntry = namedtuple("AnnotatedCitation", ["text", "entities"])
+TaggedEntity = Union[
+    PersonAdded, PersonTagged, PlaceAdded, PlaceTagged, TimeAdded, TimeTagged
+]
 
 
 class Database:
@@ -86,10 +102,28 @@ class Database:
                 res.append(CitationEntry(text, entities))
         return res
 
-    def handle_event(self, event):
+    def handle_event(self, event: Model):
         """Process an emitted event and save it to the database"""
-        # this isn't as strict with messages being lost/out of order, but
-        # shouldn't be a huge deal for this particular use case.
-        id = event.get("event_id")
-        if id > self.last_event_id:
-            self.last_event_id = id
+
+        if isinstance(event, CitationAdded):
+            self._handle_citation_added(event)
+        elif type(event) in get_args(TaggedEntity):
+            self._handle_entity_tagged(event)
+        else:
+            pass
+
+    def _handle_citation_added(self, event: CitationAdded) -> None:
+        """Persist citation text"""
+        citation = AnnotatedCitation(
+            id=event.payload.citation_id, text=event.payload.text
+        )
+        with Session(self._engine, future=True) as session:
+            session.add(citation)
+            session.commit()
+
+    def _handle_entity_tagged(self, event: TaggedEntity) -> None:
+        """Persist a tag"""
+        ...
+        # entity = Entity(
+        #     id=
+        # )
