@@ -10,6 +10,7 @@ from typing import Union, get_args, Literal
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.state.schema import AnnotatedCitation
 from app.state.schema import Base
 from app.state.schema import Entity
@@ -114,9 +115,7 @@ class Database:
 
     def _handle_citation_added(self, event: CitationAdded) -> None:
         """Persist citation text"""
-        citation = AnnotatedCitation(
-            id=event.payload.id, text=event.payload.text
-        )
+        citation = AnnotatedCitation(id=event.payload.id, text=event.payload.text)
         with Session(self._engine, future=True) as session:
             session.add(citation)
             session.commit()
@@ -138,5 +137,14 @@ class Database:
             name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
-            annotated_citation_id=event.transaction_id
+            annotated_citation_id=event.payload.citation_id,
         )
+        with Session(self._engine, future=True) as session:
+            # NOTE: if events have been received out of order, it's possible
+            #       that the citation doesn't yet exist, and this will error.
+            #       Not mission critical to have all the data, so allowing.
+            try:
+                session.add(entity)
+                session.commit()
+            except IntegrityError as e:
+                log.error(f"Encountered error while persisting Entity: {e}")
