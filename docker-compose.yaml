@@ -159,20 +159,20 @@ services:
         networks:
             - tha-connect
 
-#    # Note: used for local dev only
-#    db:
-#
-#        image: postgres
-#        restart: always
-#        environment:
-#            - POSTGRES_PASSWORD=hardpass123
-#        networks:
-#            - tha-connect
-#        ports:
-#            - 5432:5432
-#        volumes:
-#            - db:/var/lib/postgresql/data
-#
+#    # Note: used for local dev only, i.e. when CONFIG=DEVELOPMENT
+    db:
+
+        image: postgres
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=hardpass123
+        networks:
+            - tha-connect
+        ports:
+            - 5432:5432
+        volumes:
+            - db:/var/lib/postgresql/data
+
 #    adminer:
 #        image: adminer
 #        restart: always
