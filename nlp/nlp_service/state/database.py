@@ -88,7 +88,6 @@ class Database:
         entity = Entity(
             id=event.payload.id,
             type=type_,
-            name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
             annotated_citation_id=event.payload.citation_id,
