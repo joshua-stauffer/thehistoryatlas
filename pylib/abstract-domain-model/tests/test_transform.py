@@ -67,6 +67,7 @@ def time_added_data(baseline_event_data):
         **baseline_event_data,
         "type": "TIME_ADDED",
         "payload": {
+            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "name": "name",
@@ -82,6 +83,7 @@ def time_tagged_data(baseline_event_data):
         **baseline_event_data,
         "type": "TIME_TAGGED",
         "payload": {
+            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "name": "name",
@@ -97,6 +99,7 @@ def place_added_data(baseline_event_data):
         **baseline_event_data,
         "type": "PLACE_ADDED",
         "payload": {
+            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "name": "name",
@@ -115,6 +118,7 @@ def place_tagged_data(baseline_event_data):
         **baseline_event_data,
         "type": "PLACE_TAGGED",
         "payload": {
+            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "name": "name",
@@ -130,6 +134,7 @@ def person_added_data(baseline_event_data):
         **baseline_event_data,
         "type": "PERSON_ADDED",
         "payload": {
+            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "name": "name",
@@ -145,6 +150,7 @@ def person_tagged_data(baseline_event_data):
         **baseline_event_data,
         "type": "PERSON_TAGGED",
         "payload": {
+            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "name": "name",
