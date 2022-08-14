@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from abstract_domain_model.errors import UnknownMessageError
+from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
 from abstract_domain_model.models import (
     TimeAdded,
     SummaryAdded,
@@ -50,9 +50,13 @@ def from_dict(data: dict) -> Model:
     if type_ is None or cls is None:
         raise UnknownMessageError(data)
 
-    payload = data.pop("payload", None)
-    if payload is None:
-        return cls(**data)
+    try:
+        payload = data.pop("payload", None)
+        if payload is None:
+            return cls(**data)
 
-    typed_payload = payload_cls(**payload)
-    return cls(**data, payload=typed_payload)
+        typed_payload = payload_cls(**payload)
+        return cls(**data, payload=typed_payload)
+    except TypeError:
+        # raised when the dataclass isn't provided with required fields
+        raise MissingFieldsError(data)

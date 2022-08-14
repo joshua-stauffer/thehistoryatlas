@@ -1,5 +1,6 @@
 import pytest
 
+from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
 from abstract_domain_model.models import (
     SummaryAdded,
     SummaryTagged,
@@ -282,3 +283,14 @@ def test_transform_meta_added(meta_added_data):
         if isinstance(value, dict):
             value = MetaAddedPayload(**value)
         assert getattr(res, key) == value
+
+
+def test_transform_without_type_raises_exception():
+    with pytest.raises(UnknownMessageError):
+        from_dict({})
+
+
+def test_transform_with_missing_fields_raises_exception():
+    data = {"type": "PERSON_TAGGED"}
+    with pytest.raises(MissingFieldsError):
+        _ = from_dict(data)
