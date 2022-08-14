@@ -7,7 +7,7 @@ class MetaAddedPayload(TypedDict):
     meta_id: str
     title: str
     author: str
-    publisher: int
+    publisher: str
     kwargs: dict
 
 
