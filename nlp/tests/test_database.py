@@ -1,6 +1,7 @@
 import json
 import os
 from logging import getLogger
+from unittest.mock import patch, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -88,7 +89,7 @@ def config():
 
 
 @pytest.fixture
-def db(config):
+def db(config) -> Database:
     root = os.getcwd()
     if root.endswith("nlp"):
         config.TRAIN_DIR = root + "/tests/test_train_dir"
@@ -97,7 +98,7 @@ def db(config):
     config.debug = True
     db = Database(config)
     reset_db(db)
-    yield db
+    return db
 
 
 event_base_dict = {
@@ -260,3 +261,49 @@ def test_handle_entity_tagged(event, db, citation_added, request):
         assert entity.stop_char == event.payload.citation_end
         assert str(entity.annotated_citation_id) == event.payload.citation_id
         assert entity.type in event.type  # ex. "TIME" in "TIME_TAGGED"
+
+
+def test_handle_entity_tagged_fails_gracefully_on_integrity_error(db, person_added):
+    db._handle_entity_tagged(person_added)
+    with Session(db._engine, future=True) as session:
+        entity = (
+            session.query(Entity)
+            .filter(Entity.id == person_added.payload.id)
+            .one_or_none()
+        )
+        assert entity is None
+
+
+@patch("nlp_service.state.database.Database._handle_citation_added")
+def test_handle_event_calls_handle_citation_added(func, db, citation_added):
+    db.handle_event(citation_added)
+    func.assert_called_with(citation_added)
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        "person_added",
+        "person_tagged",
+        "place_added",
+        "place_tagged",
+        "time_added",
+        "time_tagged",
+    ],
+)
+@patch("nlp_service.state.database.Database._handle_entity_tagged")
+def test_handle_event_calls_handle_entity_tagged(func, event, db, request):
+    event = request.getfixturevalue(event)
+    db.handle_event(event)
+    func.assert_called_with(event)
+
+
+@patch("nlp_service.state.database.Database._handle_citation_added")
+@patch("nlp_service.state.database.Database._handle_entity_tagged")
+def test_handle_event_does_nothing_with_unknown_event(
+    handle_entity_tagged, handle_citation_added, db
+):
+    event = MagicMock()
+    db.handle_event(event)
+    handle_entity_tagged.assert_not_called()
+    handle_citation_added.assert_not_called()
