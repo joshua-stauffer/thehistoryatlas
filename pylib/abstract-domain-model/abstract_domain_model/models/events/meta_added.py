@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from typing import Literal
 
 
 @dataclass(frozen=True)
 class MetaAddedPayload:
     citation_id: str
-    meta_id: str
+    id: str
     title: str
     author: str
     publisher: str

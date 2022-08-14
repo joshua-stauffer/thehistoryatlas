@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from typing import Literal
 
 
 @dataclass(frozen=True)
 class SummaryAddedPayload:
     citation_id: str
-    summary_id: str
+    id: str
     text: str
 
 
