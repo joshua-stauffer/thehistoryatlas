@@ -16,6 +16,6 @@ class PersonTagged:
     transaction_id: str
     app_version: str
     timestamp: str
-    user: str
+    user_id: str
     payload: PersonTaggedPayload
     type: Literal["PERSON_TAGGED"] = "PERSON_TAGGED"

@@ -12,6 +12,6 @@ class SummaryTagged:
     transaction_id: str
     app_version: str
     timestamp: str
-    user: str
+    user_id: str
     payload: SummaryTaggedPayload
     type: Literal["SUMMARY_TAGGED"] = "SUMMARY_TAGGED"

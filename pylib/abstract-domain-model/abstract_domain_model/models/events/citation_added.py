@@ -16,6 +16,6 @@ class CitationAdded:
     transaction_id: str
     app_version: str
     timestamp: str
-    user: str
+    user_id: str
     payload: CitationAddedPayload
     type: Literal["CITATION_ADDED"] = "CITATION_ADDED"

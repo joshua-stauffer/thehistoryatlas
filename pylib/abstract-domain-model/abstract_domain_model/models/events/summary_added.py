@@ -13,6 +13,6 @@ class SummaryAdded:
     transaction_id: str
     app_version: str
     timestamp: str
-    user: str
+    user_id: str
     payload: SummaryAddedPayload
     type: Literal["SUMMARY_ADDED"] = "SUMMARY_ADDED"
