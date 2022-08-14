@@ -5,7 +5,7 @@ from collections import namedtuple
 import logging
 import json
 import os
-from typing import Union, get_args
+from typing import Union, get_args, Literal
 
 from sqlalchemy import create_engine
 from sqlalchemy import select
@@ -115,7 +115,7 @@ class Database:
     def _handle_citation_added(self, event: CitationAdded) -> None:
         """Persist citation text"""
         citation = AnnotatedCitation(
-            id=event.payload.citation_id, text=event.payload.text
+            id=event.payload.id, text=event.payload.text
         )
         with Session(self._engine, future=True) as session:
             session.add(citation)
@@ -123,7 +123,20 @@ class Database:
 
     def _handle_entity_tagged(self, event: TaggedEntity) -> None:
         """Persist a tag"""
-        ...
-        # entity = Entity(
-        #     id=
-        # )
+        type_: Literal["PERSON", "PLACE", "TIME"]
+        if type(event) in (PersonAdded, PersonTagged):
+            type_ = "PERSON"
+        elif type(event) in (PlaceAdded, PlaceTagged):
+            type_ = "PLACE"
+        elif type(event) in (TimeAdded, TimeTagged):
+            type_ = "TIME"
+        else:
+            raise Exception(f"Cannot handle unknown event type: {type(event)}")
+        entity = Entity(
+            id=event.payload.id,
+            type=type_,
+            name=event.payload.name,
+            start_char=event.payload.citation_start,
+            stop_char=event.payload.citation_end,
+            annotated_citation_id=event.transaction_id
+        )
