@@ -7,12 +7,13 @@ import logging
 
 log = logging.getLogger(__name__)
 
-ENTITY_TYPES = ['PERSON', 'PLACE', 'TIME']
+ENTITY_TYPES = ["PERSON", "PLACE", "TIME"]
 TextMap = dict[str, list[dict]]
+
 
 class Resolver:
     """Class corresponding to the lifetime of an API request. A new instance
-    is created when a request is received, stored in the NLP resolver store 
+    is created when a request is received, stored in the NLP resolver store
     by correlation id, and removed after the final subquery is resolved and
     a response has been sent.
 
@@ -27,22 +28,23 @@ class Resolver:
                                also sends the response to close the query.
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         text: str,
         text_map: dict,
         corr_id: str,
         pub_func: Callable,
         query_geo: Callable,
-        query_readmodel: Callable
-        ) -> None:
-        """Create a session to manage the state of an API query between 
+        query_readmodel: Callable,
+    ) -> None:
+        """Create a session to manage the state of an API query between
         receipt of request and returning the response."""
         # unique identifier for this instance of the class
         self._corr_id = corr_id
         # data
         self._text = text
         self._text_map = text_map
-        self._tag_view = list()     # utility view to work with all tags at once
+        self._tag_view = list()  # utility view to work with all tags at once
         [self._tag_view.extend(tag_list) for tag_list in text_map.values()]
         # methods and properties for interacting with other services
         self._pub_func = pub_func
@@ -60,66 +62,54 @@ class Resolver:
         """Call when a new query session is created. Opens query requests to
         the ReadModel and the GeoService."""
 
-        log.info(f'Creating subqueries for query {self._corr_id}')
+        log.info(f"Creating subqueries for query {self._corr_id}")
         # TODO: if names aren't found for a service request, shouldn't send it.
         all_names = self._get_names(self._text_map)
-        geo_names = self._get_names(self._text_map, key='PLACE')
-        rm_query = {
-            'type': 'GET_GUIDS_BY_NAME_BATCH',
-            'payload': { 'names': all_names }
-        }
+        geo_names = self._get_names(self._text_map, key="PLACE")
+        rm_query = {"type": "GET_GUIDS_BY_NAME_BATCH", "payload": {"names": all_names}}
         geo_query = {
-            'type': 'GET_COORDS_BY_NAME_BATCH',
-            'payload': { 'names': geo_names }
+            "type": "GET_COORDS_BY_NAME_BATCH",
+            "payload": {"names": geo_names},
         }
-        await self._query_rm(
-            query=rm_query,
-            corr_id=self._corr_id)
-        await self._query_geo(
-            query=geo_query,
-            corr_id=self._corr_id)
+        await self._query_rm(query=rm_query, corr_id=self._corr_id)
+        await self._query_geo(query=geo_query, corr_id=self._corr_id)
 
-    async def handle_response(self,
-        response: dict
-        ) -> None:
+    async def handle_response(self, response: dict) -> None:
         """Handles an incoming query response and updates session state accordingly.
         If incoming query response is the last we were waiting for, publishes the
         results back to the original requester based on reply_to field they provided."""
 
-        log.info(f'Received subquery response: {response}')
-        resp_type = response.get('type')
-        if resp_type == 'COORDS_BY_NAME_BATCH':
+        log.info(f"Received subquery response: {response}")
+        resp_type = response.get("type")
+        if resp_type == "COORDS_BY_NAME_BATCH":
             if self._geo_complete == True:
                 return  # this query has already been resolved
-            coord_map = response['payload']['coords']
+            coord_map = response["payload"]["coords"]
             self._add_coords(coord_map)
             self._geo_complete = True
-        elif resp_type == 'GUIDS_BY_NAME_BATCH': 
+        elif resp_type == "GUIDS_BY_NAME_BATCH":
             if self._rm_complete == True:
                 return  # this query has already been resolved
-            name_map = response['payload']['names']
+            name_map = response["payload"]["names"]
             self._add_guids(name_map)
             self._rm_complete = True
         else:
-            raise Exception(f'Unknown response type {resp_type}')
+            raise Exception(f"Unknown response type {resp_type}")
 
         if self.has_resolved:
             # send result back to service that requested this query
-            log.info(f'Query {self._corr_id} is now complete :: sending reply')
+            log.info(f"Query {self._corr_id} is now complete :: sending reply")
             log.debug(self._tag_view)
             log.debug(self._text_map)
-            await self._pub_func({
-                'type': 'TEXT_PROCESSED',
-                'payload': {
-                    'text_map': self._text_map,
-                    'text': self._text
-                }})
+            await self._pub_func(
+                {
+                    "type": "TEXT_PROCESSED",
+                    "payload": {"text_map": self._text_map, "text": self._text},
+                }
+            )
 
     @staticmethod
-    def _get_names(
-        entities: TextMap,
-        key: str=None
-        ) -> TextMap:
+    def _get_names(entities: TextMap, key: str = None) -> TextMap:
         """Returns a single list of all names found within entities: TextMap[key]['text']
         If no key is passed returns results for keys defined in ENTITY_TYPES"""
         names = list()
@@ -128,24 +118,20 @@ class Resolver:
         else:
             keys = [key]
         for k in keys:
-            names.extend(entity['text'] for entity in entities[k])
+            names.extend(entity["text"] for entity in entities[k])
         return names
 
-    def _add_guids(self,
-        name_map: dict
-        ) -> None:
+    def _add_guids(self, name_map: dict) -> None:
         """Add GUIDs received from a service to the current text_map"""
         for tag in self._tag_view:
-            tag_name = tag['text']
+            tag_name = tag["text"]
             # we need every tag to have a guids list, whether or not we found results
-            tag['guids'] = name_map.get(tag_name)
+            tag["guids"] = name_map.get(tag_name)
 
-    def _add_coords(self,
-        coord_map: dict
-        ) -> None:
+    def _add_coords(self, coord_map: dict) -> None:
         """Add coordinates received from GeoService to the current text_map.
         If no geo name was found, the coordinate field will not be added."""
         for tag in self._tag_view:
-            tag_name = tag['text']
+            tag_name = tag["text"]
             if coords := coord_map.get(tag_name):
-                tag['coords'] = coords
+                tag["coords"] = coords

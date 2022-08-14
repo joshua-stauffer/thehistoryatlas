@@ -20,6 +20,7 @@ COPY --from=ilriccio/thehistoryatlas:pylib /lib /lib
 
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
+RUN pip3 install /lib/abstract-domain-model
 RUN pip3 install sqlalchemy
 RUN pip3 install psycopg2-binary
 COPY . .

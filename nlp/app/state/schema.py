@@ -14,45 +14,50 @@ from sqlalchemy.sql.schema import ForeignKey
 
 Base = declarative_base()
 
+
 class AnnotatedCitation(Base):
     """Model representing a single annotated citation."""
 
-    __tablename__ = 'annotated_citation'
+    __tablename__ = "annotated_citation"
 
     id = Column(INTEGER, primary_key=True)
     text = Column(VARCHAR)
-    entities = relationship('Entity', back_populates='annotated_citation')
+    entities = relationship("Entity", back_populates="annotated_citation")
 
     def __repr__(self):
         return f"AnnotatedCitation(id: {self.id}, text: {self.text})"
 
+
 class Entity(Base):
     """Model representing an entity tagged in an annotation."""
 
-    __tablename__ = 'entity'
+    __tablename__ = "entity"
 
     id = Column(INTEGER, primary_key=True)
-    type = Column(VARCHAR)               # PERSON PLACE TIME
+    type = Column(VARCHAR)  # PERSON PLACE TIME
     start_char = Column(INTEGER)
     stop_char = Column(INTEGER)
-    annotated_citation_id = Column(INTEGER, ForeignKey('annotated_citation.id'))
-    annotated_citation = relationship('AnnotatedCitation', back_populates='entities')
+    annotated_citation_id = Column(INTEGER, ForeignKey("annotated_citation.id"))
+    annotated_citation = relationship("AnnotatedCitation", back_populates="entities")
 
     def __repr__(self):
-        return f'Entity(id: {self.id}, type: {self.type}, start_char: {self.start_char}, ' + \
-               f'stop_char: {self.stop_char})'
+        return (
+            f"Entity(id: {self.id}, type: {self.type}, start_char: {self.start_char}, "
+            + f"stop_char: {self.stop_char})"
+        )
+
 
 class Init(Base):
     """Model which tracks if this database instance has been initialized or not."""
 
-    __tablename__ = 'init'
+    __tablename__ = "init"
 
     id = Column(INTEGER, primary_key=True)
     is_initialized = Column(BOOLEAN)
 
     def __repr__(self):
         if self.is_initialized:
-            answer = 'is'
+            answer = "is"
         else:
-            answer = 'is not'
-        return f'This database {answer} initialized.'
+            answer = "is not"
+        return f"This database {answer} initialized."
