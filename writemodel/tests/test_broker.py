@@ -5,12 +5,14 @@ from uuid import uuid4
 import pytest
 from writemodel.broker import Broker
 
+
 @pytest.fixture
 def broker(monkeypatch, get_latest_event_id, create_message_tuple, publish_one_tuple):
     # patch init to not inherit from BrokerBase
     def mock_init(self):
         return
-    monkeypatch.setattr(Broker, '__init__', mock_init)
+
+    monkeypatch.setattr(Broker, "__init__", mock_init)
     b = Broker()
     # set init attributes by hand
     b.is_history_replaying = False
@@ -29,30 +31,39 @@ def broker(monkeypatch, get_latest_event_id, create_message_tuple, publish_one_t
     b.publish_one_store = publish_one_store
     return b
 
+
 @pytest.fixture
 def get_latest_event_id():
     def func():
         # lets always return 11
         return 11
+
     return func
+
 
 @pytest.fixture
 def create_message_tuple():
     store = list()
+
     def create_message(self, *args, **kwargs):
         store.append([args, kwargs])
+
     return create_message, store
+
 
 @pytest.fixture
 def publish_one_tuple():
     store = list()
+
     async def publish_one(self, *args, **kwargs):
         store.append([args, kwargs])
+
     return publish_one, store
 
 
 def test_broker_exists(broker):
     assert broker != None
+
 
 @pytest.mark.asyncio
 async def test_request_history_replay_no_index(broker):

@@ -9,6 +9,7 @@ from writemodel.state_manager.command_handler import CommandHandler
 from writemodel.state_manager.event_handler import EventHandler
 from writemodel.state_manager.text_processor import TextHasher
 
+
 class Manager:
     """A class to share the database resource between command handlers
     and event handlers."""

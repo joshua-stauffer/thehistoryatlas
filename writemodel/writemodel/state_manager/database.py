@@ -16,14 +16,10 @@ from writemodel.state_manager.schema import History
 
 log = logging.getLogger(__name__)
 
-class Database:
 
-    def __init__(self, config, stm_timeout: int=60):
-        self._engine = create_engine(
-            config.DB_URI,
-            echo=config.DEBUG,
-            future=True
-        )
+class Database:
+    def __init__(self, config, stm_timeout: int = 60):
+        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
         # initialize the db
         Base.metadata.create_all(self._engine)
         self.__short_term_memory = dict()
@@ -33,14 +29,14 @@ class Database:
         """Looks for hash in table CitationHash and returns GUID if found"""
 
         if tmp_guid := self.__short_term_memory.get(text_hash):
-            log.info('Matched a hashed citation in short term memory')
+            log.info("Matched a hashed citation in short term memory")
             return tmp_guid
-        
+
         with Session(self._engine, future=True) as sess:
             result = sess.execute(
-                select(CitationHash).where(CitationHash.hash==text_hash)
+                select(CitationHash).where(CitationHash.hash == text_hash)
             ).scalar_one_or_none()
-            log.debug(f'Database: searching for citation and found {result}')
+            log.debug(f"Database: searching for citation and found {result}")
             if result:
                 return result.GUID
             else:
@@ -56,27 +52,29 @@ class Database:
         """Looks for guid and returns type if found"""
 
         if tmp_type := self.__short_term_memory.get(guid_to_test):
-            log.info(f'Matched GUID {guid_to_test} to type {tmp_type} in STM')
+            log.info(f"Matched GUID {guid_to_test} to type {tmp_type} in STM")
             return tmp_type
 
         with Session(self._engine, future=True) as sess:
             result = sess.execute(
-                select(GUID).where(GUID.value==guid_to_test)
+                select(GUID).where(GUID.value == guid_to_test)
             ).scalar_one_or_none()
-            log.debug(f'Database: searching for GUID and found {result}')
+            log.debug(f"Database: searching for GUID and found {result}")
             if result:
                 return result.type
             else:
-                log.debug(f'Found no existing result for GUID {guid_to_test}')
+                log.debug(f"Found no existing result for GUID {guid_to_test}")
                 return None
 
     def add_guid(self, value, type):
         """Adds a new record to the GUID lookup table"""
         record = GUID(value=value, type=type)
         with Session(self._engine, future=True) as session:
-            res = session.execute(select(GUID).where(GUID.value==value)).scalar_one_or_none()
+            res = session.execute(
+                select(GUID).where(GUID.value == value)
+            ).scalar_one_or_none()
             if res:
-                raise Exception(f'Caught duplicate row for type {type} guid {value}')
+                raise Exception(f"Caught duplicate row for type {type} guid {value}")
             session.add(record)
             session.commit()
 
@@ -84,24 +82,22 @@ class Database:
         """Adds a value from an emitted event to the short term memory"""
         self.__short_term_memory[key] = value
         asyncio.create_task(self.__rm_from_stm(key))
-        log.debug(f'Added key {key} to short term memory')
+        log.debug(f"Added key {key} to short term memory")
         return
-    
+
     async def __rm_from_stm(self, key):
         """internal method to clean up stale values from the stm"""
         await asyncio.sleep(self.__stm_timeout)
-        log.debug(f'Removing key {key} from short term memory.')
+        log.debug(f"Removing key {key} from short term memory.")
         del self.__short_term_memory[key]
 
     # HISTORY MANAGEMENT
 
     def check_database_init(self) -> int:
-        """Checks database for the most recent event id. Returns None if 
+        """Checks database for the most recent event id. Returns None if
         database isn't initialized yet, otherwise most recent id."""
         with Session(self._engine, future=True) as session:
-            res = session.execute(
-                select(History)
-            ).scalar_one_or_none()
+            res = session.execute(select(History)).scalar_one_or_none()
             if not res:
                 # initialize with default row
                 session.add(History())
@@ -111,9 +107,7 @@ class Database:
 
     def update_last_event_id(self, event_id: int) -> int:
         with Session(self._engine, future=True) as session:
-            res = session.execute(
-                select(History)
-            ).scalar_one_or_none()
+            res = session.execute(select(History)).scalar_one_or_none()
             if not res:
                 res = History(latest_event_id=event_id)
             # for now, not checking if id is out of order
