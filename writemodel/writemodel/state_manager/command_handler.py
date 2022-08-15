@@ -6,7 +6,7 @@ Friday, April 9th 2021
 import logging
 from copy import deepcopy
 from dataclasses import asdict
-from typing import Any, Union, Dict, List
+from typing import Any, Union, Dict, List, Literal
 from uuid import uuid4
 
 from abstract_domain_model.models.commands.publish_citation import (
@@ -44,7 +44,7 @@ class CommandHandler:
         """Receives a dict, processes it, and returns an Event
         or raises an Exception"""
         log.debug(f"handling command {command}")
-        command = self.translate_command(command)
+        command: Command = self.translate_command(command)
         handler = self._command_handlers[type(command)]
         events = handler(command)
         return [asdict(event) for event in events]
@@ -120,16 +120,20 @@ class CommandHandler:
         elif type_ == "PLACE":
             return self._translate_place(tag)
         else:
-            raise UnknownTagTypeError
+            raise UnknownTagTypeError(f"Received unknown tag type: {type_}")
 
     def _translate_person(self, tag) -> Person:
+        type_: Literal["PERSON"] = "PERSON"
         id_ = tag["GUID"]
         name = tag["name"]
         start_char = tag["start_char"]
         stop_char = tag["stop_char"]
-        return Person(id=id_, name=name, start_char=start_char, stop_char=stop_char)
+        return Person(
+            id=id_, name=name, start_char=start_char, stop_char=stop_char, type=type_
+        )
 
     def _translate_place(self, tag) -> Place:
+        type_: Literal["PLACE"] = "PLACE"
         id_ = tag["GUID"]
         name = tag["name"]
         start_char = tag["start_char"]
@@ -139,6 +143,7 @@ class CommandHandler:
         geo_shape = tag.get("geoshape", None)
         return Place(
             id=id_,
+            type=type_,
             name=name,
             start_char=start_char,
             stop_char=stop_char,
@@ -148,11 +153,14 @@ class CommandHandler:
         )
 
     def _translate_time(self, tag) -> Time:
+        type_: Literal["TIME"] = "TIME"
         id_ = tag["GUID"]
         name = tag["name"]
         start_char = tag["start_char"]
         stop_char = tag["stop_char"]
-        return Time(id=id_, name=name, start_char=start_char, stop_char=stop_char)
+        return Time(
+            id=id_, name=name, start_char=start_char, stop_char=stop_char, type=type_
+        )
 
     def _handle_publish_new_citation_old(self, cmd):
         """Handles the PUBLISH_NEW_CITATION command.

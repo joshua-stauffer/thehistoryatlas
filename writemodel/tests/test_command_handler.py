@@ -1,7 +1,17 @@
+import os
+from copy import deepcopy
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
 import pytest
 from uuid import uuid4
 
+from abstract_domain_model.models.commands.publish_citation import (
+    Time,
+    Person,
+    Place,
+    PublishCitation,
+)
 from writemodel.state_manager.command_handler import CommandHandler
 from writemodel.state_manager.database import Database
 from writemodel.state_manager.text_processor import TextHasher
@@ -12,6 +22,10 @@ from writemodel.state_manager.handler_errors import (
     CitationExistsError,
     UnknownTagTypeError,
 )
+
+TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
+# if not TEST_DB_URI:
+#     raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
 
 
 @pytest.fixture
@@ -26,7 +40,7 @@ def config():
         """minimal class for setting up an in memory db for this test"""
 
         def __init__(self):
-            self.DB_URI = "sqlite+pysqlite:///:memory:"
+            self.DB_URI = TEST_DB_URI
             self.DEBUG = False
 
     return Config()
@@ -35,6 +49,16 @@ def config():
 @pytest.fixture
 def handler(db, hash_text):
     return CommandHandler(database_instance=db, hash_text=hash_text)
+
+
+@pytest.fixture
+def handler_with_mock_db(mock_db, hash_text):
+    return CommandHandler(database_instance=mock_db, hash_text=hash_text)
+
+
+@pytest.fixture
+def mock_db():
+    return MagicMock(spec=Database)
 
 
 @pytest.fixture
@@ -47,7 +71,7 @@ def basic_meta():
     return {
         "type": "PUBLISH_NEW_CITATION",
         "user": "da schwitz",
-        "timestamp": str(datetime.utcnow()),
+        "timestamp": "2022-08-15 21:32:28.133457",
         "app_version": "0.0.0",
     }
 
@@ -55,7 +79,7 @@ def basic_meta():
 @pytest.fixture
 def meta0():
     return {
-        "GUID": str(uuid4()),
+        "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
         "author": "francesco, natürli",
         "publisher": "dr papscht",
         "title": "try this at home",
@@ -67,7 +91,7 @@ def citation0(basic_meta, meta0, summary_new):
     return {
         **basic_meta,
         "payload": {
-            "GUID": str(uuid4()),
+            "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
             "text": "Dr Papscht hett ds Spiez Späck Besteck spät bestellt",
             "tags": [],
             "meta": meta0,
@@ -79,7 +103,7 @@ def citation0(basic_meta, meta0, summary_new):
 @pytest.fixture
 def meta1():
     return {
-        "GUID": str(uuid4()),
+        "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
         "author": "francesco, natürli",
         "publisher": "dr papscht",
         "title": "try this at home",
@@ -91,7 +115,7 @@ def citation1(basic_meta, meta1, summary_existing):
     return {
         **basic_meta,
         "payload": {
-            "GUID": str(uuid4()),
+            "GUID": "42891176-dd66-4775-8f4a-82e03652cc2d",
             # this text has an extra letter, so is considered unique
             "text": "Der Papscht hett ds Spiez Späck Besteck spät bestellt",
             "tags": [],
@@ -150,7 +174,7 @@ def place_tag_1(place_tag_0):
 @pytest.fixture
 def time_tag_0():
     return {
-        "GUID": str(uuid4()),
+        "GUID": "cc8bd319-596c-49be-8bbc-96fa3b9ff424",
         "type": "TIME",
         "name": "1999:1:1:1",
         "start_char": 19,
@@ -359,3 +383,71 @@ async def test_synthetic_event(
     ]
     for t, s in zip(expected_types, synthetic_events):
         assert t == s["type"]
+
+
+def test_translate_time(handler_with_mock_db, time_tag_0):
+    tag = handler_with_mock_db._translate_time(time_tag_0)
+    assert isinstance(tag, Time)
+
+
+def test_translate_person(handler_with_mock_db, person_tag_0):
+    tag = handler_with_mock_db._translate_person(person_tag_0)
+    assert isinstance(tag, Person)
+
+
+def test_translate_place(handler_with_mock_db, place_tag_0):
+    tag = handler_with_mock_db._translate_place(place_tag_0)
+    assert isinstance(tag, Place)
+
+
+@patch("writemodel.state_manager.command_handler.CommandHandler._translate_person")
+def test_translate_tag_returns_person(
+    translate_method, person_tag_0, handler_with_mock_db
+):
+    handler_with_mock_db._translate_tag(person_tag_0)
+    translate_method.assert_called_with(person_tag_0)
+
+
+@patch("writemodel.state_manager.command_handler.CommandHandler._translate_time")
+def test_translate_tag_returns_time(translate_method, time_tag_0, handler_with_mock_db):
+    handler_with_mock_db._translate_tag(time_tag_0)
+    translate_method.assert_called_with(time_tag_0)
+
+
+@patch("writemodel.state_manager.command_handler.CommandHandler._translate_place")
+def test_translate_tag_returns_place(
+    translate_method, place_tag_0, handler_with_mock_db
+):
+    handler_with_mock_db._translate_tag(place_tag_0)
+    translate_method.assert_called_with(place_tag_0)
+
+
+@pytest.mark.parametrize("tag", ({}, {"type": "UNKNOWN"}, {"random": "field"}))
+def test_translate_tag_raises_exception_with_unknown_input(tag, handler_with_mock_db):
+    with pytest.raises(UnknownTagTypeError):
+        handler_with_mock_db._translate_tag(tag)
+
+
+def test_translate_publish_citation_without_tags(handler_with_mock_db, citation0):
+    command = handler_with_mock_db._translate_publish_citation(citation0)
+    assert isinstance(command, PublishCitation)
+
+
+def test_translate_publish_citation_with_tags(
+    handler_with_mock_db, citation0, time_tag_0, person_tag_0, place_tag_0
+):
+    citation = deepcopy(citation0)
+    citation["payload"]["tags"] = [time_tag_0, person_tag_0, place_tag_0]
+    command = handler_with_mock_db._translate_publish_citation(citation0)
+    assert isinstance(command, PublishCitation)
+
+
+def test_translate_command_success(handler_with_mock_db, citation0):
+    command = handler_with_mock_db.translate_command(citation0)
+    assert isinstance(command, PublishCitation)
+
+
+@pytest.mark.parametrize("citation", ({}, {"type": "UNKNOWN"}, {"random": "field"}))
+def test_translate_command_failure(citation, handler_with_mock_db):
+    with pytest.raises(UnknownCommandTypeError):
+        _ = handler_with_mock_db.translate_command(citation)
