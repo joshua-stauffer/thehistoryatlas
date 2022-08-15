@@ -15,7 +15,7 @@ from sqlalchemy.sql.schema import ForeignKey
 Base = declarative_base()
 
 class AnnotatedCitation(Base):
-    """Model representing a single annotated citation."""
+    """Event representing a single annotated citation."""
 
     __tablename__ = 'annotated_citation'
 
@@ -27,7 +27,7 @@ class AnnotatedCitation(Base):
         return f"AnnotatedCitation(id: {self.id}, text: {self.text})"
 
 class Entity(Base):
-    """Model representing an entity tagged in an annotation."""
+    """Event representing an entity tagged in an annotation."""
 
     __tablename__ = 'entity'
 
@@ -43,7 +43,7 @@ class Entity(Base):
                f'stop_char: {self.stop_char})'
 
 class Init(Base):
-    """Model which tracks if this database instance has been initialized or not."""
+    """Event which tracks if this database instance has been initialized or not."""
 
     __tablename__ = 'init'
 
