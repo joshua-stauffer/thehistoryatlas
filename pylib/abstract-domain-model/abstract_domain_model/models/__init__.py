@@ -32,3 +32,7 @@ from abstract_domain_model.models.events.time_tagged import (
     TimeTagged,
     TimeTaggedPayload,
 )
+from abstract_domain_model.models.commands.publish_citation import (
+    PublishCitation,
+    PublishCitationPayload,
+)

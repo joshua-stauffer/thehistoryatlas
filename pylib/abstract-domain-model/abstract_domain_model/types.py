@@ -10,9 +10,10 @@ from abstract_domain_model.models import (
     MetaAdded,
     SummaryAdded,
     SummaryTagged,
+    PublishCitation
 )
 
-Model = Union[
+Event = Union[
     TimeAdded,
     TimeTagged,
     PlaceTagged,
@@ -23,4 +24,8 @@ Model = Union[
     MetaAdded,
     SummaryAdded,
     SummaryTagged,
+]
+
+Command = Union[
+    PublishCitation
 ]
