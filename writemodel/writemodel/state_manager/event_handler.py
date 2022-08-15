@@ -5,10 +5,10 @@ Friday, April 9th 2021
 """
 
 import logging
-from .handler_errors import MalformedEventError
-from .handler_errors import UnknownEventTypeError
-from .handler_errors import MissingEventFieldError
-from .handler_errors import DuplicateEventError
+from writemodel.state_manager.handler_errors import MalformedEventError
+from writemodel.state_manager.handler_errors import UnknownEventTypeError
+from writemodel.state_manager.handler_errors import MissingEventFieldError
+from writemodel.state_manager.handler_errors import DuplicateEventError
 
 
 log = logging.getLogger(__name__)

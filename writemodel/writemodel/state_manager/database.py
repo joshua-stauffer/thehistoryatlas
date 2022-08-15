@@ -9,11 +9,10 @@ from typing import Union
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import text
-from .schema import Base
-from .schema import CitationHash
-from .schema import GUID
-from .schema import History
+from writemodel.state_manager.schema import Base
+from writemodel.state_manager.schema import CitationHash
+from writemodel.state_manager.schema import GUID
+from writemodel.state_manager.schema import History
 
 log = logging.getLogger(__name__)
 

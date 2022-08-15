@@ -3,8 +3,7 @@ SQLAlchemy database schema for the Command Manager database, as part of
 the WriteModel service.
 """
 
-from sqlalchemy import Column, String, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import INTEGER, VARCHAR
 

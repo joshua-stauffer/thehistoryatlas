@@ -1,6 +1,6 @@
 import pytest
-from app.state_manager.event_handler import EventHandler
-from app.state_manager.handler_errors import UnknownEventTypeError
+from writemodel.state_manager.event_handler import EventHandler
+from writemodel.state_manager.handler_errors import UnknownEventTypeError
 
 def test_build():
     eh = EventHandler(None, None)

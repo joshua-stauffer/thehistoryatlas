@@ -2,8 +2,8 @@ import asyncio
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.state_manager.database import Database
-from app.state_manager.schema import CitationHash, GUID
+from writemodel.state_manager.database import Database
+from writemodel.state_manager.schema import CitationHash, GUID
 
 class Config:
     """minimal class for setting up an in memory db for this test"""

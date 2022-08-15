@@ -7,8 +7,8 @@ from collections import deque
 import logging
 from uuid import uuid4
 from pybroker import BrokerBase
-from app.state_manager.handler_errors import CitationExistsError
-from app.state_manager.handler_errors import CitationMissingFieldsError
+from writemodel.state_manager.handler_errors import CitationExistsError
+from writemodel.state_manager.handler_errors import CitationMissingFieldsError
 
 log = logging.getLogger(__name__)
 log.setLevel('DEBUG')

@@ -3,7 +3,7 @@ from collections import deque
 from collections.abc import Callable
 from uuid import uuid4
 import pytest
-from app.broker import Broker
+from writemodel.broker import Broker
 
 @pytest.fixture
 def broker(monkeypatch, get_latest_event_id, create_message_tuple, publish_one_tuple):

@@ -12,8 +12,8 @@ import json
 import logging
 import signal
 from tha_config import Config
-from app.broker import Broker
-from app.state_manager.manager import Manager
+from writemodel.broker import Broker
+from writemodel.state_manager.manager import Manager
 
 logging.basicConfig(level='DEBUG')
 log = logging.getLogger(__name__)

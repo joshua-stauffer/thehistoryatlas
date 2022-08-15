@@ -3,11 +3,11 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from tha_config import Config
-from app.state_manager.manager import Manager
-from app.state_manager.schema import Base
-from app.state_manager.schema import GUID
-from app.state_manager.schema import CitationHash
-from app.state_manager.schema import History
+from writemodel.state_manager.manager import Manager
+from writemodel.state_manager.schema import Base
+from writemodel.state_manager.schema import GUID
+from writemodel.state_manager.schema import CitationHash
+from writemodel.state_manager.schema import History
 
 
 

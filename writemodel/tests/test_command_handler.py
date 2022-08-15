@@ -2,10 +2,10 @@ from datetime import datetime
 import pytest
 from uuid import uuid4
 
-from app.state_manager.command_handler import CommandHandler
-from app.state_manager.database import Database
-from app.state_manager.text_processor import TextHasher
-from app.state_manager.handler_errors import (GUIDError, UnknownCommandTypeError,
+from writemodel.state_manager.command_handler import CommandHandler
+from writemodel.state_manager.database import Database
+from writemodel.state_manager.text_processor import TextHasher
+from writemodel.state_manager.handler_errors import (GUIDError, UnknownCommandTypeError,
     CitationMissingFieldsError, CitationExistsError, UnknownTagTypeError)
 
 @pytest.fixture

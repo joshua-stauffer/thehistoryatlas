@@ -1,8 +1,7 @@
 import pytest
 import string
 import random
-import unicodedata
-from app.state_manager.text_processor import TextHasher
+from writemodel.state_manager.text_processor import TextHasher
 
 @pytest.fixture
 def hasher():

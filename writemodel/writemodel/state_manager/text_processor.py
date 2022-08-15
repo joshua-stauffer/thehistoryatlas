@@ -11,8 +11,8 @@ class TextHasher:
     def __init__(self):
         self.hash_func = hashlib.sha256
         non_encodable_unicode = [chr(n) for n in range(55296, 57344)]
-        self.stop_chars = set([*string.punctuation, *string.whitespace,
-            *non_encodable_unicode])
+        self.stop_chars = {*string.punctuation, *string.whitespace,
+            *non_encodable_unicode}
 
     def get_hash(self, text):
         """Processes the text and returns a stable hash"""

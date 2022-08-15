@@ -6,16 +6,16 @@ Friday, April 9th 2021
 import logging
 from uuid import uuid4
 
-from .handler_errors import CitationExistsError
-from .handler_errors import UnknownCommandTypeError
-from .handler_errors import CitationMissingFieldsError
-from .handler_errors import GUIDError
-from .handler_errors import UnknownTagTypeError
-from .event_composer import EventComposer
+from writemodel.state_manager.handler_errors import CitationExistsError
+from writemodel.state_manager.handler_errors import UnknownCommandTypeError
+from writemodel.state_manager.handler_errors import CitationMissingFieldsError
+from writemodel.state_manager.handler_errors import GUIDError
+from writemodel.state_manager.handler_errors import UnknownTagTypeError
+from writemodel.state_manager.event_composer import EventComposer
 
 log = logging.getLogger(__name__)
 
-TAG_TYPES = set(["PERSON", "PLACE", "TIME"])
+TAG_TYPES = {"PERSON", "PLACE", "TIME"}
 
 class CommandHandler:
     """Class encapsulating logic to transform Commands from the user

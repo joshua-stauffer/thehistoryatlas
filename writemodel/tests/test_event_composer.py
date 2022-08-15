@@ -1,7 +1,7 @@
 from datetime import datetime
 import pytest
 from uuid import uuid4
-from app.state_manager.event_composer import EventComposer
+from writemodel.state_manager.event_composer import EventComposer
 
 @pytest.fixture
 def composer(basic_meta):
