@@ -10,7 +10,7 @@ from abstract_domain_model.models import (
     MetaAdded,
     SummaryAdded,
     SummaryTagged,
-    PublishCitation
+    PublishCitation,
 )
 
 Event = Union[
@@ -26,6 +26,4 @@ Event = Union[
     SummaryTagged,
 ]
 
-Command = Union[
-    PublishCitation
-]
+Command = Union[PublishCitation]

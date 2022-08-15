@@ -31,20 +31,20 @@ class Tag:
 
 @dataclass(frozen=True)
 class Person(Tag):
-    type: Literal["PERSON"] = "PERSON"
+    type: Literal["PERSON"]
 
 
 @dataclass(frozen=True)
 class Place(Tag):
     latitude: float
     longitude: float
-    geo_shape: Optional[str] = None
-    type: Literal["PLACE"] = "PLACE"
+    geo_shape: Optional[str]
+    type: Literal["PLACE"]
 
 
 @dataclass(frozen=True)
 class Time(Tag):
-    type: Literal["TIME"] = "TIME"
+    type: Literal["TIME"]
 
 
 @dataclass(frozen=True)
