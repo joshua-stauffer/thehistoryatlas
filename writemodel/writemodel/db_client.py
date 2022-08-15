@@ -16,7 +16,7 @@ if __name__ == "__main__":
     db = manager.db
     engine = db._engine
     print("." * 79)
-    print("\nWelcome to the Write Model interactive client.\n")
+    print("\nWelcome to the Write Event interactive client.\n")
     print("The following objects are available in the local namespace:")
     for obj in (
         "manager: Manager()",

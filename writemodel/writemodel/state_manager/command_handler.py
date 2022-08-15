@@ -4,8 +4,20 @@ Friday, April 9th 2021
 """
 
 import logging
+from copy import deepcopy
+from dataclasses import asdict
+from typing import Any, Union, Dict, List
 from uuid import uuid4
 
+from abstract_domain_model.models.commands.publish_citation import (
+    PublishCitation,
+    PublishCitationPayload,
+    Meta,
+    Time,
+    Place,
+    Person,
+)
+from abstract_domain_model.types import Command, Event
 from writemodel.state_manager.handler_errors import CitationExistsError
 from writemodel.state_manager.handler_errors import UnknownCommandTypeError
 from writemodel.state_manager.handler_errors import CitationMissingFieldsError
@@ -24,30 +36,125 @@ class CommandHandler:
 
     def __init__(self, database_instance, hash_text):
         self._command_handlers = self._map_command_handlers()
+        self._translators = self._map_translators()
         self._db = database_instance
-        self._hashfunc = hash_text
+        self._hashfunc = hash_text  # noqa
 
-    def handle_command(self, command: dict):
+    def handle_command(self, command: Dict):
         """Receives a dict, processes it, and returns an Event
         or raises an Exception"""
-
         log.debug(f"handling command {command}")
-        cmd_type = command.get("type")
-        handler = self._command_handlers.get(cmd_type)
-        if not handler:
-            raise UnknownCommandTypeError
-        event = handler(command)
-        return event
+        command = self.translate_command(command)
+        handler = self._command_handlers[type(command)]
+        events = handler(command)
+        return [asdict(event) for event in events]
 
-    def _map_command_handlers(self):
+    def translate_command(self, command: dict) -> Command:
+        log.debug(f"translating command {command}")
+        type_ = command.get("type")
+        translator = self._translators.get(type_, None)
+        if translator is None:
+            raise UnknownCommandTypeError
+        return translator(command)
+
+    def _map_command_handlers(self) -> Dict[type, callable]:
         """Returns a dict of known commands mapping to their handle method."""
         return {
-            "PUBLISH_NEW_CITATION": self._handle_publish_new_citation,
+            type(PublishCitation): self._handle_publish_new_citation,
         }
 
-    # command handlers
+    def _map_translators(self) -> Dict[str, callable]:
+        return {"PUBLISH_NEW_CITATION": self._translate_publish_citation}
 
-    def _handle_publish_new_citation(self, cmd):
+    def _handle_publish_new_citation(self, command: Dict) -> List[Event]:
+
+        events = []
+        # validate
+        # transform into Events
+        return events
+
+    def _translate_publish_citation(self, command: dict) -> PublishCitation:
+        """
+        Transform a dict version of the the JSON command PUBLISH_NEW_CITATION
+        into ADM objects.
+        """
+        command = deepcopy(command)
+        user_id = command["user"]
+        timestamp = command["timestamp"]
+        app_version = command["app_version"]
+        citation_id = command["payload"]["GUID"]
+        text = command["payload"]["text"]
+        tags = [self._translate_tag(tag) for tag in command["payload"]["tags"]]
+        author = command["payload"]["meta"]["author"]
+        publisher = command["payload"]["meta"]["publisher"]
+        title = command["payload"]["meta"]["title"]
+        kwargs = {
+            key: value
+            for key, value in command["payload"]["meta"].items()
+            if key not in ("author", "publisher", "title")
+        }
+        return PublishCitation(
+            user_id=user_id,
+            timestamp=timestamp,
+            app_version=app_version,
+            payload=PublishCitationPayload(
+                id=citation_id,
+                text=text,
+                tags=tags,
+                meta=Meta(
+                    author=author,
+                    publisher=publisher,
+                    title=title,
+                    kwargs=kwargs,
+                ),
+            ),
+        )
+
+    def _translate_tag(self, tag: dict) -> Union[Person, Place, Time]:
+        """Build typed dataclass from incoming request."""
+        type_ = tag.get("type")
+        if type_ == "PERSON":
+            return self._translate_person(tag)
+        elif type_ == "TIME":
+            return self._translate_time(tag)
+        elif type_ == "PLACE":
+            return self._translate_place(tag)
+        else:
+            raise UnknownTagTypeError
+
+    def _translate_person(self, tag) -> Person:
+        id_ = tag["GUID"]
+        name = tag["name"]
+        start_char = tag["start_char"]
+        stop_char = tag["stop_char"]
+        return Person(id=id_, name=name, start_char=start_char, stop_char=stop_char)
+
+    def _translate_place(self, tag) -> Place:
+        id_ = tag["GUID"]
+        name = tag["name"]
+        start_char = tag["start_char"]
+        stop_char = tag["stop_char"]
+        latitude = tag["latitude"]
+        longitude = tag["longitude"]
+        geo_shape = tag.get("geoshape", None)
+        return Place(
+            id=id_,
+            name=name,
+            start_char=start_char,
+            stop_char=stop_char,
+            latitude=latitude,
+            longitude=longitude,
+            geo_shape=geo_shape,
+        )
+
+    def _translate_time(self, tag) -> Time:
+        id_ = tag["GUID"]
+        name = tag["name"]
+        start_char = tag["start_char"]
+        stop_char = tag["stop_char"]
+        return Time(id=id_, name=name, start_char=start_char, stop_char=stop_char)
+
+    def _handle_publish_new_citation_old(self, cmd):
         """Handles the PUBLISH_NEW_CITATION command.
 
         Validates the command's contents and returns a synthetic event

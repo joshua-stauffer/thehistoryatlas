@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class WriteModel:
-    """Primary class to serve the Write Model. Starts database connection on
+    """Primary class to serve the Write Event. Starts database connection on
     instantiation, and is available to broker after calling
     WriteModel.start_broker()"""
 
