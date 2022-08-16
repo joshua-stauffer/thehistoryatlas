@@ -22,6 +22,7 @@ from abstract_domain_model.types import Command, Event
 from writemodel.state_manager.handler_errors import (
     CitationExistsError,
     NoValidatorError,
+    MissingResourceError,
 )
 from writemodel.state_manager.handler_errors import UnknownCommandTypeError
 from writemodel.state_manager.handler_errors import CitationMissingFieldsError
@@ -120,15 +121,14 @@ class CommandHandler:
         user_id = command["user"]
         timestamp = command["timestamp"]
         app_version = command["app_version"]
-        citation_id = command["payload"]["GUID"]
         text = command["payload"]["text"]
         tags = [self._translate_tag(tag) for tag in command["payload"]["tags"]]
         author = command["payload"]["meta"]["author"]
         publisher = command["payload"]["meta"]["publisher"]
         title = command["payload"]["meta"]["title"]
-        meta_id = command["payload"]["meta"]["GUID"]
+        meta_id = command["payload"]["meta"].get("GUID", None)
         summary = command["payload"]["summary"]
-        summary_id = command["payload"]["summary_guid"]
+        summary_id = command["payload"].get("summary_guid", None)
         kwargs = {
             key: value
             for key, value in command["payload"]["meta"].items()
@@ -139,7 +139,6 @@ class CommandHandler:
             timestamp=timestamp,
             app_version=app_version,
             payload=PublishCitationPayload(
-                id=citation_id,
                 text=text,
                 tags=tags,
                 summary=summary,
@@ -168,7 +167,7 @@ class CommandHandler:
 
     def _translate_person(self, tag) -> Person:
         type_: Literal["PERSON"] = "PERSON"
-        id_ = tag["GUID"]
+        id_ = tag.get("GUID", None)
         name = tag["name"]
         start_char = tag["start_char"]
         stop_char = tag["stop_char"]
@@ -178,7 +177,7 @@ class CommandHandler:
 
     def _translate_place(self, tag) -> Place:
         type_: Literal["PLACE"] = "PLACE"
-        id_ = tag["GUID"]
+        id_ = tag.get("GUID", None)
         name = tag["name"]
         start_char = tag["start_char"]
         stop_char = tag["stop_char"]
@@ -198,7 +197,7 @@ class CommandHandler:
 
     def _translate_time(self, tag) -> Time:
         type_: Literal["TIME"] = "TIME"
-        id_ = tag["GUID"]
+        id_ = tag.get("GUID", None)
         name = tag["name"]
         start_char = tag["start_char"]
         stop_char = tag["stop_char"]
@@ -216,32 +215,34 @@ class CommandHandler:
         # add this to short term memory for preventing immediate duplication
         self._db.add_to_stm(key=hashed_text, value=command.payload.id)
 
-        # check citation id
-        if existing_type := self._db.check_id_for_uniqueness(command.payload.id):
-            raise GUIDError(
-                "Citation id was not unique. "
-                + f"Collided with id of type {existing_type}"
-            )
-        # add this to short term memory for preventing immediate duplication
-        self._db.add_to_stm(key=command.payload.id, value="CITATION")
-
         # check summary id
-        existing_type = self._db.check_id_for_uniqueness(command.payload.summary_id)
-        if existing_type is not None and existing_type != "SUMMARY":
-            raise GUIDError(f"Summary id collided with id of type {existing_type}")
+        if command.payload.summary_id is not None:
+            existing_type = self._db.check_id_for_uniqueness(command.payload.summary_id)
+            if existing_type is None:
+                raise MissingResourceError
+            if existing_type != "SUMMARY":
+                raise GUIDError(f"Summary id collided with id of type {existing_type}")
 
         # check tag ids
         for tag in command.payload.tags:
+            if tag.id is None:
+                # new tag, no need to validate
+                continue
             existing_type = self._db.check_id_for_uniqueness(tag.id)
-            if existing_type is not None and tag.type != existing_type:
+            if existing_type is None:
+                raise MissingResourceError
+            if tag.type != existing_type:
                 raise GUIDError(
                     f"Tag id of type {tag.type} doesn't match database type of {existing_type}."
                 )
 
         # check meta id
-        existing_type = self._db.check_id_for_uniqueness(command.payload.meta.id)
-        if existing_type is not None and existing_type != "META":
-            raise GUIDError(f"Meta id collided with id of type {existing_type}")
+        if command.payload.meta.id is not None:
+            existing_type = self._db.check_id_for_uniqueness(command.payload.meta.id)
+            if existing_type is None:
+                raise MissingResourceError
+            if existing_type != "META":
+                raise GUIDError(f"Meta id collided with id of type {existing_type}")
 
         return True
 

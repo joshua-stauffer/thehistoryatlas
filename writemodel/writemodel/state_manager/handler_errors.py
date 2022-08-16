@@ -57,6 +57,12 @@ class NoValidatorError(CommandHandlerError):
     ...
 
 
+class MissingResourceError(CommandHandlerError):
+    """Raised when an unknown ID is passed to the writemodel"""
+
+    ...
+
+
 # Event Exceptions
 
 
