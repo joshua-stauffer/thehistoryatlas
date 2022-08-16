@@ -53,7 +53,7 @@ def basic_meta():
 @pytest.fixture
 def meta0():
     return {
-        "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
+        # "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
         "author": "francesco, natürli",
         "publisher": "dr papscht",
         "title": "try this at home",
@@ -175,7 +175,7 @@ def summary_guid():
 @pytest.fixture
 def summary_new(summary_guid):
     return {
-        "GUID": summary_guid,
+        # "GUID": summary_guid,
         "text": "here is some long text indicating a person, place, and time",
     }
 
