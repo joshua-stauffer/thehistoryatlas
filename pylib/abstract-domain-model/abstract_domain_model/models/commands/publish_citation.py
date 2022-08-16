@@ -16,6 +16,8 @@ class PublishCitation:
 class PublishCitationPayload:
     id: str
     text: str
+    summary: str
+    summary_id: str
     tags: List[Union["Person", "Place", "Time"]]
     meta: "Meta"
 
@@ -49,6 +51,7 @@ class Time(Tag):
 
 @dataclass(frozen=True)
 class Meta:
+    id: str
     author: str
     publisher: str
     title: str
