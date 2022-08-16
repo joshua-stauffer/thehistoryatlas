@@ -14,17 +14,16 @@ class PublishCitation:
 
 @dataclass(frozen=True)
 class PublishCitationPayload:
-    id: str
     text: str
     summary: str
-    summary_id: str
+    summary_id: Optional[str]
     tags: List[Union["Person", "Place", "Time"]]
     meta: "Meta"
 
 
 @dataclass(frozen=True)
 class Tag:
-    id: str
+    id: Optional[str]
     type: Literal["PERSON", "PLACE", "TIME"]
     start_char: int
     stop_char: int
@@ -51,7 +50,7 @@ class Time(Tag):
 
 @dataclass(frozen=True)
 class Meta:
-    id: str
+    id: Optional[str]
     author: str
     publisher: str
     title: str
