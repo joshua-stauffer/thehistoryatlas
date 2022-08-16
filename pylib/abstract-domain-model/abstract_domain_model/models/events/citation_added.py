@@ -4,11 +4,10 @@ from typing import Literal, List
 
 @dataclass(frozen=True)
 class CitationAddedPayload:
-    summary_id: str
     id: str
     text: str
-    tags: List[str]
-    meta: str
+    summary_id: str
+    meta_id: str
 
 
 @dataclass(frozen=True)

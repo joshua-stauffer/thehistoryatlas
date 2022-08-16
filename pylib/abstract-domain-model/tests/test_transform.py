@@ -107,7 +107,7 @@ def place_added_data(baseline_event_data):
             "citation_end": 20,
             "latitude": 50.12345,
             "longitude": 45.23456,
-            "geoshape": None,
+            "geo_shape": None,
         },
     }
 

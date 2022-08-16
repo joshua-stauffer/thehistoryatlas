@@ -23,7 +23,8 @@ from abstract_domain_model.models import (
     TimeTaggedPayload,
     MetaAddedPayload,
 )
-from abstract_domain_model.types import Model
+from abstract_domain_model.models.commands.publish_citation import PublishCitation
+from abstract_domain_model.types import Event
 
 
 type_map = {
@@ -40,7 +41,7 @@ type_map = {
 }
 
 
-def from_dict(data: dict) -> Model:
+def from_dict(data: dict) -> Event:
     """Transform a JSON dict into a known Domain Object."""
 
     data = deepcopy(data)
@@ -55,8 +56,10 @@ def from_dict(data: dict) -> Model:
         if payload is None:
             return cls(**data)
 
+        # events can all be treated the same:
         typed_payload = payload_cls(**payload)
         return cls(**data, payload=typed_payload)
+
     except TypeError:
         # raised when the dataclass isn't provided with required fields
         raise MissingFieldsError(data)
