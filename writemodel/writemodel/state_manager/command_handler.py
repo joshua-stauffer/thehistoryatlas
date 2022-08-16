@@ -18,7 +18,7 @@ from abstract_domain_model.models.commands.publish_citation import (
     Place,
     Person,
 )
-from abstract_domain_model.types import Command, Event
+from abstract_domain_model.types import Command, Event, PublishCitationType
 from writemodel.state_manager.handler_errors import (
     CitationExistsError,
     NoValidatorError,
@@ -75,13 +75,13 @@ class CommandHandler:
     def _map_command_handlers(self) -> Dict[type, callable]:
         """Returns a dict of known commands mapping to their handle method."""
         return {
-            type(PublishCitation): self._transform_publish_citation_to_events,
+            PublishCitationType: self._transform_publish_citation_to_events,
         }
 
     def _map_command_validators(self) -> Dict[type, callable]:
         """Returns a dict of known commands mapping to their validator method."""
         return {
-            type(PublishCitation): self._validate_publish_citation,
+            PublishCitationType: self._validate_publish_citation,
         }
 
     def _map_translators(self) -> Dict[str, callable]:
@@ -118,6 +118,7 @@ class CommandHandler:
         into ADM objects.
         """
         command = deepcopy(command)
+        id_ = str(uuid4())
         user_id = command["user"]
         timestamp = command["timestamp"]
         app_version = command["app_version"]
@@ -139,6 +140,7 @@ class CommandHandler:
             timestamp=timestamp,
             app_version=app_version,
             payload=PublishCitationPayload(
+                id=id_,
                 text=text,
                 tags=tags,
                 summary=summary,

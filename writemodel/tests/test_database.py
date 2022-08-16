@@ -6,22 +6,6 @@ from writemodel.state_manager.database import Database
 from writemodel.state_manager.schema import CitationHash, GUID
 
 
-class Config:
-    """minimal class for setting up an in memory db for this test"""
-
-    def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
-        self.DEBUG = False
-
-
-@pytest.fixture
-def db():
-    c = Config()
-    # stm timeout is an asyncio.sleep value: by setting it to 0 we defer control
-    # back to the main thread but return to it as soon as possible.
-    return Database(c, stm_timeout=0)
-
-
 @pytest.fixture
 def hash():
     return "a2c4e6g"

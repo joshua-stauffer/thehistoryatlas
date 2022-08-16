@@ -23,27 +23,11 @@ from writemodel.state_manager.handler_errors import (
     UnknownTagTypeError,
 )
 
-TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
-# if not TEST_DB_URI:
-#     raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
-
 
 @pytest.fixture
 def hash_text():
     t = TextHasher()
     return t.get_hash
-
-
-@pytest.fixture
-def config():
-    class Config:
-        """minimal class for setting up an in memory db for this test"""
-
-        def __init__(self):
-            self.DB_URI = TEST_DB_URI
-            self.DEBUG = False
-
-    return Config()
 
 
 @pytest.fixture
@@ -54,16 +38,6 @@ def handler(db, hash_text):
 @pytest.fixture
 def handler_with_mock_db(mock_db, hash_text):
     return CommandHandler(database_instance=mock_db, hash_text=hash_text)
-
-
-@pytest.fixture
-def mock_db():
-    return MagicMock(spec=Database)
-
-
-@pytest.fixture
-def db(config):
-    return Database(config, stm_timeout=0)
 
 
 @pytest.fixture
