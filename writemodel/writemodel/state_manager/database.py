@@ -48,22 +48,22 @@ class Database:
         with Session(self._engine, future=True) as sess, sess.begin():
             sess.add(record)
 
-    def check_guid_for_uniqueness(self, guid_to_test: str) -> Union[str, None]:
+    def check_id_for_uniqueness(self, id_: str) -> Union[str, None]:
         """Looks for guid and returns type if found"""
 
-        if tmp_type := self.__short_term_memory.get(guid_to_test):
-            log.info(f"Matched GUID {guid_to_test} to type {tmp_type} in STM")
+        if tmp_type := self.__short_term_memory.get(id_):
+            log.info(f"Matched GUID {id_} to type {tmp_type} in STM")
             return tmp_type
 
         with Session(self._engine, future=True) as sess:
             result = sess.execute(
-                select(GUID).where(GUID.value == guid_to_test)
+                select(GUID).where(GUID.value == id_)
             ).scalar_one_or_none()
             log.debug(f"Database: searching for GUID and found {result}")
             if result:
                 return result.type
             else:
-                log.debug(f"Found no existing result for GUID {guid_to_test}")
+                log.debug(f"Found no existing result for GUID {id_}")
                 return None
 
     def add_guid(self, value, type):

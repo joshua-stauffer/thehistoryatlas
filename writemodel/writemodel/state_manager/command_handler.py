@@ -9,6 +9,7 @@ from dataclasses import asdict
 from typing import Any, Union, Dict, List, Literal
 from uuid import uuid4
 
+from abstract_domain_model.models import CitationAdded, CitationAddedPayload
 from abstract_domain_model.models.commands.publish_citation import (
     PublishCitation,
     PublishCitationPayload,
@@ -18,7 +19,10 @@ from abstract_domain_model.models.commands.publish_citation import (
     Person,
 )
 from abstract_domain_model.types import Command, Event
-from writemodel.state_manager.handler_errors import CitationExistsError
+from writemodel.state_manager.handler_errors import (
+    CitationExistsError,
+    NoValidatorError,
+)
 from writemodel.state_manager.handler_errors import UnknownCommandTypeError
 from writemodel.state_manager.handler_errors import CitationMissingFieldsError
 from writemodel.state_manager.handler_errors import GUIDError
@@ -35,8 +39,9 @@ class CommandHandler:
     into canonical Events to be passed on to the Event Store."""
 
     def __init__(self, database_instance, hash_text):
-        self._command_handlers = self._map_command_handlers()
         self._translators = self._map_translators()
+        self._command_validators = self._map_command_validators()
+        self._command_handlers = self._map_command_handlers()
         self._db = database_instance
         self._hashfunc = hash_text  # noqa
 
@@ -55,22 +60,55 @@ class CommandHandler:
         translator = self._translators.get(type_, None)
         if translator is None:
             raise UnknownCommandTypeError
-        return translator(command)
+        try:
+            return translator(command)
+        except KeyError as e:
+            raise CitationMissingFieldsError(e)
+
+    def validate_command(self, command: Command) -> bool:
+        validate = self._command_validators.get(type(command), None)
+        if validate is None:
+            raise NoValidatorError
+        return validate(command)
 
     def _map_command_handlers(self) -> Dict[type, callable]:
         """Returns a dict of known commands mapping to their handle method."""
         return {
-            type(PublishCitation): self._handle_publish_new_citation,
+            type(PublishCitation): self._transform_publish_citation_to_events,
+        }
+
+    def _map_command_validators(self) -> Dict[type, callable]:
+        """Returns a dict of known commands mapping to their validator method."""
+        return {
+            type(PublishCitation): self._validate_publish_citation,
         }
 
     def _map_translators(self) -> Dict[str, callable]:
         return {"PUBLISH_NEW_CITATION": self._translate_publish_citation}
 
-    def _handle_publish_new_citation(self, command: Dict) -> List[Event]:
+    def _transform_publish_citation_to_events(
+        self, command: PublishCitation
+    ) -> List[Event]:
 
         events = []
-        # validate
-        # transform into Events
+        transaction_meta = {
+            "transaction_id": str(uuid4()),
+            "app_version": command.app_version,
+            "timestamp": command.timestamp,
+            "user_id": command.user_id,
+        }
+
+        citation = CitationAdded(
+            **transaction_meta,
+            type="CITATION_ADDED",
+            payload=CitationAddedPayload(
+                id=command.payload.id,
+                text=command.payload.text,
+                summary_id=command.payload.summary_id,
+                meta_id=command.payload.meta.id,
+            ),
+        )
+
         return events
 
     def _translate_publish_citation(self, command: dict) -> PublishCitation:
@@ -88,6 +126,9 @@ class CommandHandler:
         author = command["payload"]["meta"]["author"]
         publisher = command["payload"]["meta"]["publisher"]
         title = command["payload"]["meta"]["title"]
+        meta_id = command["payload"]["meta"]["GUID"]
+        summary = command["payload"]["summary"]
+        summary_id = command["payload"]["summary_guid"]
         kwargs = {
             key: value
             for key, value in command["payload"]["meta"].items()
@@ -101,7 +142,10 @@ class CommandHandler:
                 id=citation_id,
                 text=text,
                 tags=tags,
+                summary=summary,
+                summary_id=summary_id,
                 meta=Meta(
+                    id=meta_id,
                     author=author,
                     publisher=publisher,
                     title=title,
@@ -162,6 +206,45 @@ class CommandHandler:
             id=id_, name=name, start_char=start_char, stop_char=stop_char, type=type_
         )
 
+    def _validate_publish_citation(self, command: PublishCitation) -> bool:
+
+        # check text for uniqueness
+        hashed_text = self._hashfunc(command.payload.text)
+        if duplicate_id := self._db.check_citation_for_uniqueness(hashed_text):
+            log.info("tried (and failed) to publish duplicate citation")
+            raise CitationExistsError(duplicate_id)
+        # add this to short term memory for preventing immediate duplication
+        self._db.add_to_stm(key=hashed_text, value=command.payload.id)
+
+        # check citation id
+        if existing_type := self._db.check_id_for_uniqueness(command.payload.id):
+            raise GUIDError(
+                "Citation id was not unique. "
+                + f"Collided with id of type {existing_type}"
+            )
+        # add this to short term memory for preventing immediate duplication
+        self._db.add_to_stm(key=command.payload.id, value="CITATION")
+
+        # check summary id
+        existing_type = self._db.check_id_for_uniqueness(command.payload.summary_id)
+        if existing_type is not None and existing_type != "SUMMARY":
+            raise GUIDError(f"Summary id collided with id of type {existing_type}")
+
+        # check tag ids
+        for tag in command.payload.tags:
+            existing_type = self._db.check_id_for_uniqueness(tag.id)
+            if existing_type is not None and tag.type != existing_type:
+                raise GUIDError(
+                    f"Tag id of type {tag.type} doesn't match database type of {existing_type}."
+                )
+
+        # check meta id
+        existing_type = self._db.check_id_for_uniqueness(command.payload.meta.id)
+        if existing_type is not None and existing_type != "META":
+            raise GUIDError(f"Meta id collided with id of type {existing_type}")
+
+        return True
+
     def _handle_publish_new_citation_old(self, cmd):
         """Handles the PUBLISH_NEW_CITATION command.
 
@@ -216,7 +299,7 @@ class CommandHandler:
         self._db.add_to_stm(key=hashed_text, value=citation_guid)
 
         # check citation GUID
-        if cit_res := self._db.check_guid_for_uniqueness(citation_guid):
+        if cit_res := self._db.check_id_for_uniqueness(citation_guid):
             raise GUIDError(
                 "Citation GUID was not unique. "
                 + f"Collided with GUID of type {cit_res}"
@@ -230,7 +313,7 @@ class CommandHandler:
 
         # check meta GUID
         meta_guid = meta["GUID"]
-        if m_res := self._db.check_guid_for_uniqueness(meta_guid):
+        if m_res := self._db.check_id_for_uniqueness(meta_guid):
             if m_res != "META":
                 raise GUIDError(f"Meta GUID collided with GUID of type {m_res}")
 
@@ -260,7 +343,7 @@ class CommandHandler:
         )
 
         # check summary guid
-        if s_res := self._db.check_guid_for_uniqueness(summary_guid):
+        if s_res := self._db.check_id_for_uniqueness(summary_guid):
             if s_res != "SUMMARY":
                 raise GUIDError(f"Summary GUID collided with GUID of type {s_res}")
             # we're adding a new citation to this summary
@@ -293,7 +376,7 @@ class CommandHandler:
                 )
 
             # check if tag already exists in the database
-            if t_res := self._db.check_guid_for_uniqueness(t_guid):
+            if t_res := self._db.check_id_for_uniqueness(t_guid):
                 # and if it does, it must be the same type as this tag
                 if t_type != t_res:
                     raise GUIDError(

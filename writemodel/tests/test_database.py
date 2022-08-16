@@ -68,12 +68,12 @@ def test_add_citation_hash(db, hash, guid):
 
 def test_check_guid_for_uniqueness(db, value, type):
     # returns none if table is empty
-    res1 = db.check_guid_for_uniqueness(value)
+    res1 = db.check_id_for_uniqueness(value)
     assert res1 == None
     # add something and make sure it's there
     with Session(db._engine, future=True) as sess, sess.begin():
         sess.add(GUID(value=value, type=type))
-    res2 = db.check_guid_for_uniqueness(value)
+    res2 = db.check_id_for_uniqueness(value)
     assert res2 == type
 
 
@@ -105,8 +105,8 @@ async def test_citation_short_term_memory(db):
 async def test_guid_short_term_memory(db):
     db.add_to_stm(key="a2c4e", value="it worked!")
     assert db._Database__short_term_memory.get("a2c4e") == "it worked!"
-    res = db.check_guid_for_uniqueness(guid_to_test="a2c4e")
+    res = db.check_id_for_uniqueness(id_="a2c4e")
     assert res == "it worked!"
     await asyncio.sleep(0.000001)
-    res = db.check_guid_for_uniqueness(guid_to_test="a2c4e")
+    res = db.check_id_for_uniqueness(id_="a2c4e")
     assert res == None

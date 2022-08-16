@@ -51,6 +51,12 @@ class UnknownTagTypeError(CommandHandlerError):
         self.msg = msg
 
 
+class NoValidatorError(CommandHandlerError):
+    """Raised when no validator function is found to validate this command"""
+
+    ...
+
+
 # Event Exceptions
 
 
