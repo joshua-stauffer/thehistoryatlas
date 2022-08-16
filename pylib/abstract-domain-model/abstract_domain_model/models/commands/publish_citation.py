@@ -14,6 +14,7 @@ class PublishCitation:
 
 @dataclass(frozen=True)
 class PublishCitationPayload:
+    id: str
     text: str
     summary: str
     summary_id: Optional[str]
