@@ -77,7 +77,7 @@ def citation0(basic_meta, meta0, summary_new):
 @pytest.fixture
 def meta1():
     return {
-        "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
+        # "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
         "author": "francesco, natürli",
         "publisher": "dr papscht",
         "title": "try this at home",
@@ -102,7 +102,6 @@ def citation1(basic_meta, meta1, summary_existing):
 @pytest.fixture
 def person_tag_0():
     return {
-        "GUID": str(uuid4()),
         "type": "PERSON",
         "name": "Papscht",
         "start_char": 3,
@@ -111,9 +110,9 @@ def person_tag_0():
 
 
 @pytest.fixture
-def person_tag_1(person_tag_0):
+def person_tag_1(person_tag_0, existing_person_id):
     return {
-        "GUID": person_tag_0["GUID"],
+        "GUID": existing_person_id,
         "type": "PERSON",
         "name": "Papscht",
         "start_char": 4,
@@ -124,7 +123,6 @@ def person_tag_1(person_tag_0):
 @pytest.fixture
 def place_tag_0():
     return {
-        "GUID": str(uuid4()),
         "type": "PLACE",
         "name": "Spiez",
         "start_char": 19,
@@ -135,20 +133,22 @@ def place_tag_0():
 
 
 @pytest.fixture
-def place_tag_1(place_tag_0):
+def place_tag_1(existing_place_id):
     return {
-        "GUID": place_tag_0["GUID"],
+        "GUID": existing_place_id,
         "type": "PLACE",
         "name": "Spiez",
         "start_char": 19,
         "stop_char": 24,
+        "latitude": 1.234,
+        "longitude": 2.345,
+        "geo_shape": None,
     }
 
 
 @pytest.fixture
 def time_tag_0():
     return {
-        "GUID": "cc8bd319-596c-49be-8bbc-96fa3b9ff424",
         "type": "TIME",
         "name": "1999:1:1:1",
         "start_char": 19,
@@ -157,9 +157,9 @@ def time_tag_0():
 
 
 @pytest.fixture
-def time_tag_1(time_tag_0):
+def time_tag_1(existing_time_id):
     return {
-        "GUID": time_tag_0["GUID"],
+        "GUID": existing_time_id,
         "type": "TIME",
         "name": "1999:1:1:1",
         "start_char": 19,
@@ -181,11 +181,8 @@ def summary_new(summary_guid):
 
 
 @pytest.fixture
-def summary_existing(summary_guid):
-    return {"GUID": summary_guid}
-
-
-# sad paths
+def summary_existing(existing_summary_id):
+    return {"GUID": existing_summary_id}
 
 
 def test_raises_error_with_unknown_type(handler):
@@ -208,17 +205,11 @@ async def test_raises_error_with_duplicate_citation_text(handler, citation0):
 
 
 @pytest.mark.asyncio
-async def test_raises_error_with_duplicate_citation_guid(handler, citation0, citation1):
+async def test_raises_error_with_matched_meta_guid(
+    handler, citation0, citation1, existing_summary_id
+):
     handler.handle_command(citation0)
-    citation1["payload"]["GUID"] = citation0["payload"]["GUID"]
-    with pytest.raises(GUIDError):
-        handler.handle_command(citation1)
-
-
-@pytest.mark.asyncio
-async def test_raises_error_with_matched_meta_guid(handler, citation0, citation1):
-    handler.handle_command(citation0)
-    citation1["payload"]["meta"]["GUID"] = citation0["payload"]["GUID"]
+    citation1["payload"]["meta"]["GUID"] = existing_summary_id
     with pytest.raises(GUIDError):
         handler.handle_command(citation1)
 
@@ -233,18 +224,14 @@ async def test_raises_error_with_unknown_tag_type(handler, citation0, person_tag
 
 @pytest.mark.asyncio
 async def test_raises_error_with_tag_with_guid_of_different_type(
-    handler, citation0, person_tag_0
+    handler, citation0, person_tag_0, existing_meta_id
 ):
-
     # give the citation GUID to the tag -- it'll run first and throw an error
     # for duplication
-    person_tag_0["GUID"] = citation0["payload"]["GUID"]
+    person_tag_0["GUID"] = existing_meta_id
     citation0["payload"]["tags"] = [person_tag_0]
     with pytest.raises(GUIDError):
         handler.handle_command(citation0)
-
-
-# happy paths!
 
 
 @pytest.mark.asyncio

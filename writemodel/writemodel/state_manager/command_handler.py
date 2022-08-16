@@ -180,7 +180,7 @@ class CommandHandler:
             ),
         )
 
-        return [citation, *tags, meta, summary]
+        return [summary, citation, *tags, meta]
 
     def _tag_to_event(
         self,
@@ -298,7 +298,7 @@ class CommandHandler:
         publisher = command["payload"]["meta"]["publisher"]
         title = command["payload"]["meta"]["title"]
         meta_id = command["payload"]["meta"].get("GUID", None)
-        summary = command["payload"]["summary"]["text"]
+        summary = command["payload"]["summary"].get("text", None)
         summary_id = command["payload"]["summary"].get("GUID", None)
         kwargs = {
             key: value

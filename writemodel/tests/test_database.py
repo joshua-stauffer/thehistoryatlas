@@ -61,19 +61,6 @@ def test_check_guid_for_uniqueness(db, value, type):
     assert res2 == type
 
 
-def test_add_guid(db, value, type):
-    db.add_guid(value, type)
-    # retrieve it manually
-    with Session(db._engine, future=True) as sess:
-        result = sess.execute(
-            select(GUID).where(GUID.value == value)
-        ).scalar_one_or_none()
-        assert result != None
-        assert result.id == 1  # nothing else is in this database
-        assert result.value == value
-        assert result.type == type
-
-
 @pytest.mark.asyncio
 async def test_citation_short_term_memory(db):
     db.add_to_stm(key="a2c4e", value="it worked!")
