@@ -9,7 +9,28 @@ from dataclasses import asdict
 from typing import Any, Union, Dict, List, Literal
 from uuid import uuid4
 
-from abstract_domain_model.models import CitationAdded, CitationAddedPayload
+from abstract_domain_model.models import (
+    CitationAdded,
+    CitationAddedPayload,
+    MetaAdded,
+    MetaAddedPayload,
+    SummaryTagged,
+    SummaryTaggedPayload,
+    SummaryAdded,
+    SummaryAddedPayload,
+    PersonAdded,
+    PersonAddedPayload,
+    PersonTagged,
+    PersonTaggedPayload,
+    TimeAdded,
+    TimeAddedPayload,
+    TimeTagged,
+    TimeTaggedPayload,
+    PlaceAdded,
+    PlaceTagged,
+    PlaceTaggedPayload,
+    PlaceAddedPayload,
+)
 from abstract_domain_model.models.commands.publish_citation import (
     PublishCitation,
     PublishCitationPayload,
@@ -91,7 +112,6 @@ class CommandHandler:
         self, command: PublishCitation
     ) -> List[Event]:
 
-        events = []
         transaction_meta = {
             "transaction_id": str(uuid4()),
             "app_version": command.app_version,
@@ -99,18 +119,168 @@ class CommandHandler:
             "user_id": command.user_id,
         }
 
+        # handle summary
+        if command.payload.summary_id is not None:
+            # we're tagging an existing summary
+            summary = SummaryTagged(
+                type="SUMMARY_TAGGED",
+                **transaction_meta,
+                payload=SummaryTaggedPayload(
+                    id=command.payload.summary_id, citation_id=command.payload.id
+                ),
+            )
+        else:
+            # create a new summary
+            summary = SummaryAdded(
+                type="SUMMARY_ADDED",
+                **transaction_meta,
+                payload=SummaryAddedPayload(
+                    id=str(uuid4()),
+                    citation_id=command.payload.id,
+                    text=command.payload.summary,
+                ),
+            )
+
+        # handle meta
+        # Note: currently not handling MetaTagged, since this needs rework anyways
+        meta_id = str(uuid4())
+        meta = MetaAdded(
+            type="META_ADDED",
+            **transaction_meta,
+            payload=MetaAddedPayload(
+                id=meta_id,
+                citation_id=command.payload.id,
+                author=command.payload.meta.author,
+                title=command.payload.meta.title,
+                publisher=command.payload.meta.publisher,
+                kwargs=command.payload.meta.kwargs,
+            ),
+        )
+
+        # handle tags
+        tags = [
+            self._tag_to_event(
+                tag=tag,
+                transaction_meta=transaction_meta,
+                citation_id=command.payload.id,
+                summary_id=command.payload.summary_id,
+            )
+            for tag in command.payload.tags
+        ]
+
+        # handle citation
         citation = CitationAdded(
             **transaction_meta,
             type="CITATION_ADDED",
             payload=CitationAddedPayload(
                 id=command.payload.id,
                 text=command.payload.text,
-                summary_id=command.payload.summary_id,
-                meta_id=command.payload.meta.id,
+                summary_id=summary.payload.id,
+                meta_id=meta.payload.id,
             ),
         )
 
-        return events
+        return [citation, *tags, meta, summary]
+
+    def _tag_to_event(
+        self,
+        tag: Union[Person, Place, Time],
+        transaction_meta: dict,
+        citation_id: str,
+        summary_id: str,
+    ) -> Union[
+        PersonAdded, PersonTagged, PlaceAdded, PlaceTagged, TimeAdded, TimeTagged
+    ]:
+
+        if isinstance(tag, Person):
+            if tag.id is None:
+                return PersonAdded(
+                    type="PERSON_ADDED",
+                    **transaction_meta,
+                    payload=PersonAddedPayload(
+                        id=str(uuid4()),
+                        name=tag.name,
+                        citation_start=tag.start_char,
+                        citation_end=tag.stop_char,
+                        citation_id=citation_id,
+                        summary_id=summary_id,
+                    ),
+                )
+            else:
+                return PersonTagged(
+                    type="PERSON_TAGGED",
+                    **transaction_meta,
+                    payload=PersonTaggedPayload(
+                        id=tag.id,
+                        name=tag.name,
+                        citation_start=tag.start_char,
+                        citation_end=tag.stop_char,
+                        citation_id=citation_id,
+                        summary_id=summary_id,
+                    ),
+                )
+
+        elif isinstance(tag, Time):
+            if tag.id is None:
+                return TimeAdded(
+                    type="TIME_ADDED",
+                    **transaction_meta,
+                    payload=TimeAddedPayload(
+                        id=str(uuid4()),
+                        name=tag.name,
+                        citation_start=tag.start_char,
+                        citation_end=tag.stop_char,
+                        citation_id=citation_id,
+                        summary_id=summary_id,
+                    ),
+                )
+            else:
+                return TimeTagged(
+                    type="TIME_TAGGED",
+                    **transaction_meta,
+                    payload=TimeTaggedPayload(
+                        id=tag.id,
+                        name=tag.name,
+                        citation_start=tag.start_char,
+                        citation_end=tag.stop_char,
+                        citation_id=citation_id,
+                        summary_id=summary_id,
+                    ),
+                )
+
+        elif isinstance(tag, Place):
+            if tag.id is None:
+                return PlaceAdded(
+                    type="PLACE_ADDED",
+                    **transaction_meta,
+                    payload=PlaceAddedPayload(
+                        id=str(uuid4()),
+                        name=tag.name,
+                        citation_start=tag.start_char,
+                        citation_end=tag.stop_char,
+                        citation_id=citation_id,
+                        summary_id=summary_id,
+                        latitude=tag.latitude,
+                        longitude=tag.longitude,
+                        geo_shape=tag.geo_shape,
+                    ),
+                )
+            else:
+                return PlaceTagged(
+                    type="PLACE_TAGGED",
+                    **transaction_meta,
+                    payload=PlaceTaggedPayload(
+                        id=tag.id,
+                        name=tag.name,
+                        citation_start=tag.start_char,
+                        citation_end=tag.stop_char,
+                        citation_id=citation_id,
+                        summary_id=summary_id,
+                    ),
+                )
+
+        else:
+            raise UnknownTagTypeError
 
     def _translate_publish_citation(self, command: dict) -> PublishCitation:
         """
@@ -185,7 +355,7 @@ class CommandHandler:
         stop_char = tag["stop_char"]
         latitude = tag["latitude"]
         longitude = tag["longitude"]
-        geo_shape = tag.get("geoshape", None)
+        geo_shape = tag.get("geo_shape", None)
         return Place(
             id=id_,
             type=type_,

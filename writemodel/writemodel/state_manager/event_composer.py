@@ -95,7 +95,7 @@ class EventComposer:
                     "citation_end": citation_end,
                     "longitude": longitude,
                     "latitude": latitude,
-                    "geoshape": geoshape,
+                    "geo_shape": geoshape,
                 },
             }
         )
