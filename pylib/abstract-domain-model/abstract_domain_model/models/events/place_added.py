@@ -12,7 +12,7 @@ class PlaceAddedPayload:
     citation_end: int
     longitude: float
     latitude: float
-    geoshape: Optional[str]
+    geo_shape: Optional[str]
 
 
 @dataclass(frozen=True)
