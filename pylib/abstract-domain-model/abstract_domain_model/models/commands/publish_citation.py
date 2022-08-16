@@ -16,7 +16,7 @@ class PublishCitation:
 class PublishCitationPayload:
     id: str
     text: str
-    summary: str
+    summary: Optional[str]  # won't exist when tagging a summary
     summary_id: Optional[str]
     tags: List[Union["Person", "Place", "Time"]]
     meta: "Meta"
