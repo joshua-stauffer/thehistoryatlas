@@ -170,7 +170,7 @@ services:
     provisioner:
         build:
             context:
-                /provisioner
+                ./provisioner
         depends_on:
             - db
         restart: "no"
@@ -183,6 +183,7 @@ services:
             - ACCOUNTS_SERVICE_PASSWORD=${ACCOUNTS_SERVICE_PASSWORD}
             - GEO_SERVICE_PASSWORD=${GEO_SERVICE_PASSWORD}
             - NLP_SERVICE_PASSWORD=${NLP_SERVICE_PASSWORD}
+            - THA_DB_URI=${THA_DB_URI}
 volumes:
     db:
 networks:
