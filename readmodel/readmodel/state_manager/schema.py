@@ -11,7 +11,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT
-from app.errors import EmptyNameError
+from readmodel.errors import EmptyNameError
 
 Base = declarative_base()
 

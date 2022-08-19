@@ -4,8 +4,8 @@ Tuesday, May 4th 2021
 """
 
 import logging
-from app.errors import UnknownQueryError, UnknownManifestTypeError
-from app.state_manager.database import Database
+from readmodel.errors import UnknownQueryError, UnknownManifestTypeError
+from readmodel.state_manager.database import Database
 
 log = logging.getLogger(__name__)
 

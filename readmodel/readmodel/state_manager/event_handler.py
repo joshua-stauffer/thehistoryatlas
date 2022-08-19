@@ -4,7 +4,11 @@ Monday, May 3rd 2021
 """
 
 import logging
-from app.errors import UnknownEventError, MissingEventFieldError, DuplicateEventError
+from readmodel.errors import (
+    UnknownEventError,
+    MissingEventFieldError,
+    DuplicateEventError,
+)
 
 log = logging.getLogger(__name__)
 

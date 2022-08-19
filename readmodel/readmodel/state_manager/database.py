@@ -12,7 +12,7 @@ from typing import Tuple, Union
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
-from app.state_manager.schema import (
+from readmodel.state_manager.schema import (
     Base,
     Citation,
     History,
