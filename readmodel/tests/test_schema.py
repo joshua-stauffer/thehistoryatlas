@@ -18,10 +18,8 @@ from readmodel.errors import EmptyNameError
 
 
 @pytest.fixture
-def engine():
-    engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
-    Base.metadata.create_all(engine)
-    return engine
+def engine(db):
+    return db._engine
 
 
 @pytest.fixture

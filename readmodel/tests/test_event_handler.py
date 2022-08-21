@@ -26,24 +26,6 @@ from readmodel.state_manager.schema import Name
 from readmodel.state_manager.schema import Summary
 
 
-class Config:
-    """minimal class for setting up an in memory db for this test"""
-
-    def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
-        self.DEBUG = False
-
-
-@pytest.fixture
-def db():
-    c = Config()
-    # stm timeout is an asyncio.sleep value: by setting it to 0 we defer control
-    # back to the main thread but return to it as soon as possible.
-    db = Database(c, stm_timeout=0)
-    db.check_database_init()
-    return db
-
-
 @pytest.fixture
 def handler(db):
     return EventHandler(database_instance=db)
