@@ -24,7 +24,7 @@ from readmodel.state_manager.schema import (
     TagInstance,
     Time,
 )
-from app.state_manager.trie import Trie, TrieResult
+from readmodel.state_manager.trie import Trie, TrieResult
 
 log = logging.getLogger(__name__)
 

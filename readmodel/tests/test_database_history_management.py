@@ -6,8 +6,8 @@ import random
 from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.state_manager.database import Database
-from app.state_manager.schema import History
+from readmodel.state_manager.database import Database
+from readmodel.state_manager.schema import History
 
 
 class Config:

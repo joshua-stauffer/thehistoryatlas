@@ -5,15 +5,15 @@ import random
 from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.state_manager.database import Database
-from app.state_manager.schema import Citation
-from app.state_manager.schema import TagInstance
-from app.state_manager.schema import Tag
-from app.state_manager.schema import Time
-from app.state_manager.schema import Person
-from app.state_manager.schema import Place
-from app.state_manager.schema import Name
-from app.state_manager.schema import Summary
+from readmodel.state_manager.database import Database
+from readmodel.state_manager.schema import Citation
+from readmodel.state_manager.schema import TagInstance
+from readmodel.state_manager.schema import Tag
+from readmodel.state_manager.schema import Time
+from readmodel.state_manager.schema import Person
+from readmodel.state_manager.schema import Place
+from readmodel.state_manager.schema import Name
+from readmodel.state_manager.schema import Summary
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
