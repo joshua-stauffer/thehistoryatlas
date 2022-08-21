@@ -6,8 +6,8 @@ services:
         networks:
             - tha-connect
         ports:
-            - "5672:5672"
-            - "15672:15672"
+            - ${BROKER_PORT}
+            - ${BROKER_ADMIN_PORT}
     api:
         image: ilriccio/thehistoryatlas:api-dev
         restart: always
@@ -29,14 +29,13 @@ services:
             - db
             - broker
             - history
+            - provisioner
         build:
             context: ./readmodel
-            args:
-                test: "True"
         environment:
             - PROD_DB_URI=${READMODEL_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/readmodel
-            - TESTING=False
+            - DEV_DB_URI=${READMODEL_CONN_STR_DEV}
+            - TESTING=${TESTING}
             - CONFIG=${CONFIG}
         networks:
             - tha-connect
@@ -49,17 +48,16 @@ services:
             - broker
             - history
             - eventstore
+            - provisioner
         build:
             context: ./writemodel
-            args:
-                test: "True"
         networks:
             - tha-connect
         environment:
             - PROD_DB_URI=${WRITEMODEL_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/writemodel
+            - DEV_DB_URI=${WRITEMODEL_CONN_STR_DEV}
             - CONFIG=${CONFIG}
-            - TESTING=False
+            - TESTING=${TESTING}
 
     eventstore:
         image: ilriccio/thehistoryatlas:eventstore-dev
@@ -67,17 +65,16 @@ services:
         depends_on:
             - broker
             - db
+            - provisioner
         build:
             context: ./eventstore
-            args:
-                test: "False"
         networks:
             - tha-connect
         environment:
             - PROD_DB_URI=${EVENTSTORE_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
+            - DEV_DB_URI=${EVENTSTORE_CONN_STR_DEV}
             - CONFIG=${CONFIG}
-            - TESTING=False
+            - TESTING=${TESTING}
 
     history:
         image: ilriccio/thehistoryatlas:history-dev
@@ -85,17 +82,16 @@ services:
         depends_on: 
             - broker
             - db
+            - provisioner
         build:
             context: ./history
-            args:
-                test: "False"
-        networks: 
+        networks:
             - tha-connect
         environment:
             - PROD_DB_URI=${EVENTSTORE_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/eventstore
+            - DEV_DB_URI=${EVENTSTORE_CONN_STR_DEV}
             - CONFIG=${CONFIG}
-            - TESTING=False
+            - TESTING=${TESTING}
 
     nlp:
         image: ilriccio/thehistoryatlas:nlp-dev
@@ -103,13 +99,14 @@ services:
         depends_on: 
             - broker
             - db
+            - provisioner
         build:
             context: ./nlp
         environment: 
-            - TESTING=False
             - PROD_DB_URI=${NLP_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/nlp
+            - DEV_DB_URI=${NLP_CONN_STR_DEV}
             - CONFIG=${CONFIG}
+            - TESTING=${TESTING}
 
         networks:
             - tha-connect
@@ -120,18 +117,17 @@ services:
         depends_on: 
             - db
             - broker
+            - provisioner
         build:
             context: ./geo
-            args:
-                test: "False"
         environment:
             - PROD_DB_URI=${GEO_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/geo
-            - TESTING=False
+            - DEV_DB_URI=${GEO_CONN_STR_DEV}
+            - TESTING=${TESTING}
             # choose between one of the following two city lists:
             # cities500 is much more comprehensive, and also requires a much longer build.
-            # - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
-            - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
+            - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
+            # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
             - CONFIG=${CONFIG}
 
         networks: 
@@ -143,29 +139,27 @@ services:
         depends_on:
             - broker
             - db
+            - provisioner
         build:
             context: ./accounts
-            args:
-                test: "False"
         environment:
             - PROD_DB_URI=${ACCOUNTS_CONN_STR}
-            - DEV_DB_URI=postgresql+psycopg2://postgres:hardpass123@db:5432/accounts
+            - DEV_DB_URI=${ACCOUNTS_CONN_STR_DEV}
             - SEC_KEY=${ACCOUNTS_SEC_KEY}
-            - TTL=28800
-            - TESTING=False
-            - REFRESH_BY=7200
+            - TTL=${ACCOUNTS_TTL}
+            - TESTING=${TESTING}
+            - REFRESH_BY=${ACCOUNTS_REFRESH_BY}
             - CONFIG=${CONFIG}
 
         networks:
             - tha-connect
 
-#    # Note: used for local dev only, i.e. when CONFIG=DEVELOPMENT
     db:
 
         image: postgres
         restart: always
         environment:
-            - POSTGRES_PASSWORD=hardpass123
+            - POSTGRES_PASSWORD=${POSTGRES_PASS}
         networks:
             - tha-connect
         ports:
@@ -173,14 +167,23 @@ services:
         volumes:
             - db:/var/lib/postgresql/data
 
-#    adminer:
-#        image: adminer
-#        restart: always
-#        ports:
-#            - 8080:8080
-#        networks:
-#            - tha-connect
-
+    provisioner:
+        build:
+            context:
+                ./provisioner
+        depends_on:
+            - db
+        restart: "no"
+        networks:
+            - tha-connect
+        environment:
+            - EVENTSTORE_SERVICE_PASSWORD=${EVENTSTORE_SERVICE_PASSWORD}
+            - READMODEL_SERVICE_PASSWORD=${READMODEL_SERVICE_PASSWORD}
+            - WRITEMODEL_SERVICE_PASSWORD=${WRITEMODEL_SERVICE_PASSWORD}
+            - ACCOUNTS_SERVICE_PASSWORD=${ACCOUNTS_SERVICE_PASSWORD}
+            - GEO_SERVICE_PASSWORD=${GEO_SERVICE_PASSWORD}
+            - NLP_SERVICE_PASSWORD=${NLP_SERVICE_PASSWORD}
+            - THA_DB_URI=${THA_DB_URI}
 volumes:
     db:
 networks:
