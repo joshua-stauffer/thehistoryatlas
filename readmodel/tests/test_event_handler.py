@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 from datetime import datetime
 import json
 import pytest
@@ -242,8 +243,8 @@ def test_unknown_event_raises_error(handle_event):
 @pytest.mark.asyncio
 async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, SUMMARY_ADDED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([CITATION_ADDED, SUMMARY_ADDED, SUMMARY_ADDED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
     payload = CITATION_ADDED["payload"]
@@ -260,8 +261,8 @@ async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
 @pytest.mark.asyncio
 async def test_person_added(db, handle_event, SUMMARY_ADDED, PERSON_ADDED):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
     payload = PERSON_ADDED["payload"]
@@ -281,8 +282,8 @@ async def test_person_tagged(
     db, handle_event, SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
     handle_event(PERSON_TAGGED)
@@ -310,8 +311,8 @@ async def test_person_tagged(
 
 @pytest.mark.asyncio
 async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
-    # for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     payload = PLACE_ADDED["payload"]
@@ -327,8 +328,8 @@ async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
 @pytest.mark.asyncio
 async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     handle_event(PLACE_TAGGED)
@@ -361,8 +362,8 @@ async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_
 @pytest.mark.asyncio
 async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     payload = TIME_ADDED["payload"]
@@ -378,8 +379,8 @@ async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
 @pytest.mark.asyncio
 async def test_time_tagged(db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED]):
+        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     handle_event(TIME_TAGGED)
@@ -408,8 +409,8 @@ async def test_meta_added_basic(
     db, handle_event, SUMMARY_ADDED, CITATION_ADDED, META_ADDED_basic
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_basic]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_basic]):
+        event["event_id"] = i + 1
     citation_guid = CITATION_ADDED["payload"]["id"]
     meta = dict(**META_ADDED_basic["payload"])
 
@@ -437,8 +438,8 @@ async def test_meta_added_more(
     db, handle_event, SUMMARY_ADDED, CITATION_ADDED, META_ADDED_more
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_more]):
-    #     event["event_id"] = i + 1
+    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_more]):
+        event["event_id"] = i + 1
     citation_guid = CITATION_ADDED["payload"]["id"]
     meta = dict(**META_ADDED_more["payload"])
 
@@ -461,15 +462,18 @@ async def test_meta_added_more(
         assert res.meta == meta_string
 
 
-@pytest.mark.skip("Need to rebuild logic to avoid duplicates.")
 @pytest.mark.asyncio
 async def test_reject_event_with_duplicate_id(
     db, handle_event, SUMMARY_ADDED, CITATION_ADDED
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
-    # for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED]):
-    #     event["event_id"] = i + 1
-    handle_event(SUMMARY_ADDED)
-    handle_event(CITATION_ADDED)
+    summary_dict = deepcopy(SUMMARY_ADDED)
+    summary_dict["event_id"] = 1
+    citation_dict_1 = deepcopy(CITATION_ADDED)
+    citation_dict_2 = deepcopy(CITATION_ADDED)
+    citation_dict_1["event_id"] = 2
+    citation_dict_2["event_id"] = 2
+    handle_event(summary_dict)
+    handle_event(citation_dict_1)
     with pytest.raises(DuplicateEventError):
-        handle_event(CITATION_ADDED)
+        handle_event(citation_dict_2)
