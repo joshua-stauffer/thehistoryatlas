@@ -151,6 +151,6 @@ class EventHandler:
         citation_id = event.payload.citation_id
         event = asdict(event)
         meta_payload = dict(**event["payload"])
-        del meta_payload["citation_guid"]
-        del meta_payload["meta_guid"]
+        del meta_payload["citation_id"]
+        del meta_payload["id"]
         self._db.add_meta_to_citation(citation_guid=citation_id, **meta_payload)

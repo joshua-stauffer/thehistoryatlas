@@ -5,16 +5,16 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import text
 
-from app.state_manager.schema import Base
-from app.state_manager.schema import Citation
-from app.state_manager.schema import TagInstance
-from app.state_manager.schema import Tag
-from app.state_manager.schema import Time
-from app.state_manager.schema import Person
-from app.state_manager.schema import Place
-from app.state_manager.schema import Name
-from app.state_manager.schema import Summary
-from app.errors import EmptyNameError
+from readmodel.state_manager.schema import Base
+from readmodel.state_manager.schema import Citation
+from readmodel.state_manager.schema import TagInstance
+from readmodel.state_manager.schema import Tag
+from readmodel.state_manager.schema import Time
+from readmodel.state_manager.schema import Person
+from readmodel.state_manager.schema import Place
+from readmodel.state_manager.schema import Name
+from readmodel.state_manager.schema import Summary
+from readmodel.errors import EmptyNameError
 
 
 @pytest.fixture

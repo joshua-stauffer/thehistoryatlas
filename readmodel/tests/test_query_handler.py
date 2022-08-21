@@ -5,10 +5,10 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest
-from app.errors import UnknownManifestTypeError, UnknownQueryError
-from app.state_manager.database import Database
-from app.state_manager.query_handler import QueryHandler
-from app.state_manager.schema import (
+from readmodel.errors import UnknownManifestTypeError, UnknownQueryError
+from readmodel.state_manager.database import Database
+from readmodel.state_manager.query_handler import QueryHandler
+from readmodel.state_manager.schema import (
     Base,
     Citation,
     Name,
