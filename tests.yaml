@@ -3,6 +3,7 @@ version: "3"
 services:
 
   db:
+    # NOTE: using postgres 13.3 to avoid m1 libpq issue: https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
     image: postgres:13.3
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASS}
@@ -20,7 +21,6 @@ services:
       - tha-test
     environment:
       - TEST_DB_URI=${TEST_DB_URI}
-      - REQUIREMENT_FILE=test-requirements.txt
 
 networks:
     tha-test:
