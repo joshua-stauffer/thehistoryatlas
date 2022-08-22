@@ -15,8 +15,8 @@ def mock_db():
 
 @pytest.fixture
 def db():
-    TEST_DB_URI = "postgresql+psycopg2://readmodel_service:BBGrS6DXMSZn2vRo8ZEPi2MeY3mgZb2Z@db:5432/readmodel"
-    # TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
+    TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
+
     if not TEST_DB_URI:
         raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
 
@@ -35,7 +35,11 @@ def db():
     Base.metadata.create_all(db._engine)
 
     with Session(db._engine, future=True) as session:
-        session.add_all([])
+        session.add_all(
+            [
+                # add any necessary seed data here
+            ]
+        )
         session.commit()
 
     return db

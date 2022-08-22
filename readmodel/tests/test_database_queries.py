@@ -25,7 +25,7 @@ FUZZ_ITERATIONS = 10
 
 
 @pytest.fixture
-def db_tuple(_db):
+def db_tuple(db):
     """
     This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
     of people, places, and times (each). It then associates each citation
@@ -106,15 +106,15 @@ def db_tuple(_db):
             )
         )
 
-    with Session(_db._engine, future=True) as session:
+    with Session(db._engine, future=True) as session:
         session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
-            _db._handle_name(person.names, person.guid, session)
+            db._handle_name(person.names, person.guid, session)
         for place in places:
-            _db._handle_name(place.names, place.guid, session)
+            db._handle_name(place.names, place.guid, session)
         for time in times:
-            _db._handle_name(time.name, time.guid, session)
+            db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
         "summary_guids": sum_guids,
@@ -124,7 +124,7 @@ def db_tuple(_db):
         "time_guids": time_guids,
         "names": names,
     }
-    return _db, db_dict
+    return db, db_dict
 
 
 def load_db(db_tuple):
