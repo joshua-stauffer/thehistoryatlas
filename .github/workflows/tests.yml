@@ -1,0 +1,29 @@
+name: "Tests"
+
+on:
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  run-tests:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Setup Test Environment
+        run: docker compose -f tests.yaml up db -d
+
+      - name: Test Readmodel
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_DB_UIL }}
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+        run: |
+          docker compose -f docker-compose-integration.yml up --build readmodel -exit-code-from readmodel
