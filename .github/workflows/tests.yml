@@ -26,4 +26,4 @@ jobs:
           TEST_DB_URI: ${{ secrets.TEST_DB_UIL }}
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
         run: |
-          docker compose -f docker-compose-integration.yml up --build readmodel -exit-code-from readmodel
+          docker compose -f docker-compose-integration.yml up --build readmodel --exit-code-from readmodel
