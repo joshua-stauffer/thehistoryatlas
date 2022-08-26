@@ -16,6 +16,7 @@ RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
 RUN pip3 install /lib/abstract-domain-model
 COPY . .
+ENV TEST_DB_URI=${TEST_DB_URI}
 ENV HOST_NAME=broker
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
