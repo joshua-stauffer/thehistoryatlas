@@ -23,7 +23,7 @@ jobs:
 
       - name: Test Readmodel
         env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_UIL }}
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
         run: |
           docker compose -f docker-compose-integration.yml up --build readmodel --exit-code-from readmodel
