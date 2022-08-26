@@ -23,7 +23,6 @@ jobs:
 
       - name: Test Readmodel
         env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-          THA_DB_URI: ${{ secrets.THA_DB_URI }}
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
           docker compose -f tests.yaml up --build readmodel --exit-code-from readmodel
