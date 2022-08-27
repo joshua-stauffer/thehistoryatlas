@@ -5,15 +5,15 @@ import random
 from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.state_manager.database import Database
-from app.state_manager.schema import Citation
-from app.state_manager.schema import TagInstance
-from app.state_manager.schema import Tag
-from app.state_manager.schema import Time
-from app.state_manager.schema import Person
-from app.state_manager.schema import Place
-from app.state_manager.schema import Name
-from app.state_manager.schema import Summary
+from readmodel.state_manager.database import Database
+from readmodel.state_manager.schema import Citation
+from readmodel.state_manager.schema import TagInstance
+from readmodel.state_manager.schema import Tag
+from readmodel.state_manager.schema import Time
+from readmodel.state_manager.schema import Person
+from readmodel.state_manager.schema import Place
+from readmodel.state_manager.schema import Name
+from readmodel.state_manager.schema import Summary
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
@@ -24,24 +24,8 @@ DB_COUNT = 100
 FUZZ_ITERATIONS = 10
 
 
-class Config:
-    """minimal class for setting up an in memory db for this test"""
-
-    def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
-        self.DEBUG = False
-
-
 @pytest.fixture
-def _db():
-    c = Config()
-    # stm timeout is an asyncio.sleep value: by setting it to 0 we defer control
-    # back to the main thread but return to it as soon as possible.
-    return Database(c, stm_timeout=0)
-
-
-@pytest.fixture
-def db_tuple(_db):
+def db_tuple(db):
     """
     This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
     of people, places, and times (each). It then associates each citation
@@ -122,15 +106,15 @@ def db_tuple(_db):
             )
         )
 
-    with Session(_db._engine, future=True) as session:
+    with Session(db._engine, future=True) as session:
         session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
-            _db._handle_name(person.names, person.guid, session)
+            db._handle_name(person.names, person.guid, session)
         for place in places:
-            _db._handle_name(place.names, place.guid, session)
+            db._handle_name(place.names, place.guid, session)
         for time in times:
-            _db._handle_name(time.name, time.guid, session)
+            db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
         "summary_guids": sum_guids,
@@ -140,7 +124,7 @@ def db_tuple(_db):
         "time_guids": time_guids,
         "names": names,
     }
-    return _db, db_dict
+    return db, db_dict
 
 
 def load_db(db_tuple):

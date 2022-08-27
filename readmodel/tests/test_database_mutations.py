@@ -5,33 +5,17 @@ import random
 from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.state_manager.database import Database
+from readmodel.state_manager.database import Database
 
-from app.state_manager.schema import Base
-from app.state_manager.schema import Citation
-from app.state_manager.schema import TagInstance
-from app.state_manager.schema import Tag
-from app.state_manager.schema import Time
-from app.state_manager.schema import Person
-from app.state_manager.schema import Place
-from app.state_manager.schema import Name
-from app.state_manager.schema import Summary
-
-
-class Config:
-    """minimal class for setting up an in memory db for this test"""
-
-    def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
-        self.DEBUG = False
-
-
-@pytest.fixture
-def db():
-    c = Config()
-    # stm timeout is an asyncio.sleep value: by setting it to 0 we defer control
-    # back to the main thread but return to it as soon as possible.
-    return Database(c, stm_timeout=0)
+from readmodel.state_manager.schema import Base
+from readmodel.state_manager.schema import Citation
+from readmodel.state_manager.schema import TagInstance
+from readmodel.state_manager.schema import Tag
+from readmodel.state_manager.schema import Time
+from readmodel.state_manager.schema import Person
+from readmodel.state_manager.schema import Place
+from readmodel.state_manager.schema import Name
+from readmodel.state_manager.schema import Summary
 
 
 @pytest.fixture

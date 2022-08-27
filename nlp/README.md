@@ -46,7 +46,7 @@ Messages have the following shape:
                 "coords": {
                     "latitude":     float,
                     "longitude":    float,
-                    "geoshape"?:    string
+                    "geo_shape"?:    string
                 }
             }[],
         }

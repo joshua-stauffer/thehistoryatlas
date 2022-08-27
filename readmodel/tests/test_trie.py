@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from app.state_manager.trie import Trie, Node
+from readmodel.state_manager.trie import Trie, Node
 
 
 @pytest.fixture

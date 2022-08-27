@@ -5,10 +5,10 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 import pytest
-from app.errors import UnknownManifestTypeError, UnknownQueryError
-from app.state_manager.database import Database
-from app.state_manager.query_handler import QueryHandler
-from app.state_manager.schema import (
+from readmodel.errors import UnknownManifestTypeError, UnknownQueryError
+from readmodel.state_manager.database import Database
+from readmodel.state_manager.query_handler import QueryHandler
+from readmodel.state_manager.schema import (
     Base,
     Citation,
     Name,
@@ -28,24 +28,8 @@ DB_COUNT = 100
 FUZZ_ITERATIONS = 10
 
 
-class Config:
-    """minimal class for setting up an in memory db for this test"""
-
-    def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
-        self.DEBUG = False
-
-
 @pytest.fixture
-def _db():
-    c = Config()
-    # stm timeout is an asyncio.sleep value: by setting it to 0 we defer control
-    # back to the main thread but return to it as soon as possible.
-    return Database(c, stm_timeout=0)
-
-
-@pytest.fixture
-def db_tuple(_db):
+def db_tuple(db):
     """
     This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
     of people, places, and times (each). It then associates each citation
@@ -126,15 +110,15 @@ def db_tuple(_db):
             )
         )
 
-    with Session(_db._engine, future=True) as session:
+    with Session(db._engine, future=True) as session:
         session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
-            _db._handle_name(person.names, person.guid, session)
+            db._handle_name(person.names, person.guid, session)
         for place in places:
-            _db._handle_name(place.names, place.guid, session)
+            db._handle_name(place.names, place.guid, session)
         for time in times:
-            _db._handle_name(time.name, time.guid, session)
+            db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
         "summary_guids": sum_guids,
@@ -144,7 +128,7 @@ def db_tuple(_db):
         "time_guids": time_guids,
         "names": names,
     }
-    return _db, db_dict
+    return db, db_dict
 
 
 @pytest.fixture
