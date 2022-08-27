@@ -4,9 +4,9 @@ and the Event Handler.
 May 3rd, 2021
 """
 
-from app.state_manager.database import Database
-from app.state_manager.event_handler import EventHandler
-from app.state_manager.query_handler import QueryHandler
+from readmodel.state_manager.database import Database
+from readmodel.state_manager.event_handler import EventHandler
+from readmodel.state_manager.query_handler import QueryHandler
 
 
 class Manager:

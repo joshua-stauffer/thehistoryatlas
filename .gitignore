@@ -48,3 +48,7 @@ nlp/app/models/
 .idea/
 geo/app/data/
 secrets.yaml
+
+# vim
+*.swp
+*.swo

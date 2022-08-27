@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Literal
 from abstract_domain_model.models import (
     TimeAdded,
     TimeTagged,
@@ -28,7 +28,38 @@ Event = Union[
     SummaryTagged,
 ]
 
+EventTypes = Literal[
+    "TIME_ADDED",
+    "TIME_TAGGED",
+    "PLACE_TAGGED",
+    "PLACE_ADDED",
+    "PERSON_TAGGED",
+    "PERSON_ADDED",
+    "CITATION_ADDED",
+    "META_ADDED",
+    "SUMMARY_ADDED",
+    "SUMMARY_TAGGED",
+]
+
 Command = Union[PublishCitation]
+
+CommandTypes = Literal["PUBLISH_CITATION"]
+
+# Query = Union[None]
+
+# QueryTypes = Literal[]
+
+DomainObject = Union[
+    Command,
+    Event,
+    # Query,
+]
+
+DomainObjectTypes = Union[
+    CommandTypes,
+    EventTypes,
+    # QueryTypes,
+]
 
 PublishCitationType = type(
     PublishCitation(

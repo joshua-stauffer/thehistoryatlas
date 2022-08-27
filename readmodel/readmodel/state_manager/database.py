@@ -12,7 +12,7 @@ from typing import Tuple, Union
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
-from app.state_manager.schema import (
+from readmodel.state_manager.schema import (
     Base,
     Citation,
     History,
@@ -24,19 +24,15 @@ from app.state_manager.schema import (
     TagInstance,
     Time,
 )
-from app.state_manager.trie import Trie, TrieResult
+from readmodel.state_manager.trie import Trie, TrieResult
 
 log = logging.getLogger(__name__)
 
 
 class Database:
-
     def __init__(self, config, stm_timeout: int = 5):
         self._engine = self._connect(
-            uri=config.DB_URI,
-            debug=config.DEBUG,
-            retries=-1,  # infinite
-            timeout=1
+            uri=config.DB_URI, debug=config.DEBUG, retries=-1, timeout=1  # infinite
         )
         # initialize the db
         Base.metadata.create_all(self._engine)
@@ -48,7 +44,7 @@ class Database:
     def _connect(self, uri: str, debug: bool, retries: int = -1, timeout=30):
 
         while True:
-        # while retries != 0:  # negative number allows infinite retries
+            # while retries != 0:  # negative number allows infinite retries
             try:
                 eng = create_engine(uri, echo=debug, echo_pool=True, future=True)
                 return eng
@@ -56,7 +52,6 @@ class Database:
                 print(f"hit exception {e}")
                 retries -= 1
                 sleep(timeout)
-
 
         raise Exception("Exceeded max retries -- cannot connect to database.")
 
