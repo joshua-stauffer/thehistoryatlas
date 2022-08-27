@@ -5,9 +5,15 @@ Provides write only access to the canonical database.
 
 import json
 import logging
+from dataclasses import asdict
+from typing import List, Dict
+
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from event_schema.EventSchema import Event, Base
+
+from abstract_domain_model.transform import from_dict, to_dict
+from abstract_domain_model.types import Event
+from event_schema.EventSchema import Event as EventModel, Base
 
 log = logging.getLogger(__name__)
 
@@ -18,28 +24,27 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
 
-    def commit_event(self, synthetic_event) -> list[dict]:
+    def commit_event(self, synthetic_event: List[Dict]) -> list[Event]:
         """Commit an event to the database"""
         log.info(f"Committing event {synthetic_event} to the event store database.")
-        emitted_events = list()
-        persisted_events = list()
-        for event in synthetic_event:
-            emitted_events.append(
-                Event(
-                    type=event.get("type"),  # string representing EventType
-                    transaction_guid=event.get(
-                        "transaction_guid"
-                    ),  # group atomic events together by command
-                    app_version=event.get("app_version"),  # future proof(ish)
-                    timestamp=event.get("timestamp"),  # string timestamp
-                    user=event.get("user"),  # string user GUID
-                    payload=json.dumps(event.get("payload")),  # arbitrary json string
-                )
+        events: List[Event] = [from_dict(event) for event in synthetic_event]
+        emitted_events: List[EventModel] = [
+            EventModel(
+                type=event.type,
+                transaction_id=event.transaction_id,
+                app_version=event.app_version,
+                timestamp=event.timestamp,
+                user_id=event.user_id,
+                payload=asdict(event.payload),
             )
+            for event in events
+        ]
+
         with Session(self._engine, future=True) as session:
             session.add_all(emitted_events)
             session.commit()
-            persisted_events.extend([e.to_dict() for e in emitted_events])
+
+        persisted_events = [from_dict(e.to_dict()) for e in emitted_events]
 
         log.debug(
             f"returning persisted events {persisted_events} from the database store"

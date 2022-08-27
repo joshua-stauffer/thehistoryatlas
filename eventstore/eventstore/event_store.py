@@ -4,10 +4,10 @@ canonical database for the History Atlas.
 """
 
 import asyncio
-import json
 import logging
-import os
 import signal
+
+from abstract_domain_model.transform import to_dict
 from eventstore.database import Database
 from eventstore.broker import Broker
 from tha_config import Config
@@ -35,8 +35,8 @@ class EventStore:
         Returns a json string representation of the persisted event."""
         log.debug(f"processing event {event}")
         persisted_events = self.db.commit_event(event)
-        for e in persisted_events:
-            await pub_func(e)
+        for event in persisted_events:
+            await pub_func(to_dict(event))
         log.info("Finished processing event")
 
 
