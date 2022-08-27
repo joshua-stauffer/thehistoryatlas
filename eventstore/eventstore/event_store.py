@@ -12,11 +12,11 @@ from eventstore.database import Database
 from eventstore.broker import Broker
 from tha_config import Config
 
-logging.basicConfig(level='DEBUG')
+logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
-class EventStore:
 
+class EventStore:
     def __init__(self):
         self.config = Config()
         self.db = Database(self.config)
@@ -27,17 +27,17 @@ class EventStore:
 
     async def shutdown(self, signal):
         if signal:
-            log.info(f'Received shutdown signal: {signal}')
+            log.info(f"Received shutdown signal: {signal}")
         await self.broker.cancel()
 
     async def process_event(self, event, pub_func):
         """accepts an event and submits it to the datastore for storage.
         Returns a json string representation of the persisted event."""
-        log.debug(f'processing event {event}')
+        log.debug(f"processing event {event}")
         persisted_events = self.db.commit_event(event)
         for e in persisted_events:
             await pub_func(e)
-        log.info('Finished processing event')
+        log.info("Finished processing event")
 
 
 if __name__ == "__main__":
@@ -46,11 +46,10 @@ if __name__ == "__main__":
     loop.create_task(store.start_broker())
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
-        loop.add_signal_handler(
-            s, lambda s=s: asyncio.create_task(store.shutdown(s)))
+        loop.add_signal_handler(s, lambda s=s: asyncio.create_task(store.shutdown(s)))
     try:
-        log.info('Asyncio loop now running')
+        log.info("Asyncio loop now running")
         loop.run_forever()
     finally:
         loop.close()
-        log.info('EventStore shut down successfully.') 
+        log.info("EventStore shut down successfully.")
