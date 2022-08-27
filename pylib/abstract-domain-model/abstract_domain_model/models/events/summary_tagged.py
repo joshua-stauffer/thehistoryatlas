@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 
 @dataclass(frozen=True)
@@ -16,3 +16,4 @@ class SummaryTagged:
     user_id: str
     payload: SummaryTaggedPayload
     type: Literal["SUMMARY_TAGGED"] = "SUMMARY_TAGGED"
+    index: Optional[int] = None
