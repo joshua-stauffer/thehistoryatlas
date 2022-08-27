@@ -11,6 +11,6 @@ class MockConfig(Config):
 
 
 def test_eventstore(mocker):
-    mocker.patch('app.event_store.Config', new=MockConfig)
+    mocker.patch('eventstore.event_store.Config', new=MockConfig)
     store = EventStore()
     assert store != None
