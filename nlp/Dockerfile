@@ -20,6 +20,7 @@ COPY --from=ilriccio/thehistoryatlas:pylib /lib /lib
 
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
+RUN pip3 install /lib/abstract-domain-model
 RUN pip3 install sqlalchemy
 RUN pip3 install psycopg2-binary
 COPY . .
@@ -33,4 +34,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=nlp
-CMD ["python3", "-m", "app.nlp"]
+CMD ["python3", "-m", "nlp_service.nlp"]
