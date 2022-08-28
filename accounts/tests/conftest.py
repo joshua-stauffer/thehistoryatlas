@@ -1,5 +1,8 @@
+import os
 from datetime import datetime
 from datetime import timedelta
+from unittest.mock import MagicMock
+
 from cryptography.fernet import Fernet
 import pytest
 from sqlalchemy.orm import Session
@@ -8,22 +11,36 @@ from app.encryption import get_token
 from app.encryption import fernet
 from app.encryption import TTL
 from app.encryption import encrypt
-from app.schema import User
+from app.schema import User, Base
 
 
-class Config:
-    """minimal class for setting up an in memory db for this test"""
-
-    def __init__(self):
-        self.DB_URI = "sqlite+pysqlite:///:memory:"
-        self.DEBUG = False
+@pytest.fixture
+def mock_db():
+    return MagicMock(spec=Database)
 
 
 @pytest.fixture
 def bare_db():
-    """An active database instance with no users"""
-    c = Config()
-    return Database(c)
+    TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
+
+    if not TEST_DB_URI:
+        raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
+
+    class Config:
+        """minimal class for setting up an in memory db for this test"""
+
+        def __init__(self):
+            self.DB_URI = TEST_DB_URI
+            self.DEBUG = False
+
+    config = Config()
+    db = Database(config)
+
+    # if we're using db, ensure its fresh
+    Base.metadata.drop_all(db._engine)
+    Base.metadata.create_all(db._engine)
+
+    return db
 
 
 @pytest.fixture

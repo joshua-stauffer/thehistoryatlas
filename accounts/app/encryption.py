@@ -14,11 +14,20 @@ from app.errors import InvalidTokenError
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
-SEC_KEY = os.environ.get("SEC_KEY")
-TTL = int(os.environ.get("TTL"))
-REFRESH_BY = int(os.environ.get("REFRESH_BY"))
+
+SEC_KEY = os.environ.get("SEC_KEY", None)
+TTL = os.environ.get("TTL", None)
+REFRESH_BY = os.environ.get("REFRESH_BY", None)
 if not (TTL and SEC_KEY and REFRESH_BY):
     raise Exception("Missing environment variables for the encryption utility.")
+try:
+    TTL = int(TTL)
+except ValueError:
+    raise Exception("TTL environment variable must be parsable as integer.")
+try:
+    REFRESH_BY = int(REFRESH_BY)
+except ValueError:
+    raise Exception("REFRESH_BY environment variable must be parsable as integer.")
 
 fernet = Fernet(SEC_KEY)
 
@@ -33,6 +42,7 @@ def encrypt(password: str) -> bytes:
 
 def check_password(password, encrypted_password) -> bool:
     return password.encode() == fernet.decrypt(encrypted_password)
+
 
 
 def get_token(user_id) -> Token:
