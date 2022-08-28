@@ -44,7 +44,7 @@ class Database:
             session.add_all(emitted_events)
             session.commit()
 
-        persisted_events = [from_dict(e.to_dict()) for e in emitted_events]
+            persisted_events = [from_dict(e.to_dict()) for e in emitted_events]
 
         log.debug(
             f"returning persisted events {persisted_events} from the database store"
