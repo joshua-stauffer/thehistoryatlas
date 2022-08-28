@@ -9,11 +9,11 @@ May 21st, 2021"""
 import asyncio
 import logging
 import signal
-from app.config import Config
-from app.broker import Broker
-from app.state.database import Database
-from app.geonames import GeoNames
-from app.state.query_handler import QueryHandler
+from geo.config import Config
+from geo.broker import Broker
+from geo.state.database import Database
+from geo.geonames import GeoNames
+from geo.state.query_handler import QueryHandler
 
 
 logging.basicConfig(level='DEBUG')

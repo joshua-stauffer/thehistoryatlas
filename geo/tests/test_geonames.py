@@ -1,6 +1,6 @@
 import pytest
-from app.geonames import GeoNames
-from app.geonames import CityRow
+from geo.geonames import GeoNames
+from geo.geonames import CityRow
 from requests.exceptions import ConnectionError
 
 def test_raises_error_with_invalid_uri():

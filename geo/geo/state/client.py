@@ -1,10 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.config import Config
-from app.state.database import Database
-from app.state.schema import Place
-from app.state.schema import Name
-from app.state.schema import UpdateTracker
+from geo.config import Config
+from geo.state.database import Database
+from geo.state.schema import Place
+from geo.state.schema import Name
+from geo.state.schema import UpdateTracker
 
 
 if __name__ == '__main__':

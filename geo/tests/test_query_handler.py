@@ -1,8 +1,8 @@
 import pytest
-from app.state.query_handler import QueryHandler
-from app.errors import MessageMissingTypeError
-from app.errors import MessageMissingPayloadError
-from app.errors import UnknownQueryError
+from geo.state.query_handler import QueryHandler
+from geo.errors import MessageMissingTypeError
+from geo.errors import MessageMissingPayloadError
+from geo.errors import UnknownQueryError
 
 @pytest.fixture
 def db(result_a, name_a, result_b, name_b, result_c, name_c):

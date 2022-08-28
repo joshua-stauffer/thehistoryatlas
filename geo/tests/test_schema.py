@@ -5,10 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import pytest
-from app.state.schema import Place
-from app.state.schema import Name
-from app.state.schema import UpdateTracker
-from app.state.schema import Base
+from geo.state.schema import Place
+from geo.state.schema import Name
+from geo.state.schema import UpdateTracker
+from geo.state.schema import Base
 
 @pytest.fixture
 def engine():

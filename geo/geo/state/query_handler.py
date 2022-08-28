@@ -4,9 +4,9 @@ the correct database resource.
 Sunday, May 23rd 2021
 """
 import logging
-from app.errors import MessageMissingTypeError
-from app.errors import MessageMissingPayloadError
-from app.errors import UnknownQueryError
+from geo.errors import MessageMissingTypeError
+from geo.errors import MessageMissingPayloadError
+from geo.errors import UnknownQueryError
 
 log = logging.getLogger(__name__)
 
