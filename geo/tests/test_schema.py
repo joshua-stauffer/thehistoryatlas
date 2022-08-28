@@ -11,14 +11,6 @@ from geo.state.schema import UpdateTracker
 from geo.state.schema import Base
 
 
-@pytest.fixture
-def engine():
-    URL = "sqlite+pysqlite:///:memory:"
-    engine = create_engine(URL, echo=False, future=True)
-    Base.metadata.create_all(engine)
-    return engine
-
-
 def test_name(engine):
     with Session(engine, future=True) as session:
         somename = "filippo"

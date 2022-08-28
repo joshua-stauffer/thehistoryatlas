@@ -11,10 +11,10 @@ from geo.state.schema import UpdateTracker
 
 
 @pytest.fixture
-def config():
+def config(TEST_DB_URI):
     class Config:
         def __init__(self):
-            self.DB_URI = "sqlite+pysqlite:///:memory:"
+            self.DB_URI = TEST_DB_URI
             self.DEBUG = False
 
     return Config()
