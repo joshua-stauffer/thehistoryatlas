@@ -43,5 +43,15 @@ services:
     environment:
       - TEST_DB_URI=${TEST_DB_URI}
 
+  nlp:
+    build:
+      context:
+        ./nlp
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
 networks:
     tha-test:

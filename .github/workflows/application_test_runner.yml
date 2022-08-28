@@ -21,22 +21,28 @@ jobs:
       - name: Setup Test Environment
         env:
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f tests.yaml up db -d
+        run: docker compose -f service_tests.yaml up db -d
 
       - name: Test WriteModel
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f tests.yaml up --build writemodel --exit-code-from writemodel
+          docker compose -f service_tests.yaml up --build writemodel --exit-code-from writemodel
 
       - name: Test EventStore
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f tests.yaml up --build eventstore --exit-code-from eventstore
+          docker compose -f service_tests.yaml up --build eventstore --exit-code-from eventstore
 
       - name: Test ReadModel
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f tests.yaml up --build readmodel --exit-code-from readmodel
+          docker compose -f service_tests.yaml up --build readmodel --exit-code-from readmodel
+
+      - name: Test NLP
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+        run: |
+          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
