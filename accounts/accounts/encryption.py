@@ -41,7 +41,12 @@ def encrypt(password: str) -> bytes:
 
 
 def check_password(password, encrypted_password) -> bool:
-    return password.encode() == fernet.decrypt(encrypted_password)
+    if isinstance(encrypted_password, str):
+        return password.encode() == fernet.decrypt(encrypted_password.encode())
+    elif isinstance(encrypted_password, bytes):
+        return password.encode() == fernet.decrypt(encrypted_password)
+    else:
+        raise Exception(f"Unexpected type received: {type(encrypted_password)}")
 
 
 def get_token(user_id) -> Token:
