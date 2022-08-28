@@ -66,5 +66,15 @@ services:
       - REFRESH_BY=${REFRESH_BY}
       - SEC_KEY=${SEC_KEY}
 
+  geo:
+    build:
+      context:
+        ./geo
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
 networks:
     tha-test:

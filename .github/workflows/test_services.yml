@@ -56,3 +56,8 @@ jobs:
         run: |
           docker compose -f service_tests.yaml up --build accounts --exit-code-from accounts
 
+      - name: Test Geo
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+        run: |
+          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
