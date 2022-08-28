@@ -7,16 +7,22 @@ from geo.state.schema import Name
 from geo.state.schema import UpdateTracker
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     config = Config()
     db = Database(config)
     engine = db._engine
     session = Session(engine, future=True)
-    print('.' * 79)
-    print('\nWelcome to the Geo database interactive client.\n')
-    print('The following objects are available in the local namespace:')
-    for obj in ('db: Database()', 'session', 'Place', 'Name', 'UpdateTracker',
-                'engine'):
+    print("." * 79)
+    print("\nWelcome to the Geo database interactive client.\n")
+    print("The following objects are available in the local namespace:")
+    for obj in (
+        "db: Database()",
+        "session",
+        "Place",
+        "Name",
+        "UpdateTracker",
+        "engine",
+    ):
         print(obj)
-    print('\nEnjoy !\n')
-    print('.' * 79)
+    print("\nEnjoy !\n")
+    print("." * 79)

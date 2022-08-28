@@ -14,25 +14,27 @@ import requests
 
 log = logging.getLogger(__name__)
 
-CityRow = namedtuple('Row', [
-    'geoname_id',
-    'name',
-    'ascii_name',
-    'alternate_names',
-    'latitude',
-    'longitude',
-    'modification_date' # yyyy-mm-dd
-])
+CityRow = namedtuple(
+    "Row",
+    [
+        "geoname_id",
+        "name",
+        "ascii_name",
+        "alternate_names",
+        "latitude",
+        "longitude",
+        "modification_date",  # yyyy-mm-dd
+    ],
+)
+
 
 class GeoNames:
     """Class to encapsulate the process of fetching, cleaning, and presenting
     geo data obtained from geonames.org."""
-    
-    def __init__(self,
-        resource_url: str
-    ) -> None:
+
+    def __init__(self, resource_url: str) -> None:
         self._resource_url = resource_url
-        self._basedir = '.'
+        self._basedir = "."
         self.RETRIES_ALLOWED = 3
         self.RETRY_TIMEOUT = 0.5
 
@@ -53,12 +55,16 @@ class GeoNames:
         if response.status_code == requests.codes.ok:
             return uri, response.content
 
-    def _write_zipfile(self, url: str, data: bin,) -> str:
+    def _write_zipfile(
+        self,
+        url: str,
+        data: bin,
+    ) -> str:
         """Writes binary to a zipfile on disk and returns the filename"""
         # the last segment of the url is the resource name
-        filename = self._basedir + url.split('/')[-1]
-        print(f'Writing file {filename} to disk.')
-        with open(filename, 'wb') as f:
+        filename = self._basedir + url.split("/")[-1]
+        print(f"Writing file {filename} to disk.")
+        with open(filename, "wb") as f:
             f.write(data)
         return filename
 
@@ -66,27 +72,28 @@ class GeoNames:
     def _extract_txt_from_zip(filename: str):
         """Writes the content of a zip file located at filename to the same
         location and returns a list of unzipped resource filenames"""
-        print(f'Extracting text from filename {filename}')
+        print(f"Extracting text from filename {filename}")
         with ZipFile(filename) as z:
             # these zip files should all just have one txt file
-            filename = z.extract(z.namelist()[0], path='./data')
+            filename = z.extract(z.namelist()[0], path="./data")
         return filename
 
     @staticmethod
     def _get_data(path):
         """Opens a tsv text file and returns it as a list of lists"""
         r = list()
-        print(f'Getting data from path {path}')
-        with open(path, 'r') as f:
+        print(f"Getting data from path {path}")
+        with open(path, "r") as f:
             for line in f.readlines():
-                tmp_row = line.split('\t')
+                tmp_row = line.split("\t")
                 row = CityRow(
-                    geoname_id        = int(tmp_row[0]),
-                    name              = tmp_row[1],
-                    ascii_name        = tmp_row[2],
-                    alternate_names   = tmp_row[3],
-                    latitude          = float(tmp_row[4]),
-                    longitude         = float(tmp_row[5]),
-                    modification_date = tmp_row[18])
+                    geoname_id=int(tmp_row[0]),
+                    name=tmp_row[1],
+                    ascii_name=tmp_row[2],
+                    alternate_names=tmp_row[3],
+                    latitude=float(tmp_row[4]),
+                    longitude=float(tmp_row[5]),
+                    modification_date=tmp_row[18],
+                )
                 r.append(row)
         return r
