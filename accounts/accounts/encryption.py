@@ -44,7 +44,6 @@ def check_password(password, encrypted_password) -> bool:
     return password.encode() == fernet.decrypt(encrypted_password)
 
 
-
 def get_token(user_id) -> Token:
     """obtain a cryptographically secure token"""
 

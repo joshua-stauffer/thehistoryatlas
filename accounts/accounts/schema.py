@@ -26,9 +26,7 @@ class User(Base):
     username = Column(VARCHAR, unique=True)
     password = Column(VARCHAR)
     type = Column(VARCHAR, default="contrib")  # "admin" or "contrib"
-    last_login = Column(
-        VARCHAR, onupdate=update_last_login, default=update_last_login
-    )
+    last_login = Column(VARCHAR, onupdate=update_last_login, default=update_last_login)
     deactivated = Column(BOOLEAN, default=False)
     confirmed = Column(BOOLEAN, default=False)
 
