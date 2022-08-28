@@ -28,19 +28,19 @@ class Database:
         """Commit an event to the database"""
         log.info(f"Committing event {synthetic_event} to the event store database.")
         events: List[Event] = [from_dict(event) for event in synthetic_event]
-        emitted_events: List[EventModel] = [
-            EventModel(
-                type=event.type,
-                transaction_id=event.transaction_id,
-                app_version=event.app_version,
-                timestamp=event.timestamp,
-                user_id=event.user_id,
-                payload=asdict(event.payload),
-            )
-            for event in events
-        ]
 
         with Session(self._engine, future=True) as session:
+            emitted_events: List[EventModel] = [
+                EventModel(
+                    type=event.type,
+                    transaction_id=event.transaction_id,
+                    app_version=event.app_version,
+                    timestamp=event.timestamp,
+                    user_id=event.user_id,
+                    payload=asdict(event.payload),
+                )
+                for event in events
+            ]
             session.add_all(emitted_events)
             session.commit()
 
