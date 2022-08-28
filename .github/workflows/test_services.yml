@@ -46,3 +46,13 @@ jobs:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
           docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
+
+      - name: Test Accounts
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+          TTL: ${{ secrets.ACCOUNTS_TTL }}
+          REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
+          SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
+        run: |
+          docker compose -f service_tests.yaml up --build accounts --exit-code-from accounts
+
