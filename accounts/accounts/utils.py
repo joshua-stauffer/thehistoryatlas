@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from app.errors import known_exceptions
+from accounts.errors import known_exceptions
 
 log = logging.getLogger(__name__)
 

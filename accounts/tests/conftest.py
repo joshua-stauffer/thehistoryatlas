@@ -6,12 +6,12 @@ from unittest.mock import MagicMock
 from cryptography.fernet import Fernet
 import pytest
 from sqlalchemy.orm import Session
-from app.database import Database
-from app.encryption import get_token
-from app.encryption import fernet
-from app.encryption import TTL
-from app.encryption import encrypt
-from app.schema import User, Base
+from accounts.database import Database
+from accounts.encryption import get_token
+from accounts.encryption import fernet
+from accounts.encryption import TTL
+from accounts.encryption import encrypt
+from accounts.schema import User, Base
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def db(bare_db, admin_user_details):
     # must start with an admin user
     encrypted_admin_details = {
         **admin_user_details,
-        "password": encrypt(admin_user_details["password"]),
+        "password": str(encrypt(admin_user_details["password"])),
     }
     with Session(bare_db._engine, future=True) as session:
         session.add(User(**encrypted_admin_details))
@@ -62,7 +62,7 @@ def loaded_db(db, user_details, unconfirmed_user):
     """An active database instance with two users -- one admin, one contrib"""
     encrypted_user_details = {
         **user_details,
-        "password": encrypt(user_details["password"]),
+        "password": str(encrypt(user_details["password"])),
     }
     with Session(db._engine, future=True) as session:
         session.add(User(**encrypted_user_details))

@@ -1,13 +1,13 @@
 import pytest
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.schema import User
-from app.errors import UnauthorizedUserError
-from app.schema import PROTECTED_FIELDS
-from app.encryption import validate_token
-from app.errors import UnauthorizedUserError
-from app.errors import MissingFieldsError
-from app.encryption import fernet
+from accounts.schema import User
+from accounts.errors import UnauthorizedUserError
+from accounts.schema import PROTECTED_FIELDS
+from accounts.encryption import validate_token
+from accounts.errors import UnauthorizedUserError
+from accounts.errors import MissingFieldsError
+from accounts.encryption import fernet
 
 
 def test_db_has_one_user(db):

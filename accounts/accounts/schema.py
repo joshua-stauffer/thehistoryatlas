@@ -6,8 +6,8 @@ October 16th 2021
 from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import VARCHAR, BOOLEAN
-from app.types import UserDetails
-from app.utils import update_last_login
+from accounts.types import UserDetails
+from accounts.utils import update_last_login
 
 Base = declarative_base()
 

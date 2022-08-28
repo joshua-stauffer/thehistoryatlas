@@ -15,22 +15,22 @@ from typing import (
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.schema import PROTECTED_FIELDS
-from app.schema import User
-from app.schema import Base
-from app.errors import AuthenticationError
-from app.errors import MissingFieldsError
-from app.errors import MissingUserError
-from app.errors import DeactivatedUserError
-from app.errors import UnauthorizedUserError
-from app.errors import UnconfirmedUserError
-from app.errors import DuplicateUsernameError
-from app.encryption import get_token
-from app.encryption import encrypt
-from app.encryption import check_password
-from app.encryption import validate_token
-from app.types import Token
-from app.types import UserDetails
+from accounts.schema import PROTECTED_FIELDS
+from accounts.schema import User
+from accounts.schema import Base
+from accounts.errors import AuthenticationError
+from accounts.errors import MissingFieldsError
+from accounts.errors import MissingUserError
+from accounts.errors import DeactivatedUserError
+from accounts.errors import UnauthorizedUserError
+from accounts.errors import UnconfirmedUserError
+from accounts.errors import DuplicateUsernameError
+from accounts.encryption import get_token
+from accounts.encryption import encrypt
+from accounts.encryption import check_password
+from accounts.encryption import validate_token
+from accounts.types import Token
+from accounts.types import UserDetails
 
 
 log = logging.getLogger(__name__)

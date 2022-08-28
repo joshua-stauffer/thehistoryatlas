@@ -9,9 +9,9 @@ import logging
 import signal
 from tha_config import Config
 
-from app.broker import Broker
-from app.database import Database
-from app.query_handler import QueryHandler
+from accounts.broker import Broker
+from accounts.database import Database
+from accounts.query_handler import QueryHandler
 
 
 logging.basicConfig(level="DEBUG")

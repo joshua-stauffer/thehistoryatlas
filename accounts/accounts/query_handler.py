@@ -4,13 +4,13 @@ Sunday, October 17th 2021
 """
 
 import logging
-from app.database import Database
-from app.errors import UnknownQueryError
-from app.errors import MissingUserError
-from app.errors import AuthenticationError
-from app.errors import DeactivatedUserError
-from app.errors import MissingFieldsError
-from app.utils import error_handler
+from accounts.database import Database
+from accounts.errors import UnknownQueryError
+from accounts.errors import MissingUserError
+from accounts.errors import AuthenticationError
+from accounts.errors import DeactivatedUserError
+from accounts.errors import MissingFieldsError
+from accounts.utils import error_handler
 
 log = logging.getLogger(__name__)
 

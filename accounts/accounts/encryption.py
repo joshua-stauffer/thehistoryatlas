@@ -5,10 +5,10 @@ import logging
 from typing import Tuple, Optional
 from cryptography.fernet import Fernet
 from cryptography.fernet import InvalidToken
-from app.types import Token
-from app.types import UserId
-from app.errors import ExpiredTokenError
-from app.errors import InvalidTokenError
+from accounts.types import Token
+from accounts.types import UserId
+from accounts.errors import ExpiredTokenError
+from accounts.errors import InvalidTokenError
 
 
 logging.basicConfig(level="DEBUG")
