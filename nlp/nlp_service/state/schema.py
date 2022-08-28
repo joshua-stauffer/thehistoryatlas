@@ -3,9 +3,8 @@
 May 19th 2021
 """
 
-from uuid import uuid4
 from sqlalchemy import Column, Enum
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, BOOLEAN, UUID
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
