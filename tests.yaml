@@ -13,11 +13,31 @@ services:
     ports:
       - 5432:5432
 
+  writemodel:
+    build:
+      context:
+        ./writemodel
+    command: ["python3", "-m", "pytest", "-vvv"]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
+  eventstore:
+    build:
+      context:
+        ./eventstore
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
   readmodel:
     build:
       context:
         ./readmodel
-    command: ["python3", "-m", "pytest", "-vvv"]
+    command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test
     environment:
