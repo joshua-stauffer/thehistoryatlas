@@ -13,6 +13,7 @@ RUN pip3 install -r requirements.txt
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
 RUN pip3 install /lib/event-schema
+RUN pip3 install /lib/abstract-domain-model
 COPY . .
 ENV HOST_NAME=broker
 ARG test=False
