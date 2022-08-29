@@ -9,6 +9,9 @@ import asyncio
 import logging
 import signal
 import random
+from typing import Optional
+
+from abstract_domain_model.transform import to_dict
 from history_service.database import Database
 from history_service.broker import Broker
 from history_service.history_config import HistoryConfig
@@ -31,7 +34,9 @@ class HistoryPlayer:
             log.info(f"Received shutdown signal: {signal}")
         await self.broker.cancel()
 
-    def handle_request(self, request: dict, send_func, close_func) -> asyncio.Task:
+    def handle_request(
+        self, request: dict, send_func, close_func
+    ) -> Optional[asyncio.Task]:
         """callback method for broker.
 
         Parses request for parameters then passes events to
@@ -42,7 +47,7 @@ class HistoryPlayer:
             log.info(
                 "Received a malformed replay request. Discarding and doing nothing."
             )
-            return
+            return None
         last_event_id = self._parse_msg(request)
         event_gen = self.db.get_event_generator(last_event_id)
         # move the generator operation off to another coroutine and return
@@ -61,7 +66,7 @@ class HistoryPlayer:
                 # add a bit of chaos -- randomly fail
                 # log.info(f'Randomly killing this request on event {event.get("event_id")}!')
                 # return close_func()
-            await send_func(event)
+            await send_func(to_dict(event))
         # inform recipient that the stream is over
         await send_func({"type": "HISTORY_REPLAY_END", "payload": {}})
         # inform broker that the stream is over
