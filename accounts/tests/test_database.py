@@ -1,13 +1,13 @@
 import pytest
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.schema import User
-from app.errors import UnauthorizedUserError
-from app.schema import PROTECTED_FIELDS
-from app.encryption import validate_token
-from app.errors import UnauthorizedUserError
-from app.errors import MissingFieldsError
-from app.encryption import fernet
+from accounts.schema import User
+from accounts.errors import UnauthorizedUserError
+from accounts.schema import PROTECTED_FIELDS
+from accounts.encryption import validate_token
+from accounts.errors import UnauthorizedUserError
+from accounts.errors import MissingFieldsError
+from accounts.encryption import fernet
 
 
 def test_db_has_one_user(db):
@@ -93,7 +93,9 @@ def test_update_login_creds_fails_without_login(loaded_db, active_token, user_de
             select(User).where(User.id == user_details["id"])
         ).scalar_one()
         assert user.username == user_details["username"]
-        assert fernet.decrypt(user.password).decode() == user_details["password"]
+        assert (
+            fernet.decrypt(user.password.encode()).decode() == user_details["password"]
+        )
 
 
 def test_update_login_creds_with_login(loaded_db, active_token, user_details):
@@ -112,7 +114,9 @@ def test_update_login_creds_with_login(loaded_db, active_token, user_details):
             select(User).where(User.id == user_details["id"])
         ).scalar_one()
         assert user.username == new_details["username"]
-        assert fernet.decrypt(user.password).decode() == new_details["password"]
+        assert (
+            fernet.decrypt(user.password.encode()).decode() == new_details["password"]
+        )
 
 
 def test_update_protected_field(loaded_db, active_token):

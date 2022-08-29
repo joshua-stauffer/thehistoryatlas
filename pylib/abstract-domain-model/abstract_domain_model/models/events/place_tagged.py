@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 
 @dataclass(frozen=True)
@@ -20,3 +20,4 @@ class PlaceTagged:
     user_id: str
     payload: PlaceTaggedPayload
     type: Literal["PLACE_TAGGED"] = "PLACE_TAGGED"
+    index: Optional[int] = None

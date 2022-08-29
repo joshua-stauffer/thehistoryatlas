@@ -1,0 +1,80 @@
+version: "3"
+
+services:
+
+  db:
+    # NOTE: using postgres 13.3 to avoid m1 libpq issue:
+    #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
+    image: postgres:13.3
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+    networks:
+      - tha-test
+    ports:
+      - 5432:5432
+
+  writemodel:
+    build:
+      context:
+        ./writemodel
+    command: ["python3", "-m", "pytest", "-vvv"]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
+  eventstore:
+    build:
+      context:
+        ./eventstore
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
+  readmodel:
+    build:
+      context:
+        ./readmodel
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
+  nlp:
+    build:
+      context:
+        ./nlp
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
+  accounts:
+    build:
+      context:
+        ./accounts
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+      - TTL=${TTL}
+      - REFRESH_BY=${REFRESH_BY}
+      - SEC_KEY=${SEC_KEY}
+
+  geo:
+    build:
+      context:
+        ./geo
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
+networks:
+    tha-test:

@@ -24,3 +24,4 @@ class PlaceAdded:
     user_id: str
     payload: PlaceAddedPayload
     type: Literal["PLACE_ADDED"] = "PLACE_ADDED"
+    index: Optional[int] = None

@@ -1,5 +1,5 @@
 FROM ilriccio/thehistoryatlas:ner_base
-COPY /app /app
+COPY /app /nlp
 
 FROM python:3.9-slim-buster
 

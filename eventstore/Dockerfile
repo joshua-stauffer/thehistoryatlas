@@ -1,4 +1,4 @@
-FROM python:3.9-slim-buster
+FROM python:3.10-slim-buster
 WORKDIR /app
 
 # set environment variables
@@ -13,16 +13,11 @@ RUN pip3 install -r requirements.txt
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
 RUN pip3 install /lib/event-schema
+RUN pip3 install /lib/abstract-domain-model
 COPY . .
 ENV HOST_NAME=broker
-ARG test=False
-ENV TESTING=$test
-ENV CONFIG=DEV
-ENV PROD_DB_URI=
-ENV DEV_DB_URI=sqlite:////data/db/tha-store-dev.db
-ENV TEST_DB_URI=sqlite:////data/db/tha-test-dev.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=eventstore
-CMD ["python3", "-m", "app.event_store"]
+CMD ["python3", "-m", "eventstore.event_store"]

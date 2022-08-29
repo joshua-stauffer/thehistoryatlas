@@ -3,15 +3,15 @@ from uuid import UUID
 from base64 import b64decode
 import pytest
 from unittest import mock
-from app.errors import ExpiredTokenError
-from app.errors import InvalidTokenError
-from app.encryption import encrypt
-from app.encryption import check_password
-from app.encryption import get_token
-from app.encryption import validate_token
-from app.encryption import parse_token_str
-from app.encryption import str_to_time
-from app.encryption import fernet
+from accounts.errors import ExpiredTokenError
+from accounts.errors import InvalidTokenError
+from accounts.encryption import encrypt
+from accounts.encryption import check_password
+from accounts.encryption import get_token
+from accounts.encryption import validate_token
+from accounts.encryption import parse_token_str
+from accounts.encryption import str_to_time
+from accounts.encryption import fernet
 
 
 def test_encrypt():

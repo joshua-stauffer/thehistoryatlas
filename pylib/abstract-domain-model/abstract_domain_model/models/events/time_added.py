@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Optional
 
 
 @dataclass(frozen=True)
@@ -20,3 +20,4 @@ class TimeAdded:
     user_id: str
     payload: TimeAddedPayload
     type: Literal["TIME_ADDED"] = "TIME_ADDED"
+    index: Optional[int] = None

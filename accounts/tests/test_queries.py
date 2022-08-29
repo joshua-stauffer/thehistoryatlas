@@ -1,5 +1,5 @@
 import pytest
-from app.query_handler import QueryHandler
+from accounts.query_handler import QueryHandler
 
 
 @pytest.fixture

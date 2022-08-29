@@ -25,7 +25,7 @@ from abstract_domain_model.models import (
     TimeAdded,
     TimeTagged,
 )
-from abstract_domain_model.types import Model
+from abstract_domain_model.types import Event
 
 
 log = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class Database:
                 res.append(CitationEntry(text, entities))
         return res
 
-    def handle_event(self, event: Model):
+    def handle_event(self, event: Event):
         """Process an emitted event and save it to the database"""
 
         if isinstance(event, CitationAdded):
