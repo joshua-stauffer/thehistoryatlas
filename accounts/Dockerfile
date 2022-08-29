@@ -19,4 +19,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=accounts
-CMD ["python3", "-m", "app.accounts"]
+CMD ["python3", "-m", "accounts.accounts"]
