@@ -60,23 +60,7 @@ jobs:
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
         run: docker compose -f service_tests.yaml up db -d
 
-      - name: Test Accounts
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-          TTL: ${{ secrets.ACCOUNTS_TTL }}
-          REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
-          SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
-        run: |
-          docker compose -f service_tests.yaml up --build accounts --exit-code-from accounts
-
-      - name: Test Geo
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
-          
-          
-          - name: Test WriteModel
+      - name: Test WriteModel
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
@@ -100,3 +84,17 @@ jobs:
 #        run: |
 #          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
 
+      - name: Test Accounts
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+          TTL: ${{ secrets.ACCOUNTS_TTL }}
+          REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
+          SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
+        run: |
+          docker compose -f service_tests.yaml up --build accounts --exit-code-from accounts
+
+#      - name: Test Geo
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
