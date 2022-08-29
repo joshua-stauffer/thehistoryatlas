@@ -93,7 +93,9 @@ def test_update_login_creds_fails_without_login(loaded_db, active_token, user_de
             select(User).where(User.id == user_details["id"])
         ).scalar_one()
         assert user.username == user_details["username"]
-        assert fernet.decrypt(user.password).decode() == user_details["password"]
+        assert (
+            fernet.decrypt(user.password.encode()).decode() == user_details["password"]
+        )
 
 
 def test_update_login_creds_with_login(loaded_db, active_token, user_details):
@@ -112,7 +114,9 @@ def test_update_login_creds_with_login(loaded_db, active_token, user_details):
             select(User).where(User.id == user_details["id"])
         ).scalar_one()
         assert user.username == new_details["username"]
-        assert fernet.decrypt(user.password).decode() == new_details["password"]
+        assert (
+            fernet.decrypt(user.password.encode()).decode() == new_details["password"]
+        )
 
 
 def test_update_protected_field(loaded_db, active_token):

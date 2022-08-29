@@ -99,7 +99,7 @@ class Database:
             )
         if "password" in user_details:  # encrypt new password
             password = user_details["password"]
-            user_details["password"] = encrypt(password)
+            user_details["password"] = encrypt(password).decode()
 
         with Session(self._engine, future=True) as session:
             user = self._get_user_by_id(user_id, session)

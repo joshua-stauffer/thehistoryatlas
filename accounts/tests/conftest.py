@@ -49,7 +49,7 @@ def db(bare_db, admin_user_details):
     # must start with an admin user
     encrypted_admin_details = {
         **admin_user_details,
-        "password": str(encrypt(admin_user_details["password"])),
+        "password": encrypt(admin_user_details["password"]).decode(),
     }
     with Session(bare_db._engine, future=True) as session:
         session.add(User(**encrypted_admin_details))
@@ -62,7 +62,7 @@ def loaded_db(db, user_details, unconfirmed_user):
     """An active database instance with two users -- one admin, one contrib"""
     encrypted_user_details = {
         **user_details,
-        "password": str(encrypt(user_details["password"])),
+        "password": encrypt(user_details["password"]).decode(),
     }
     with Session(db._engine, future=True) as session:
         session.add(User(**encrypted_user_details))
