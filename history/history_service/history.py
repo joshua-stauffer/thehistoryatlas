@@ -9,9 +9,9 @@ import asyncio
 import logging
 import signal
 import random
-from app.database import Database
-from app.broker import Broker
-from app.history_config import HistoryConfig
+from history_service.database import Database
+from history_service.broker import Broker
+from history_service.history_config import HistoryConfig
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)

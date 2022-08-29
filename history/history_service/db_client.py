@@ -1,4 +1,4 @@
-from app.history import HistoryPlayer
+from history_service.history import HistoryPlayer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event

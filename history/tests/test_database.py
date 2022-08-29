@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event
-from app.database import Database
+from history_service.database import Database
 
 
 class Config:
