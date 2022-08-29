@@ -7,15 +7,19 @@ from sqlalchemy.orm import Session
 from event_schema.EventSchema import Event
 from app.database import Database
 
+
 class Config:
     """minimal class for setting up an in memory db for this test"""
+
     def __init__(self):
-        self.DB_URI = 'sqlite+pysqlite:///:memory:'
-        self.DEBUG = False # outputs all activity
+        self.DB_URI = "sqlite+pysqlite:///:memory:"
+        self.DEBUG = False  # outputs all activity
+
 
 @pytest.fixture
 def config():
     return Config()
+
 
 @pytest.fixture
 def db(config, event):
@@ -26,17 +30,16 @@ def db(config, event):
             sess.add(e)
     return db
 
+
 @pytest.fixture
 def event():
     return {
-        'type': 'TEST_EVENT',
-        'transaction_guid': str(uuid4()),
-        'app_version': '0.0.0',
-        'user': str(uuid4()),
-        'timestamp': str(datetime.utcnow()),
-        'payload': json.dumps({
-            'use your imagination': ', kid!'
-        })
+        "type": "TEST_EVENT",
+        "transaction_guid": str(uuid4()),
+        "app_version": "0.0.0",
+        "user": str(uuid4()),
+        "timestamp": str(datetime.utcnow()),
+        "payload": json.dumps({"use your imagination": ", kid!"}),
     }
 
 
@@ -44,10 +47,9 @@ def test_database_exists(db):
     assert db != None
     # check that it's empty
     with Session(db._engine, future=True) as sess:
-        res = sess.execute(
-                select(Event).where(Event.id == 1000)
-            ).scalar_one_or_none()
+        res = sess.execute(select(Event).where(Event.id == 1000)).scalar_one_or_none()
         assert res != None
+
 
 def test_get_all_events(db):
     gen = db.get_event_generator()
@@ -56,6 +58,7 @@ def test_get_all_events(db):
         c += 1
     assert c == 1000
 
+
 def test_get_events_from_halfway(db):
     gen = db.get_event_generator(500)
     c = 0
@@ -63,15 +66,16 @@ def test_get_events_from_halfway(db):
         c += 1
     assert c == 500
 
+
 def test_get_events_returns_dict(db):
     gen = db.get_event_generator(999)
     for e in gen:
         assert isinstance(e, dict)
-        e['event_id']
-        e['type']
-        e['transaction_guid']
-        e['app_version']
-        e['timestamp']
-        e['user']
-        e['payload']
-        e['payload']['use your imagination']
+        e["event_id"]
+        e["type"]
+        e["transaction_guid"]
+        e["app_version"]
+        e["timestamp"]
+        e["user"]
+        e["payload"]
+        e["payload"]["use your imagination"]
