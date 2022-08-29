@@ -21,7 +21,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./pylib
-          file: ./Dockerfile
+          file: ./pylib/Dockerfile
           tags: ilriccio/thehistoryatlas:pylib
           outputs: type=docker,dest=/tmp/pylib.tar
       -
