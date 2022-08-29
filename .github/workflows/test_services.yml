@@ -72,6 +72,12 @@ jobs:
         run: |
           docker compose -f service_tests.yaml up --build eventstore --exit-code-from eventstore
 
+      - name: Test History
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+        run: |
+          docker compose -f service_tests.yaml up --build history --exit-code-from history
+
       - name: Test ReadModel
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}

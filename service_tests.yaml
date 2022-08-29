@@ -33,6 +33,16 @@ services:
     environment:
       - TEST_DB_URI=${TEST_DB_URI}
 
+  history:
+    build:
+      context:
+        ./history
+    command: [ "python3", "-m", "pytest", "-vvv" ]
+    networks:
+      - tha-test
+    environment:
+      - TEST_DB_URI=${TEST_DB_URI}
+
   readmodel:
     build:
       context:
