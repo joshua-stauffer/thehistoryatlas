@@ -78,11 +78,11 @@ jobs:
         run: |
           docker compose -f service_tests.yaml up --build readmodel --exit-code-from readmodel
 
-      - name: Test NLP
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
+#      - name: Test NLP
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
 
       - name: Test Accounts
         env:
