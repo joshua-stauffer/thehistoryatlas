@@ -31,7 +31,27 @@ jobs:
           name: pylib-image
           path: /tmp/pylib.tar
 
-  run-tests:
+  build-testlib:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Build and export
+        uses: docker/build-push-action@v2
+        with:
+          context: ./testlib
+          file: ./testlib/Dockerfile
+          tags: ilriccio/thehistoryatlas:testlib
+          outputs: type=docker,dest=/tmp/pylib.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pylib-image
+          path: /tmp/testlib.tar
+
+  Test-WriteModel:
     needs: build-pylib
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -66,11 +86,82 @@ jobs:
         run: |
           docker compose -f service_tests.yaml up --build writemodel --exit-code-from writemodel
 
+  Test-EventStore:
+    needs: build-pylib
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download Pylib
+        uses: actions/download-artifact@v2
+        with:
+          name: pylib-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/pylib.tar
+          docker image ls -a
+
+      - name: Setup Test Environment
+        env:
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+        run: docker compose -f service_tests.yaml up db -d
+
       - name: Test EventStore
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
           docker compose -f service_tests.yaml up --build eventstore --exit-code-from eventstore
+
+  Test-History:
+    needs:
+      - build-pylib
+      - build-testlib
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download Pylib
+        uses: actions/download-artifact@v2
+        with:
+          name: pylib-image
+          path: /tmp
+
+      - name: Load Pylib
+        run: |
+          docker load --input /tmp/pylib.tar
+          docker image ls -a
+
+      - name: Download Testlib
+        uses: actions/download-artifact@v2
+        with:
+          name: testlib-image
+          path: /tmp
+
+      - name: Load Testlib
+        run: |
+          docker load --input /tmp/testlib.tar
+          docker image ls -a
+
+      - name: Setup Test Environment
+        env:
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+        run: docker compose -f service_tests.yaml up db -d
 
       - name: Test History
         env:
@@ -78,17 +169,69 @@ jobs:
         run: |
           docker compose -f service_tests.yaml up --build history --exit-code-from history
 
+  Test-ReadModel:
+    needs: build-pylib
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download Pylib
+        uses: actions/download-artifact@v2
+        with:
+          name: pylib-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/pylib.tar
+          docker image ls -a
+
+      - name: Setup Test Environment
+        env:
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+        run: docker compose -f service_tests.yaml up db -d
+
       - name: Test ReadModel
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
           docker compose -f service_tests.yaml up --build readmodel --exit-code-from readmodel
 
-#      - name: Test NLP
-#        env:
-#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-#        run: |
-#          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
+  Test-Accounts-Service:
+    needs: build-pylib
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download Pylib
+        uses: actions/download-artifact@v2
+        with:
+          name: pylib-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/pylib.tar
+          docker image ls -a
+
+      - name: Setup Test Environment
+        env:
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+        run: docker compose -f service_tests.yaml up db -d
 
       - name: Test Accounts
         env:
@@ -104,3 +247,10 @@ jobs:
 #          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
 #        run: |
 #          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
+
+
+#      - name: Test NLP
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
