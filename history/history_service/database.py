@@ -4,7 +4,6 @@ Provides read-only access to the database.
 
 """
 
-import json
 import logging
 from typing import Union
 from sqlalchemy import create_engine, select

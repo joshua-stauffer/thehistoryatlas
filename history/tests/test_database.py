@@ -1,13 +1,4 @@
-from datetime import datetime
-import json
-from uuid import uuid4
-import pytest
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
 from abstract_domain_model.types import Event
-from event_schema.EventSchema import Event as EventModel
-from history_service.database import Database
 from seed import EVENTS
 
 

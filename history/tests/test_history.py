@@ -1,15 +1,9 @@
-from datetime import datetime
-import json
 from unittest.mock import MagicMock, patch
-from uuid import uuid4
 import pytest
-from sqlalchemy.orm import Session
 
 from seed import EVENTS
-from event_schema.EventSchema import Event
 from history_service.broker import Broker
 from history_service.history import HistoryPlayer
-from tha_config import Config
 
 
 @pytest.fixture

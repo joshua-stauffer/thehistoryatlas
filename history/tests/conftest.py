@@ -1,5 +1,4 @@
 import os
-import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,11 +7,6 @@ from sqlalchemy.orm import Session
 from event_schema.EventSchema import Base, Event
 from history_service.database import Database
 from seed import EVENTS
-
-
-class MockBroker:
-    def __init__(self, *args, **kwargs):
-        pass
 
 
 @pytest.fixture
@@ -48,12 +42,3 @@ def db():
         session.commit()
 
     return db
-
-
-broker_module = type(sys)("broker")
-broker_module.Broker = MockBroker
-sys.modules["broker"] = broker_module
-
-# config_module = type(sys)('history_config')
-# config_module.HistoryConfig = MockHistoryConfig
-# sys.modules['history_config'] = config_module
