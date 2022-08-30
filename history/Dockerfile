@@ -16,7 +16,7 @@ RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
 RUN pip3 install /lib/event-schema
 RUN pip3 install /lib/abstract-domain-model
-RUN pip3 install /lib/seed
+RUN pip3 install /lib/test-data
 COPY . .
 ENV HOST_NAME=broker
 ENV BROKER_USERNAME=guest

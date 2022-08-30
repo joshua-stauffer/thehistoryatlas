@@ -4,9 +4,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from event_schema.EventSchema import Event
+
+from abstract_domain_model.types import Event
+from event_schema.EventSchema import Event as EventModel
 from history_service.database import Database
-from testlib.seed.data.events import EVENTS
+from seed import EVENTS
 
 
 def test_get_all_events(db):
@@ -26,14 +28,6 @@ def test_get_events_from_halfway(db):
 
 
 def test_get_events_returns_dict(db):
-    gen = db.get_event_generator(999)
+    gen = db.get_event_generator(4)
     for e in gen:
-        assert isinstance(e, dict)
-        e["event_id"]
-        e["type"]
-        e["transaction_guid"]
-        e["app_version"]
-        e["timestamp"]
-        e["user"]
-        e["payload"]
-        e["payload"]["use your imagination"]
+        assert isinstance(e, Event)
