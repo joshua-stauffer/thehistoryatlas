@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from event_schema.EventSchema import Base, Event
 from history_service.database import Database
-from testlib.seed.data.events import EVENTS
+from seed.data.events import EVENTS
 
 
 class MockBroker:
