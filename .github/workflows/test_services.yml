@@ -44,7 +44,7 @@ jobs:
           context: ./testlib
           file: ./testlib/Dockerfile
           tags: ilriccio/thehistoryatlas:testlib
-          outputs: type=docker,dest=/tmp/pylib.tar
+          outputs: type=docker,dest=/tmp/testlib.tar
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
