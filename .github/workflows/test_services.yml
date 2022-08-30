@@ -48,7 +48,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: pylib-image
+          name: testlib-image
           path: /tmp/testlib.tar
 
   Test-WriteModel:
