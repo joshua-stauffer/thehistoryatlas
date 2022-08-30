@@ -14,7 +14,7 @@ from typing import Optional
 from abstract_domain_model.transform import to_dict
 from history_service.database import Database
 from history_service.broker import Broker
-from history_service.history_config import HistoryConfig
+from tha_config import Config
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 class HistoryPlayer:
     def __init__(self):
-        self.config = HistoryConfig()
+        self.config = Config()
         self.db = Database(self.config)
         self.broker = Broker(self.config, self.handle_request)
 
