@@ -3,5 +3,5 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "seed"
+name = "test_data"
 version = "0.0.1"
