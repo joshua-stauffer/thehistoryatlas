@@ -73,7 +73,7 @@ jobs:
         platforms: linux/amd64
         file: ./readmodel/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas/readmodel:${{ github.sha }}
+        tags: ilriccio/thehistoryatlas:readmodel-${{ github.sha }}
 
     -
       name: Image digest
