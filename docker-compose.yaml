@@ -29,7 +29,6 @@ services:
             - db
             - broker
             - history
-            - provisioner
         build:
             context: ./readmodel
         environment:
@@ -48,7 +47,6 @@ services:
             - broker
             - history
             - eventstore
-            - provisioner
         build:
             context: ./writemodel
         networks:
@@ -65,7 +63,6 @@ services:
         depends_on:
             - broker
             - db
-            - provisioner
         build:
             context: ./eventstore
         networks:
@@ -82,7 +79,6 @@ services:
         depends_on: 
             - broker
             - db
-            - provisioner
         build:
             context: ./history
         networks:
@@ -99,7 +95,6 @@ services:
         depends_on: 
             - broker
             - db
-            - provisioner
         build:
             context: ./nlp
         environment: 
@@ -117,7 +112,6 @@ services:
         depends_on: 
             - db
             - broker
-            - provisioner
         build:
             context: ./geo
         environment:
@@ -139,7 +133,6 @@ services:
         depends_on:
             - broker
             - db
-            - provisioner
         build:
             context: ./accounts
         environment:
