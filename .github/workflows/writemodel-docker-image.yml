@@ -73,7 +73,7 @@ jobs:
         platforms: linux/amd64
         file: ./writemodel/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas/writemodel:${{ GITHUB_SHA }}
+        tags: ilriccio/thehistoryatlas/writemodel:${{ github.sha }}
 
     -
       name: Image digest
