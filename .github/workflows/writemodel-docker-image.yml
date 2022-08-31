@@ -3,8 +3,8 @@ name: Writemodel Dev Docker Image CI
 on:
   push:
     branches: [ dev ]
-#  pull_request: # test action configuration
-#    branches: [ dev ]
+  pull_request: # test action configuration
+    branches: [ dev ]
 
 jobs:
 
@@ -32,7 +32,7 @@ jobs:
           name: pylib-image
           path: /tmp/pylib.tar
 
-  build-writemodel:
+  build-writemodel-amd64:
 
     runs-on: ubuntu-latest
 
@@ -40,6 +40,17 @@ jobs:
     -
       name: Checkout
       uses: actions/checkout@v2
+
+    - name: Download Pylib
+      uses: actions/download-artifact@v2
+      with:
+        name: pylib-image
+        path: /tmp
+
+    - name: Load Docker image
+      run: |
+        docker load --input /tmp/pylib.tar
+        docker image ls -a
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -62,7 +73,7 @@ jobs:
         platforms: linux/amd64
         file: ./writemodel/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:writemodel
+        tags: ilriccio/thehistoryatlas/writemodel:${{ GITHUB_SHA }}
 
     -
       name: Image digest
