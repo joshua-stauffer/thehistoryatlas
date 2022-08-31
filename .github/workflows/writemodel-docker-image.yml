@@ -33,9 +33,8 @@ jobs:
           path: /tmp/pylib.tar
 
   build-writemodel-amd64:
-
+    needs: build-pylib
     runs-on: ubuntu-latest
-
     steps:
     -
       name: Checkout

@@ -32,10 +32,9 @@ jobs:
           name: pylib-image
           path: /tmp/pylib.tar
 
-  build:
-
+  build-readmodel-amd64:
+    needs: build-pylib
     runs-on: ubuntu-latest
-
     steps:
     -
       name: Checkout

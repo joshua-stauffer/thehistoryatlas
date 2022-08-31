@@ -40,9 +40,8 @@ jobs:
           path: /tmp/pylib.tar
 
   build-readmodel-arm64:
-
+    needs: build-pylib
     runs-on: ubuntu-latest
-
     steps:
     -
       name: Checkout
