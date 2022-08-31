@@ -73,16 +73,26 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
     -
-      name: Build and push
+      name: Build and push amd64
       id: docker_build
       uses: docker/build-push-action@v2
       with:
         context: ./writemodel
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         file: ./writemodel/Dockerfile
         push: true
         tags: ilriccio/thehistoryatlas:writemodel
 
+    - name: Build and push arm64
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: ./writemodel
+        platforms: linux/arm64
+        file: ./writemodel/Dockerfile
+        push: true
+        tags: ilriccio/thehistoryatlas:writemodel-arm64
+      
     -
       name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
