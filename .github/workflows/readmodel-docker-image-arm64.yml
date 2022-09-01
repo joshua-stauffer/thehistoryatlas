@@ -1,4 +1,4 @@
-name: Readmodel Dev Docker Image CI
+name: Readmodel Docker Image CI ARM64 architecture
 
 on:
   push:
