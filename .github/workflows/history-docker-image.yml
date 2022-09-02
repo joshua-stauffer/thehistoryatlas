@@ -62,6 +62,17 @@ jobs:
       name: Checkout
       uses: actions/checkout@v2
 
+    - name: Download Testlib
+      uses: actions/download-artifact@v2
+      with:
+        name: testlib-image
+        path: /tmp
+
+    - name: Load Testlib
+      run: |
+        docker load --input /tmp/testlib.tar
+        docker image ls -a
+
     - name: Download Pylib
       uses: actions/download-artifact@v2
       with:
@@ -73,16 +84,7 @@ jobs:
         docker load --input /tmp/pylib.tar
         docker image ls -a
 
-    - name: Download Testlib
-      uses: actions/download-artifact@v2
-      with:
-        name: testlib-image
-        path: /tmp
 
-    - name: Load Testlib
-      run: |
-        docker load --input /tmp/testlib.tar
-        docker image ls -a
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
