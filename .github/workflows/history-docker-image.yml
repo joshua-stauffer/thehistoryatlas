@@ -104,8 +104,8 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         build-contexts:
-          pylib=./pylib
-          testlib=./testlib
+          - pylib=./pylib
+          - testlib=./testlib
         context: ./history
         platforms: linux/amd64
         file: ./history/Dockerfile
