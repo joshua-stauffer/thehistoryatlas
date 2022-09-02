@@ -3,9 +3,6 @@ WORKDIR /app
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-# get local python packages
-#COPY --from=ilriccio/thehistoryatlas:pylib /lib /lib
-#COPY --from=ilriccio/thehistoryatlas:testlib /lib /lib
 
 COPY --from=pylib . /lib
 COPY --from=testlib . /lib
