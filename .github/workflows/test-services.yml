@@ -24,7 +24,7 @@ jobs:
           build-contexts: |
             pylib=./pylib
             testlib=./testlib
-          file: ./pylib/Dockerfile
+          file: ./writemodel/Dockerfile
           tags: ilriccio/thehistoryatlas:test-writemodel
           outputs: type=docker,dest=/tmp/writemodel.tar
       -
