@@ -7,46 +7,15 @@ on:
 
 jobs:
 
-#  build-writemodel:
-#    runs-on: ubuntu-latest
-#    steps:
-#      -
-#        name: Checkout
-#        uses: actions/checkout@v2
-#      -
-#        name: Set up Docker Buildx
-#        uses: docker/setup-buildx-action@v1
-#      -
-#        name: Build and export
-#        uses: docker/build-push-action@v2
-#        with:
-#          context: ./writemodel
-#          build-contexts: |
-#            pylib=./pylib
-#            testlib=./testlib
-#          file: ./writemodel/Dockerfile
-#          tags: ilriccio/thehistoryatlas:test-writemodel
-#          outputs: type=docker,dest=/tmp/writemodel.tar
-#      -
-#        name: Upload artifact
-#        uses: actions/upload-artifact@v2
-#        with:
-#          name: writemodel-image
-#          path: /tmp/writemodel.tar
-
-
   Test-WriteModel:
-#    needs: build-writemodel
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-
       -
         name: Build and export
         uses: docker/build-push-action@v2
@@ -58,25 +27,13 @@ jobs:
           file: ./writemodel/Dockerfile
           tags: ilriccio/thehistoryatlas:test-writemodel
           load: true
-#          outputs: type=docker,dest=/tmp/writemodel.tar
-
-#      - name: Download Writemodel
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: writemodel-image
-#          path: /tmp
-#
-#      - name: Load Docker image
-#        run: |
-#          docker load --input /tmp/writemodel.tar
-#          docker image ls -a
-
-      - name: Setup Test Environment
+      -
+        name: Setup Test Environment
         env:
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
         run: docker compose -f service_tests.yaml up db -d
-
-      - name: Test WriteModel
+      -
+        name: Test WriteModel
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
@@ -93,17 +50,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
-#      - name: Download Pylib
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: pylib-image
-#          path: /tmp
-#
-#      - name: Load Docker image
-#        run: |
-#          docker load --input /tmp/pylib.tar
-#          docker image ls -a
+      -
+        name: Build and export
+        uses: docker/build-push-action@v2
+        with:
+          context: ./eventstore
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./eventstore/Dockerfile
+          tags: ilriccio/thehistoryatlas:test-eventstore
+          load: true
 
       - name: Setup Test Environment
         env:
@@ -114,7 +71,7 @@ jobs:
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f service_tests.yaml up --build-context pylib=./pylib --build-context testlib=./testlib --build eventstore --exit-code-from eventstore
+          docker compose -f service_tests.yaml up eventstore --exit-code-from eventstore
         
 
   Test-History:
@@ -124,32 +81,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Build and export
+        uses: docker/build-push-action@v2
         with:
-          python-version: '3.10'
-
-#      - name: Download Pylib
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: pylib-image
-#          path: /tmp
-#
-#      - name: Load Pylib
-#        run: |
-#          docker load --input /tmp/pylib.tar
-#          docker image ls -a
-#
-#      - name: Download Testlib
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: testlib-image
-#          path: /tmp
-#
-#      - name: Load Testlib
-#        run: |
-#          docker load --input /tmp/testlib.tar
-#          docker image ls -a
+          context: ./history
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./history/Dockerfile
+          tags: ilriccio/thehistoryatlas:test-history
+          load: true
 
       - name: Setup Test Environment
         env:
@@ -160,11 +101,7 @@ jobs:
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f service_tests.yaml up 
-          --build-context pylib=./pylib
-          --build-context testlib=./testlib
-          --build history 
-          --exit-code-from history
+          docker compose -f service_tests.yaml up history --exit-code-from history
 
   Test-ReadModel:
     timeout-minutes: 10
@@ -173,21 +110,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Build and export
+        uses: docker/build-push-action@v2
         with:
-          python-version: '3.10'
-#
-#      - name: Download Pylib
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: pylib-image
-#          path: /tmp
-#
-#      - name: Load Docker image
-#        run: |
-#          docker load --input /tmp/pylib.tar
-#          docker image ls -a
+          context: ./readmodel
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./history/Dockerfile
+          tags: ilriccio/thehistoryatlas:test-readmodel
+          load: true
 
       - name: Setup Test Environment
         env:
@@ -198,11 +130,7 @@ jobs:
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f service_tests.yaml up 
-          --build-context pylib=./pylib
-          --build-context testlib=./testlib
-          --build readmodel 
-          --exit-code-from readmodel
+          docker compose -f service_tests.yaml up readmodel --exit-code-from readmodel
 
   Test-Accounts-Service:
     timeout-minutes: 10
@@ -211,21 +139,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Build and export
+        uses: docker/build-push-action@v2
         with:
-          python-version: '3.10'
-
-#      - name: Download Pylib
-#        uses: actions/download-artifact@v2
-#        with:
-#          name: pylib-image
-#          path: /tmp
-#
-#      - name: Load Docker image
-#        run: |
-#          docker load --input /tmp/pylib.tar
-#          docker image ls -a
+          context: ./accounts
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./history/Dockerfile
+          tags: ilriccio/thehistoryatlas:test-accounts
+          load: true
 
       - name: Setup Test Environment
         env:
@@ -239,11 +162,7 @@ jobs:
           REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
           SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
         run: |
-          docker compose -f service_tests.yaml up 
-          --build-context pylib=./pylib
-          --build-context testlib=./testlib
-          --build accounts 
-          --exit-code-from accounts
+          docker compose -f service_tests.yaml up accounts --exit-code-from accounts
 
 #      - name: Test Geo
 #        env:
