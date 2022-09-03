@@ -1,10 +1,10 @@
-name: Pylib Docker Image CI
+name: Accounts Dev Docker Image CI
 
 on:
   push:
     branches: [ dev ]
-#  pull_request:
-#    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
 
 jobs:
 
@@ -46,11 +46,14 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./pylib
+        context: ./accounts
+        build-contexts: |
+          pylib=./pylib
+          testlib=./testlib
         platforms: linux/amd64,linux/arm64
-        file: ./pylib/Dockerfile
+        file: ./accounts/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:pylib
+        tags: ilriccio/thehistoryatlas:accounts-${{ github.sha }}
 
     -
       name: Image digest

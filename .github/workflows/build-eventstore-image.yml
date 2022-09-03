@@ -1,10 +1,10 @@
-name: History Dev Docker Image CI
+name: Eventstore Docker Image CI
 
 on:
   push:
     branches: [ dev ]
-#  pull_request:
-#    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
 
 jobs:
 
@@ -46,11 +46,14 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./geo
+        context: ./eventstore
+        build-contexts: |
+          pylib=./pylib
+          testlib=./testlib
         platforms: linux/amd64,linux/arm64
-        file: ./geo/Dockerfile
+        file: ./eventstore/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:geo-dev
+        tags: ilriccio/thehistoryatlas:eventstore-${{ github.sha }}
 
     -
       name: Image digest

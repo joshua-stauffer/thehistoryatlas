@@ -1,10 +1,10 @@
-name: API Dev Docker Image CI
+name: Geo Docker Image CI
 
 on:
   push:
     branches: [ dev ]
-#  pull_request:
-#    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
 
 jobs:
 
@@ -46,11 +46,14 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./api
+        context: ./geo
+        build-contexts: |
+          pylib=./pylib
+          testlib=./testlib
         platforms: linux/amd64,linux/arm64
-        file: ./api/Dockerfile
+        file: ./geo/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:api-dev
+        tags: ilriccio/thehistoryatlas:geo-${{ github.sha }}
 
     -
       name: Image digest
