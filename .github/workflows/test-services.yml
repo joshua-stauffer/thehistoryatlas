@@ -117,7 +117,7 @@ jobs:
           build-contexts: |
             pylib=./pylib
             testlib=./testlib
-          file: ./history/Dockerfile
+          file: ./readmodel/Dockerfile
           tags: ilriccio/thehistoryatlas:test-readmodel
           load: true
 
