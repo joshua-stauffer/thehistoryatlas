@@ -68,9 +68,7 @@ jobs:
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose 
-          -f service_tests.yaml up 
-          --exit-code-from writemodel
+          docker compose -f service_tests.yaml up writemodel --exit-code-from writemodel
 
   Test-EventStore:
     timeout-minutes: 10
@@ -104,11 +102,8 @@ jobs:
         env:
           TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
         run: |
-          docker compose -f service_tests.yaml up 
-          --build-context pylib=./pylib
-          --build-context testlib=./testlib
-          --build eventstore 
-          --exit-code-from eventstore
+          docker compose -f service_tests.yaml up --build-context pylib=./pylib --build-context testlib=./testlib --build eventstore --exit-code-from eventstore
+        
 
   Test-History:
     timeout-minutes: 10
