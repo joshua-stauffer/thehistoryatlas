@@ -9,7 +9,7 @@ services:
             - ${BROKER_PORT}
             - ${BROKER_ADMIN_PORT}
     api:
-        image: ilriccio/thehistoryatlas:api-dev
+        image: ilriccio/thehistoryatlas:api-${VERSION}
         restart: always
         depends_on:
             - broker
@@ -23,15 +23,12 @@ services:
             - tha-connect
 
     readmodel:
-        image: ilriccio/thehistoryatlas:readmodel-dev
+        image: ilriccio/thehistoryatlas:readmodel-${VERSION}
         restart: always
         depends_on:
             - db
             - broker
             - history
-            - provisioner
-        build:
-            context: ./readmodel
         environment:
             - PROD_DB_URI=${READMODEL_CONN_STR}
             - DEV_DB_URI=${READMODEL_CONN_STR_DEV}
@@ -41,16 +38,13 @@ services:
             - tha-connect
 
     writemodel:
-        image: ilriccio/thehistoryatlas:writemodel-dev
+        image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
         depends_on:
             - db
             - broker
             - history
             - eventstore
-            - provisioner
-        build:
-            context: ./writemodel
         networks:
             - tha-connect
         environment:
@@ -60,14 +54,11 @@ services:
             - TESTING=${TESTING}
 
     eventstore:
-        image: ilriccio/thehistoryatlas:eventstore-dev
+        image: ilriccio/thehistoryatlas:eventstore-${VERSION}
         restart: always
         depends_on:
             - broker
             - db
-            - provisioner
-        build:
-            context: ./eventstore
         networks:
             - tha-connect
         environment:
@@ -77,12 +68,11 @@ services:
             - TESTING=${TESTING}
 
     history:
-        image: ilriccio/thehistoryatlas:history-dev
+        image: ilriccio/thehistoryatlas:history-${VERSION}
         restart: always
         depends_on: 
             - broker
             - db
-            - provisioner
         build:
             context: ./history
         networks:
@@ -94,15 +84,12 @@ services:
             - TESTING=${TESTING}
 
     nlp:
-        image: ilriccio/thehistoryatlas:nlp-dev
+        image: ilriccio/thehistoryatlas:nlp-${VERSION}
         restart: always
         depends_on: 
             - broker
             - db
-            - provisioner
-        build:
-            context: ./nlp
-        environment: 
+        environment:
             - PROD_DB_URI=${NLP_CONN_STR}
             - DEV_DB_URI=${NLP_CONN_STR_DEV}
             - CONFIG=${CONFIG}
@@ -112,14 +99,11 @@ services:
             - tha-connect
 
     geo:
-        image: ilriccio/thehistoryatlas:geo-dev
+        image: ilriccio/thehistoryatlas:geo-${VERSION}
         restart: always
         depends_on: 
             - db
             - broker
-            - provisioner
-        build:
-            context: ./geo
         environment:
             - PROD_DB_URI=${GEO_CONN_STR}
             - DEV_DB_URI=${GEO_CONN_STR_DEV}
@@ -134,14 +118,11 @@ services:
             - tha-connect
 
     accounts:
-        image: ilriccio/thehistoryatlas:accounts-dev
+        image: ilriccio/thehistoryatlas:accounts-${VERSION}
         restart: always
         depends_on:
             - broker
             - db
-            - provisioner
-        build:
-            context: ./accounts
         environment:
             - PROD_DB_URI=${ACCOUNTS_CONN_STR}
             - DEV_DB_URI=${ACCOUNTS_CONN_STR_DEV}
@@ -155,8 +136,9 @@ services:
             - tha-connect
 
     db:
-
-        image: postgres
+        # NOTE: using postgres 13.3 to avoid m1 libpq issue:
+        #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
+        image: postgres:13.3
         restart: always
         environment:
             - POSTGRES_PASSWORD=${POSTGRES_PASS}

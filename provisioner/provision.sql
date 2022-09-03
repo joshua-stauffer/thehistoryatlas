@@ -1,7 +1,3 @@
-CREATE DATABASE eventstore;
-CREATE ROLE readwrite_eventstore;
-CREATE USER eventstore_service WITH PASSWORD '$EVENTSTORE_SERVICE_PASSWORD';
-
 GRANT CONNECT ON DATABASE eventstore TO readwrite_eventstore;
 GRANT USAGE, CREATE ON SCHEMA public TO readwrite_eventstore;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite_eventstore;
@@ -10,10 +6,6 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite_eventstore;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite_eventstore;
 ALTER DATABASE eventstore SET timezone TO 'UTC';
 GRANT readwrite_eventstore TO eventstore_service;
-
-CREATE DATABASE readmodel;
-CREATE ROLE readwrite_readmodel;
-CREATE USER readmodel_service WITH PASSWORD '$READMODEL_SERVICE_PASSWORD';
 
 GRANT CONNECT ON DATABASE readmodel TO readwrite_readmodel;
 GRANT USAGE, CREATE ON SCHEMA public TO readwrite_readmodel;
@@ -24,10 +16,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite_
 ALTER DATABASE readmodel SET timezone TO 'UTC';
 GRANT readwrite_readmodel TO readmodel_service;
 
-CREATE DATABASE writemodel;
-CREATE ROLE readwrite_writemodel;
-CREATE USER writemodel_service WITH PASSWORD '$WRITEMODEL_SERVICE_PASSWORD';
-
 GRANT CONNECT ON DATABASE writemodel TO readwrite_writemodel;
 GRANT USAGE, CREATE ON SCHEMA public TO readwrite_writemodel;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite_writemodel;
@@ -36,10 +24,6 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite_writemodel;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite_writemodel;
 ALTER DATABASE writemodel SET timezone TO 'UTC';
 GRANT readwrite_writemodel TO writemodel_service;
-
-CREATE DATABASE accounts;
-CREATE ROLE readwrite_accounts;
-CREATE USER accounts_service WITH PASSWORD '$ACCOUNTS_SERVICE_PASSWORD';
 
 GRANT CONNECT ON DATABASE accounts TO readwrite_accounts;
 GRANT USAGE, CREATE ON SCHEMA public TO readwrite_accounts;
@@ -50,10 +34,6 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite_
 ALTER DATABASE accounts SET timezone TO 'UTC';
 GRANT readwrite_accounts TO accounts_service;
 
-CREATE DATABASE geo;
-CREATE ROLE readwrite_geo;
-CREATE USER geo_service WITH PASSWORD '$GEO_SERVICE_PASSWORD';
-
 GRANT CONNECT ON DATABASE geo TO readwrite_geo;
 GRANT USAGE, CREATE ON SCHEMA public TO readwrite_geo;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite_geo;
@@ -62,10 +42,6 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite_geo;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite_geo;
 ALTER DATABASE geo SET timezone TO 'UTC';
 GRANT readwrite_geo TO geo_service;
-
-CREATE DATABASE nlp;
-CREATE ROLE readwrite_nlp;
-CREATE USER nlp_service WITH PASSWORD '$NLP_SERVICE_PASSWORD';
 
 GRANT CONNECT ON DATABASE nlp TO readwrite_nlp;
 GRANT USAGE, CREATE ON SCHEMA public TO readwrite_nlp;

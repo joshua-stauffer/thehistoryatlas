@@ -14,9 +14,7 @@ services:
       - 5432:5432
 
   writemodel:
-    build:
-      context:
-        ./writemodel
+    image: ilriccio/thehistoryatlas:test-writemodel
     command: ["python3", "-m", "pytest", "-vvv"]
     networks:
       - tha-test
@@ -24,9 +22,7 @@ services:
       - TEST_DB_URI=${TEST_DB_URI}
 
   eventstore:
-    build:
-      context:
-        ./eventstore
+    image: ilriccio/thehistoryatlas:test-eventstore
     command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test
@@ -34,9 +30,7 @@ services:
       - TEST_DB_URI=${TEST_DB_URI}
 
   history:
-    build:
-      context:
-        ./history
+    image: ilriccio/thehistoryatlas:test-history
     command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test
@@ -44,9 +38,7 @@ services:
       - TEST_DB_URI=${TEST_DB_URI}
 
   readmodel:
-    build:
-      context:
-        ./readmodel
+    image: ilriccio/thehistoryatlas:test-readmodel
     command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test
@@ -54,9 +46,7 @@ services:
       - TEST_DB_URI=${TEST_DB_URI}
 
   nlp:
-    build:
-      context:
-        ./nlp
+    image: ilriccio/thehistoryatlas:test-nlp
     command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test
@@ -64,9 +54,7 @@ services:
       - TEST_DB_URI=${TEST_DB_URI}
 
   accounts:
-    build:
-      context:
-        ./accounts
+    image: ilriccio/thehistoryatlas:test-accounts
     command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test
@@ -77,9 +65,7 @@ services:
       - SEC_KEY=${SEC_KEY}
 
   geo:
-    build:
-      context:
-        ./geo
+    image: ilriccio/thehistoryatlas:test-geo
     command: [ "python3", "-m", "pytest", "-vvv" ]
     networks:
       - tha-test

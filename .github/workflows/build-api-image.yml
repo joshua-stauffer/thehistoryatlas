@@ -1,4 +1,4 @@
-name: History Dev Docker Image CI
+name: API Docker Image CI
 
 on:
   push:
@@ -46,11 +46,11 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./history
+        context: ./api
         platforms: linux/amd64,linux/arm64
-        file: ./history/Dockerfile
+        file: ./api/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:history-dev
+        tags: ilriccio/thehistoryatlas:api-${{ github.sha }}
 
     -
       name: Image digest
