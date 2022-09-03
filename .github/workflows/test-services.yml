@@ -46,6 +46,8 @@ jobs:
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+        with:
+          driver-opts: network=host  # use local docker registry
       -
         name: Build and export
         uses: docker/build-push-action@v2
@@ -55,8 +57,9 @@ jobs:
             pylib=./pylib
             testlib=./testlib
           file: ./writemodel/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-writemodel
-          outputs: type=docker,dest=/tmp/writemodel.tar
+          tags: localhost:5000/ilriccio/thehistoryatlas:test-writemodel
+          push: true
+#          outputs: type=docker,dest=/tmp/writemodel.tar
 
 #      - name: Download Writemodel
 #        uses: actions/download-artifact@v2
