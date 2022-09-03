@@ -9,7 +9,7 @@ services:
             - ${BROKER_PORT}
             - ${BROKER_ADMIN_PORT}
     api:
-        image: ilriccio/thehistoryatlas:api-dev
+        image: ilriccio/thehistoryatlas:api-${VERSION}
         restart: always
         depends_on:
             - broker
@@ -23,14 +23,12 @@ services:
             - tha-connect
 
     readmodel:
-        image: ilriccio/thehistoryatlas:readmodel-dev
+        image: ilriccio/thehistoryatlas:readmodel-${VERSION}
         restart: always
         depends_on:
             - db
             - broker
             - history
-        build:
-            context: ./readmodel
         environment:
             - PROD_DB_URI=${READMODEL_CONN_STR}
             - DEV_DB_URI=${READMODEL_CONN_STR_DEV}
@@ -40,15 +38,13 @@ services:
             - tha-connect
 
     writemodel:
-        image: ilriccio/thehistoryatlas:writemodel-arm64
+        image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
         depends_on:
             - db
             - broker
             - history
             - eventstore
-        build:
-            context: ./writemodel
         networks:
             - tha-connect
         environment:
@@ -58,13 +54,11 @@ services:
             - TESTING=${TESTING}
 
     eventstore:
-        image: ilriccio/thehistoryatlas:eventstore-dev
+        image: ilriccio/thehistoryatlas:eventstore-${VERSION}
         restart: always
         depends_on:
             - broker
             - db
-        build:
-            context: ./eventstore
         networks:
             - tha-connect
         environment:
@@ -74,7 +68,7 @@ services:
             - TESTING=${TESTING}
 
     history:
-        image: ilriccio/thehistoryatlas:history-dev
+        image: ilriccio/thehistoryatlas:history-${VERSION}
         restart: always
         depends_on: 
             - broker
@@ -90,14 +84,12 @@ services:
             - TESTING=${TESTING}
 
     nlp:
-        image: ilriccio/thehistoryatlas:nlp-dev
+        image: ilriccio/thehistoryatlas:nlp-${VERSION}
         restart: always
         depends_on: 
             - broker
             - db
-        build:
-            context: ./nlp
-        environment: 
+        environment:
             - PROD_DB_URI=${NLP_CONN_STR}
             - DEV_DB_URI=${NLP_CONN_STR_DEV}
             - CONFIG=${CONFIG}
@@ -107,13 +99,11 @@ services:
             - tha-connect
 
     geo:
-        image: ilriccio/thehistoryatlas:geo-dev
+        image: ilriccio/thehistoryatlas:geo-${VERSION}
         restart: always
         depends_on: 
             - db
             - broker
-        build:
-            context: ./geo
         environment:
             - PROD_DB_URI=${GEO_CONN_STR}
             - DEV_DB_URI=${GEO_CONN_STR_DEV}
@@ -128,13 +118,11 @@ services:
             - tha-connect
 
     accounts:
-        image: ilriccio/thehistoryatlas:accounts-dev
+        image: ilriccio/thehistoryatlas:accounts-${VERSION}
         restart: always
         depends_on:
             - broker
             - db
-        build:
-            context: ./accounts
         environment:
             - PROD_DB_URI=${ACCOUNTS_CONN_STR}
             - DEV_DB_URI=${ACCOUNTS_CONN_STR_DEV}
