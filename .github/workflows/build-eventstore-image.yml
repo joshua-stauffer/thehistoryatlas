@@ -1,4 +1,4 @@
-name: Readmodel Dev Docker Image CI
+name: Eventstore Docker Image CI
 
 on:
   push:
@@ -40,17 +40,20 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-        
+
     -
       name: Build and push
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./readmodel
+        context: ./eventstore
+        build-contexts: |
+          pylib=./pylib
+          testlib=./testlib
         platforms: linux/amd64,linux/arm64
-        file: ./readmodel/Dockerfile
+        file: ./eventstore/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:readmodel-dev
+        tags: ilriccio/thehistoryatlas:eventstore-${{ github.sha }}
 
     -
       name: Image digest

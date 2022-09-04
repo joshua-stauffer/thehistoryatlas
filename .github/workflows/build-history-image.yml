@@ -1,4 +1,4 @@
-name: History Dev Docker Image CI
+name: History Docker Image CI
 
 on:
   push:
@@ -8,14 +8,14 @@ on:
 
 jobs:
 
-  build:
+  build-history-service:
 
     runs-on: ubuntu-latest
 
     steps:
     -
       name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     -
       name: Set up QEMU
@@ -25,12 +25,8 @@ jobs:
         image: tonistiigi/binfmt:latest
         platforms: all
 
-    -
-      name: Available platforms
-      run: echo ${{ steps.qemu.outputs.platforms }}
-
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v2
       with:
         install: true
 
@@ -44,13 +40,16 @@ jobs:
     -
       name: Build and push
       id: docker_build
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v3
       with:
-        context: ./geo
-        platforms: linux/amd64,linux/arm64
-        file: ./geo/Dockerfile
+        build-contexts: |
+           pylib=./pylib
+           testlib=./testlib
+        context: ./history
+        platforms: linux/amd64, linux/arm64
+        file: ./history/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:geo-dev
+        tags: ilriccio/thehistoryatlas:history-${{ github.sha }}
 
     -
       name: Image digest
