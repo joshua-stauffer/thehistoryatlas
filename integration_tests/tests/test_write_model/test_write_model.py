@@ -12,7 +12,7 @@ from tha_config import Config
 
 
 PUBLISH_NEW_CITATION_COMMAND = ADD_NEW_CITATION_API_OUTPUT[0]
-
+PUBLISH_NEW_CITATION_CACHE = None
 
 class TestBroker(BrokerBase):
     def __init__(self, queue_name: str, listen_to: str):
@@ -47,34 +47,40 @@ def publish_new_citation_broker():
 
 
 @pytest.fixture(scope="session")
-async def setup_add_new_citation_events(publish_new_citation_broker):
+def run_add_new_citation_events(publish_new_citation_broker):
     """
     Asynchronously publish the message via the broker and await a result.
     """
-
+    loop = asyncio.get_event_loop()
     # setup test broker
     broker = publish_new_citation_broker
 
-    await broker.start()
+    broker_start_coro = broker.start()
+    loop.run_until_complete(broker_start_coro)
 
     command = PUBLISH_NEW_CITATION_COMMAND
     msg = broker.create_message(body=command)
-    await broker.publish_one(
+    broker_publish_coro = broker.publish_one(
         message=msg,
         routing_key="command.writemodel",
     )
+    loop.run_until_complete(broker_publish_coro)
     start = datetime.utcnow()
     timeout = timedelta(seconds=5)
     while datetime.utcnow() - timeout <= start:
         if len(broker.results) > 0:
             break
         else:
-            await asyncio.sleep(0.1)
+            sleep_coro = asyncio.sleep(0.1)
+            loop.run_until_complete(sleep_coro)
     assert len(broker.results) > 0, "No events were received"
+    stop_broker_coro = broker.cancel()
+    loop.run_until_complete(stop_broker_coro)
+    return broker.results
 
 
 @pytest.fixture(scope="session")
-def add_new_citation_events(publish_new_citation_broker):
+def add_new_citation_events(run_add_new_citation_events):
     events = [
         from_dict(event_dict) for event_dict in publish_new_citation_broker.results[0]
     ]
@@ -109,13 +115,6 @@ def time_added(add_new_citation_events):
 @pytest.fixture(scope="session")
 def meta_added(add_new_citation_events):
     return add_new_citation_events[5]
-
-
-@pytest.mark.asyncio
-async def test_run_test(setup_add_new_citation_events):
-    # this test runs the `add_new_citation_events` coroutine, making
-    # its results available to all following tests
-    await setup_add_new_citation_events
 
 
 @pytest.mark.parametrize(
@@ -244,11 +243,3 @@ def test_add_meta_kwargs(meta_added):
     for field in ("title", "author", "publisher"):
         meta.pop(field)
     assert meta_added.payload.kwargs == meta
-
-
-@pytest.mark.asyncio
-async def test_cleanup(publish_new_citation_broker):
-    try:
-        await publish_new_citation_broker.cancel()
-    except RuntimeError:
-        pass
