@@ -70,8 +70,19 @@ jobs:
         env:
           WRITEMODEL_CONN_STR_DEV: ${{ secrets.WRITEMODEL_CONN_STR_DEV }}
         run: |
-          docker compose -f integration-test-env.yml up history -d 
+          docker compose -f integration-test-env.yml up writemodel -d 
 
+      -
+        name: Build and export Integration Tests
+        uses: docker/build-push-action@v2
+        with:
+          context: ./integration-tests
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./integration-tests/Dockerfile
+          tags: ilriccio/thehistoryatlas:integration-tests
+          load: true
       -
         name: Run Integration Tests
         run: |

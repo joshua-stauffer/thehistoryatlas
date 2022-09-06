@@ -66,9 +66,7 @@ services:
             - CONFIG=${CONFIG}
 
     integration-tests:
-        build:
-            context:
-                ./integration_tests
+        image: ilriccio/thehistoryatlas:integration-tests
         depends_on:
             - broker
             - db
