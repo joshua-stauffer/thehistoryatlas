@@ -1,0 +1,213 @@
+name: "Run Integration Tests"
+
+on:
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+
+  Run-Integration-Tests:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    env:
+      CONFIG: ${{ secrets.CONFIG }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Start Database and Broker
+        env:
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+
+        run: docker compose -f integration-test-env.yml up db broker -d
+      -
+        name: Provision Database
+        env:
+          THA_DB_URI: ${{ secrets.THA_DB_URI }}
+          EVENTSTORE_SERVICE_PASSWORD: ${{ secrets.EVENTSTORE_SERVICE_PASSWORD }}
+          WRITEMODEL_SERVICE_PASSWORD: ${{ secrets.WRITEMODEL_SERVICE_PASSWORD }}
+          READMODEL_SERVICE_PASSWORD: ${{ secrets.READMODEL_SERVICE_PASSWORD }}
+          ACCOUNTS_SERVICE_PASSWORD: ${{ secrets.ACCOUNTS_SERVICE_PASSWORD }}
+          GEO_SERVICE_PASSWORD: ${{ secrets.GEO_SERVICE_PASSWORD }}
+          NLP_SERVICE_PASSWORD: ${{ secrets.NLP_SERVICE_PASSWORD }}
+        run: |
+          docker compose -f integration-test-env.yml up provisioner --exit-code-from provisioner
+
+      - name: Build and export History
+        uses: docker/build-push-action@v2
+        with:
+          context: ./history
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./history/Dockerfile
+          tags: ilriccio/thehistoryatlas:test-history
+          load: true
+
+      -
+        name: Start History Service
+        env:
+          EVENTSTORE_CONN_STR_DEV: ${{ secrets.EVENTSTORE_CONN_STR_DEV }}
+        run: |
+          docker compose -f integration-test-env.yml up history -d 
+
+      -
+        name: Build and export WriteModel
+        uses: docker/build-push-action@v2
+        with:
+          context: ./writemodel
+          build-contexts: |
+            pylib=./pylib
+            testlib=./testlib
+          file: ./writemodel/Dockerfile
+          tags: ilriccio/thehistoryatlas:test-writemodel
+          load: true
+
+      - name: Start WriteModel Service
+        env:
+          WRITEMODEL_CONN_STR_DEV: ${{ secrets.WRITEMODEL_CONN_STR_DEV }}
+        run: |
+          docker compose -f integration-test-env.yml up history -d 
+
+      -
+        name: Run Integration Tests
+        run: |
+          docker compose -f integration-test-env.yml up integration-tests --exit-code-from integration-tests
+
+
+#      - name: Build and export EventStore
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: ./eventstore
+#          build-contexts: |
+#            pylib=./pylib
+#            testlib=./testlib
+#          file: ./eventstore/Dockerfile
+#          tags: ilriccio/thehistoryatlas:test-eventstore
+#          load: true
+
+#
+#  Test-EventStore:
+#    timeout-minutes: 10
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#      -
+#
+#
+#      - name: Setup Test Environment
+#        env:
+#          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+#        run: docker compose -f service_tests.yaml up db -d
+#
+#      - name: Test EventStore
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f service_tests.yaml up eventstore --exit-code-from eventstore
+#
+#
+#  Test-History:
+#    timeout-minutes: 10
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#
+#
+#      - name: Setup Test Environment
+#        env:
+#          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+#        run: docker compose -f service_tests.yaml up db -d
+#
+#      - name: Test History
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f service_tests.yaml up history --exit-code-from history
+#
+#  Test-ReadModel:
+#    timeout-minutes: 10
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#      -
+#        name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#      - name: Build and export
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: ./readmodel
+#          build-contexts: |
+#            pylib=./pylib
+#            testlib=./testlib
+#          file: ./readmodel/Dockerfile
+#          tags: ilriccio/thehistoryatlas:test-readmodel
+#          load: true
+#
+#      - name: Setup Test Environment
+#        env:
+#          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+#        run: docker compose -f service_tests.yaml up db -d
+#
+#      - name: Test ReadModel
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f service_tests.yaml up readmodel --exit-code-from readmodel
+#
+#  Test-Accounts-Service:
+#    timeout-minutes: 10
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - uses: actions/checkout@v3
+#      -
+#        name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#      - name: Build and export
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: ./accounts
+#          build-contexts: |
+#            pylib=./pylib
+#            testlib=./testlib
+#          file: ./history/Dockerfile
+#          tags: ilriccio/thehistoryatlas:test-accounts
+#          load: true
+#
+#      - name: Setup Test Environment
+#        env:
+#          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+#        run: docker compose -f service_tests.yaml up db -d
+#
+#      - name: Test Accounts
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#          TTL: ${{ secrets.ACCOUNTS_TTL }}
+#          REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
+#          SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
+#        run: |
+#          docker compose -f service_tests.yaml up accounts --exit-code-from accounts
+
+#      - name: Test Geo
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f integration-test-env.yml up --build geo --exit-code-from geo
+
+
+#      - name: Test NLP
+#        env:
+#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+#        run: |
+#          docker compose -f integration-test-env.yml up --build nlp --exit-code-from nlp
