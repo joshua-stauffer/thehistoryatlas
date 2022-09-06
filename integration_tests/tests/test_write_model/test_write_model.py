@@ -22,7 +22,7 @@ class TestBroker(BrokerBase):
         super().__init__(
             broker_username=config.BROKER_USERNAME,
             broker_password=config.BROKER_PASS,
-            network_host_name="localhost",  # "=config.NETWORK_HOST_NAME,
+            network_host_name=config.NETWORK_HOST_NAME,
             exchange_name="main",
             queue_name=queue_name,
         )
