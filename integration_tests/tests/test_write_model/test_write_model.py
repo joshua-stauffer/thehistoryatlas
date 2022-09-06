@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -84,6 +85,37 @@ def add_new_citation_events(publish_new_citation_broker):
     return events
 
 
+@pytest.fixture(scope="session")
+def summary_added(add_new_citation_events):
+    return add_new_citation_events[0]
+
+
+@pytest.fixture(scope="session")
+def citation_added(add_new_citation_events):
+    return add_new_citation_events[1]
+
+
+@pytest.fixture(scope="session")
+def person_added(add_new_citation_events):
+    return add_new_citation_events[2]
+
+
+@pytest.fixture(scope="session")
+def place_added(add_new_citation_events):
+    return add_new_citation_events[3]
+
+
+
+@pytest.fixture(scope="session")
+def time_added(add_new_citation_events):
+    return add_new_citation_events[4]
+
+
+@pytest.fixture(scope="session")
+def meta_added(add_new_citation_events):
+    return add_new_citation_events[5]
+
+
 @pytest.mark.asyncio
 async def test_run_test(setup_add_new_citation_events):
     # this test runs the `add_new_citation_events` coroutine, making
@@ -106,13 +138,18 @@ def test_add_new_citation_event_types(index, value, add_new_citation_events):
     assert getattr(add_new_citation_events[index], "type") == value
 
 
+def test_add_new_citation_event_ids_are_uuids(add_new_citation_events):
+    for event in add_new_citation_events:
+        assert UUID(event.payload.id)
+
+
 def test_add_new_citation_returns_same_transaction_ids(add_new_citation_events):
     transaction_id = add_new_citation_events[0].transaction_id
     for event in add_new_citation_events:
         assert event.transaction_id == transaction_id
 
 
-def test_add_new_citation_returns_valid_transaction_id(add_new_citation_events):
+def test_add_new_citation_transaction_ids_are_uuids(add_new_citation_events):
     for event in add_new_citation_events:
         assert UUID(event.transaction_id)
 
@@ -126,7 +163,7 @@ def test_add_new_citation_returns_valid_transaction_id(add_new_citation_events):
         ("index", None)  # index will only be populated after event is persisted
     ]
 )
-def test_add_new_citation_events_return_same_meta(attr, value, add_new_citation_events):
+def test_add_new_citation_events_return_same_top_level_attrs(attr, value, add_new_citation_events):
     for event in add_new_citation_events:
         assert getattr(event, attr) == value
 
@@ -148,6 +185,14 @@ def test_add_new_citation_events_return_same_citation_id(add_new_citation_events
     assert add_meta.payload.citation_id == citation_id
 
 
+def test_citation_added_text(citation_added):
+    assert citation_added.payload.text == PUBLISH_NEW_CITATION_COMMAND["payload"]["text"]
+
+
+def test_summary_added_text(summary_added):
+    assert summary_added.payload.text == PUBLISH_NEW_CITATION_COMMAND["payload"]["summary"]["text"]
+
+
 @pytest.mark.parametrize(
     "adm_attr,api_attr",
     [
@@ -156,10 +201,10 @@ def test_add_new_citation_events_return_same_citation_id(add_new_citation_events
         ("citation_end", "stop_char")
     ]
 )
-def test_add_new_person(adm_attr, api_attr, add_new_citation_events):
-    add_person = add_new_citation_events[2]
+def test_add_new_person(adm_attr, api_attr, person_added):
+    person_added = add_new_citation_events[2]
     tag = PUBLISH_NEW_CITATION_COMMAND["payload"]["tags"][0]
-    assert getattr(add_person.payload, adm_attr) == tag[api_attr]
+    assert getattr(person_added.payload, adm_attr) == tag[api_attr]
 
 
 @pytest.mark.parametrize(
@@ -170,13 +215,12 @@ def test_add_new_person(adm_attr, api_attr, add_new_citation_events):
         ("citation_end", "stop_char"),
         ("latitude", "latitude"),
         ("longitude", "longitude"),
-        ("geo_string", "geostring")
+        ("geo_shape", "geoshape")
     ]
 )
-def test_add_new_place(adm_attr, api_attr, add_new_citation_events):
-    add_place = add_new_citation_events[3]
+def test_add_new_place(adm_attr, api_attr, place_added):
     tag = PUBLISH_NEW_CITATION_COMMAND["payload"]["tags"][1]
-    assert getattr(add_place.payload, adm_attr) == tag.get(api_attr, None)
+    assert getattr(place_added.payload, adm_attr) == tag.get(api_attr, None)
 
 
 @pytest.mark.parametrize(
@@ -187,10 +231,27 @@ def test_add_new_place(adm_attr, api_attr, add_new_citation_events):
         ("citation_end", "stop_char")
     ]
 )
-def test_add_new_time(adm_attr, api_attr, add_new_citation_events):
-    add_time = add_new_citation_events[4]
+def test_add_new_time(adm_attr, api_attr, time_added):
     tag = PUBLISH_NEW_CITATION_COMMAND["payload"]["tags"][2]
-    assert getattr(add_time.payload, adm_attr) == tag[api_attr]
+    assert getattr(time_added.payload, adm_attr) == tag[api_attr]
+
+
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "title", "author", "publisher"
+    ]
+)
+def test_add_meta_fields(attr, meta_added):
+    assert getattr(meta_added.payload, attr) == PUBLISH_NEW_CITATION_COMMAND["payload"]["meta"][attr]
+
+
+def test_add_meta_kwargs(meta_added):
+    command = deepcopy(PUBLISH_NEW_CITATION_COMMAND)
+    meta = command["payload"]["meta"]
+    for field in ("title", "author", "publisher"):
+        meta.pop(field)
+    assert meta_added.payload.kwargs == meta
 
 
 @pytest.mark.asyncio
