@@ -14,32 +14,35 @@ from tha_config import Config
 PUBLISH_NEW_CITATION_COMMAND = ADD_NEW_CITATION_API_OUTPUT[0]
 PUBLISH_NEW_CITATION_CACHE = None
 
-class TestBroker(BrokerBase):
-    def __init__(self, queue_name: str, listen_to: str):
-        self._listen_to = listen_to
-        config = Config()
-        self.results = []
-        super().__init__(
-            broker_username=config.BROKER_USERNAME,
-            broker_password=config.BROKER_PASS,
-            network_host_name=config.NETWORK_HOST_NAME,
-            exchange_name="main",
-            queue_name=queue_name,
-        )
+@pytest.fixture(scope="session")
+def TestBroker():
+    class TestBroker(BrokerBase):
+        def __init__(self, queue_name: str, listen_to: str):
+            self._listen_to = listen_to
+            config = Config()
+            self.results = []
+            super().__init__(
+                broker_username=config.BROKER_USERNAME,
+                broker_password=config.BROKER_PASS,
+                network_host_name=config.NETWORK_HOST_NAME,
+                exchange_name="main",
+                queue_name=queue_name,
+            )
 
-    async def start(self):
-        await self.connect()
-        await self.add_message_handler(
-            routing_key=self._listen_to, callback=self.handle_message
-        )
+        async def start(self):
+            await self.connect()
+            await self.add_message_handler(
+                routing_key=self._listen_to, callback=self.handle_message
+            )
 
-    async def handle_message(self, message):
-        body = self.decode_message(message)
-        self.results.append(body)
+        async def handle_message(self, message):
+            body = self.decode_message(message)
+            self.results.append(body)
+    return TestBroker
 
 
 @pytest.fixture(scope="session")
-def publish_new_citation_broker():
+def publish_new_citation_broker(TestBroker):
     """Instantiate a broker to handle the PUBLISH_NEW_CITATION event."""
     # results will be available via broker.results
     broker = TestBroker(queue_name="test_broker", listen_to="event.emitted")
