@@ -1,6 +1,7 @@
 import asyncio
 from copy import deepcopy
 from datetime import datetime, timedelta
+from inspect import isawaitable
 from uuid import UUID
 
 import pytest
@@ -12,7 +13,6 @@ from tha_config import Config
 
 
 PUBLISH_NEW_CITATION_COMMAND = ADD_NEW_CITATION_API_OUTPUT[0]
-PUBLISH_NEW_CITATION_CACHE = None
 
 @pytest.fixture(scope="session")
 def TestBroker():
@@ -52,9 +52,13 @@ def publish_new_citation_broker(TestBroker):
 @pytest.fixture(scope="session")
 def run_add_new_citation_events(publish_new_citation_broker):
     """
-    Asynchronously publish the message via the broker and await a result.
+    Publish the message via the broker and await a result.
     """
-    loop = asyncio.get_event_loop()
+    # Since new citations must be unique, this command can only be
+    # run once -- this fixture blocks for asynchronous code, allowing
+    # downstream tests to also be synchronous.
+
+    loop = asyncio.new_event_loop()
     # setup test broker
     broker = publish_new_citation_broker
 
@@ -69,7 +73,7 @@ def run_add_new_citation_events(publish_new_citation_broker):
     )
     loop.run_until_complete(broker_publish_coro)
     start = datetime.utcnow()
-    timeout = timedelta(seconds=5)
+    timeout = timedelta(seconds=30)
     while datetime.utcnow() - timeout <= start:
         if len(broker.results) > 0:
             break
@@ -79,16 +83,18 @@ def run_add_new_citation_events(publish_new_citation_broker):
     assert len(broker.results) > 0, "No events were received"
     stop_broker_coro = broker.cancel()
     loop.run_until_complete(stop_broker_coro)
+    loop.stop()
+    loop.close()
     return broker.results
 
 
 @pytest.fixture(scope="session")
 def add_new_citation_events(run_add_new_citation_events):
+    results = run_add_new_citation_events
     events = [
-        from_dict(event_dict) for event_dict in publish_new_citation_broker.results[0]
+        from_dict(event_dict) for event_dict in results[0]
     ]
     return events
-
 
 @pytest.fixture(scope="session")
 def summary_added(add_new_citation_events):
@@ -202,7 +208,6 @@ def test_summary_added_text(summary_added):
     [("name", "name"), ("citation_start", "start_char"), ("citation_end", "stop_char")],
 )
 def test_add_new_person(adm_attr, api_attr, person_added):
-    person_added = add_new_citation_events[2]
     tag = PUBLISH_NEW_CITATION_COMMAND["payload"]["tags"][0]
     assert getattr(person_added.payload, adm_attr) == tag[api_attr]
 

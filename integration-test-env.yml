@@ -67,6 +67,7 @@ services:
 
     integration-tests:
         image: ilriccio/thehistoryatlas:integration-tests
+
         depends_on:
             - broker
             - db
