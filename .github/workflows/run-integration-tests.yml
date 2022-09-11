@@ -53,9 +53,6 @@ jobs:
           EVENTSTORE_CONN_STR_DEV: ${{ secrets.EVENTSTORE_CONN_STR_DEV }}
         run: |
           docker compose -f integration-test-env.yml up history -d
-#      -
-#        name: confirm docker status
-#        run: docker ps --no-trunc && sleep 30 && docker ps # give history service time to come online
 
       -
         name: Build and export WriteModel
@@ -86,9 +83,6 @@ jobs:
           file: ./integration_tests/Dockerfile
           tags: ilriccio/thehistoryatlas:integration-tests
           load: true
-#      -
-#        name: confirm docker status
-#        run: docker ps --no-trunc && sleep 30 && docker ps # give history service time to come online
 
       -
         name: Run Integration Tests
