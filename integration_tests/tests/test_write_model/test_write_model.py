@@ -9,10 +9,10 @@ import pytest
 from abstract_domain_model.transform import from_dict
 from pybroker import BrokerBase
 from seed import PUBLISH_CITATIONS, SYNTHETIC_EVENTS, ADD_NEW_CITATION_API_OUTPUT
-from tha_config import Config
-
+from tha_config import Config, get_from_env
 
 PUBLISH_NEW_CITATION_COMMAND = ADD_NEW_CITATION_API_OUTPUT[0]
+
 
 @pytest.fixture(scope="session")
 def TestBroker():
@@ -38,6 +38,7 @@ def TestBroker():
         async def handle_message(self, message):
             body = self.decode_message(message)
             self.results.append(body)
+
     return TestBroker
 
 
@@ -67,9 +68,12 @@ def run_add_new_citation_events(publish_new_citation_broker):
 
     command = PUBLISH_NEW_CITATION_COMMAND
     msg = broker.create_message(body=command)
+    command_writemodel_routing_key = get_from_env(
+        variable="WRITEMODEL__COMMAND_WRITEMODEL"
+    )
     broker_publish_coro = broker.publish_one(
         message=msg,
-        routing_key="command.writemodel",
+        routing_key=command_writemodel_routing_key,
     )
     loop.run_until_complete(broker_publish_coro)
     start = datetime.utcnow()
@@ -91,10 +95,9 @@ def run_add_new_citation_events(publish_new_citation_broker):
 @pytest.fixture(scope="session")
 def add_new_citation_events(run_add_new_citation_events):
     results = run_add_new_citation_events
-    events = [
-        from_dict(event_dict) for event_dict in results[0]
-    ]
+    events = [from_dict(event_dict) for event_dict in results[0]]
     return events
+
 
 @pytest.fixture(scope="session")
 def summary_added(add_new_citation_events):

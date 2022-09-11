@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONFIG: ${{ secrets.CONFIG }}
+      WRITEMODEL__COMMAND_WRITEMODEL_ROUTING_KEY: "test_writemodel.command.writemodel"
+      WRITEMODEL__EVENT_PERSISTED_ROUTING_KEY: "test_writemodel.event.persisted"
+      WRITEMODEL__EVENT_REPLAY_WRITEMODEL_ROUTING_KEY: "test_writemodel.event.replay"
+      WRITEMODEL__EVENT_EMITTED_ROUTING_KEY: "test_writemodel.event.emitted"
 
     steps:
       - uses: actions/checkout@v3

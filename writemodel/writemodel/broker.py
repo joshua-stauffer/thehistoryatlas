@@ -40,10 +40,10 @@ class Broker(BrokerBase):
         self._history_timeout_coro = None
         self._history_replay_corr_id = None
 
-    async def start(self, is_initialized=False, replay_from=0):
+    async def start(self, ensure_latest_state=True, replay_from=0):
         """Start the broker. Will request and process a event replay when
         after initialized unless flag is_initialized is True."""
-    
+
         await self.connect()
 
         command_writemodel_routing_key = get_from_env(
@@ -76,7 +76,7 @@ class Broker(BrokerBase):
             routing_key=event_emitted_routing_key
         )
 
-        if not is_initialized:
+        if ensure_latest_state is True:
             await self._request_history_replay(last_index=replay_from)
 
     # on message callbacks

@@ -41,7 +41,6 @@ services:
             - THA_DB_URI=${THA_DB_URI}
 
     history:
-#        image: ilriccio/thehistoryatlas:history-${VERSION}
         image: ilriccio/thehistoryatlas:test-history
         restart: always
         depends_on:
@@ -55,17 +54,17 @@ services:
 
     writemodel:
         image: ilriccio/thehistoryatlas:test-writemodel
-#        image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
-#        depends_on:
-#            - db
-#            - broker
-#            - history
         networks:
             - tha-connect
         environment:
             - DEV_DB_URI=${WRITEMODEL_CONN_STR_DEV}
             - CONFIG=${CONFIG}
+            - ENSURE_LATEST_STATE="False"
+            - COMMAND_WRITEMODEL_ROUTING_KEY=${WRITEMODEL__COMMAND_WRITEMODEL_ROUTING_KEY}
+            - EVENT_PERSISTED_ROUTING_KEY=${WRITEMODEL__EVENT_PERSISTED_ROUTING_KEY}
+            - EVENT_REPLAY_WRITEMODEL_ROUTING_KEY=${WRITEMODEL__EVENT_REPLAY_WRITEMODEL_ROUTING_KEY}
+            - EVENT_EMITTED_ROUTING_KEY=${WRITEMODEL__EVENT_EMITTED_ROUTING_KEY}
 
     integration-tests:
         image: ilriccio/thehistoryatlas:integration-tests
@@ -73,10 +72,14 @@ services:
         depends_on:
             - broker
             - db
-#            - history
-#            - writemodel
         networks:
             - tha-connect
+        environment:
+            - WRITEMODEL__COMMAND_WRITEMODEL_ROUTING_KEY=${WRITEMODEL__COMMAND_WRITEMODEL_ROUTING_KEY}
+            - WRITEMODEL__EVENT_PERSISTED_ROUTING_KEY=${WRITEMODEL__EVENT_PERSISTED_ROUTING_KEY}
+            - WRITEMODEL__EVENT_REPLAY_WRITEMODEL_ROUTING_KEY=${WRITEMODEL__EVENT_REPLAY_WRITEMODEL_ROUTING_KEY}
+            - WRITEMODEL__EVENT_EMITTED_ROUTING_KEY=${WRITEMODEL__EVENT_EMITTED_ROUTING_KEY}
+
 #
 #    api:
 #        image: ilriccio/thehistoryatlas:test-api

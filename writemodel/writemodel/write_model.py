@@ -11,7 +11,7 @@ import os
 import json
 import logging
 import signal
-from tha_config import Config
+from tha_config import Config, get_from_env
 from writemodel.broker import Broker
 from writemodel.state_manager.manager import Manager
 
@@ -42,9 +42,11 @@ class WriteModel:
         )
         last_event_id = self.manager.db.check_database_init()
         log.info(f"Last event id was {last_event_id}")
-
+        ensure_latest_state = get_from_env(variable="ENSURE_LATEST_STATE", default=True)
         try:
-            await self.broker.start(is_initialized=False, replay_from=last_event_id)
+            await self.broker.start(
+                ensure_latest_state=ensure_latest_state, replay_from=last_event_id
+            )
         except Exception as e:
             log.critical(
                 f"WriteModel caught unknown exception {e} and is "
