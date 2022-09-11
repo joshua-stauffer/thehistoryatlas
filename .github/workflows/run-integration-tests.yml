@@ -52,7 +52,7 @@ jobs:
         env:
           EVENTSTORE_CONN_STR_DEV: ${{ secrets.EVENTSTORE_CONN_STR_DEV }}
         run: |
-          docker compose -f integration-test-env.yml up history 
+          docker compose -f integration-test-env.yml up history -d 
 
       -
         name: Build and export WriteModel
@@ -85,7 +85,7 @@ jobs:
           load: true
       -
         name: confirm docker status
-        run: docker ps --no-trunc
+        run: docker ps --no-trunc && sleep 5  # give history service time to come online
       -
         name: Run Integration Tests
         run: |
