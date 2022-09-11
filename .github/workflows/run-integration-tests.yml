@@ -85,7 +85,7 @@ jobs:
           load: true
       -
         name: confirm docker status
-        run: docker ps --no-trunc && sleep 5  # give history service time to come online
+        run: docker ps --no-trunc && sleep 30  # give history service time to come online
       -
         name: Run Integration Tests
         run: |
