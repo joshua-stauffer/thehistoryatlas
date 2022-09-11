@@ -41,6 +41,7 @@ services:
             - THA_DB_URI=${THA_DB_URI}
 
     history:
+#        image: ilriccio/thehistoryatlas:history-${VERSION}
         image: ilriccio/thehistoryatlas:test-history
         restart: always
         depends_on:
@@ -54,6 +55,7 @@ services:
 
     writemodel:
         image: ilriccio/thehistoryatlas:test-writemodel
+#        image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
         depends_on:
             - db
