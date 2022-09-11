@@ -46,7 +46,10 @@ def TestBroker():
 def publish_new_citation_broker(TestBroker):
     """Instantiate a broker to handle the PUBLISH_NEW_CITATION event."""
     # results will be available via broker.results
-    broker = TestBroker(queue_name="test_broker", listen_to="event.emitted")
+    listen_to_routing_key = get_from_env(
+        variable="WRITEMODEL__EVENT_EMITTED_ROUTING_KEY"
+    )
+    broker = TestBroker(queue_name="test_broker", listen_to=listen_to_routing_key)
     return broker
 
 
