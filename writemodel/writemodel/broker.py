@@ -7,6 +7,7 @@ from collections import deque
 import logging
 from uuid import uuid4
 from pybroker import BrokerBase
+from tha_config import get_from_env
 from writemodel.state_manager.handler_errors import CitationExistsError
 from writemodel.state_manager.handler_errors import CitationMissingFieldsError
 
@@ -42,22 +43,38 @@ class Broker(BrokerBase):
     async def start(self, is_initialized=False, replay_from=0):
         """Start the broker. Will request and process a event replay when
         after initialized unless flag is_initialized is True."""
-
+    
         await self.connect()
 
+        command_writemodel_routing_key = get_from_env(
+            variable="COMMAND_WRITEMODEL_ROUTING_KEY", default="command.writemodel"
+        )
         # register handlers
         await self.add_message_handler(
-            routing_key="command.writemodel", callback=self._handle_command
+            routing_key=command_writemodel_routing_key, callback=self._handle_command
+        )
+        event_persisted_routing_key = get_from_env(
+            variable="EVENT_PERSISTED_ROUTING_KEY",
+            default="event.persisted",
         )
         await self.add_message_handler(
-            routing_key="event.persisted", callback=self._handle_persisted_event
+            routing_key=event_persisted_routing_key,
+            callback=self._handle_persisted_event,
+        )
+        event_replay_writemodel = get_from_env(
+            "EVENT_REPLAY_WRITEMODEL_ROUTING_KEY",
+            default="event.replay.writemodel",
         )
         await self.add_message_handler(
-            routing_key="event.replay.writemodel", callback=self._handle_replay_history
+            routing_key=event_replay_writemodel, callback=self._handle_replay_history
         )
-
+        event_emitted_routing_key = get_from_env(
+            variable="EVENT_EMITTED_ROUTING_KEY", default="event.emitted"
+        )
         # get publish methods
-        self._publish_emitted_event = self.get_publisher(routing_key="event.emitted")
+        self._publish_emitted_event = self.get_publisher(
+            routing_key=event_emitted_routing_key
+        )
 
         if not is_initialized:
             await self._request_history_replay(last_index=replay_from)
