@@ -89,7 +89,7 @@ jobs:
       -
         name: confirm docker status
         run: docker ps --no-trunc && sleep 30 && docker ps # give history service time to come online
-      
+
       -
         name: Run Integration Tests
         run: |

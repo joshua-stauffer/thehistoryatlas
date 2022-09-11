@@ -57,10 +57,10 @@ services:
         image: ilriccio/thehistoryatlas:test-writemodel
 #        image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
-        depends_on:
-            - db
-            - broker
-            - history
+#        depends_on:
+#            - db
+#            - broker
+#            - history
         networks:
             - tha-connect
         environment:
@@ -73,8 +73,8 @@ services:
         depends_on:
             - broker
             - db
-            - history
-            - writemodel
+#            - history
+#            - writemodel
         networks:
             - tha-connect
 #
