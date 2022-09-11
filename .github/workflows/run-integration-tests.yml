@@ -39,24 +39,24 @@ jobs:
           NLP_SERVICE_PASSWORD: ${{ secrets.NLP_SERVICE_PASSWORD }}
         run: |
           docker compose -f integration-test-env.yml up provisioner --exit-code-from provisioner
-
-      - name: Build and export History
-        uses: docker/build-push-action@v2
-        with:
-          context: ./history
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./history/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-history
-          load: true
-
-      -
-        name: Start History Service
-        env:
-          EVENTSTORE_CONN_STR_DEV: ${{ secrets.EVENTSTORE_CONN_STR_DEV }}
-        run: |
-          docker compose -f integration-test-env.yml up history -d
+#
+#      - name: Build and export History
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: ./history
+#          build-contexts: |
+#            pylib=./pylib
+#            testlib=./testlib
+#          file: ./history/Dockerfile
+#          tags: ilriccio/thehistoryatlas:test-history
+#          load: true
+#
+#      -
+#        name: Start History Service
+#        env:
+#          EVENTSTORE_CONN_STR_DEV: ${{ secrets.EVENTSTORE_CONN_STR_DEV }}
+#        run: |
+#          docker compose -f integration-test-env.yml up history -d
 
       -
         name: Build and export WriteModel

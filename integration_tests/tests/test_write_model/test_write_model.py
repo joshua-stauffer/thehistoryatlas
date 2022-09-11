@@ -1,14 +1,13 @@
 import asyncio
 from copy import deepcopy
 from datetime import datetime, timedelta
-from inspect import isawaitable
 from uuid import UUID
 
 import pytest
 
 from abstract_domain_model.transform import from_dict
 from pybroker import BrokerBase
-from seed import PUBLISH_CITATIONS, SYNTHETIC_EVENTS, ADD_NEW_CITATION_API_OUTPUT
+from seed import ADD_NEW_CITATION_API_OUTPUT
 from tha_config import Config, get_from_env
 
 PUBLISH_NEW_CITATION_COMMAND = ADD_NEW_CITATION_API_OUTPUT[0]
