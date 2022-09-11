@@ -69,7 +69,7 @@ def run_add_new_citation_events(publish_new_citation_broker):
     command = PUBLISH_NEW_CITATION_COMMAND
     msg = broker.create_message(body=command)
     command_writemodel_routing_key = get_from_env(
-        variable="WRITEMODEL__COMMAND_WRITEMODEL"
+        variable="WRITEMODEL__COMMAND_WRITEMODEL_ROUTING_KEY"
     )
     broker_publish_coro = broker.publish_one(
         message=msg,
