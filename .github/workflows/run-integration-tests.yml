@@ -87,6 +87,10 @@ jobs:
           tags: ilriccio/thehistoryatlas:integration-tests
           load: true
       -
+        name: confirm docker status
+        run: docker ps --no-trunc && sleep 30 && docker ps # give history service time to come online
+      
+      -
         name: Run Integration Tests
         run: |
           docker compose -f integration-test-env.yml up integration-tests --exit-code-from integration-tests
