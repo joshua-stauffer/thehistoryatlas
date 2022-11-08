@@ -1,6 +1,6 @@
 import os
 import pytest
-from tha_config import __version__
+from tha_config import __version__, get_from_env, MissingEnvVariable
 from tha_config.config import Config
 
 
@@ -42,3 +42,45 @@ def test_config_no_env_variables():
 def test_config_picks_up_testing_env(dev_env, dev_uri):
     c = Config()
     assert c.DB_URI == dev_uri
+
+
+@pytest.fixture
+def simple_env(monkeypatch):
+    env = {"foo": "bar", "true_flag": "True", "false_flag": "False"}
+    monkeypatch.setattr(os, "environ", env)
+
+
+def test_get_from_env_returns_value(simple_env):
+    value = get_from_env("foo")
+    assert value == "bar"
+
+
+def test_get_from_env_with_default(simple_env):
+    default = "default"
+    value = get_from_env("nonexistent", default)
+    assert value == default
+
+
+def test_get_from_env_respects_true(simple_env):
+    value = get_from_env("true_flag")
+    assert value is True
+
+
+def test_get_from_env_respects_true_default(simple_env):
+    value = get_from_env("true_flag", True)
+    assert value is True
+
+
+def test_get_from_env_respects_false(simple_env):
+    value = get_from_env("false_flag")
+    assert value is False
+
+
+def test_get_from_env_respects_false_default(simple_env):
+    value = get_from_env("false_flag", False)
+    assert value is False
+
+
+def test_get_from_env_raises_exception(simple_env):
+    with pytest.raises(MissingEnvVariable):
+        _ = get_from_env("nonexistent")

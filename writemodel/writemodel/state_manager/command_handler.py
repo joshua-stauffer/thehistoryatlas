@@ -284,7 +284,7 @@ class CommandHandler:
 
     def _translate_publish_citation(self, command: dict) -> PublishCitation:
         """
-        Transform a dict version of the the JSON command PUBLISH_NEW_CITATION
+        Transform a dict version of the JSON command PUBLISH_NEW_CITATION
         into ADM objects.
         """
         command = deepcopy(command)
