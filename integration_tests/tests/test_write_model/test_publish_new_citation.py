@@ -6,39 +6,13 @@ from uuid import UUID
 import pytest
 
 from abstract_domain_model.transform import from_dict
-from pybroker import BrokerBase
 from seed import ADD_NEW_CITATION_API_OUTPUT
-from tha_config import Config, get_from_env
+from tha_config import get_from_env
 
 PUBLISH_NEW_CITATION_COMMAND = ADD_NEW_CITATION_API_OUTPUT[0]
 
 
-@pytest.fixture(scope="session")
-def TestBroker():
-    class TestBroker(BrokerBase):
-        def __init__(self, queue_name: str, listen_to: str):
-            self._listen_to = listen_to
-            config = Config()
-            self.results = []
-            super().__init__(
-                broker_username=config.BROKER_USERNAME,
-                broker_password=config.BROKER_PASS,
-                network_host_name=config.NETWORK_HOST_NAME,
-                exchange_name="main",
-                queue_name=queue_name,
-            )
 
-        async def start(self):
-            await self.connect()
-            await self.add_message_handler(
-                routing_key=self._listen_to, callback=self.handle_message
-            )
-
-        async def handle_message(self, message):
-            body = self.decode_message(message)
-            self.results.append(body)
-
-    return TestBroker
 
 
 @pytest.fixture(scope="session")

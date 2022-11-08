@@ -79,8 +79,8 @@ class Broker(BrokerBase):
         if ensure_latest_state is True:
             log.info("Writemodel is requesting history replay to ensure latest state.")
             await self._request_history_replay(last_index=replay_from)
-
-    # on message callbacks
+        else:
+            log.info("Writemodel is not requesting history replay on startup.")
 
     async def _handle_command(self, message):
         """Wrapper for handling commands"""

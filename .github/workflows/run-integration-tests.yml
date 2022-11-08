@@ -12,10 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONFIG: ${{ secrets.CONFIG }}
+      # writemodel
       WRITEMODEL__COMMAND_WRITEMODEL_ROUTING_KEY: "test_writemodel.command.writemodel"
       WRITEMODEL__EVENT_PERSISTED_ROUTING_KEY: "test_writemodel.event.persisted"
       WRITEMODEL__EVENT_REPLAY_WRITEMODEL_ROUTING_KEY: "test_writemodel.event.replay"
       WRITEMODEL__EVENT_EMITTED_ROUTING_KEY: "test_writemodel.event.emitted"
+      # eventstore
+      EVENTSTORE__EVENT_EMITTED_ROUTING_KEY: "test_eventstore.event.emitted"
+      EVENTSTORE__EVENT_PERSISTED_ROUTING_KEY: "test_eventstore.event.persisted"
 
     steps:
       - uses: actions/checkout@v3
@@ -74,7 +78,7 @@ jobs:
         env:
           WRITEMODEL_CONN_STR_DEV: ${{ secrets.WRITEMODEL_CONN_STR_DEV }}
         run: |
-          docker compose -f integration-test-env.yml up writemodel -d 
+          docker compose -f integration-test-env.yml up writemodel -d
 
       -
         name: Build and export Integration Tests
