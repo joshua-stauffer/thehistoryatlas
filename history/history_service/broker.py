@@ -53,7 +53,7 @@ class Broker(BrokerBase):
             raise MissingReplyFieldError
         # validate that this app hasn't already requested a replay
         if not self._validate_replay(reply_to, correlation_id):
-            log.warn(
+            log.warning(
                 f"Dropping replay request from {reply_to} with id {correlation_id}"
                 + "because a request with that correlation id is already in process."
             )
@@ -78,7 +78,7 @@ class Broker(BrokerBase):
         # give send_func and close_func to the main application, and get the
         # coroutine reference in return
         task = self._request_handler(body, send_func, close_func)
-        replay_tuple = ReplayTuple(correlation_id, task)
+        replay_tuple = ReplayTuple(corr_id=correlation_id, task=task)
         self._active_replays[reply_to] = replay_tuple
 
     def _validate_replay(self, reply_to, corr_id) -> bool:
@@ -86,7 +86,7 @@ class Broker(BrokerBase):
         # this has the effect of being forgiving if the client doesn't provide
         # a correlation id, as long as they continue to not provide one.
         if res := self._active_replays.get(reply_to):
-            if res.correlation_id == corr_id:
+            if res.corr_id == corr_id:
                 # this is a duplicate request, ignore it!
                 return False
             # now we know this is a new request, so we need to cancel the
