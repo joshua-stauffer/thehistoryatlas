@@ -1,8 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.typeDefs = void 0;
-const { gql } = require("apollo-server");
+// const { gql } = require("apollo-server");
+const { gql } = require("graphql-tag");
+// import { gql } from 'graphql-tag';
 exports.typeDefs = gql `
+  extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
+  
   type Query {
     GetSummariesByGUID(summary_guids: [String!]!): [Summary]
 

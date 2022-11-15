@@ -5,6 +5,7 @@ April 16th, 2021
 */
 
 const { ApolloServer } = require("apollo-server"); // consider switching to apollo-server-express ?
+import { buildSubgraphSchema } from '@apollo/subgraph';
 const { Broker } = require("./broker");
 const { typeDefs } = require("./schema");
 const { resolvers } = require("./resolvers");
@@ -37,7 +38,12 @@ const context: Context = {
   queryAccounts: broker.queryAccounts,
 };
 
-const server = new ApolloServer({ typeDefs, resolvers, context });
+const server = new ApolloServer({
+   schema: buildSubgraphSchema({
+    typeDefs, resolvers, 
+   }),
+   context 
+  });
 server.listen().then(({ url }: any) => {
   console.log(`🚀  Server ready at ${url}`);
 });
