@@ -10,6 +10,7 @@ services:
             - ${BROKER_ADMIN_PORT}
 
     router:
+        image: ilriccio/thehistoryatlas:router-${VERSION}
         build: ./router
         restart: always
         ports:
