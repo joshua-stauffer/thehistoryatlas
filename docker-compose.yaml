@@ -8,6 +8,17 @@ services:
         ports:
             - ${BROKER_PORT}
             - ${BROKER_ADMIN_PORT}
+
+    router:
+        build: ./router
+        restart: always
+        ports:
+            - "4400:4400"
+        environment:
+            - APOLLO_ROUTER_SUPERGRAPH_PATH=/dist/schema/local.graphql
+        networks:
+            - tha-connect
+
     api:
         image: ilriccio/thehistoryatlas:api-${VERSION}
         restart: always
