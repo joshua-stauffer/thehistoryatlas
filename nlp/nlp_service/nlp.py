@@ -75,7 +75,7 @@ class NLPService:
             text_map=text_map,
             corr_id=corr_id,
             pub_func=pub_func,
-            boundaries=boundaries
+            boundaries=boundaries,
         )
         self._resolver_store[corr_id] = resolver
         # open sub queries
@@ -107,11 +107,11 @@ class NLPService:
     def ensure_model(self):
         """Checks that a model is available for the spaCy service, and builds
         one in case it is missing."""
-        if not any(file.name == 'model-best' for file in os.scandir(MODEL_DIR)):
-            log.info('No models were found. Installing the base model now.')
+        if not any(file.name == "model-best" for file in os.scandir(MODEL_DIR)):
+            log.info("No models were found. Installing the base model now.")
             try:
                 #
-                log.debug('Looking for an existing model to copy')
+                log.debug("Looking for an existing model to copy")
                 copytree(BASE_MODEL_DIR, MODEL_DIR, dirs_exist_ok=True)
             except OSError as e:
                 log.debug(f"Caught exception {e}")

@@ -32,15 +32,20 @@ class Processor:
         results = defaultdict(list)
         boundaries = list()
         for tok in doc:
-            boundaries.append({
-                'start_char': tok.idx,
-                'stop_char': tok.idx + len(tok.text),
-                'text': tok.text
-            })
+            boundaries.append(
+                {
+                    "start_char": tok.idx,
+                    "stop_char": tok.idx + len(tok.text),
+                    "text": tok.text,
+                }
+            )
             if tok.ent_type_:
-                results[tok.ent_type_].append({
-                    'start_char': tok.idx,
-                    'stop_char': tok.idx + len(tok.text),
-                    'text': tok.text})
-        log.info(f'NLP processing results: {results}')
+                results[tok.ent_type_].append(
+                    {
+                        "start_char": tok.idx,
+                        "stop_char": tok.idx + len(tok.text),
+                        "text": tok.text,
+                    }
+                )
+        log.info(f"NLP processing results: {results}")
         return results, boundaries
