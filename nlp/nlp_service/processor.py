@@ -1,10 +1,11 @@
 """Text processing component for the History Atlas, powered by spaCy.
 
 """
-from collections import defaultdict
 import logging
-import spacy
+from collections import defaultdict
+from typing import Dict, List, Tuple
 
+import spacy
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
@@ -24,12 +25,20 @@ class Processor:
             )
             self.nlp = None
 
-    def parse(self, text: str):
+    def parse(self, text: str) -> Tuple[Dict, List]:
         """Accepts text as input and returns a dict of results keyed by ENTITY_TYPE"""
         log.info(f"Parsing text: {text}")
         doc = self.nlp(text)
         results = defaultdict(list)
+        boundaries = list()
         for tok in doc:
+            boundaries.append(
+                {
+                    "start_char": tok.idx,
+                    "stop_char": tok.idx + len(tok.text),
+                    "text": tok.text,
+                }
+            )
             if tok.ent_type_:
                 results[tok.ent_type_].append(
                     {
@@ -39,4 +48,4 @@ class Processor:
                     }
                 )
         log.info(f"NLP processing results: {results}")
-        return results
+        return results, boundaries

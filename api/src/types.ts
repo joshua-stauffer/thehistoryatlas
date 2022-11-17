@@ -572,8 +572,13 @@ export namespace Resolver {
           stop_char: number;
           guids: string[];
           coords?: Location[];
-        };
-      };
-    };
+        }
+      }
+      boundaries: {
+        text: string;
+        start_char: number;
+        stop_char: number;
+      }[]
+    }
   }
 }

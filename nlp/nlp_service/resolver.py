@@ -36,6 +36,7 @@ class Resolver:
         pub_func: Callable,
         query_geo: Callable,
         query_readmodel: Callable,
+        boundaries: list,
     ) -> None:
         """Create a session to manage the state of an API query between
         receipt of request and returning the response."""
@@ -44,6 +45,7 @@ class Resolver:
         # data
         self._text = text
         self._text_map = text_map
+        self._boundaries = boundaries
         self._tag_view = list()  # utility view to work with all tags at once
         [self._tag_view.extend(tag_list) for tag_list in text_map.values()]
         # methods and properties for interacting with other services
@@ -101,10 +103,15 @@ class Resolver:
             log.info(f"Query {self._corr_id} is now complete :: sending reply")
             log.debug(self._tag_view)
             log.debug(self._text_map)
+            log.debug(self._boundaries)
             await self._pub_func(
                 {
                     "type": "TEXT_PROCESSED",
-                    "payload": {"text_map": self._text_map, "text": self._text},
+                    "payload": {
+                        "text_map": self._text_map,
+                        "text": self._text,
+                        "boundaries": self._boundaries,
+                    },
                 }
             )
 

@@ -1,53 +1,44 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
-import { useHistory } from 'react-router';
-import {  FeedAndMap, NavAndTimeline } from './style';
-import { EventFeed } from '../../components/eventFeed';
-import { MapView } from '../../components/map';
-import { HistoryNavBar } from '../../components/historyNavigation';
-import { BarTimeline } from '../../components/barTimeline';
+import { useHistory, useParams } from 'react-router';
 import { handleFeedScroll } from '../../pureFunctions/scrollLogic';
 import { sliceManifest } from '../../pureFunctions/sliceManifest';
 import { initManifestSubset } from '../../pureFunctions/initializeManifestSubset';
 import { paginateFeed } from '../../pureFunctions/paginateFeed';
-import { 
+import {
   GET_MANIFEST, GetManifestResult, GetManifestVars,
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from '../../graphql/queries';
 import { readHistory, addToHistory, addToHistoryProps, updateRootSummary } from '../../hooks/history';
-import { MarkerData, FocusedGeoEntity, CurrentFocus } from '../../types';
+import { MarkerData, FocusedGeoEntity, CurrentFocus, TimeTag } from '../../types';
 import { getCoords } from '../../pureFunctions/getCoords';
 import { getFocusedGeoData } from '../../pureFunctions/getFocusedGeoData';
-import { TimeTag } from '../../types';
 
-interface HomePageProps {
 
-}
-
-export const HomePage = (props: HomePageProps) => {
+export const useFeedLogic = () => {
   // state
-  const [ currentEvents, setCurrentEvents ] = useState<string[]>([])
-  const [ currentSummaries, setCurrentSummaries ] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
-  const [ currentCoords, setCurrentCoords ] = useState<MarkerData[]>([])
-  const [ focusedGeoEntities, setFocusedGeoEntities] = useState<FocusedGeoEntity[]>([])
-  const [ currentFocus, setCurrentFocus ] = useState<CurrentFocus>({
+  const params = useParams()
+  const [currentEvents, setCurrentEvents] = useState<string[]>([])
+  const [currentSummaries, setCurrentSummaries] = useState<GetSummariesByGUIDResult["GetSummariesByGUID"]>([])
+  const [currentCoords, setCurrentCoords] = useState<MarkerData[]>([])
+  const [focusedGeoEntities, setFocusedGeoEntities] = useState<FocusedGeoEntity[]>([])
+  const [currentFocus, setCurrentFocus] = useState<CurrentFocus>({
     focusedGUID: 'not a guid',
     scrollIntoView: false
   })
 
-
   // hooks & utility functions for state
   const { currentEntity } = readHistory()
   const history = useHistory();
-  if (!currentEntity) history.push('/search')
+  if (!currentEntity) history.push('/')
   // add a little check for TypeScript's sake..
-  if (!currentEntity) throw new Error()
+  if (!currentEntity) throw new Error('No entity selected')
 
   // create an onClick handler for navigating between entities
   const setCurrentEntity = (props: addToHistoryProps): void => {
     const { entity, lastSummaryGUID } = props;
     setCurrentEvents([])
-    addToHistory( { entity, lastSummaryGUID } )
+    addToHistory({ entity, lastSummaryGUID })
     if (lastSummaryGUID) {
       setCurrentFocus(currentFocus => {
         return {
@@ -69,20 +60,20 @@ export const HomePage = (props: HomePageProps) => {
   // API Calls
   //  -- load manifest on current entity
   const {
-    loading: manifestLoading, 
-    error: manifestError, 
-    data: manifestData 
+    loading: manifestLoading,
+    error: manifestError,
+    data: manifestData
   } = useQuery<GetManifestResult, GetManifestVars>(
     GET_MANIFEST,
-    { variables: { GUID: currentEntity.entity.guid, entityType: currentEntity.entity.type} }
+    { variables: { GUID: currentEntity.entity.guid, entityType: currentEntity.entity.type } }
   )
   //  -- load summaries for slice of manifest currently in event feed
   const {
     loading: summariesLoading,
-    data: summariesData 
+    data: summariesData
   } = useQuery<GetSummariesByGUIDResult, GetSummariesByGUIDVars>(
-      GET_SUMMARIES_BY_GUID,
-      { variables: { summary_guids: currentEvents } }
+    GET_SUMMARIES_BY_GUID,
+    { variables: { summary_guids: currentEvents } }
   )
 
   // create a ref for interacting with event feed
@@ -106,7 +97,7 @@ export const HomePage = (props: HomePageProps) => {
     if (!feedRef.current) return;
     if (!currentSummaries) return;
     const indicesInCurrentPage = paginateFeed({
-      elementHeight: 220,
+      elementHeight: 100,
       listLength: currentEvents.length,
       offsetHeight: feedRef.current.offsetHeight,
       scrollHeight: feedRef.current.scrollHeight,
@@ -115,8 +106,8 @@ export const HomePage = (props: HomePageProps) => {
     const { markerData } = getCoords({
       indices: indicesInCurrentPage,
       currentSummaries: currentSummaries
-     })
-     setCurrentCoords(markerData)
+    })
+    setCurrentCoords(markerData)
   }, [feedRef, currentEvents.length, currentSummaries])
 
   // feed logic
@@ -163,7 +154,7 @@ export const HomePage = (props: HomePageProps) => {
     })
     // find indices for summaries on this data page (events in view plus one view on either side)
     const indicesInCurrentPage = paginateFeed({
-      elementHeight: 220,
+      elementHeight: 200,
       listLength: currentEvents.length,
       offsetHeight: feedRef.current.offsetHeight,
       scrollHeight: feedRef.current.scrollHeight,
@@ -173,13 +164,13 @@ export const HomePage = (props: HomePageProps) => {
     const { markerData } = getCoords({
       indices: indicesInCurrentPage,
       currentSummaries: currentSummaries
-     })
-     setCurrentCoords(markerData)
-     const focusedGeoEntities = getFocusedGeoData({
-       currentSummaries: currentSummaries,
-       focusIndex: focusIndex
-     })
-     setFocusedGeoEntities(focusedGeoEntities);
+    })
+    setCurrentCoords(markerData)
+    const focusedGeoEntities = getFocusedGeoData({
+      currentSummaries: currentSummaries,
+      focusIndex: focusIndex
+    })
+    setFocusedGeoEntities(focusedGeoEntities);
   }
 
   // add handleScroll to the dom as an event listener
@@ -197,31 +188,22 @@ export const HomePage = (props: HomePageProps) => {
       const timeTag = focusedSummary.tags.find(tag => tag.tag_type === 'TIME') as TimeTag;
       currentDate = timeTag && timeTag.name ? timeTag.name : null;
     }
-  }
 
-  return (
-      <>
-      <NavAndTimeline>
-        <BarTimeline
-          data={manifestData ? manifestData.GetManifest.timeline : []}
-          currentDate={currentDate}
-          handleTimelineClick={handleTimelineClick}
-        />
-        <HistoryNavBar resetCurrentEvents={resetCurrentEvents}/>
-      </NavAndTimeline>
-      <FeedAndMap>
-        <EventFeed 
-          summaryList={(!manifestLoading && !manifestError) ? currentSummaries : []}
-          eventManifest={manifestData ? manifestData.GetManifest.citation_guids : []}
-          feedRef={feedRef}
-          setCurrentEntity={setCurrentEntity}
-          currentFocus={currentFocus}
-        />
-        <MapView 
-          markers={currentCoords}
-          focusedGeoEntities={focusedGeoEntities}
-        />
-      </FeedAndMap>
-      </>
-  )
+    const summaryList = (!manifestLoading && !manifestError) ? currentSummaries : []
+  }
+  useEffect(() => console.log({ currentFocus }))
+  useEffect(() => console.log({ currentCoords }))
+
+
+  return {
+    feedRef,
+    currentDate,
+    handleTimelineClick,
+    resetCurrentEvents,
+    setCurrentEntity,
+    currentFocus,
+    currentCoords,
+    focusedGeoEntities,
+    currentSummaries
+  }
 }

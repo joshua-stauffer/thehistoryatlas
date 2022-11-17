@@ -5,29 +5,56 @@ import {
   Switch,
   Route,
 } from 'react-router-dom';
+import {
+  useTheme,
+  createTheme,
+  ThemeProvider
+} from '@mui/material/styles'
 import { useReactiveVar } from '@apollo/client';
 import { currentEntity } from './hooks/history'
-import { HomePage } from './pages/home';
-import { SearchPage } from './pages/search';
-import { MainNav } from './components/mainNav';
-import { Background } from './baseStyle';
+import { ResourceNotFoundError } from './pages/errorPages';
+import { AddCitationPage } from './pages/addCitation'
+import { LoginPage } from './pages/login';
+import { FeedPage } from './pages/feed';
+import { isLoggedIn } from './hooks/user';
+
+import DateAdapter from '@mui/lab/AdapterLuxon';
+import LocalizationProvider from '@mui/lab/LocalizationProvider';
+
 function App() {
   const entity = useReactiveVar(currentEntity)
-  useEffect(() => console.log('current entity is ', entity))
+  const darkTheme = createTheme({
+    palette: {
+      mode: "light"
+    }
+  })
+
   return (
-    <Router>
-      <Background>
-        <MainNav />
-        <Switch>
-          <Route path='/search'>
-            <SearchPage />
-          </Route>
-          <Route path='/'>
-            {entity ? <HomePage /> : <SearchPage/>}
-          </Route>
-        </Switch>
-      </Background>
-    </Router>
+    <ThemeProvider theme={darkTheme}>
+      <Router>
+          <Switch>
+            <Route path='/login'>
+              <LoginPage />
+            </Route>
+            <Route 
+              path='/add-citation'
+            >
+              {
+                true ?? isLoggedIn() 
+                  ? <AddCitationPage />
+                  : <LoginPage />
+
+              }
+            </Route>
+            <Route path='/'>
+              <FeedPage />
+            </Route>
+            <Route path='*'>
+              <ResourceNotFoundError />
+            </Route>  
+          </Switch>
+      </Router>
+    </ThemeProvider>
   );
 }
 
