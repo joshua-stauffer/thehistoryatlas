@@ -1,28 +1,20 @@
-FROM python:3.9-slim-buster
+FROM python:3.10-slim-buster
 WORKDIR /app
-
-# get local python packages
-COPY --from=pylib /lib /lib
-
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+COPY --from=pylib . /lib
+COPY --from=testlib . /lib
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
+RUN pip3 install /lib/abstract-domain-model
+RUN pip3 install /lib/test-data
 COPY . .
 ENV HOST_NAME=broker
-ARG test=False
-# ENV TESTING=$test
-ENV TESTING=False
-ENV DEBUG=True
 ENV CONFIG=DEV
-ENV PROD_DB_URI=
-ENV DEV_DB_URI=sqlite:////data/db/accounts.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=accounts
-# obviously, this key for local dev only
-ENV SEC_KEY=nHECungBxXETr9hdYml6sik9Eb368q0cm2wutp644oQ=
-ENV TTL=28800
-ENV REFRESH_BY=7200
-CMD ["python3", "-m", "app.accounts"]
+CMD ["python3", "-m", "accounts.accounts"]

@@ -7,6 +7,7 @@ import { ApolloClient } from '@apollo/client';
 import { ApolloProvider } from '@apollo/client/react';
 import { cache } from './graphql/cache';
 
+// this comment will trigger a rebuild
 
 export const client = new ApolloClient({
   cache,

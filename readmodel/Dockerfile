@@ -1,24 +1,20 @@
-FROM python:3.9-slim-buster
+FROM python:3.10-slim-buster
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 WORKDIR /app
-
-# get local python packages
-COPY --from=pylib /lib /lib
-
+COPY --from=pylib . /lib
+COPY --from=testlib . /lib
+COPY test-requirements.txt test-requirements.txt
 COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r test-requirements.txt
 RUN pip3 install /lib/pybroker
 RUN pip3 install /lib/tha-config
+RUN pip3 install /lib/abstract-domain-model
+RUN pip3 install /lib/test-data
 COPY . .
 ENV HOST_NAME=broker
-ARG test=True
-# ENV TESTING=$test
-ENV TESTING=False
-ENV DEBUG=True
-ENV CONFIG=DEV
-ENV PROD_DB_URI=
-ENV DEV_DB_URI=sqlite:////data/db/readmodel.db
 ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=readmodel
-CMD ["python3", "-m", "app.read_model"]
+CMD ["python3", "-m", "readmodel.read_model"]

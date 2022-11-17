@@ -2,7 +2,7 @@
 
 The History Atlas is a web application that stores scholarly citations correlating historical people with a time and place, and presents an interactive map searchable by time period, geographic area, or person.
 
-The project has been my primary focus during my batch at [the Recurse Center](https://www.recurse.com), a three month self-directed retreat for programmers in NYC from April-June 2021.
+The project was my primary focus during my batch at [the Recurse Center](https://www.recurse.com), a three month self-directed retreat for programmers in NYC from April-June 2021.
 
 I've been building the History Atlas with a CQRS/Event-Sourcing architecture in mind. The goal is to have a flexible, extensible base infrastructure that will be easy to maintain and scale, and will allow for significant changes in the frontend data requirements without needing to make changes to the primary database.
 
@@ -27,14 +27,14 @@ The project is built as a series of microservices which communicate asynchronous
   - [build_geo_src](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/build_geo_src.py): sources geo data from geonames.org and saves it to disk for the use by other scripts.
   - [build_fake_data](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/build_fake_data.py): a script to generate a large amount of fake (but realistically interconnected) related data.
   - [mock_client](https://github.com/joshua-stauffer/thehistoryatlas/blob/dev/builder/scripts/mockclient.py): a tool to programmatically publish data from json files to the GraphQL API endpoint.
-- User Service: Manages user information (in progress)
+- [User Accounts Service](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/accounts): Manages user information
 - Email Service: Provides email services across the application (in progress)
 - Logging Service: Tracks query/response times and application traffic patterns (in progress)
 
 ## Local project setup
 - [install/setup docker](https://docs.docker.com/get-docker/)
 - fork/clone the repo, and navigate to the project root directory
-- Build the project with ``` sudo bash build.sh```
+- Build the project with ``` bash build.sh```
 - Run the project with ``` docker-compose up```
 - Generate fake data (or create your own real data) and publish it to the application using the scripts in the [builder](https://github.com/joshua-stauffer/thehistoryatlas/tree/dev/builder) directory.
 - Stop the project with ctl-C in the same terminal or with ```docker-compose down``` in a separate tab.

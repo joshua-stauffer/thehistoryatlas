@@ -1,0 +1,11 @@
+
+sandbox:
+  enabled: true
+
+homepage:
+  enabled: false
+
+supergraph:
+  listen: 0.0.0.0:4400
+#  listen: 127.0.0.1:4400
+  introspection: true

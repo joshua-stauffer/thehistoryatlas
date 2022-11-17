@@ -1,5 +1,4 @@
 # Middle stage build for incorporating local Python libraries in docker images
-FROM python:3.9-slim-buster
+FROM python:3.10-slim-buster
 WORKDIR /lib
 COPY . .
-COPY --from=pylib /lib /lib
