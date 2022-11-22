@@ -11,5 +11,5 @@ export const FeedAndMap = styled.div`
 export const NavAndTimeline = styled.div`
   display: flex;
   height: 125px;
-
+  
 `

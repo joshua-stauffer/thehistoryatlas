@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { useHistory } from 'react-router';
-import {  FeedAndMap, NavAndTimeline } from './style';
+import { FeedAndMap, NavAndTimeline } from './style';
 import { EventFeed } from '../../components/eventFeed';
 import { MapView } from '../../components/map';
 import { HistoryNavBar } from '../../components/historyNavigation';

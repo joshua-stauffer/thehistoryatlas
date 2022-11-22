@@ -25,7 +25,7 @@ function App() {
   const entity = useReactiveVar(currentEntity)
   const darkTheme = createTheme({
     palette: {
-      mode: "light"
+      mode: "dark"
     }
   })
 

@@ -1,8 +1,8 @@
 import styled from "styled-components";
 
 interface Theme {
-  bg: string;
-  fg: string;
+  primary: string;
+  secondary: string;
 }
 
 interface ColorTheme {
@@ -12,12 +12,12 @@ interface ColorTheme {
 
 export const colorTheme: ColorTheme = {
   dark: {
-    bg: '#FFFFFFF',
-    fg: '#FFFFFFF'
+    primary: '#6a1b9a',
+    secondary: '#ef6c00'
   },
   light: {
-    bg: '#fffff8',
-    fg: '#111'
+    primary: '#e1bee7',
+    secondary: '#ffb74d'
   }
 }
 
