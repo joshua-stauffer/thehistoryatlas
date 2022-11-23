@@ -40,12 +40,17 @@ export const AddSource = (props: AddSourceProps) => {
   }
   const days = Array.from({ length: 31 }, (_, i) => i + 1)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
-  const years = Array.from({ length: 2021 }, (_, i) => i + 1)
+  const years = Array.from({ length: 2023 }, (_, i) => i + 1)
 
   return (
     <Box
       component="form"
-      sx={{ padding: 50, maxWidth: 500 }}
+      sx={{
+        padding: 50,
+        maxWidth: 200,
+        marginLeft: 'auto',
+        marginRight: 'auto'
+      }}
     >
       <Grid container spacing={2}>
 

@@ -17,7 +17,12 @@ export const AddQuote = (props: AddQuoteProps) => {
   return (
     <Box
       component="form"
-      sx={{ padding: 50, maxWidth: 500 }}
+      sx={{
+        padding: 50,
+        maxWidth: 200, //orig. 500
+        marginLeft: 'auto',
+        marginRight: 'auto'
+      }}
     >
       <Grid container spacing={2}>
 

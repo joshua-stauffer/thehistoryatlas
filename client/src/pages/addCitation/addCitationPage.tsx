@@ -105,7 +105,7 @@ export const AddCitationPage = () => {
           )
   }
   return (
-    <Box>
+    <Box sx={{margin: 10}}>
       <NavBar children={[
         <ExploreButton />,
         <SettingsButton />

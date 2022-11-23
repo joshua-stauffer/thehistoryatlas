@@ -14,7 +14,7 @@ interface TagTimeProps {
 
 const days = Array.from({ length: 31 }, (_, i) => i + 1)
 const months = Array.from({ length: 12 }, (_, i) => i + 1)
-const years = Array.from({ length: 2021 }, (_, i) => i + 1).reverse()
+const years = Array.from({ length: 2023 }, (_, i) => i + 1).reverse()
 const getDefaultYear = (text: string): string | null  => {
   for (const year of years) {
     if (text.includes(String(year))) {
