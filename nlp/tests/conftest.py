@@ -24,10 +24,16 @@ def db():
         raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
 
     root = os.getcwd()
-    if root.endswith("nlp"):
+    if root.endswith("nlp") or root.endswith("app"):
+        # running in container
         TRAIN_DIR = root + "/tests/test_train_dir"
     elif root.endswith("tests"):
+        # running tests directly
         TRAIN_DIR = root + "/test_train_dir"
+    else:
+        raise Exception(
+            f"Working in unexpected path `{root}`, unable to find `test_train_dir`."
+        )
     debug = True
 
     class Config:

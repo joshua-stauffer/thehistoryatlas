@@ -37,7 +37,7 @@ def pub_func():
 
 
 @pytest.fixture
-def resolver(query_readmodel, query_geo, entity_dict, pub_func):
+def resolver(query_readmodel, query_geo, entity_dict, pub_func, boundaries):
     r = Resolver(
         corr_id=str(uuid4()),
         text="not needed",
@@ -45,6 +45,7 @@ def resolver(query_readmodel, query_geo, entity_dict, pub_func):
         pub_func=pub_func,
         query_geo=query_geo,
         query_readmodel=query_readmodel,
+        boundaries=boundaries,
     )
     return r
 
@@ -64,6 +65,15 @@ def entity_dict():
             {"text": "name9"},
         ],
     }
+
+
+@pytest.fixture
+def boundaries():
+    return [
+        {"start_char": 1, "stop_char": 5, "text": "name1"},
+        {"start_char": 6, "stop_char": 10, "text": "name2"},
+        {"start_char": 11, "stop_char": 15, "text": "name3"},
+    ]
 
 
 @pytest.fixture
@@ -129,10 +139,10 @@ def test_add_coords(resolver, coord_dict):
 
 
 def test_has_resolved(resolver):
-    assert resolver.has_resolved == False
+    assert resolver.has_resolved is False
     resolver._geo_complete = True
-    assert resolver.has_resolved == False
+    assert resolver.has_resolved is False
     resolver._rm_complete = True
-    assert resolver.has_resolved == True
+    assert resolver.has_resolved is True
     resolver._geo_complete = False
-    assert resolver.has_resolved == False
+    assert resolver.has_resolved is False
