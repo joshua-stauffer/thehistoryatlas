@@ -28,6 +28,9 @@ def db():
         TRAIN_DIR = root + "/tests/test_train_dir"
     elif root.endswith("tests"):
         TRAIN_DIR = root + "/test_train_dir"
+    else:
+        TRAIN_DIR = root + "/test_train_dir"
+    print("root file path is ", root)
     debug = True
 
     class Config:
