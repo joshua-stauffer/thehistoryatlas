@@ -7,7 +7,7 @@ import asyncio
 import logging
 from uuid import uuid4
 from pybroker import BrokerBase
-from app.broker_errors import MissingReplyFieldError
+from nlp_service.broker_errors import MissingReplyFieldError
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
