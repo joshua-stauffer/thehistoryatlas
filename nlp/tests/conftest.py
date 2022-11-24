@@ -34,7 +34,6 @@ def db():
         raise Exception(
             f"Working in unexpected path `{root}`, unable to find `test_train_dir`."
         )
-    print("root file path is ", root)
     debug = True
 
     class Config:
