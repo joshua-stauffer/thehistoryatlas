@@ -129,10 +129,10 @@ def test_add_coords(resolver, coord_dict):
 
 
 def test_has_resolved(resolver):
-    assert resolver.has_resolved == False
+    assert resolver.has_resolved is False
     resolver._geo_complete = True
-    assert resolver.has_resolved == False
+    assert resolver.has_resolved is False
     resolver._rm_complete = True
-    assert resolver.has_resolved == True
+    assert resolver.has_resolved is True
     resolver._geo_complete = False
-    assert resolver.has_resolved == False
+    assert resolver.has_resolved is False
