@@ -85,8 +85,6 @@ services:
         depends_on: 
             - broker
             - db
-        build:
-            context: ./history
         networks:
             - tha-connect
         environment:
@@ -106,6 +104,10 @@ services:
             - DEV_DB_URI=${NLP_CONN_STR_DEV}
             - CONFIG=${CONFIG}
             - TESTING=${TESTING}
+        volumes:
+            - type: bind
+              source: ${THA_ROOT_DIR}/nlp/models
+              target: /app/models
 
         networks:
             - tha-connect
