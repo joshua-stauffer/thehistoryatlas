@@ -1,9 +1,9 @@
 FROM python:3.10-slim-buster
+COPY --from=pylib . .
+COPY --from=testlib . .
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app
-COPY --from=pylib . /lib
-COPY --from=testlib . /lib
 COPY test-requirements.txt test-requirements.txt
 COPY requirements.txt requirements.txt
 RUN pip3 install -r test-requirements.txt

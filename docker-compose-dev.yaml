@@ -1,0 +1,185 @@
+version: "3"
+services:
+    broker:
+        image: "rabbitmq:3-management"
+        restart: always
+        networks:
+            - tha-connect
+        ports:
+            - ${BROKER_PORT}
+            - ${BROKER_ADMIN_PORT}
+
+    router:
+        image: ilriccio/thehistoryatlas:router-${VERSION}
+        build: ./router
+        restart: always
+        ports:
+            - "4400:4400"
+        environment:
+            - APOLLO_ROUTER_SUPERGRAPH_PATH=/dist/schema/local.graphql
+        networks:
+            - tha-connect
+
+    api:
+        restart: always
+        depends_on:
+            - broker
+            - writemodel
+            - readmodel
+            - eventstore
+        build: ./api
+        ports:
+            - "4000:4000"
+        networks:
+            - tha-connect
+
+    readmodel:
+        build: ./readmodel
+        restart: always
+        depends_on:
+            - db
+            - broker
+            - history
+        environment:
+            - PROD_DB_URI=${READMODEL_CONN_STR}
+            - DEV_DB_URI=${READMODEL_CONN_STR_DEV}
+            - TESTING=${TESTING}
+            - CONFIG=${CONFIG}
+        networks:
+            - tha-connect
+
+    writemodel:
+        build: ./writemodel
+        restart: always
+        depends_on:
+            - db
+            - broker
+            - history
+            - eventstore
+        networks:
+            - tha-connect
+        environment:
+            - PROD_DB_URI=${WRITEMODEL_CONN_STR}
+            - DEV_DB_URI=${WRITEMODEL_CONN_STR_DEV}
+            - CONFIG=${CONFIG}
+            - TESTING=${TESTING}
+
+    eventstore:
+        build: ./eventstore
+        restart: always
+        depends_on:
+            - broker
+            - db
+        networks:
+            - tha-connect
+        environment:
+            - PROD_DB_URI=${EVENTSTORE_CONN_STR}
+            - DEV_DB_URI=${EVENTSTORE_CONN_STR_DEV}
+            - CONFIG=${CONFIG}
+            - TESTING=${TESTING}
+
+    history:
+        build: ./history
+        restart: always
+        depends_on:
+            - broker
+            - db
+        networks:
+            - tha-connect
+        environment:
+            - PROD_DB_URI=${EVENTSTORE_CONN_STR}
+            - DEV_DB_URI=${EVENTSTORE_CONN_STR_DEV}
+            - CONFIG=${CONFIG}
+            - TESTING=${TESTING}
+
+    nlp:
+        build: ./nlp
+        restart: always
+        depends_on:
+            - broker
+            - db
+        environment:
+            - PROD_DB_URI=${NLP_CONN_STR}
+            - DEV_DB_URI=${NLP_CONN_STR_DEV}
+            - CONFIG=${CONFIG}
+            - TESTING=${TESTING}
+        volumes:
+            - type: bind
+              source: ${THA_ROOT_DIR}/nlp/models
+              target: /app/models
+
+        networks:
+            - tha-connect
+
+    geo:
+        build: ./geo
+        restart: always
+        depends_on:
+            - db
+            - broker
+        environment:
+            - PROD_DB_URI=${GEO_CONN_STR}
+            - DEV_DB_URI=${GEO_CONN_STR_DEV}
+            - TESTING=${TESTING}
+            # choose between one of the following two city lists:
+            # cities500 is much more comprehensive, and also requires a much longer build.
+            - GEONAMES_URL=https://download.geonames.org/export/dump/cities15000.zip
+            # - GEONAMES_URL=https://download.geonames.org/export/dump/cities500.zip
+            - CONFIG=${CONFIG}
+
+        networks:
+            - tha-connect
+
+    accounts:
+        build: ./accounts
+        restart: always
+        depends_on:
+            - broker
+            - db
+        environment:
+            - PROD_DB_URI=${ACCOUNTS_CONN_STR}
+            - DEV_DB_URI=${ACCOUNTS_CONN_STR_DEV}
+            - SEC_KEY=${ACCOUNTS_SEC_KEY}
+            - TTL=${ACCOUNTS_TTL}
+            - TESTING=${TESTING}
+            - REFRESH_BY=${ACCOUNTS_REFRESH_BY}
+            - CONFIG=${CONFIG}
+
+        networks:
+            - tha-connect
+
+    db:
+        # NOTE: using postgres 13.3 to avoid m1 libpq issue:
+        #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
+        image: postgres:13.3
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=${POSTGRES_PASS}
+        networks:
+            - tha-connect
+        ports:
+            - 5432:5432
+        volumes:
+            - db:/var/lib/postgresql/data
+
+    provisioner:
+        build:
+            context:
+                ./provisioner
+        depends_on:
+            - db
+        restart: "no"
+        networks:
+            - tha-connect
+        environment:
+            - EVENTSTORE_SERVICE_PASSWORD=${EVENTSTORE_SERVICE_PASSWORD}
+            - READMODEL_SERVICE_PASSWORD=${READMODEL_SERVICE_PASSWORD}
+            - WRITEMODEL_SERVICE_PASSWORD=${WRITEMODEL_SERVICE_PASSWORD}
+            - ACCOUNTS_SERVICE_PASSWORD=${ACCOUNTS_SERVICE_PASSWORD}
+            - GEO_SERVICE_PASSWORD=${GEO_SERVICE_PASSWORD}
+            - NLP_SERVICE_PASSWORD=${NLP_SERVICE_PASSWORD}
+            - THA_DB_URI=${THA_DB_URI}
+volumes:
+    db:
+networks:
+    tha-connect:
