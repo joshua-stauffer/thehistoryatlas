@@ -30,9 +30,9 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    PublishNewCitation(
-      Annotation: AnnotateCitationInput!
-    ): PublishCitationResponse!
+#    PublishNewCitation(
+#      Annotation: AnnotateCitationInput!
+#    ): PublishCitationResponse!
 
     ConfirmAccount(token: String!): AccountsGenericResponse!
 
