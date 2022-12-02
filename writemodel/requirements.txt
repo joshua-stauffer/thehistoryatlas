@@ -3,6 +3,5 @@ psycopg2-binary
 pytest
 pytest-asyncio
 pytest-mock
-strawberry
-strawberry-graphql[fastapi]
-fastapi
+strawberry-graphql[sanic]
+sanic

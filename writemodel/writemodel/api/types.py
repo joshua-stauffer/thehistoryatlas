@@ -1,21 +1,7 @@
 from enum import Enum
-from typing import List, Optional, Literal
+from typing import List, Optional
 
 import strawberry
-
-
-@strawberry.type
-class Query:
-    ...
-
-
-@strawberry.type
-class Mutation:
-    @strawberry.mutation
-    def PublishNewCitation(
-        self, Annotation: "AnnotateCitationInput"
-    ) -> Literal[str, str, bool]:
-        return "test", "test", True
 
 
 @strawberry.input
@@ -54,4 +40,3 @@ class TagInput:
 class EntityType(Enum):
     TIME = "TIME"
     PERSON = "PERSON"
-    PLACE = "PLACE"
