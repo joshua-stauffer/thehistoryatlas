@@ -40,3 +40,4 @@ class TagInput:
 class EntityType(Enum):
     TIME = "TIME"
     PERSON = "PERSON"
+    PLACE = "PLACE"

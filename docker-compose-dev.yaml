@@ -63,6 +63,9 @@ services:
             - DEV_DB_URI=${WRITEMODEL_CONN_STR_DEV}
             - CONFIG=${CONFIG}
             - TESTING=${TESTING}
+            - SERVER_PORT=8800
+        ports:
+            - "8800:8800"
 
     eventstore:
         build: ./eventstore

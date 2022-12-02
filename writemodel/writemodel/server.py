@@ -12,7 +12,7 @@ from writemodel.write_model import WriteModel
 log = getLogger(__name__)
 
 
-def get_app():
+def run():
     writemodel = WriteModel()
     loop = asyncio.get_event_loop()
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
@@ -25,6 +25,14 @@ def get_app():
     schema = get_schema(app=writemodel)
     server.add_route(
         GraphQLView.as_view(schema=schema, graphiql=True),
-        "/graphql",
+        "/",
     )
     server.add_task(task=writemodel.start_broker())
+    server.run(
+        host=writemodel.config.SERVER_HOST,
+        port=writemodel.config.SERVER_PORT
+    )
+
+
+if __name__ == "__main__":
+    run()
