@@ -52,6 +52,10 @@ class Config:
         self.QUEUE_NAME = os.environ.get("QUEUE_NAME", "")
         self.EXCHANGE_NAME = os.environ.get("EXCHANGE_NAME", "")
 
+        # set values for GQL server
+        self.SERVER_HOST = os.environ.get("SERVER_HOST", "0.0.0.0")
+        self.SERVER_PORT = os.environ.get("SERVER_PORT", 8888)
+
     @staticmethod
     def test_for_truthiness(val):
         """checks val for truthy values
