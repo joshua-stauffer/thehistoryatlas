@@ -13,6 +13,7 @@ import logging
 import signal
 from tha_config import Config
 from writemodel.broker import Broker
+from writemodel.state_manager.handler_errors import CitationExistsError, CitationMissingFieldsError
 from writemodel.state_manager.manager import Manager
 
 logging.basicConfig(level="DEBUG")
@@ -31,14 +32,73 @@ class WriteModel:
         self.handle_event = self.manager.event_handler.handle_event
         self.broker = None  # created asynchronously in WriteModel.start_broker()
 
+    async def handle_command(self, message):
+        """Wrapper for handling commands"""
+        body = self.broker.decode_message(message)
+        # Now pass message body to main application for processing.
+        # if the processing fails this line with raise an exception
+        # and the context manager which called this method will
+        # nack the message
+        try:
+            event = self.manager.event_handler.handle_event(body)
+            msg = self.broker.create_message(event, headers=message.headers)
+            log.debug(f"WriteModel is publishing to emitted.event: {event}")
+            await self.broker._publish_emitted_event(msg)
+            # check if the publisher wants to hear a reply
+            if message.reply_to:
+                body = self.broker.create_message(
+                    {"type": "COMMAND_SUCCESS"},
+                    correlation_id=message.correlation_id,
+                    headers=message.headers,
+                )
+                await self.broker.publish_one(body, message.reply_to)
+        except CitationExistsError as e:
+            log.info(
+                f"Broker caught error from a duplicate event. "
+                + "If sender included a reply_to value they will receive a "
+                + "message now."
+            )
+            if message.reply_to:
+                body = self.broker.create_message(
+                    {
+                        "type": "COMMAND_FAILED",
+                        "payload": {
+                            "reason": "Citation already exists in database.",
+                            "existing_event_guid": e.GUID,
+                        },
+                    },
+                    correlation_id=message.correlation_id,
+                    headers=message.headers,
+                )
+                await self.broker.publish_one(body, message.reply_to)
+        except CitationMissingFieldsError as e:
+            log.info(
+                f"Broker caught an error from a citation missing fields. "
+                + "If sender included a reply_to value they will receive a "
+                + "message now."
+            )
+            log.info(e)
+            if message.reply_to:
+                body = self.broker.create_message(
+                    {
+                        "type": "COMMAND_FAILED",
+                        "payload": {
+                            "reason": "Citation was missing fields (text, GUID, tags, or meta)."
+                        },
+                    },
+                    correlation_id=message.correlation_id,
+                    headers=message.headers,
+                )
+                await self.broker.publish_one(body, message.reply_to)
+
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
         log.info("WriteModel: starting broker")
         self.broker = Broker(
-            self.config,
-            self.handle_command,
-            self.handle_event,
-            self.manager.db.check_database_init,
+            config=self.config,
+            command_handler=self.handle_command,
+            event_handler=self.handle_event,
+            get_latest_event_id=self.manager.db.check_database_init,
         )
         last_event_id = self.manager.db.check_database_init()
         log.info(f"Last event id was {last_event_id}")

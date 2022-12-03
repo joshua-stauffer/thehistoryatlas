@@ -47,7 +47,7 @@ class Broker(BrokerBase):
 
         # register handlers
         await self.add_message_handler(
-            routing_key="command.writemodel", callback=self._handle_command
+            routing_key="command.writemodel", callback=self._command_handler
         )
         await self.add_message_handler(
             routing_key="event.persisted", callback=self._handle_persisted_event
@@ -64,64 +64,7 @@ class Broker(BrokerBase):
 
     # on message callbacks
 
-    async def _handle_command(self, message):
-        """Wrapper for handling commands"""
-        body = self.decode_message(message)
-        # Now pass message body to main application for processing.
-        # if the processing fails this line with raise an exception
-        # and the context manager which called this method will
-        # nack the message
-        try:
-            event = self._command_handler(body)
-            msg = self.create_message(event, headers=message.headers)
-            log.debug(f"Broker is publishing to emitted.event: {event}")
-            await self._publish_emitted_event(msg)
-            # check if the publisher wants to hear a reply
-            if message.reply_to:
-                body = self.create_message(
-                    {"type": "COMMAND_SUCCESS"},
-                    correlation_id=message.correlation_id,
-                    headers=message.headers,
-                )
-                await self.publish_one(body, message.reply_to)
-        except CitationExistsError as e:
-            log.info(
-                f"Broker caught error from a duplicate event. "
-                + "If sender included a reply_to value they will receive a "
-                + "message now."
-            )
-            if message.reply_to:
-                body = self.create_message(
-                    {
-                        "type": "COMMAND_FAILED",
-                        "payload": {
-                            "reason": "Citation already exists in database.",
-                            "existing_event_guid": e.GUID,
-                        },
-                    },
-                    correlation_id=message.correlation_id,
-                    headers=message.headers,
-                )
-                await self.publish_one(body, message.reply_to)
-        except CitationMissingFieldsError as e:
-            log.info(
-                f"Broker caught an error from a citation missing fields. "
-                + "If sender included a reply_to value they will receive a "
-                + "message now."
-            )
-            log.info(e)
-            if message.reply_to:
-                body = self.create_message(
-                    {
-                        "type": "COMMAND_FAILED",
-                        "payload": {
-                            "reason": "Citation was missing fields (text, GUID, tags, or meta)."
-                        },
-                    },
-                    correlation_id=message.correlation_id,
-                    headers=message.headers,
-                )
-                await self.publish_one(body, message.reply_to)
+
 
     async def _handle_persisted_event(self, message):
         """wrapper for handling persisted events"""

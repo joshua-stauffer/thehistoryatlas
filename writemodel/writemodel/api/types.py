@@ -4,6 +4,20 @@ from typing import List, Optional
 import strawberry
 
 
+@strawberry.interface
+class MutationResponse:
+    code: str
+    success: bool
+    message: bool
+
+
+@strawberry.type
+class PublishCitationResponse(MutationResponse):
+    code: str
+    success: bool
+    message: bool
+
+
 @strawberry.input
 class AnnotateCitationInput:
     citation: str
