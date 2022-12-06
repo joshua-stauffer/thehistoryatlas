@@ -1,7 +1,7 @@
 FROM python:3.10-slim-buster
+#WORKDIR /app
 COPY --from=pylib . .
 COPY --from=testlib . .
-WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 COPY requirements.txt requirements.txt
