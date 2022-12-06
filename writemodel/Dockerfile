@@ -6,10 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
-RUN pip3 install ./pybroker
-RUN pip3 install ./tha-config
-RUN pip3 install ./abstract-domain-model
-RUN pip3 install ./test-data
+RUN pip3 install /pybroker
+RUN pip3 install /tha-config
+RUN pip3 install /abstract-domain-model
+RUN pip3 install /test-data
 COPY . .
 ENV HOST_NAME=broker
 ENV BROKER_USERNAME=guest
