@@ -28,9 +28,6 @@ jobs:
           tags: ilriccio/thehistoryatlas:test-writemodel
           load: true
       -
-        name: look at image
-        run: echo ${{ steps.docker_build.outputs }}
-      -
         name: Setup Test Environment
         env:
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
