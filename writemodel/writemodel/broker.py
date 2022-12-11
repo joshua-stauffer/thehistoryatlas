@@ -64,8 +64,6 @@ class Broker(BrokerBase):
 
     # on message callbacks
 
-
-
     async def _handle_persisted_event(self, message):
         """wrapper for handling persisted events"""
         body = self.decode_message(message)

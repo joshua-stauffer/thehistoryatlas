@@ -12,7 +12,7 @@ from writemodel.write_model import WriteModel
 def get_schema(app: WriteModel) -> Schema:
     @strawberry.type
     class Query:
-        name: str = strawberry.field(resolver=lambda : "test")
+        status: str = strawberry.field(resolver=lambda: "ok")
 
     @strawberry.type
     class Mutation:

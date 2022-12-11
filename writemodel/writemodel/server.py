@@ -28,10 +28,7 @@ def run():
         "/",
     )
     server.add_task(task=writemodel.start_broker())
-    server.run(
-        host=writemodel.config.SERVER_HOST,
-        port=writemodel.config.SERVER_PORT
-    )
+    server.run(host=writemodel.config.SERVER_HOST, port=writemodel.config.SERVER_PORT)
 
 
 if __name__ == "__main__":

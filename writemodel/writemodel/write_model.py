@@ -13,7 +13,10 @@ import logging
 import signal
 from tha_config import Config
 from writemodel.broker import Broker
-from writemodel.state_manager.handler_errors import CitationExistsError, CitationMissingFieldsError
+from writemodel.state_manager.handler_errors import (
+    CitationExistsError,
+    CitationMissingFieldsError,
+)
 from writemodel.state_manager.manager import Manager
 
 logging.basicConfig(level="DEBUG")
