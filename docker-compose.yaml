@@ -36,6 +36,7 @@ services:
 
     readmodel:
         image: ilriccio/thehistoryatlas:readmodel-${VERSION}
+        build: ./readmodel
         restart: always
         depends_on:
             - db
@@ -52,6 +53,7 @@ services:
     writemodel:
         image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
+        build: ./writemodel
         depends_on:
             - db
             - broker
@@ -67,6 +69,7 @@ services:
 
     eventstore:
         image: ilriccio/thehistoryatlas:eventstore-${VERSION}
+        build: ./eventstore
         restart: always
         depends_on:
             - broker
@@ -81,6 +84,7 @@ services:
 
     history:
         image: ilriccio/thehistoryatlas:history-${VERSION}
+        build: ./history
         restart: always
         depends_on: 
             - broker
@@ -95,6 +99,7 @@ services:
 
     nlp:
         image: ilriccio/thehistoryatlas:nlp-${VERSION}
+        build: ./nlp
         restart: always
         depends_on: 
             - broker
@@ -114,6 +119,7 @@ services:
 
     geo:
         image: ilriccio/thehistoryatlas:geo-${VERSION}
+        build: ./geo
         restart: always
         depends_on: 
             - db
@@ -133,6 +139,7 @@ services:
 
     accounts:
         image: ilriccio/thehistoryatlas:accounts-${VERSION}
+        build: ./accounts
         restart: always
         depends_on:
             - broker
