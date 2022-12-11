@@ -1,5 +1,3 @@
-from typing import Literal
-
 import strawberry
 
 from strawberry.federation import Schema
@@ -20,7 +18,7 @@ def get_schema(app: WriteModel) -> Schema:
         def PublishNewCitation(
             self, annotation: AnnotateCitationInput
         ) -> PublishCitationResponse:
-            res = app.handle_command(annotation)
-            return
+            response = app.handle_command(annotation)
+            return PublishCitationResponse(**response)
 
     return Schema(query=Query, mutation=Mutation, enable_federation_2=True)
