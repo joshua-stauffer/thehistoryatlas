@@ -85,9 +85,7 @@ class WriteModel:
                 body = self.broker.create_message(
                     {
                         "type": "COMMAND_FAILED",
-                        "payload": {
-                            "reason": "Citation was missing fields (text, GUID, tags, or meta)."
-                        },
+                        "payload": {"reason": "Citation was missing fields."},
                     },
                     correlation_id=message.correlation_id,
                     headers=message.headers,
