@@ -26,6 +26,10 @@ from abstract_domain_model.models import (
     MetaAddedPayload,
 )
 from abstract_domain_model.models.commands.publish_citation import PublishCitation
+from abstract_domain_model.models.errors.command_failed import (
+    CommandFailed,
+    CommandFailedPayload,
+)
 from abstract_domain_model.types import Event, DomainObject, DomainObjectTypes
 
 
@@ -33,7 +37,6 @@ from abstract_domain_model.types import Event, DomainObject, DomainObjectTypes
 class TranslatorSpec:
     obj_cls: dataclass
     obj_payload: dataclass
-    resolver: Callable[[Dict, "TranslatorSpec"], DomainObject]
 
 
 class Translator:
@@ -50,52 +53,46 @@ class Translator:
             "SUMMARY_ADDED": TranslatorSpec(
                 obj_cls=SummaryAdded,
                 obj_payload=SummaryAddedPayload,
-                resolver=cls._resolve_event,
             ),
             "SUMMARY_TAGGED": TranslatorSpec(
                 obj_cls=SummaryTagged,
                 obj_payload=SummaryTaggedPayload,
-                resolver=cls._resolve_event,
             ),
             "CITATION_ADDED": TranslatorSpec(
                 obj_cls=CitationAdded,
                 obj_payload=CitationAddedPayload,
-                resolver=cls._resolve_event,
             ),
             "PERSON_ADDED": TranslatorSpec(
                 obj_cls=PersonAdded,
                 obj_payload=PersonAddedPayload,
-                resolver=cls._resolve_event,
             ),
             "PLACE_ADDED": TranslatorSpec(
                 obj_cls=PlaceAdded,
                 obj_payload=PlaceAddedPayload,
-                resolver=cls._resolve_event,
             ),
             "TIME_ADDED": TranslatorSpec(
                 obj_cls=TimeAdded,
                 obj_payload=TimeAddedPayload,
-                resolver=cls._resolve_event,
             ),
             "PERSON_TAGGED": TranslatorSpec(
                 obj_cls=PersonTagged,
                 obj_payload=PersonTaggedPayload,
-                resolver=cls._resolve_event,
             ),
             "PLACE_TAGGED": TranslatorSpec(
                 obj_cls=PlaceTagged,
                 obj_payload=PlaceTaggedPayload,
-                resolver=cls._resolve_event,
             ),
             "TIME_TAGGED": TranslatorSpec(
                 obj_cls=TimeTagged,
                 obj_payload=TimeTaggedPayload,
-                resolver=cls._resolve_event,
             ),
             "META_ADDED": TranslatorSpec(
                 obj_cls=MetaAdded,
                 obj_payload=MetaAddedPayload,
-                resolver=cls._resolve_event,
+            ),
+            "COMMAND_FAILED": TranslatorSpec(
+                obj_cls=CommandFailed,
+                obj_payload=CommandFailedPayload,
             ),
         }
 
@@ -110,14 +107,14 @@ class Translator:
             raise UnknownMessageError(data)
 
         try:
-            return translation_spec.resolver(data, translation_spec)
+            return cls.resolve(data, translation_spec)
 
         except TypeError:
             # raised when the dataclass isn't provided with required fields
             raise MissingFieldsError(data)
 
     @staticmethod
-    def _resolve_event(data: dict, spec: TranslatorSpec) -> Event:
+    def resolve(data: dict, spec: TranslatorSpec) -> Event:
         payload = data.pop("payload", None)
         if payload is None:
             return spec.obj_cls(**data)
