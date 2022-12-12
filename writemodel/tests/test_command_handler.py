@@ -246,9 +246,9 @@ async def test_adds_person_when_given_new_person_guid(handler, citation0, person
     citation0["payload"]["tags"] = [person_tag_0]
     synthetic_events = handler.handle_command(citation0)
     OTHER = ["TIME_TAGGED", "TIME_ADDED", "PLACE_ADDED", "PLACE_TAGGED"]
-    assert any(t["type"] == "PERSON_ADDED" for t in synthetic_events) == True
-    assert any(t["type"] == "PERSON_TAGGED" for t in synthetic_events) == False
-    assert any(t["type"] in OTHER for t in synthetic_events) == False
+    assert any(t["type"] == "PERSON_ADDED" for t in synthetic_events) is True
+    assert any(t["type"] == "PERSON_TAGGED" for t in synthetic_events) is False
+    assert any(t["type"] in OTHER for t in synthetic_events) is False
 
 
 @pytest.mark.asyncio
@@ -258,9 +258,9 @@ async def test_tags_person_when_given_a_known_person_guid(
     citation0["payload"]["tags"] = [person_tag_0, person_tag_1]
     synthetic_events = handler.handle_command(citation0)
     OTHER = ["TIME_TAGGED", "TIME_ADDED", "PLACE_ADDED", "PLACE_TAGGED"]
-    assert any(t["type"] == "PERSON_ADDED" for t in synthetic_events) == True
-    assert any(t["type"] == "PERSON_TAGGED" for t in synthetic_events) == True
-    assert any(t["type"] in OTHER for t in synthetic_events) == False
+    assert any(t["type"] == "PERSON_ADDED" for t in synthetic_events) is True
+    assert any(t["type"] == "PERSON_TAGGED" for t in synthetic_events) is True
+    assert any(t["type"] in OTHER for t in synthetic_events) is False
 
 
 @pytest.mark.asyncio
