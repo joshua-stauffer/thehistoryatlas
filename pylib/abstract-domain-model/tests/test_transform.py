@@ -169,8 +169,7 @@ def citation_added_data(baseline_event_data):
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "text": "name",
-            "tags": ["one", "two", "three"],
-            "meta": "arbitrary value here",
+            "meta_id": "69a8bc1b-7c7c-49a3-8d05-db110c14b949",
         },
     }
 
