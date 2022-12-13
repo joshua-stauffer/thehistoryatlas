@@ -1,6 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, asdict
-from typing import Any, Dict, Callable
+from typing import Dict
 
 from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
 from abstract_domain_model.models import (
@@ -25,8 +25,8 @@ from abstract_domain_model.models import (
     TimeTaggedPayload,
     MetaAddedPayload,
 )
-from abstract_domain_model.models.commands.publish_citation import PublishCitation
-from abstract_domain_model.models.errors.command_failed import (
+from abstract_domain_model.models.commands import CommandSuccess
+from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
     CommandFailedPayload,
 )
@@ -94,6 +94,7 @@ class Translator:
                 obj_cls=CommandFailed,
                 obj_payload=CommandFailedPayload,
             ),
+            "COMMAND_SUCCESS": TranslatorSpec(obj_cls=CommandSuccess, obj_payload=None),
         }
 
     @classmethod

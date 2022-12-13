@@ -23,6 +23,11 @@ from abstract_domain_model.models import (
     CitationAddedPayload,
     MetaAddedPayload,
 )
+from abstract_domain_model.models.commands import (
+    CommandFailed,
+    CommandFailedPayload,
+    CommandSuccess,
+)
 from abstract_domain_model.transform import from_dict
 
 
@@ -299,3 +304,18 @@ def test_transform_with_missing_fields_raises_exception():
     data = {"type": "PERSON_TAGGED"}
     with pytest.raises(MissingFieldsError):
         _ = from_dict(data)
+
+
+def test_transform_command_failed():
+    data = {"type": "COMMAND_FAILED", "payload": {"reason": "some reason"}}
+    res = from_dict(data)
+    assert isinstance(res, CommandFailed)
+    assert isinstance(res.payload, CommandFailedPayload)
+
+
+def test_transform_command_success():
+    data = {
+        "type": "COMMAND_SUCCESS",
+    }
+    res = from_dict(data)
+    assert isinstance(res, CommandSuccess)

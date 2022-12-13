@@ -6,8 +6,8 @@ TYPE = "COMMAND_FAILED"
 
 @dataclass
 class CommandFailed:
-    type: Literal[TYPE]
     payload: "CommandFailedPayload"
+    type: Literal[TYPE] = TYPE
 
 
 @dataclass
