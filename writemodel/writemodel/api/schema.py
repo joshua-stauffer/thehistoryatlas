@@ -16,14 +16,16 @@ def get_schema(app: WriteModel) -> Schema:
     class Mutation:
         @strawberry.mutation
         def PublishNewCitation(
-            self, annotation: AnnotateCitationInput
+            self, Annotation: AnnotateCitationInput
         ) -> PublishCitationResponse:
-            response = app.handle_command(annotation)
+            response = app.handle_command(Annotation)
             if isinstance(response, CommandSuccess):
                 return PublishCitationResponse(success=True, message=None)
             elif isinstance(response, CommandFailed):
                 return PublishCitationResponse(
                     success=False, reason=response.payload.reason
                 )
+            else:
+                raise Exception("Unexpected error occurred.")
 
     return Schema(query=Query, mutation=Mutation, enable_federation_2=True)

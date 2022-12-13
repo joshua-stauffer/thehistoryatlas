@@ -13,7 +13,7 @@ class MutationResponse:
 @strawberry.type
 class PublishCitationResponse(MutationResponse):
     success: bool
-    message: Optional[bool]
+    message: Optional[bool] = None
 
 
 @strawberry.input
@@ -39,13 +39,13 @@ class MetaDataInput:
 @strawberry.input
 class TagInput:
     GUID: str
-    geoshape: Optional[str]
-    latitude: float
-    longitude: float
     name: str
     start_char: int
     stop_char: int
     type: "EntityType"
+    geoshape: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 @strawberry.enum

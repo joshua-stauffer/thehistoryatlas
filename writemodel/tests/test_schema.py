@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from abstract_domain_model.models.commands import CommandSuccess
 from writemodel.api.schema import get_schema
 
 
@@ -27,13 +28,16 @@ def test_mutation_add_new_citation():
 
     app = Mock()
     app.handle_command = Mock()
-    app.handle_command.return_value = {"type": "COMMAND_SUCCESS"}
+    app.handle_command.return_value = CommandSuccess()
 
     schema = get_schema(app)
 
     query = """
     mutation PublishNewCitation($annotation: AnnotateCitationInput!) {
-      PublishNewCitation(Annotation: $annotation)
+        PublishNewCitation(Annotation: $annotation) {
+            success
+            message
+        }
     }
     """
     variables = {
@@ -82,4 +86,5 @@ def test_mutation_add_new_citation():
     result = schema.execute_sync(query, variable_values=variables)
 
     assert result.errors is None
-    assert result.data["status"] == "ok"
+    assert result.data["PublishNewCitation"]["success"] is True
+    assert result.data["PublishNewCitation"]["message"] is None

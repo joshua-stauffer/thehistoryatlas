@@ -14,7 +14,11 @@ import signal
 from typing import Union
 
 
-from abstract_domain_model.models.commands import CommandSuccess, CommandFailed, CommandFailedPayload
+from abstract_domain_model.models.commands import (
+    CommandSuccess,
+    CommandFailed,
+    CommandFailedPayload,
+)
 from tha_config import Config
 from writemodel.broker import Broker
 from writemodel.state_manager.handler_errors import (
