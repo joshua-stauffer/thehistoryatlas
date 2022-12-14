@@ -1,3 +1,5 @@
+from typing import Union
+
 from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
     CommandFailedPayload,
@@ -11,3 +13,6 @@ from abstract_domain_model.models.commands.publish_citation import (
     Time,
     Meta,
 )
+
+Command = Union[PublishCitation]
+CommandResponse = Union[CommandSuccess, CommandFailed]
