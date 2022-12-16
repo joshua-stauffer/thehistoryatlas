@@ -24,6 +24,7 @@ class AnnotateCitationInput:
     summary_guid: str
     meta: "MetaDataInput"
     summary_tags: List["TagInput"]
+    token: str
 
 
 @strawberry.input

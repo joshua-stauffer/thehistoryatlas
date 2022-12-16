@@ -80,6 +80,7 @@ def test_mutation_add_new_citation():
                     "type": "TIME",
                 },
             ],
+            "token": "test-token-value-here",
         }
     }
 
