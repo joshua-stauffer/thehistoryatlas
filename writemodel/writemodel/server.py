@@ -8,11 +8,11 @@ from strawberry.sanic.views import GraphQLView
 from writemodel.api.schema import get_schema
 from writemodel.write_model import WriteModel
 
-
 log = getLogger(__name__)
 
 
 def run():
+    log.info("Initializing WriteModel")
     writemodel = WriteModel()
     loop = asyncio.get_event_loop()
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
@@ -27,8 +27,12 @@ def run():
         GraphQLView.as_view(schema=schema, graphiql=True),
         "/",
     )
+    log.info("Starting WriteModel broker.")
     server.add_task(task=writemodel.start_broker())
-    server.run(host=writemodel.config.SERVER_HOST, port=writemodel.config.SERVER_PORT)
+    HOST = writemodel.config.SERVER_HOST
+    PORT = int(writemodel.config.SERVER_PORT)
+    log.info(f"Starting Sanic server at {HOST}:{PORT}.")
+    server.run(host=HOST, port=PORT)
 
 
 if __name__ == "__main__":

@@ -66,11 +66,10 @@ class CommandHandler:
         self._db = database_instance
         self._hashfunc = hash_text  # noqa
 
-    def handle_command(self, command: Dict):
+    def handle_command(self, command: Command) -> List[Event]:
         """Receives a dict, processes it, and returns an Event
         or raises an Exception"""
         log.debug(f"handling command {command}")
-        command: Command = self.translate_command(command)
         self.validate_command(command)
         handler = self._command_handlers[type(command)]
         events = handler(command)
@@ -284,7 +283,7 @@ class CommandHandler:
 
     def _translate_publish_citation(self, command: dict) -> PublishCitation:
         """
-        Transform a dict version of the the JSON command PUBLISH_NEW_CITATION
+        Transform a dict version of the JSON command PUBLISH_NEW_CITATION
         into ADM objects.
         """
         command = deepcopy(command)

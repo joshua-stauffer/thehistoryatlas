@@ -32,6 +32,7 @@ input AnnotateCitationInput
   summaryGuid: String!
   meta: MetaDataInput!
   summaryTags: [TagInput!]!
+  token: String!
 }
 
 type Citation
@@ -189,7 +190,14 @@ type Mutation
   UpdateUser(token: String!, user_details: UpdateUserDetailsInput!, credentials: CredentialsInput): AccountsGenericResponse! @join__field(graph: API)
   AddUser(token: String!, user_details: NewUserDetailsInput!): AccountsGenericResponse! @join__field(graph: API)
   Login(username: String!, password: String!): LoginResponse! @join__field(graph: API)
-  PublishNewCitation(Annotation: AnnotateCitationInput!): String! @join__field(graph: WRITEMODEL)
+  PublishNewCitation(Annotation: AnnotateCitationInput!): PublishCitationResponse! @join__field(graph: WRITEMODEL)
+}
+
+interface MutationResponse
+  @join__type(graph: WRITEMODEL)
+{
+  success: Boolean!
+  message: Boolean
 }
 
 input NewUserDetailsInput
@@ -210,6 +218,14 @@ type PlaceByCoordsResponse
   guid: String
 }
 
+type PublishCitationResponse implements MutationResponse
+  @join__implements(graph: WRITEMODEL, interface: "MutationResponse")
+  @join__type(graph: WRITEMODEL)
+{
+  success: Boolean!
+  message: Boolean
+}
+
 type Query
   @join__type(graph: API)
   @join__type(graph: WRITEMODEL)
@@ -225,7 +241,7 @@ type Query
   IsUsernameUnique(username: String!): IsUsernameUniqueResponse! @join__field(graph: API)
   GetUser(token: String!): AccountsGenericResponse! @join__field(graph: API)
   GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse! @join__field(graph: API)
-  name: String! @join__field(graph: WRITEMODEL)
+  status: String! @join__field(graph: WRITEMODEL)
 }
 
 type Summary
@@ -253,13 +269,13 @@ input TagInput
   @join__type(graph: WRITEMODEL)
 {
   GUID: String!
-  geoshape: String
-  latitude: Float!
-  longitude: Float!
   name: String!
   startChar: Int!
   stopChar: Int!
   type: EntityType!
+  geoshape: String = null
+  latitude: Float = null
+  longitude: Float = null
 }
 
 type TextAnalysis
