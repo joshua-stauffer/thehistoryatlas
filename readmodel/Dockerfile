@@ -1,6 +1,6 @@
 FROM python:3.10-slim-buster
-COPY --from=pylib . .
-COPY --from=testlib . .
+COPY --from=pylib . /lib
+COPY --from=testlib . /lib
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 WORKDIR /app

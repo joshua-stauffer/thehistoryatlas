@@ -36,7 +36,9 @@ services:
 
     readmodel:
         image: ilriccio/thehistoryatlas:readmodel-${VERSION}
-        build: ./readmodel
+        build:
+            context: ./readmodel
+            dockerfile: Dockerfile.local
         restart: always
         depends_on:
             - db
@@ -74,7 +76,9 @@ services:
 
     eventstore:
         image: ilriccio/thehistoryatlas:eventstore-${VERSION}
-        build: ./eventstore
+        build:
+            context: ./eventstore
+            dockerfile: Dockerfile.local
         restart: always
         depends_on:
             - broker
@@ -89,7 +93,9 @@ services:
 
     history:
         image: ilriccio/thehistoryatlas:history-${VERSION}
-        build: ./history
+        build:
+            context: ./history
+            dockerfile: Dockerfile.local
         restart: always
         depends_on: 
             - broker
@@ -104,7 +110,9 @@ services:
 
     nlp:
         image: ilriccio/thehistoryatlas:nlp-${VERSION}
-        build: ./nlp
+        build:
+            context: ./nlp
+            dockerfile: Dockerfile.local
         restart: always
         depends_on: 
             - broker
@@ -124,7 +132,9 @@ services:
 
     geo:
         image: ilriccio/thehistoryatlas:geo-${VERSION}
-        build: ./geo
+        build:
+            context: ./geo
+            dockerfile: Dockerfile.local
         restart: always
         depends_on: 
             - db
@@ -144,7 +154,9 @@ services:
 
     accounts:
         image: ilriccio/thehistoryatlas:accounts-${VERSION}
-        build: ./accounts
+        build:
+            context: ./accounts
+            dockerfile: Dockerfile.local
         restart: always
         depends_on:
             - broker
