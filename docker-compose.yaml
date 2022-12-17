@@ -53,7 +53,9 @@ services:
     writemodel:
         image: ilriccio/thehistoryatlas:writemodel-${VERSION}
         restart: always
-        build: ./writemodel
+        build:
+            context: ./writemodel
+            dockerfile: Dockerfile.local
         depends_on:
             - db
             - broker
