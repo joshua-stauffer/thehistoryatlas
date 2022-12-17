@@ -203,5 +203,3 @@ jobs:
 #          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
 #        run: |
 #          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
-
-dyaml up --build nlp --exit-code-from nlp
