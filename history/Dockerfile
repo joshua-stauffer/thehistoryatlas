@@ -3,8 +3,8 @@ FROM python:3.10-slim-buster
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-COPY --from=pylib . .
-COPY --from=testlib . .
+COPY --from=pylib . /lib
+COPY --from=testlib . /lib
 WORKDIR /app
 
 COPY requirements.txt requirements.txt

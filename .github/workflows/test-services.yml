@@ -148,7 +148,7 @@ jobs:
           build-contexts: |
             pylib=./pylib
             testlib=./testlib
-          file: ./history/Dockerfile
+          file: ./accounts/Dockerfile
           tags: ilriccio/thehistoryatlas:test-accounts
           load: true
 
@@ -204,9 +204,4 @@ jobs:
 #        run: |
 #          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
 
-
-#      - name: Test NLP
-#        env:
-#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-#        run: |
-#          docker compose -f service_tests.yaml up --build nlp --exit-code-from nlp
+dyaml up --build nlp --exit-code-from nlp
