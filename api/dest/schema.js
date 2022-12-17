@@ -184,21 +184,6 @@ exports.typeDefs = gql `
 
   # mutation types
 
-
-
-
-#  interface MutationResponse {
-#    code: String!
-#    success: Boolean!
-#    message: String!
-#  }
-#
-#  type PublishCitationResponse implements MutationResponse {
-#    code: String!
-#    success: Boolean!
-#    message: String!
-#  }
-
   # Accounts Service Types
 
   type AccountsGenericResponse {

@@ -19,7 +19,9 @@ from abstract_domain_model.models.commands import (
     CommandFailed,
     CommandFailedPayload,
 )
+from abstract_domain_model.types import Command
 from tha_config import Config
+from writemodel.api.api import GQLApi
 from writemodel.broker import Broker
 from writemodel.state_manager.handler_errors import (
     CitationExistsError,
@@ -39,17 +41,22 @@ class WriteModel:
     def __init__(self):
         self.config = Config()
         self.manager = Manager(self.config)
-        self.handle_command = self.manager.command_handler.handle_command
         self.handle_event = self.manager.event_handler.handle_event
         self.broker = None  # created asynchronously in WriteModel.start_broker()
+        self.api = GQLApi(
+            command_handler=self.handle_command,
+            auth_handler=lambda: "86831492-bdb0-45b5-bdcc-d801b176433a",
+        )
 
-    async def handle_command(self, message: dict) -> Union[CommandFailed]:
+    async def handle_command(
+        self, message: Command
+    ) -> Union[CommandSuccess, CommandFailed]:
         """Wrapper for handling commands"""
 
         try:
-            event = self.manager.event_handler.handle_event(message)
-            msg = self.broker.create_message(event)
-            log.debug(f"WriteModel is publishing to emitted.event: {event}")
+            events = self.manager.command_handler.handle_command(message)
+            msg = self.broker.create_message(events)
+            log.debug(f"WriteModel is publishing to emitted.event: {events}")
             await self.broker._publish_emitted_event(msg)
             return CommandSuccess()
         except CitationExistsError as e:
@@ -110,17 +117,17 @@ class WriteModel:
         log.info("Asyncio loop has been stopped")
 
 
-if __name__ == "__main__":
-    wm = WriteModel()
-    log.info("WriteModel initialized")
-    loop = asyncio.get_event_loop()
-    loop.create_task(wm.start_broker())
-    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-    for s in signals:
-        loop.add_signal_handler(s, lambda s=s: asyncio.create_task(wm.shutdown(s)))
-    try:
-        log.info("Asyncio loop now running")
-        loop.run_forever()
-    finally:
-        loop.close()
-        log.info("WriteModel shut down successfully.")
+# if __name__ == "__main__":
+#     wm = WriteModel()
+#     log.info("WriteModel initialized")
+#     loop = asyncio.get_event_loop()
+#     loop.create_task(wm.start_broker())
+#     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+#     for s in signals:
+#         loop.add_signal_handler(s, lambda s=s: asyncio.create_task(wm.shutdown(s)))
+#     try:
+#         log.info("Asyncio loop now running")
+#         loop.run_forever()
+#     finally:
+#         loop.close()
+#         log.info("WriteModel shut down successfully.")
