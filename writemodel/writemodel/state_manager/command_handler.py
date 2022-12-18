@@ -39,6 +39,10 @@ from abstract_domain_model.models.commands.publish_citation import (
     Place,
     Person,
 )
+from abstract_domain_model.models.events.meta_tagged import (
+    MetaTagged,
+    MetaTaggedPayload,
+)
 from abstract_domain_model.types import Command, Event, PublishCitationType
 from writemodel.state_manager.handler_errors import (
     CitationExistsError,
@@ -103,7 +107,7 @@ class CommandHandler:
 
         # handle summary
         if command.payload.summary_id is not None:
-            # we're tagging an existing summary
+            # tag existing summary
             summary = SummaryTagged(
                 type="SUMMARY_TAGGED",
                 **transaction_meta,
@@ -124,24 +128,34 @@ class CommandHandler:
             )
 
         # handle meta
-        # Note: currently not handling MetaTagged, since this needs rework anyways
-        meta_id = str(uuid4())
-        meta = MetaAdded(
-            type="META_ADDED",
-            **transaction_meta,
-            payload=MetaAddedPayload(
-                id=meta_id,
-                citation_id=command.payload.id,
-                author=command.payload.meta.author,
-                title=command.payload.meta.title,
-                publisher=command.payload.meta.publisher,
-                kwargs=command.payload.meta.kwargs,
-            ),
-        )
+        if command.payload.meta.id is not None:
+            # tag existing meta
+            meta = MetaTagged(
+                type="META_TAGGED",
+                **transaction_meta,
+                payload=MetaTaggedPayload(
+                    id=command.payload.summary_id, citation_id=command.payload.id
+                ),
+            )
+        else:
+            # create a new meta
+            meta_id = str(uuid4())
+            meta = MetaAdded(
+                type="META_ADDED",
+                **transaction_meta,
+                payload=MetaAddedPayload(
+                    id=meta_id,
+                    citation_id=command.payload.id,
+                    author=command.payload.meta.author,
+                    title=command.payload.meta.title,
+                    publisher=command.payload.meta.publisher,
+                    kwargs=command.payload.meta.kwargs,
+                ),
+            )
 
         # handle tags
         tags = [
-            self._tag_to_event(
+            self.tag_to_event(
                 tag=tag,
                 transaction_meta=transaction_meta,
                 citation_id=command.payload.id,
@@ -164,8 +178,8 @@ class CommandHandler:
 
         return [summary, citation, *tags, meta]
 
-    def _tag_to_event(
-        self,
+    @staticmethod
+    def tag_to_event(
         tag: Union[Person, Place, Time],
         transaction_meta: dict,
         citation_id: str,
@@ -262,7 +276,7 @@ class CommandHandler:
                 )
 
         else:
-            raise UnknownTagTypeError
+            raise UnknownTagTypeError(f"Received tag of unknown type `{tag}")
 
     def validate_publish_citation(self, command: PublishCitation) -> bool:
 
