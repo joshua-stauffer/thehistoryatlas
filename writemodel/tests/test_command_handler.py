@@ -189,6 +189,73 @@ def publish_citation():
 
 
 @pytest.mark.asyncio
+async def test_validate_publish_citation_success_with_tagged_summary(
+    publish_citation, hash_text
+):
+    db = Mock()
+    db.check_citation_for_uniqueness.return_value = None
+    db.check_id_for_uniqueness.return_value = "SUMMARY"
+    publish_citation = replace(
+        publish_citation,
+        payload=replace(
+            publish_citation.payload,
+            # add an ID so we tag this summary
+            id="8f856919-6c46-4837-a41a-69d48c6129a5",
+        ),
+    )
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    handler.validate_publish_citation(publish_citation)
+
+
+@pytest.mark.asyncio
+async def test_validate_publish_citation_success_with_tagged_meta(
+    publish_citation, hash_text
+):
+    db = Mock()
+    db.check_citation_for_uniqueness.return_value = None
+    db.check_id_for_uniqueness.return_value = "META"
+    publish_citation = replace(
+        publish_citation,
+        payload=replace(
+            publish_citation.payload,
+            # add an ID so we tag this summary
+            id="8f856919-6c46-4837-a41a-69d48c6129a5",
+            meta=replace(
+                publish_citation.payload.meta,
+                # add an ID so we tag this meta
+                id="7eee5f0c-14dd-4701-a951-5857beb54405",
+            ),
+        ),
+    )
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    handler.validate_publish_citation(publish_citation)
+
+
+@pytest.mark.asyncio
+async def test_validate_publish_citation_success_with_tagged_summary_and_meta(
+    publish_citation, hash_text
+):
+    db = Mock()
+    db.check_citation_for_uniqueness.return_value = None
+    db.check_id_for_uniqueness.side_effect = ["SUMMARY", "META"]
+    publish_citation = replace(
+        publish_citation,
+        payload=replace(
+            publish_citation.payload,
+            # add an ID so we tag this summary
+            summary_id="8f856919-6c46-4837-a41a-69d48c6129a5",
+            meta=replace(
+                publish_citation.payload.meta,
+                # add an ID so we tag this meta
+                id="7eee5f0c-14dd-4701-a951-5857beb54405",
+            ),
+        ),
+    )
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    handler.validate_publish_citation(publish_citation)
+
+
+@pytest.mark.asyncio
 async def test_validate_publish_citation_raises_citation_exists_error(
     publish_citation, hash_text
 ):
@@ -196,11 +263,11 @@ async def test_validate_publish_citation_raises_citation_exists_error(
     db.check_citation_for_uniqueness.return_value = "FAILED-UUID-HERE"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(CitationExistsError):
-        handler.validate_command(publish_citation)
+        handler.validate_publish_citation(publish_citation)
 
 
 @pytest.mark.asyncio
-async def test_validate_publish_citation_raises_missing_resource_error(
+async def test_validate_publish_citation_raises_missing_resource_error_for_summary(
     publish_citation, hash_text
 ):
     """
@@ -212,7 +279,7 @@ async def test_validate_publish_citation_raises_missing_resource_error(
     payload = replace(
         publish_citation.payload,
         # add an ID so we tag this summary
-        id="8f856919-6c46-4837-a41a-69d48c6129a5",
+        summary_id="8f856919-6c46-4837-a41a-69d48c6129a5",
     )
     publish_citation = replace(publish_citation, payload=payload)
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
@@ -221,11 +288,11 @@ async def test_validate_publish_citation_raises_missing_resource_error(
 
 
 @pytest.mark.asyncio
-async def test_validate_publish_citation_raises_missing_resource_error(
+async def test_validate_publish_citation_raises_missing_resource_error_for_summary(
     publish_citation, hash_text
 ):
     """
-    If PublishCitation tags a summary, make sure the ID exists.
+    If PublishCitation tags a summary, make sure the ID belongs to a Summary.
     """
     db = Mock()
     db.check_id_for_uniqueness.return_value = "NOT-SUMMARY"
@@ -236,6 +303,59 @@ async def test_validate_publish_citation_raises_missing_resource_error(
         id="8f856919-6c46-4837-a41a-69d48c6129a5",
     )
     publish_citation = replace(publish_citation, payload=payload)
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    with pytest.raises(GUIDError):
+        handler.validate_publish_citation(publish_citation)
+
+
+@pytest.mark.asyncio
+async def test_validate_publish_citation_raises_missing_resource_error_for_meta(
+    publish_citation, hash_text
+):
+    """
+    If PublishCitation tags a Meta, make sure the ID exists.
+    """
+    db = Mock()
+    db.check_id_for_uniqueness.return_value = None
+    db.check_citation_for_uniqueness.return_value = None
+    publish_citation = replace(
+        publish_citation,
+        payload=replace(
+            publish_citation.payload,
+            meta=replace(
+                publish_citation.payload.meta,
+                # add an ID so we tag this meta
+                id="7eee5f0c-14dd-4701-a951-5857beb54405",
+            ),
+        ),
+    )
+
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    with pytest.raises(CitationExistsError):
+        handler.validate_publish_citation(publish_citation)
+
+
+@pytest.mark.asyncio
+async def test_validate_publish_citation_raises_missing_resource_error_for_summary(
+    publish_citation, hash_text
+):
+    """
+    If PublishCitation tags a Meta, make sure the ID belongs to a Meta.
+    """
+    db = Mock()
+    db.check_id_for_uniqueness.side_effect = None
+    db.check_citation_for_uniqueness.return_value = None
+    publish_citation = replace(
+        publish_citation,
+        payload=replace(
+            publish_citation.payload,
+            meta=replace(
+                publish_citation.payload.meta,
+                # add an ID so we tag this meta
+                id="7eee5f0c-14dd-4701-a951-5857beb54405",
+            ),
+        ),
+    )
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(GUIDError):
         handler.validate_publish_citation(publish_citation)

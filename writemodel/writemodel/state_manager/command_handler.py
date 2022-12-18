@@ -81,7 +81,7 @@ class CommandHandler:
     def _map_command_handlers(self) -> Dict[type, callable]:
         """Returns a dict of known commands mapping to their handle method."""
         return {
-            PublishCitationType: self._transform_publish_citation_to_events,
+            PublishCitationType: self.transform_publish_citation_to_events,
         }
 
     def _map_command_validators(self) -> Dict[type, callable]:
@@ -90,7 +90,7 @@ class CommandHandler:
             PublishCitationType: self.validate_publish_citation,
         }
 
-    def _transform_publish_citation_to_events(
+    def transform_publish_citation_to_events(
         self, command: PublishCitation
     ) -> List[Event]:
 
