@@ -28,6 +28,10 @@ from abstract_domain_model.models.commands import (
     CommandFailedPayload,
     CommandSuccess,
 )
+from abstract_domain_model.models.events.meta_tagged import (
+    MetaTagged,
+    MetaTaggedPayload,
+)
 from abstract_domain_model.transform import from_dict
 
 
@@ -195,6 +199,18 @@ def meta_added_data(baseline_event_data):
     }
 
 
+@pytest.fixture
+def meta_tagged_data(baseline_event_data):
+    return {
+        **baseline_event_data,
+        "type": "META_TAGGED",
+        "payload": {
+            "citation_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
+        },
+    }
+
+
 def test_transform_summary_added(summary_added_data):
     res = from_dict(summary_added_data)
     assert isinstance(res, SummaryAdded)
@@ -292,6 +308,16 @@ def test_transform_meta_added(meta_added_data):
     for key, value in meta_added_data.items():
         if isinstance(value, dict):
             value = MetaAddedPayload(**value)
+        assert getattr(res, key) == value
+
+
+def test_transform_meta_tagged(meta_tagged_data):
+    res = from_dict(meta_tagged_data)
+    assert isinstance(res, MetaTagged)
+    assert isinstance(res.payload, MetaTaggedPayload)
+    for key, value in meta_tagged_data.items():
+        if isinstance(value, dict):
+            value = MetaTaggedPayload(**value)
         assert getattr(res, key) == value
 
 

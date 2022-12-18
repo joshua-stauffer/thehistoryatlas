@@ -30,6 +30,10 @@ from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
     CommandFailedPayload,
 )
+from abstract_domain_model.models.events.meta_tagged import (
+    MetaTagged,
+    MetaTaggedPayload,
+)
 from abstract_domain_model.types import Event, DomainObject, DomainObjectTypes
 
 
@@ -89,6 +93,9 @@ class Translator:
             "META_ADDED": TranslatorSpec(
                 obj_cls=MetaAdded,
                 obj_payload=MetaAddedPayload,
+            ),
+            "META_TAGGED": TranslatorSpec(
+                obj_cls=MetaTagged, obj_payload=MetaTaggedPayload
             ),
             "COMMAND_FAILED": TranslatorSpec(
                 obj_cls=CommandFailed,

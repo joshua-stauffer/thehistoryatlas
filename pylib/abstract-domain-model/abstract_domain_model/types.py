@@ -14,6 +14,7 @@ from abstract_domain_model.models import (
     PublishCitationPayload,
 )
 from abstract_domain_model.models.commands.publish_citation import Meta
+from abstract_domain_model.models.events.meta_tagged import MetaTagged
 
 Event = Union[
     TimeAdded,
@@ -24,6 +25,7 @@ Event = Union[
     PersonAdded,
     CitationAdded,
     MetaAdded,
+    MetaTagged,
     SummaryAdded,
     SummaryTagged,
 ]
@@ -37,6 +39,7 @@ EventTypes = Literal[
     "PERSON_ADDED",
     "CITATION_ADDED",
     "META_ADDED",
+    "META_TAGGED",
     "SUMMARY_ADDED",
     "SUMMARY_TAGGED",
 ]
