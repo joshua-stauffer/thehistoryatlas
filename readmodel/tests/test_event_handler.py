@@ -39,10 +39,10 @@ def handle_event(handler):
 @pytest.fixture
 def basic_meta():
     return {
-        "transaction_id": str(uuid4()),
+        "transaction_id": "70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
         "app_version": "0.0.0",
         "user_id": "testy-tester",
-        "timestamp": str(datetime.utcnow()),
+        "timestamp": "2022-12-18 21:20:41.262212",
     }
 
 
