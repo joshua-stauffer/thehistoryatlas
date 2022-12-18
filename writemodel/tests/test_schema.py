@@ -1,13 +1,31 @@
 from unittest.mock import Mock
 
-from abstract_domain_model.models.commands import CommandSuccess
-from writemodel.api.schema import get_schema
+import pytest
+
+from abstract_domain_model.models.commands import CommandSuccess, Command
+from writemodel.api.api import GQLApi
 
 
-def test_query_handles_query_status():
+@pytest.fixture
+def command_handler():
+    async def command_handler(message: Command):
+        return CommandSuccess()
 
-    app = Mock()
-    schema = get_schema(app)
+    return command_handler
+
+
+@pytest.fixture
+def auth_handler():
+    return Mock()
+
+
+@pytest.fixture
+def api(command_handler, auth_handler):
+    return GQLApi(command_handler=command_handler, auth_handler=auth_handler)
+
+
+@pytest.mark.asyncio
+async def test_query_handles_query_status(api):
 
     query = """
         query TestStatus {
@@ -15,22 +33,19 @@ def test_query_handles_query_status():
         }
     """
 
-    result = schema.execute_sync(
+    result = await api.get_schema().execute(
         query,
         variable_values={},
     )
 
     assert result.errors is None
-    assert result.data["status"] == "ok"
+    assert result.data["status"] == "OK"
 
 
-def test_mutation_add_new_citation():
+@pytest.mark.asyncio
+async def test_mutation_add_new_citation(api, command_handler):
 
-    app = Mock()
-    app.handle_command = Mock()
-    app.handle_command.return_value = CommandSuccess()
-
-    schema = get_schema(app)
+    schema = api.get_schema()
 
     query = """
     mutation PublishNewCitation($annotation: AnnotateCitationInput!) {
@@ -84,7 +99,7 @@ def test_mutation_add_new_citation():
         }
     }
 
-    result = schema.execute_sync(query, variable_values=variables)
+    result = await schema.execute(query, variable_values=variables)
 
     assert result.errors is None
     assert result.data["PublishNewCitation"]["success"] is True

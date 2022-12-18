@@ -5,7 +5,6 @@ from logging import getLogger
 from sanic import Sanic
 from strawberry.sanic.views import GraphQLView
 
-from writemodel.api.schema import get_schema
 from writemodel.write_model import WriteModel
 
 log = getLogger(__name__)
@@ -22,9 +21,8 @@ def run():
         )
 
     server = Sanic(__name__)
-    schema = get_schema(app=writemodel)
     server.add_route(
-        GraphQLView.as_view(schema=schema, graphiql=True),
+        GraphQLView.as_view(schema=writemodel.api.get_schema(), graphiql=True),
         "/",
     )
     log.info("Starting WriteModel broker.")

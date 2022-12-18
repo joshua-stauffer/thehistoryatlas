@@ -1,8 +1,9 @@
 from dataclasses import asdict
+from logging import getLogger
 
 import strawberry
 from strawberry.federation import Schema
-from typing import Callable
+from typing import Callable, Literal
 
 from abstract_domain_model.models import PublishCitation, PublishCitationPayload
 from abstract_domain_model.models.commands import (
@@ -20,8 +21,12 @@ from writemodel.api.types import (
     AnnotateCitationInput,
     PublishCitationResponse,
     TagInput,
+    EntityType,
 )
 from writemodel.utils import get_timestamp
+
+log = getLogger(__name__)
+log.setLevel("DEBUG")
 
 
 class GQLApi:
@@ -38,18 +43,18 @@ class GQLApi:
 
         @strawberry.type
         class Query:
-            status: str = strawberry.field(resolver=lambda: "ok")
+            status: str = strawberry.field(resolver=self._status_handler)
 
         @strawberry.type
         class Mutation:
             @strawberry.mutation
             async def PublishNewCitation(
-                _, Annotation: AnnotateCitationInput
+                Annotation: AnnotateCitationInput,
             ) -> PublishCitationResponse:
 
                 user_id = self._auth_handler(Annotation.token)
 
-                publish_citation = self.transform_publish_citation(
+                publish_citation = self._transform_publish_citation(
                     data=Annotation, user_id=user_id
                 )
 
@@ -67,11 +72,11 @@ class GQLApi:
         return Schema(query=Query, mutation=Mutation, enable_federation_2=True)
 
     @classmethod
-    def transform_publish_citation(
+    def _transform_publish_citation(
         cls, data: AnnotateCitationInput, user_id: str
     ) -> PublishCitation:
         """Transform GQL type to domain model type."""
-        return PublishCitation(
+        citation = PublishCitation(
             user_id=user_id,
             timestamp=get_timestamp(),
             app_version="0.0.1",
@@ -80,7 +85,7 @@ class GQLApi:
                 text=data.citation,
                 summary=data.summary,
                 summary_id=data.summary_guid,
-                tags=[cls.transform_tag(tag) for tag in data.summary_tags],
+                tags=[cls._transform_tag(tag) for tag in data.summary_tags],
                 meta=Meta(
                     id=data.meta.GUID,
                     author=data.meta.author,
@@ -88,16 +93,17 @@ class GQLApi:
                     title=data.meta.title,
                     kwargs={
                         k: v
-                        for k, v in asdict(data.meta)
+                        for k, v in asdict(data.meta).items()
                         if k in {"pageNum", "pubDate"}
                     },
                 ),
             ),
         )
+        return citation
 
     @classmethod
-    def transform_tag(cls, tag: TagInput) -> Entity:
-        if tag.type == "PERSON":
+    def _transform_tag(cls, tag: TagInput) -> Entity:
+        if tag.type == EntityType.PERSON:
             return Person(
                 id=tag.GUID,
                 type="PERSON",
@@ -105,7 +111,7 @@ class GQLApi:
                 stop_char=tag.stop_char,
                 name=tag.name,
             )
-        elif tag.type == "PLACE":
+        elif tag.type == EntityType.PLACE:
             return Place(
                 id=tag.GUID,
                 type="PLACE",
@@ -116,7 +122,7 @@ class GQLApi:
                 longitude=tag.longitude,
                 geo_shape=tag.geoshape,
             )
-        elif tag.type == "TIME":
+        elif tag.type == EntityType.TIME:
             return Time(
                 id=tag.GUID,
                 type="TIME",
@@ -126,3 +132,7 @@ class GQLApi:
             )
         else:
             raise Exception(f"Unknown tag type received: `{tag.type}`")
+
+    def _status_handler(self) -> str:
+        log.info("Received status request - responding OK.")
+        return "OK"
