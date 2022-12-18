@@ -45,8 +45,6 @@ from writemodel.state_manager.handler_errors import (
     NoValidatorError,
     MissingResourceError,
 )
-from writemodel.state_manager.handler_errors import UnknownCommandTypeError
-from writemodel.state_manager.handler_errors import CitationMissingFieldsError
 from writemodel.state_manager.handler_errors import GUIDError
 from writemodel.state_manager.handler_errors import UnknownTagTypeError
 
@@ -60,7 +58,6 @@ class CommandHandler:
     into canonical Events to be passed on to the Event Store."""
 
     def __init__(self, database_instance, hash_text):
-        self._translators = self._map_translators()
         self._command_validators = self._map_command_validators()
         self._command_handlers = self._map_command_handlers()
         self._db = database_instance
@@ -73,18 +70,7 @@ class CommandHandler:
         self.validate_command(command)
         handler = self._command_handlers[type(command)]
         events = handler(command)
-        return [asdict(event) for event in events]
-
-    def translate_command(self, command: dict) -> Command:
-        log.debug(f"translating command {command}")
-        type_ = command.get("type")
-        translator = self._translators.get(type_, None)
-        if translator is None:
-            raise UnknownCommandTypeError
-        try:
-            return translator(command)
-        except KeyError as e:
-            raise CitationMissingFieldsError(e)
+        return events
 
     def validate_command(self, command: Command) -> bool:
         validate = self._command_validators.get(type(command), None)
@@ -101,11 +87,8 @@ class CommandHandler:
     def _map_command_validators(self) -> Dict[type, callable]:
         """Returns a dict of known commands mapping to their validator method."""
         return {
-            PublishCitationType: self._validate_publish_citation,
+            PublishCitationType: self.validate_publish_citation,
         }
-
-    def _map_translators(self) -> Dict[str, callable]:
-        return {"PUBLISH_NEW_CITATION": self._translate_publish_citation}
 
     def _transform_publish_citation_to_events(
         self, command: PublishCitation
@@ -281,108 +264,14 @@ class CommandHandler:
         else:
             raise UnknownTagTypeError
 
-    def _translate_publish_citation(self, command: dict) -> PublishCitation:
-        """
-        Transform a dict version of the JSON command PUBLISH_NEW_CITATION
-        into ADM objects.
-        """
-        command = deepcopy(command)
-        id_ = str(uuid4())
-        user_id = command["user"]
-        timestamp = command["timestamp"]
-        app_version = command["app_version"]
-        text = command["payload"]["text"]
-        tags = [self._translate_tag(tag) for tag in command["payload"]["tags"]]
-        author = command["payload"]["meta"]["author"]
-        publisher = command["payload"]["meta"]["publisher"]
-        title = command["payload"]["meta"]["title"]
-        meta_id = command["payload"]["meta"].get("GUID", None)
-        summary = command["payload"]["summary"].get("text", None)
-        summary_id = command["payload"]["summary"].get("GUID", None)
-        kwargs = {
-            key: value
-            for key, value in command["payload"]["meta"].items()
-            if key not in ("author", "publisher", "title")
-        }
-        return PublishCitation(
-            user_id=user_id,
-            timestamp=timestamp,
-            app_version=app_version,
-            payload=PublishCitationPayload(
-                id=id_,
-                text=text,
-                tags=tags,
-                summary=summary,
-                summary_id=summary_id,
-                meta=Meta(
-                    id=meta_id,
-                    author=author,
-                    publisher=publisher,
-                    title=title,
-                    kwargs=kwargs,
-                ),
-            ),
-        )
-
-    def _translate_tag(self, tag: dict) -> Union[Person, Place, Time]:
-        """Build typed dataclass from incoming request."""
-        type_ = tag.get("type")
-        if type_ == "PERSON":
-            return self._translate_person(tag)
-        elif type_ == "TIME":
-            return self._translate_time(tag)
-        elif type_ == "PLACE":
-            return self._translate_place(tag)
-        else:
-            raise UnknownTagTypeError(f"Received unknown tag type: {type_}")
-
-    def _translate_person(self, tag) -> Person:
-        type_: Literal["PERSON"] = "PERSON"
-        id_ = tag.get("GUID", None)
-        name = tag["name"]
-        start_char = tag["start_char"]
-        stop_char = tag["stop_char"]
-        return Person(
-            id=id_, name=name, start_char=start_char, stop_char=stop_char, type=type_
-        )
-
-    def _translate_place(self, tag) -> Place:
-        type_: Literal["PLACE"] = "PLACE"
-        id_ = tag.get("GUID", None)
-        name = tag["name"]
-        start_char = tag["start_char"]
-        stop_char = tag["stop_char"]
-        latitude = tag["latitude"]
-        longitude = tag["longitude"]
-        geo_shape = tag.get("geo_shape", None)
-        return Place(
-            id=id_,
-            type=type_,
-            name=name,
-            start_char=start_char,
-            stop_char=stop_char,
-            latitude=latitude,
-            longitude=longitude,
-            geo_shape=geo_shape,
-        )
-
-    def _translate_time(self, tag) -> Time:
-        type_: Literal["TIME"] = "TIME"
-        id_ = tag.get("GUID", None)
-        name = tag["name"]
-        start_char = tag["start_char"]
-        stop_char = tag["stop_char"]
-        return Time(
-            id=id_, name=name, start_char=start_char, stop_char=stop_char, type=type_
-        )
-
-    def _validate_publish_citation(self, command: PublishCitation) -> bool:
+    def validate_publish_citation(self, command: PublishCitation) -> bool:
 
         # check text for uniqueness
         hashed_text = self._hashfunc(command.payload.text)
         if duplicate_id := self._db.check_citation_for_uniqueness(hashed_text):
             log.info("tried (and failed) to publish duplicate citation")
             raise CitationExistsError(duplicate_id)
+
         # add this to short term memory for preventing immediate duplication
         self._db.add_to_stm(key=hashed_text, value=command.payload.id)
 

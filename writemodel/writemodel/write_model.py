@@ -7,10 +7,7 @@ Communicates with the rest of the History Atlas through the Broker module.
 """
 
 import asyncio
-import os
-import json
 import logging
-import signal
 from typing import Union
 
 
@@ -19,6 +16,7 @@ from abstract_domain_model.models.commands import (
     CommandFailed,
     CommandFailedPayload,
 )
+from abstract_domain_model.transform import to_dict
 from abstract_domain_model.types import Command
 from tha_config import Config
 from writemodel.api.api import GQLApi
@@ -55,7 +53,7 @@ class WriteModel:
 
         try:
             events = self.manager.command_handler.handle_command(message)
-            msg = self.broker.create_message(events)
+            msg = self.broker.create_message([to_dict(e) for e in events])
             log.debug(f"WriteModel is publishing to emitted.event: {events}")
             await self.broker._publish_emitted_event(msg)
             return CommandSuccess()

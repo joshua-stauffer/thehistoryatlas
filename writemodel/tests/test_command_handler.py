@@ -1,7 +1,6 @@
-import os
 from copy import deepcopy
-from datetime import datetime
-from unittest.mock import MagicMock, patch
+from dataclasses import replace
+from unittest.mock import patch, Mock
 
 import pytest
 from uuid import uuid4
@@ -12,13 +11,12 @@ from abstract_domain_model.models.commands.publish_citation import (
     Place,
     PublishCitation,
 )
+from seed import PUBLISH_CITATIONS
 from writemodel.state_manager.command_handler import CommandHandler
-from writemodel.state_manager.database import Database
 from writemodel.state_manager.text_processor import TextHasher
 from writemodel.state_manager.handler_errors import (
     GUIDError,
     UnknownCommandTypeError,
-    CitationMissingFieldsError,
     CitationExistsError,
     UnknownTagTypeError,
 )
@@ -36,7 +34,7 @@ def handler(db, hash_text):
 
 
 @pytest.fixture
-def handler_with_mock_db(mock_db, hash_text):
+def handler_with_mock_db(hash_text):
     return CommandHandler(database_instance=mock_db, hash_text=hash_text)
 
 
@@ -185,33 +183,62 @@ def summary_existing(existing_summary_id):
     return {"GUID": existing_summary_id}
 
 
-def test_raises_error_with_unknown_type(handler):
-    with pytest.raises(UnknownCommandTypeError):
-        handler.handle_command({"type": "who knows!"})
-
-
-def test_raises_error_with_missing_fields(handler):
-    with pytest.raises(CitationMissingFieldsError):
-        handler.handle_command(
-            {"type": "PUBLISH_NEW_CITATION", "something": "missing here"}
-        )
+@pytest.fixture
+def publish_citation():
+    return PUBLISH_CITATIONS[0]
 
 
 @pytest.mark.asyncio
-async def test_raises_error_with_duplicate_citation_text(handler, citation0):
-    handler.handle_command(citation0)
-    with pytest.raises(CitationExistsError):
-        handler.handle_command(citation0)
-
-
-@pytest.mark.asyncio
-async def test_raises_error_with_matched_meta_guid(
-    handler, citation0, citation1, existing_summary_id
+async def test_validate_publish_citation_raises_citation_exists_error(
+    publish_citation, hash_text
 ):
-    handler.handle_command(citation0)
-    citation1["payload"]["meta"]["GUID"] = existing_summary_id
+    db = Mock()
+    db.check_citation_for_uniqueness.return_value = "FAILED-UUID-HERE"
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    with pytest.raises(CitationExistsError):
+        handler.validate_command(publish_citation)
+
+
+@pytest.mark.asyncio
+async def test_validate_publish_citation_raises_missing_resource_error(
+    publish_citation, hash_text
+):
+    """
+    If PublishCitation tags a summary, make sure the ID exists.
+    """
+    db = Mock()
+    db.check_id_for_uniqueness.return_value = None
+    db.check_citation_for_uniqueness.return_value = None
+    payload = replace(
+        publish_citation.payload,
+        # add an ID so we tag this summary
+        id="8f856919-6c46-4837-a41a-69d48c6129a5",
+    )
+    publish_citation = replace(publish_citation, payload=payload)
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    with pytest.raises(CitationExistsError):
+        handler.validate_publish_citation(publish_citation)
+
+
+@pytest.mark.asyncio
+async def test_validate_publish_citation_raises_missing_resource_error(
+    publish_citation, hash_text
+):
+    """
+    If PublishCitation tags a summary, make sure the ID exists.
+    """
+    db = Mock()
+    db.check_id_for_uniqueness.return_value = "NOT-SUMMARY"
+    db.check_citation_for_uniqueness.return_value = None
+    payload = replace(
+        publish_citation.payload,
+        # add an ID so we tag this summary
+        id="8f856919-6c46-4837-a41a-69d48c6129a5",
+    )
+    publish_citation = replace(publish_citation, payload=payload)
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(GUIDError):
-        handler.handle_command(citation1)
+        handler.validate_publish_citation(publish_citation)
 
 
 @pytest.mark.asyncio

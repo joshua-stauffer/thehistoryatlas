@@ -104,3 +104,6 @@ async def test_mutation_add_new_citation(api, command_handler):
     assert result.errors is None
     assert result.data["PublishNewCitation"]["success"] is True
     assert result.data["PublishNewCitation"]["message"] is None
+
+
+s
