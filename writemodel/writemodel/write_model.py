@@ -16,7 +16,7 @@ from abstract_domain_model.models.commands import (
     CommandFailed,
     CommandFailedPayload,
 )
-from abstract_domain_model.transform import to_dict
+from abstract_domain_model.transform import to_dict, from_dict
 from abstract_domain_model.types import Command
 from tha_config import Config
 from writemodel.api.api import GQLApi
@@ -39,7 +39,6 @@ class WriteModel:
     def __init__(self):
         self.config = Config()
         self.manager = Manager(self.config)
-        self.handle_event = self.manager.event_handler.handle_event
         self.broker = None  # created asynchronously in WriteModel.start_broker()
         self.api = GQLApi(
             command_handler=self.handle_command,
@@ -80,6 +79,10 @@ class WriteModel:
                     reason="Citation was missing fields.",
                 ),
             )
+
+    def handle_event(self, event: dict) -> None:
+        event = from_dict(event)
+        self.manager.event_handler.handle_event(event=event)
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
