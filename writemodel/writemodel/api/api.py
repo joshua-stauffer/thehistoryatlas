@@ -61,10 +61,14 @@ class GQLApi:
                 response = await self._command_handler(publish_citation)
 
                 if isinstance(response, CommandSuccess):
-                    return PublishCitationResponse(success=True, message=None)
+                    return PublishCitationResponse(
+                        success=True, message=None, token=Annotation.token
+                    )
                 elif isinstance(response, CommandFailed):
                     return PublishCitationResponse(
-                        success=False, reason=response.payload.reason
+                        success=False,
+                        reason=response.payload.reason,
+                        token=Annotation.token,
                     )
                 else:
                     raise Exception("Unexpected error occurred.")
@@ -81,13 +85,13 @@ class GQLApi:
             timestamp=get_timestamp(),
             app_version="0.0.1",
             payload=PublishCitationPayload(
-                id=data.citation_guid,
+                id=data.citation_id,
                 text=data.citation,
                 summary=data.summary,
-                summary_id=data.summary_guid,
+                summary_id=data.summary_id,
                 tags=[cls._transform_tag(tag) for tag in data.summary_tags],
                 meta=Meta(
-                    id=data.meta.GUID,
+                    id=data.meta.id,
                     author=data.meta.author,
                     publisher=data.meta.publisher,
                     title=data.meta.title,
@@ -105,7 +109,7 @@ class GQLApi:
     def _transform_tag(cls, tag: TagInput) -> Entity:
         if tag.type == EntityType.PERSON:
             return Person(
-                id=tag.GUID,
+                id=tag.id,
                 type="PERSON",
                 start_char=tag.start_char,
                 stop_char=tag.stop_char,
@@ -113,7 +117,7 @@ class GQLApi:
             )
         elif tag.type == EntityType.PLACE:
             return Place(
-                id=tag.GUID,
+                id=tag.id,
                 type="PLACE",
                 start_char=tag.start_char,
                 stop_char=tag.stop_char,
@@ -124,7 +128,7 @@ class GQLApi:
             )
         elif tag.type == EntityType.TIME:
             return Time(
-                id=tag.GUID,
+                id=tag.id,
                 type="TIME",
                 start_char=tag.start_char,
                 stop_char=tag.stop_char,

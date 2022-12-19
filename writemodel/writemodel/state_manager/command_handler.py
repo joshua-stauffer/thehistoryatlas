@@ -4,9 +4,7 @@ Friday, April 9th 2021
 """
 
 import logging
-from copy import deepcopy
-from dataclasses import asdict
-from typing import Any, Union, Dict, List, Literal
+from typing import Union, Dict, List
 from uuid import uuid4
 
 from abstract_domain_model.models import (
@@ -33,8 +31,6 @@ from abstract_domain_model.models import (
 )
 from abstract_domain_model.models.commands.publish_citation import (
     PublishCitation,
-    PublishCitationPayload,
-    Meta,
     Time,
     Place,
     Person,

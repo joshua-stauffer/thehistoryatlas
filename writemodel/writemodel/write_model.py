@@ -43,7 +43,7 @@ class WriteModel:
         self.broker = None  # created asynchronously in WriteModel.start_broker()
         self.api = GQLApi(
             command_handler=self.handle_command,
-            auth_handler=lambda: "86831492-bdb0-45b5-bdcc-d801b176433a",
+            auth_handler=lambda token: token,
         )
 
     async def handle_command(

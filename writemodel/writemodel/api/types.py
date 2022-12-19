@@ -7,21 +7,23 @@ import strawberry
 @strawberry.interface
 class MutationResponse:
     success: bool
-    message: Optional[bool]
+    message: Optional[str]
+    token: str
 
 
 @strawberry.type
 class PublishCitationResponse(MutationResponse):
     success: bool
-    message: Optional[bool] = None
+    message: Optional[str] = None
+    token: str
 
 
 @strawberry.input
 class AnnotateCitationInput:
     citation: str
-    citation_guid: str
+    citation_id: str
     summary: str
-    summary_guid: str
+    summary_id: Optional[str]
     meta: "MetaDataInput"
     summary_tags: List["TagInput"]
     token: str
@@ -29,9 +31,9 @@ class AnnotateCitationInput:
 
 @strawberry.input
 class MetaDataInput:
-    GUID: str
+    id: Optional[str]
     author: str
-    pageNum: int
+    pageNum: Optional[int]
     pubDate: str
     publisher: str
     title: str
@@ -39,7 +41,7 @@ class MetaDataInput:
 
 @strawberry.input
 class TagInput:
-    GUID: str
+    id: Optional[str]
     name: str
     start_char: int
     stop_char: int

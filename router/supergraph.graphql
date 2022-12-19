@@ -27,9 +27,9 @@ input AnnotateCitationInput
   @join__type(graph: WRITEMODEL)
 {
   citation: String!
-  citationGuid: String!
+  citationId: String!
   summary: String!
-  summaryGuid: String!
+  summaryId: String
   meta: MetaDataInput!
   summaryTags: [TagInput!]!
   token: String!
@@ -173,9 +173,9 @@ type MetaData
 input MetaDataInput
   @join__type(graph: WRITEMODEL)
 {
-  GUID: String!
+  id: String
   author: String!
-  pageNum: Int!
+  pageNum: Int
   pubDate: String!
   publisher: String!
   title: String!
@@ -197,7 +197,8 @@ interface MutationResponse
   @join__type(graph: WRITEMODEL)
 {
   success: Boolean!
-  message: Boolean
+  message: String
+  token: String!
 }
 
 input NewUserDetailsInput
@@ -223,7 +224,8 @@ type PublishCitationResponse implements MutationResponse
   @join__type(graph: WRITEMODEL)
 {
   success: Boolean!
-  message: Boolean
+  message: String
+  token: String!
 }
 
 type Query
@@ -268,7 +270,7 @@ type Tag
 input TagInput
   @join__type(graph: WRITEMODEL)
 {
-  GUID: String!
+  id: String
   name: String!
   startChar: Int!
   stopChar: Int!

@@ -38,161 +38,6 @@ def hash_text():
 
 
 @pytest.fixture
-def handler(db, hash_text):
-    return CommandHandler(database_instance=db, hash_text=hash_text)
-
-
-@pytest.fixture
-def handler_with_mock_db(hash_text, mock_db):
-    return CommandHandler(database_instance=mock_db, hash_text=hash_text)
-
-
-@pytest.fixture
-def basic_meta():
-    return {
-        "type": "PUBLISH_NEW_CITATION",
-        "user": "da schwitz",
-        "timestamp": "2022-08-15 21:32:28.133457",
-        "app_version": "0.0.0",
-    }
-
-
-@pytest.fixture
-def meta0():
-    return {
-        # "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
-        "author": "francesco, natürli",
-        "publisher": "dr papscht",
-        "title": "try this at home",
-    }
-
-
-@pytest.fixture
-def citation0(basic_meta, meta0, summary_new):
-    return {
-        **basic_meta,
-        "payload": {
-            "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
-            "text": "Dr Papscht hett ds Spiez Späck Besteck spät bestellt",
-            "tags": [],
-            "meta": meta0,
-            "summary": summary_new,
-        },
-    }
-
-
-@pytest.fixture
-def meta1():
-    return {
-        # "GUID": "917ddfcf-8feb-4755-bc40-144c8351b7cd",
-        "author": "francesco, natürli",
-        "publisher": "dr papscht",
-        "title": "try this at home",
-    }
-
-
-@pytest.fixture
-def citation1(basic_meta, meta1, summary_existing):
-    return {
-        **basic_meta,
-        "payload": {
-            "GUID": "42891176-dd66-4775-8f4a-82e03652cc2d",
-            # this text has an extra letter, so is considered unique
-            "text": "Der Papscht hett ds Spiez Späck Besteck spät bestellt",
-            "tags": [],
-            "meta": meta1,
-            "summary": summary_existing,
-        },
-    }
-
-
-@pytest.fixture
-def person_tag_0():
-    return {
-        "type": "PERSON",
-        "name": "Papscht",
-        "start_char": 3,
-        "stop_char": 10,
-    }
-
-
-@pytest.fixture
-def person_tag_1(person_tag_0, existing_person_id):
-    return {
-        "GUID": existing_person_id,
-        "type": "PERSON",
-        "name": "Papscht",
-        "start_char": 4,
-        "stop_char": 11,
-    }
-
-
-@pytest.fixture
-def place_tag_0():
-    return {
-        "type": "PLACE",
-        "name": "Spiez",
-        "start_char": 19,
-        "stop_char": 24,
-        "longitude": 1.5346,
-        "latitude": 48.2348,
-    }
-
-
-@pytest.fixture
-def place_tag_1(existing_place_id):
-    return {
-        "GUID": existing_place_id,
-        "type": "PLACE",
-        "name": "Spiez",
-        "start_char": 19,
-        "stop_char": 24,
-        "latitude": 1.234,
-        "longitude": 2.345,
-        "geo_shape": None,
-    }
-
-
-@pytest.fixture
-def time_tag_0():
-    return {
-        "type": "TIME",
-        "name": "1999:1:1:1",
-        "start_char": 19,
-        "stop_char": 24,
-    }
-
-
-@pytest.fixture
-def time_tag_1(existing_time_id):
-    return {
-        "GUID": existing_time_id,
-        "type": "TIME",
-        "name": "1999:1:1:1",
-        "start_char": 19,
-        "stop_char": 24,
-    }
-
-
-@pytest.fixture
-def summary_guid():
-    return str(uuid4())
-
-
-@pytest.fixture
-def summary_new(summary_guid):
-    return {
-        # "GUID": summary_guid,
-        "text": "here is some long text indicating a person, place, and time",
-    }
-
-
-@pytest.fixture
-def summary_existing(existing_summary_id):
-    return {"GUID": existing_summary_id}
-
-
-@pytest.fixture
 def publish_citation():
     return PUBLISH_CITATIONS[0]
 
@@ -205,6 +50,30 @@ def transaction_meta():
         "user_id": "testy-tester",
         "timestamp": "2022-12-18 21:20:41.262212",
     }
+
+
+@pytest.mark.asyncio
+async def test_transform_publish_citation_to_events_returns_expected_events_list(
+    publish_citation,
+):
+
+    synthetic_events = handler.handle_command(citation0)
+    # there are currently 9 types of synthetic tags, and this should
+    # include all of them
+    assert len(synthetic_events) == 9
+    expected_types = [
+        "SUMMARY_ADDED",
+        "CITATION_ADDED",
+        "PERSON_ADDED",
+        "PERSON_TAGGED",
+        "PLACE_ADDED",
+        "PLACE_TAGGED",
+        "TIME_ADDED",
+        "TIME_TAGGED",
+        "META_ADDED",
+    ]
+    for t, s in zip(expected_types, synthetic_events):
+        assert t == s["type"]
 
 
 @pytest.mark.asyncio
@@ -289,7 +158,7 @@ async def test_validate_publish_citation_raises_citation_exists_error(
     If this citation already exists in the system, expect an error.
     """
     db = Mock()
-    db.check_citation_for_uniqueness.return_value = "FAILED-UUID-HERE"
+    db.check_citation_for_uniqueness.return_value = "THIS-UUID-IS-NOT-THE-SAME"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(CitationExistsError):
         handler.validate_publish_citation(publish_citation)
@@ -327,7 +196,7 @@ async def test_validate_publish_citation_raises_guid_error_for_summary(
     Summary, expect an error.
     """
     db = Mock()
-    db.check_id_for_uniqueness.return_value = "NOT-SUMMARY"
+    db.check_id_for_uniqueness.return_value = "THIS-TYPE-IS-NOT-SUMMARY"
     db.check_citation_for_uniqueness.return_value = None
     payload = replace(
         publish_citation.payload,
@@ -452,6 +321,10 @@ async def test_validate_publish_citation_raises_guid_error_for_tag(
 
 @pytest.mark.asyncio
 async def test_tag_to_event_raises_error_with_unknown_tag_type(transaction_meta):
+    """
+    If an unexpected tag is passed in, expect an error.
+    """
+
     @dataclass
     class NotAnEntity:
         pass
@@ -470,6 +343,9 @@ async def test_tag_to_event_raises_error_with_unknown_tag_type(transaction_meta)
 
 @pytest.mark.asyncio
 async def test_tag_to_event_adds_person(transaction_meta):
+    """
+    If a Person tag is provided, expect a PersonAdded event.
+    """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
     entity = Person(
@@ -490,6 +366,9 @@ async def test_tag_to_event_adds_person(transaction_meta):
 
 @pytest.mark.asyncio
 async def test_tag_to_event_tags_person(transaction_meta):
+    """
+    If a Person tag is provided with an ID, expect a PersonTagged event.
+    """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
     entity = Person(
@@ -510,6 +389,9 @@ async def test_tag_to_event_tags_person(transaction_meta):
 
 @pytest.mark.asyncio
 async def test_tag_to_event_adds_place(transaction_meta):
+    """
+    If a Place tag is provided, expect a PlaceAdded event.
+    """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
     entity = Place(
@@ -533,6 +415,9 @@ async def test_tag_to_event_adds_place(transaction_meta):
 
 @pytest.mark.asyncio
 async def test_tag_to_event_tags_place(transaction_meta):
+    """
+    If a Place tag is provided with an ID, expect a PlaceTagged event.
+    """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
     entity = Place(
@@ -556,6 +441,9 @@ async def test_tag_to_event_tags_place(transaction_meta):
 
 @pytest.mark.asyncio
 async def test_tag_to_event_adds_time(transaction_meta):
+    """
+    If a Time tag is provided, expect a TimeAdded event.
+    """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
     entity = Time(
@@ -576,6 +464,9 @@ async def test_tag_to_event_adds_time(transaction_meta):
 
 @pytest.mark.asyncio
 async def test_tag_to_event_tags_time(transaction_meta):
+    """
+    If a Time tag is provided with an ID, expect a TimeTagged event.
+    """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
     entity = Time(
@@ -592,62 +483,3 @@ async def test_tag_to_event_tags_time(transaction_meta):
         citation_id=citation_id,
     )
     assert isinstance(event, TimeTagged)
-
-
-@pytest.mark.asyncio
-async def test_synthetic_event(
-    handler,
-    citation0,
-    person_tag_0,
-    person_tag_1,
-    place_tag_0,
-    place_tag_1,
-    time_tag_0,
-    time_tag_1,
-):
-    tags = [
-        person_tag_0,
-        person_tag_1,
-        place_tag_0,
-        place_tag_1,
-        time_tag_0,
-        time_tag_1,
-    ]
-    citation0["payload"]["tags"] = tags
-    synthetic_events = handler.handle_command(citation0)
-    # there are currently 9 types of synthetic tags, and this should
-    # include all of them
-    assert len(synthetic_events) == 9
-    expected_types = [
-        "SUMMARY_ADDED",
-        "CITATION_ADDED",
-        "PERSON_ADDED",
-        "PERSON_TAGGED",
-        "PLACE_ADDED",
-        "PLACE_TAGGED",
-        "TIME_ADDED",
-        "TIME_TAGGED",
-        "META_ADDED",
-    ]
-    for t, s in zip(expected_types, synthetic_events):
-        assert t == s["type"]
-
-
-def test_translate_publish_citation_with_tags(
-    handler_with_mock_db, citation0, time_tag_0, person_tag_0, place_tag_0
-):
-    citation = deepcopy(citation0)
-    citation["payload"]["tags"] = [time_tag_0, person_tag_0, place_tag_0]
-    command = handler_with_mock_db._translate_publish_citation(citation0)
-    assert isinstance(command, PublishCitation)
-
-
-def test_translate_command_success(handler_with_mock_db, citation0):
-    command = handler_with_mock_db.translate_command(citation0)
-    assert isinstance(command, PublishCitation)
-
-
-@pytest.mark.parametrize("citation", ({}, {"type": "UNKNOWN"}, {"random": "field"}))
-def test_translate_command_failure(citation, handler_with_mock_db):
-    with pytest.raises(UnknownCommandTypeError):
-        _ = handler_with_mock_db.translate_command(citation)
