@@ -3,7 +3,7 @@ from logging import getLogger
 
 import strawberry
 from strawberry.federation import Schema
-from typing import Callable, Literal
+from typing import Callable, Literal, Awaitable
 
 from abstract_domain_model.models import PublishCitation, PublishCitationPayload
 from abstract_domain_model.models.commands import (
@@ -32,8 +32,8 @@ log.setLevel("DEBUG")
 class GQLApi:
     def __init__(
         self,
-        command_handler: Callable[[Command], CommandResponse],
-        auth_handler: Callable[[str], str],
+        command_handler: Callable[[Command], Awaitable[CommandResponse]],
+        auth_handler: Callable[[str], Awaitable[str]],
     ):
         self._command_handler = command_handler
         self._auth_handler = auth_handler
@@ -52,7 +52,7 @@ class GQLApi:
                 Annotation: AnnotateCitationInput,
             ) -> PublishCitationResponse:
 
-                user_id = self._auth_handler(Annotation.token)
+                user_id = await self._auth_handler(Annotation.token)
 
                 publish_citation = self._transform_publish_citation(
                     data=Annotation, user_id=user_id

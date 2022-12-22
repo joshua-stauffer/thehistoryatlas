@@ -8,8 +8,7 @@ Communicates with the rest of the History Atlas through the Broker module.
 
 import asyncio
 import logging
-from typing import Union
-
+from typing import Union, Dict
 
 from abstract_domain_model.models.commands import (
     CommandSuccess,
@@ -18,6 +17,7 @@ from abstract_domain_model.models.commands import (
 )
 from abstract_domain_model.transform import to_dict, from_dict
 from abstract_domain_model.types import Command
+from rpc_manager import RPCManager, RPCFailure
 from tha_config import Config
 from writemodel.api.api import GQLApi
 from writemodel.broker import Broker
@@ -39,10 +39,13 @@ class WriteModel:
     def __init__(self):
         self.config = Config()
         self.manager = Manager(self.config)
-        self.broker = None  # created asynchronously in WriteModel.start_broker()
+        self.broker: Broker = (
+            None  # created asynchronously in WriteModel.start_broker()
+        )
+        self.auth_manager: RPCManager = None  # created after broker is initialized
         self.api = GQLApi(
             command_handler=self.handle_command,
-            auth_handler=lambda token: token,
+            auth_handler=self.get_authorization,
         )
 
     async def handle_command(
@@ -84,13 +87,30 @@ class WriteModel:
         event = from_dict(event)
         self.manager.event_handler.handle_event(event=event)
 
+    async def get_authorization(self, token: str) -> str:
+        auth_request = {}
+        response = await self.auth_manager.make_call(auth_request)
+        if isinstance(response, RPCFailure):
+            raise Exception("Unauthorized")
+        return response.message["payload"]["token"]
+
+    def handle_auth_response(self, message: Dict, corr_id: str) -> None:
+        self.auth_manager.handle_response(message=message, corr_id=corr_id)
+
+    async def init_services(self):
+        """
+        Start up any asynchronous services required by the application.
+        """
+        await self.start_broker()
+        await self.start_auth_manager()
+
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
         log.info("WriteModel: starting broker")
         self.broker = Broker(
             config=self.config,
-            command_handler=self.handle_command,
             event_handler=self.handle_event,
+            auth_handler=self.handle_auth_response,
             get_latest_event_id=self.manager.db.check_database_init,
         )
         last_event_id = self.manager.db.check_database_init()
@@ -105,6 +125,13 @@ class WriteModel:
             )
             await self.shutdown()
 
+    async def start_auth_manager(self):
+        if self.broker is None:
+            raise Exception("AuthManager must be initialized after Broker.")
+        self.auth_manager = RPCManager(
+            timeout=5, pub_function=self.broker.make_auth_request
+        )
+
     async def shutdown(self, signal=None):
         """Gracefully close all open connections and cancel tasks"""
         if signal:
@@ -116,19 +143,3 @@ class WriteModel:
         await asyncio.gather(*tasks, return_exceptions=True)
         loop.stop()
         log.info("Asyncio loop has been stopped")
-
-
-# if __name__ == "__main__":
-#     wm = WriteModel()
-#     log.info("WriteModel initialized")
-#     loop = asyncio.get_event_loop()
-#     loop.create_task(wm.start_broker())
-#     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-#     for s in signals:
-#         loop.add_signal_handler(s, lambda s=s: asyncio.create_task(wm.shutdown(s)))
-#     try:
-#         log.info("Asyncio loop now running")
-#         loop.run_forever()
-#     finally:
-#         loop.close()
-#         log.info("WriteModel shut down successfully.")

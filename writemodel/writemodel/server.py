@@ -26,7 +26,7 @@ def run():
         "/",
     )
     log.info("Starting WriteModel broker.")
-    server.add_task(task=writemodel.start_broker())
+    server.add_task(task=writemodel.init_services())
     HOST = writemodel.config.SERVER_HOST
     PORT = int(writemodel.config.SERVER_PORT)
     log.info(f"Starting Sanic server at {HOST}:{PORT}.")
