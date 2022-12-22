@@ -38,7 +38,7 @@ class RPCManager:
         self._result_store: Dict[str, Optional[Dict]] = {}
         self._poll_offset = 0
 
-    def listen(self, message: dict, corr_id: str) -> None:
+    def handle_response(self, message: dict, corr_id: str) -> None:
         """
         Message handler to field incoming responses.
         """
