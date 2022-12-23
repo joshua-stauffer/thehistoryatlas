@@ -23,6 +23,11 @@ from abstract_domain_model.models import (
     CitationAddedPayload,
     MetaAddedPayload,
 )
+from abstract_domain_model.models.accounts import GetUser, GetUserPayload, UserDetails
+from abstract_domain_model.models.accounts.get_user import (
+    GetUserResponse,
+    GetUserResponsePayload,
+)
 from abstract_domain_model.models.commands import (
     CommandFailed,
     CommandFailedPayload,
@@ -345,3 +350,38 @@ def test_transform_command_success():
     }
     res = from_dict(data)
     assert isinstance(res, CommandSuccess)
+
+
+def test_transform_get_user():
+    get_user = from_dict(
+        {
+            "type": "GET_USER",
+            "payload": {
+                "token": "token-value-here",
+            },
+        }
+    )
+    assert isinstance(get_user, GetUser)
+    assert isinstance(get_user.payload, GetUserPayload)
+
+
+def test_transform_get_user_response():
+    get_user_response = from_dict(
+        {
+            "type": "GET_USER_RESPONSE",
+            "payload": {
+                "token": "token-value-here",
+                "user_details": {
+                    "f_name": "Bilbo",
+                    "l_name": "Baggins",
+                    "username": "dragonslayer",
+                    "email": "bagends@theshire.middleearth",
+                    "last_login": "2022-12-23 16:30:53.368102",
+                    "type": "contrib",
+                },
+            },
+        }
+    )
+    assert isinstance(get_user_response, GetUserResponse)
+    assert isinstance(get_user_response.payload, GetUserResponsePayload)
+    assert isinstance(get_user_response.payload.user_details, UserDetails)

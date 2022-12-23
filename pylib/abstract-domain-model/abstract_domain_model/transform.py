@@ -1,6 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, asdict
-from typing import Dict
+from typing import Dict, Optional, Callable
 
 from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
 from abstract_domain_model.models import (
@@ -25,6 +25,16 @@ from abstract_domain_model.models import (
     TimeTaggedPayload,
     MetaAddedPayload,
 )
+from abstract_domain_model.models.accounts import (
+    GetUser,
+    GetUserPayload,
+    UserDetails,
+    Credentials,
+)
+from abstract_domain_model.models.accounts.get_user import (
+    GetUserResponse,
+    GetUserResponsePayload,
+)
 from abstract_domain_model.models.commands import CommandSuccess
 from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
@@ -34,13 +44,19 @@ from abstract_domain_model.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
 )
-from abstract_domain_model.types import Event, DomainObject, DomainObjectTypes
+from abstract_domain_model.types import (
+    Event,
+    DomainObject,
+    DomainObjectTypes,
+    AccountEvent,
+)
 
 
 @dataclass
 class TranslatorSpec:
     obj_cls: dataclass
     obj_payload: dataclass
+    resolve_func: Optional[Callable[[Dict, "TranslatorSpec"], DomainObject]] = None
 
 
 class Translator:
@@ -102,6 +118,16 @@ class Translator:
                 obj_payload=CommandFailedPayload,
             ),
             "COMMAND_SUCCESS": TranslatorSpec(obj_cls=CommandSuccess, obj_payload=None),
+            "GET_USER": TranslatorSpec(
+                obj_cls=GetUser,
+                obj_payload=GetUserPayload,
+                resolve_func=cls.resolve_account_event,
+            ),
+            "GET_USER_RESPONSE": TranslatorSpec(
+                obj_cls=GetUserResponse,
+                obj_payload=GetUserResponsePayload,
+                resolve_func=cls.resolve_account_event,
+            ),
         }
 
     @classmethod
@@ -115,7 +141,10 @@ class Translator:
             raise UnknownMessageError(data)
 
         try:
-            return cls.resolve(data, translation_spec)
+            if translation_spec.resolve_func is not None:
+                return translation_spec.resolve_func(data, translation_spec)
+            else:
+                return cls.resolve(data, translation_spec)
 
         except TypeError:
             # raised when the dataclass isn't provided with required fields
@@ -126,6 +155,18 @@ class Translator:
         payload = data.pop("payload", None)
         if payload is None:
             return spec.obj_cls(**data)
+        payload = spec.obj_payload(**payload)
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_account_event(data: dict, spec: TranslatorSpec) -> AccountEvent:
+        payload = data.pop("payload")
+        user_details = payload.pop("user_details", None)
+        if user_details is not None:
+            payload["user_details"] = UserDetails(**user_details)
+        credentials = payload.pop("credentials", None)
+        if credentials is not None:
+            payload["credentials"] = Credentials(**credentials)
         payload = spec.obj_payload(**payload)
         return spec.obj_cls(**data, payload=payload)
 
