@@ -30,7 +30,7 @@ from accounts.encryption import encrypt
 from accounts.encryption import check_password
 from accounts.encryption import validate_token
 from accounts.types import Token
-from accounts.types import UserDetails
+from accounts.types import UserDetailsDict
 
 
 log = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
 
-    def add_user(self, token: Token, user_details: Dict) -> UserDetails:
+    def add_user(self, token: Token, user_details: Dict) -> Tuple[str, UserDetailsDict]:
         """Adds a user to the database"""
 
         user_id, token = validate_token(token)
@@ -85,7 +85,7 @@ class Database:
 
     def update_user(
         self, token: str, user_details: dict, credentials: Optional[dict[str, str]]
-    ) -> Tuple[Token, UserDetails]:
+    ) -> Tuple[Token, UserDetailsDict]:
         """Update a user's data"""
         if not credentials:
             credentials = {}
@@ -112,7 +112,7 @@ class Database:
             session.commit()
             return str(token), user.to_dict()
 
-    def get_user(self, token) -> Tuple[Token, UserDetails]:
+    def get_user(self, token) -> Tuple[Token, UserDetailsDict]:
         """Obtain user details"""
 
         user_id, token = validate_token(token)
@@ -149,7 +149,7 @@ class Database:
                 return False
             return True
 
-    def deactivate_account(self, token, username) -> Tuple[Token, UserDetails]:
+    def deactivate_account(self, token, username) -> Tuple[Token, UserDetailsDict]:
         admin_user_id, token = validate_token(token)
         with Session(self._engine, future=True) as session:
             self._require_admin_user(user_id=admin_user_id, session=session)
@@ -159,7 +159,7 @@ class Database:
             session.commit()
             return token, user.to_dict()
 
-    def confirm_account(self, token) -> Tuple[Token, UserDetails]:
+    def confirm_account(self, token) -> Tuple[Token, UserDetailsDict]:
         user_id, token = validate_token(token, force_refresh=True)
         with Session(self._engine, future=True) as session:
             user = self._get_user_by_id(user_id, session)
