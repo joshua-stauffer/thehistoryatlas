@@ -10,6 +10,8 @@ import asyncio
 import logging
 from typing import Union, Dict
 
+from abstract_domain_model.models.accounts import GetUser, GetUserPayload
+from abstract_domain_model.models.accounts.get_user import GetUserResponse
 from abstract_domain_model.models.commands import (
     CommandSuccess,
     CommandFailed,
@@ -88,11 +90,15 @@ class WriteModel:
         self.manager.event_handler.handle_event(event=event)
 
     async def get_authorization(self, token: str) -> str:
-        auth_request = {}
-        response = await self.auth_manager.make_call(auth_request)
+        """
+        Query the Accounts service to verify token.
+        """
+        auth_request = GetUser(type="GET_USER", payload=GetUserPayload(token=token))
+        response = await self.auth_manager.make_call(to_dict(auth_request))
         if isinstance(response, RPCFailure):
             raise Exception("Unauthorized")
-        return response.message["payload"]["token"]
+        get_user_response: GetUserResponse = from_dict(response.message)
+        return get_user_response.payload.token
 
     def handle_auth_response(self, message: Dict, corr_id: str) -> None:
         self.auth_manager.handle_response(message=message, corr_id=corr_id)
