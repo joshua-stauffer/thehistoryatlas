@@ -41,6 +41,32 @@ class Database:
         self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
         # initialize the db
         Base.metadata.create_all(self._engine)
+        self._ensure_admin()
+
+    def _ensure_admin(self):
+        """
+        For development use only. Creates a default admin user
+        if one does not yet exist.
+        """
+        with Session(self._engine, future=True) as session:
+            accounts = session.query(User).all()
+            if len(accounts):
+                log.info("Found an existing account.")
+                return
+            log.info("Creating a default admin account.")
+            user = User(
+                id=str(uuid4()),
+                username="admin",
+                password=encrypt("admin").decode(),
+                f_name="tha",
+                l_name="admin",
+                email="test@thehistoryatlas.org",
+                type="admin",
+                confirmed=True,
+                deactivated=False,
+            )
+            session.add(user)
+            session.commit()
 
     def add_user(self, token: Token, user_details: Dict) -> Tuple[str, UserDetailsDict]:
         """Adds a user to the database"""
