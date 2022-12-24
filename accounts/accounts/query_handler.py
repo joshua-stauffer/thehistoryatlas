@@ -93,7 +93,7 @@ class QueryHandler:
         token = query["payload"]["token"]
         token, user_details = self._db.get_user(token=token)
         return {
-            "type": "GET_USER",
+            "type": "GET_USER_RESPONSE",
             "payload": {"token": token, "user_details": user_details},
         }
 
