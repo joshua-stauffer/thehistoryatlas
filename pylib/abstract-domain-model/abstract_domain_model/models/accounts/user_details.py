@@ -9,4 +9,3 @@ class UserDetails:
     username: str
     email: str
     last_login: str
-    type: Literal["admin", "contrib"]

@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, asdict
+from logging import getLogger
 from typing import Dict, Optional, Callable
 
 from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
@@ -50,6 +51,8 @@ from abstract_domain_model.types import (
     DomainObjectTypes,
     AccountEvent,
 )
+
+log = getLogger()
 
 
 @dataclass
@@ -133,6 +136,7 @@ class Translator:
     @classmethod
     def from_dict(cls, data: dict) -> DomainObject:
         """Transform a JSON dict into a known Domain Object."""
+        log.info(f"Transforming dict: \n..\n{data}\n..\n")
 
         data = deepcopy(data)
         type_ = data.get("type", None)

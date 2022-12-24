@@ -377,7 +377,6 @@ def test_transform_get_user_response():
                     "username": "dragonslayer",
                     "email": "bagends@theshire.middleearth",
                     "last_login": "2022-12-23 16:30:53.368102",
-                    "type": "contrib",
                 },
             },
         }
