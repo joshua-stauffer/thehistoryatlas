@@ -123,6 +123,9 @@ class CommandHandler:
                 ),
             )
 
+        # summary ID on the command may be null - use the newly created event ID instead
+        summary_id = summary.payload.id
+
         # handle meta
         if command.payload.meta.id is not None:
             # tag existing meta
@@ -130,17 +133,16 @@ class CommandHandler:
                 type="META_TAGGED",
                 **transaction_meta,
                 payload=MetaTaggedPayload(
-                    id=command.payload.summary_id, citation_id=command.payload.id
+                    id=command.payload.meta.id, citation_id=command.payload.id
                 ),
             )
         else:
             # create a new meta
-            meta_id = str(uuid4())
             meta = MetaAdded(
                 type="META_ADDED",
                 **transaction_meta,
                 payload=MetaAddedPayload(
-                    id=meta_id,
+                    id=str(uuid4()),
                     citation_id=command.payload.id,
                     author=command.payload.meta.author,
                     title=command.payload.meta.title,
@@ -155,7 +157,7 @@ class CommandHandler:
                 tag=tag,
                 transaction_meta=transaction_meta,
                 citation_id=command.payload.id,
-                summary_id=command.payload.summary_id,
+                summary_id=summary_id,
             )
             for tag in command.payload.tags
         ]
@@ -167,7 +169,7 @@ class CommandHandler:
             payload=CitationAddedPayload(
                 id=command.payload.id,
                 text=command.payload.text,
-                summary_id=summary.payload.id,
+                summary_id=summary_id,
                 meta_id=meta.payload.id,
             ),
         )
