@@ -6,6 +6,9 @@ May 3rd, 2021
 import asyncio
 import logging
 import signal
+from typing import Dict
+
+from abstract_domain_model.transform import from_dict
 from readmodel.broker import Broker
 from tha_config import Config
 from readmodel.state_manager.manager import Manager
@@ -23,8 +26,11 @@ class ReadModel:
         self.config = Config()
         self.manager = Manager(self.config)
         self.handle_query = self.manager.query_handler.handle_query
-        self.handle_event = self.manager.event_handler.handle_event
         self.broker = None  # created asynchronously in ReadModel.start_broker()
+
+    def handle_event(self, event: Dict):
+        event = from_dict(event)
+        self.manager.event_handler.handle_event(event=event)
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""

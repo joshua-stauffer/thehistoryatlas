@@ -1,6 +1,7 @@
 import asyncio
 from copy import deepcopy
 from datetime import datetime
+from dataclasses import replace, dataclass
 import json
 import pytest
 from uuid import uuid4
@@ -9,7 +10,26 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from abstract_domain_model.errors import UnknownMessageError
-from abstract_domain_model.models import SummaryAdded
+from abstract_domain_model.models import (
+    SummaryAdded,
+    SummaryAddedPayload,
+    CitationAdded,
+    CitationAddedPayload,
+    PersonAdded,
+    PersonAddedPayload,
+    PersonTagged,
+    PersonTaggedPayload,
+    PlaceAdded,
+    PlaceAddedPayload,
+    PlaceTagged,
+    PlaceTaggedPayload,
+    TimeAdded,
+    TimeAddedPayload,
+    TimeTagged,
+    TimeTaggedPayload,
+    MetaAdded,
+    MetaAddedPayload,
+)
 from abstract_domain_model.transform import from_dict
 from readmodel.state_manager.database import Database
 from readmodel.state_manager.event_handler import EventHandler
@@ -53,17 +73,22 @@ def meta_id():
 
 @pytest.fixture
 def citation_guid():
-    return str(uuid4())
+    return "f8e39a88-5220-41f4-b9f0-8880255f84be"
 
 
 @pytest.fixture
 def summary_guid():
-    return str(uuid4())
+    return "1fb8ee2e-177b-4e2b-8cc2-14335fb2f867"
 
 
 @pytest.fixture
 def place_guid():
-    return str(uuid4())
+    return "3c35e5f3-8788-41de-a052-d9de8410da17"
+
+
+@pytest.fixture
+def time_guid():
+    return "a3bddcb6-d03e-4770-81cb-27799c410558"
 
 
 @pytest.fixture
@@ -72,6 +97,7 @@ def summary_args(summary_guid, citation_guid):
         "id": summary_guid,
         "citation_id": citation_guid,
         "text": "some random text here please!",
+        "index": 1,
     }
 
 
@@ -82,6 +108,7 @@ def citation_args(citation_guid, summary_guid, meta_id):
         "id": citation_guid,
         "text": "some nice text",
         "meta_id": meta_id,
+        "index": 2,
     }
 
 
@@ -94,6 +121,7 @@ def person_args(summary_guid, citation_guid):
         "name": "Charlemagne",
         "citation_start": 4,
         "citation_end": 10,
+        "index": 3,
     }
 
 
@@ -109,6 +137,7 @@ def place_args_with_coords(summary_guid, place_guid, citation_guid):
         "longitude": 1.9235,
         "latitude": 7.2346,
         "geo_shape": "{some long geoshape file in geojson format}",
+        "index": 4,
     }
 
 
@@ -121,6 +150,7 @@ def place_args(summary_guid, place_guid, citation_guid):
         "name": "Charlemagne",
         "citation_start": 4,
         "citation_end": 10,
+        "index": 5,
     }
 
 
@@ -133,6 +163,7 @@ def time_args(summary_guid, citation_guid):
         "name": "1847:3:8:18",
         "citation_start": 4,
         "citation_end": 10,
+        "index": 6,
     }
 
 
@@ -145,6 +176,7 @@ def meta_args(citation_guid, meta_id):
         "author": "Samwise",
         "publisher": "Dragon Press",
         "kwargs": {},
+        "index": 7,
     }
 
 
@@ -160,79 +192,229 @@ def meta_args_with_arbitrary_fields(citation_guid):
             "unexpected": "but still shows up",
             "also didnt plan for this": "but should come through anyways",
         },
+        "index": 8,
     }
 
 
 @pytest.fixture
-def SUMMARY_ADDED(basic_meta, summary_args):
-    return {"type": "SUMMARY_ADDED", **basic_meta, "payload": {**summary_args}}
+def SUMMARY_ADDED(summary_guid, citation_guid):
+    return SummaryAdded(
+        type="SUMMARY_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=1,
+        payload=SummaryAddedPayload(
+            id=summary_guid,
+            citation_id=citation_guid,
+            text="some random text here please!",
+        ),
+    )
 
 
 @pytest.fixture
-def CITATION_ADDED(basic_meta, citation_args):
-    return {"type": "CITATION_ADDED", **basic_meta, "payload": {**citation_args}}
+def CITATION_ADDED(summary_guid, citation_guid, meta_id):
+    return CitationAdded(
+        type="CITATION_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=2,
+        payload=CitationAddedPayload(
+            summary_id=summary_guid,
+            id=citation_guid,
+            text="some nice text",
+            meta_id=meta_id,
+        ),
+    )
 
 
 @pytest.fixture
-def PERSON_ADDED(basic_meta, person_args):
-    return {"type": "PERSON_ADDED", **basic_meta, "payload": {**person_args}}
+def PERSON_ADDED(summary_guid, citation_guid):
+    return PersonAdded(
+        type="PERSON_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=3,
+        payload=PersonAddedPayload(
+            summary_id=summary_guid,
+            citation_id=citation_guid,
+            id="65052229-69ab-4827-a5f5-39a4bc1a2ada",
+            name="Charlemagne",
+            citation_start=4,
+            citation_end=10,
+        ),
+    )
 
 
 @pytest.fixture
-def PERSON_TAGGED(basic_meta, person_args):
-    return {"type": "PERSON_TAGGED", **basic_meta, "payload": {**person_args}}
+def PERSON_TAGGED(summary_guid, citation_guid):
+    return PersonTagged(
+        type="PERSON_TAGGED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=4,
+        payload=PersonTaggedPayload(
+            summary_id=summary_guid,
+            citation_id=citation_guid,
+            id="65052229-69ab-4827-a5f5-39a4bc1a2ada",
+            name="Charlemagne",
+            citation_start=4,
+            citation_end=10,
+        ),
+    )
 
 
 @pytest.fixture
-def PLACE_ADDED(basic_meta, place_args_with_coords):
-    return {"type": "PLACE_ADDED", **basic_meta, "payload": {**place_args_with_coords}}
+def PLACE_ADDED(summary_guid, citation_guid, place_guid):
+    return PlaceAdded(
+        type="PLACE_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=5,
+        payload=PlaceAddedPayload(
+            summary_id=summary_guid,
+            citation_id=citation_guid,
+            id=place_guid,
+            name="Charlemagne",
+            citation_start=4,
+            citation_end=10,
+            longitude=1.9235,
+            latitude=7.2346,
+            geo_shape="{some long geoshape file in geojson format}",
+        ),
+    )
 
 
 @pytest.fixture
-def PLACE_TAGGED(basic_meta, place_args):
-    return {"type": "PLACE_TAGGED", **basic_meta, "payload": {**place_args}}
+def PLACE_TAGGED(summary_guid, citation_guid, place_guid):
+    return PlaceTagged(
+        type="PLACE_TAGGED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=6,
+        payload=PlaceTaggedPayload(
+            summary_id=summary_guid,
+            citation_id=citation_guid,
+            id=place_guid,
+            name="Charlemagne",
+            citation_start=4,
+            citation_end=10,
+        ),
+    )
 
 
 @pytest.fixture
-def TIME_ADDED(basic_meta, time_args):
-    return {"type": "TIME_ADDED", **basic_meta, "payload": {**time_args}}
+def TIME_ADDED(time_guid, summary_guid, citation_guid):
+    return TimeAdded(
+        type="TIME_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=7,
+        payload=TimeAddedPayload(
+            summary_id=summary_guid,
+            citation_id=citation_guid,
+            id=time_guid,
+            name="1847:3:8:18",
+            citation_start=4,
+            citation_end=10,
+        ),
+    )
 
 
 @pytest.fixture
-def TIME_TAGGED(basic_meta, time_args):
-    return {"type": "TIME_TAGGED", **basic_meta, "payload": {**time_args}}
+def TIME_TAGGED(summary_guid, citation_guid, time_guid):
+    return TimeTagged(
+        type="TIME_TAGGED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=8,
+        payload=TimeTaggedPayload(
+            summary_id=summary_guid,
+            citation_id=citation_guid,
+            id=time_guid,
+            name="1847:3:8:18",
+            citation_start=4,
+            citation_end=10,
+        ),
+    )
 
 
 @pytest.fixture
-def META_ADDED_basic(basic_meta, meta_args):
-    return {"type": "META_ADDED", **basic_meta, "payload": {**meta_args}}
+def META_ADDED_basic(citation_guid, meta_id):
+    return MetaAdded(
+        type="META_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=9,
+        payload=MetaAddedPayload(
+            id=meta_id,
+            citation_id=citation_guid,
+            title="A Scholarly Book",
+            author="Samwise",
+            publisher="Dragon Press",
+            kwargs={},
+        ),
+    )
 
 
 @pytest.fixture
-def META_ADDED_more(basic_meta, meta_args_with_arbitrary_fields):
-    return {
-        "type": "META_ADDED",
-        **basic_meta,
-        "payload": {**meta_args_with_arbitrary_fields},
-    }
+def META_ADDED_more(meta_id, citation_guid):
+    return MetaAdded(
+        type="META_ADDED",
+        transaction_id="70ae0538-72a6-44f3-aa15-7a9fa1c199ff",
+        app_version="0.0.0",
+        user_id="testy-tester",
+        timestamp="2022-12-18 21:20:41.262212",
+        index=10,
+        payload=MetaAddedPayload(
+            id=meta_id,
+            citation_id=citation_guid,
+            title="A Scholarly Book",
+            author="Samwise",
+            publisher="Dragon Press",
+            kwargs={
+                "unexpected": "but still shows up",
+                "also didnt plan for this": "but should come through anyways",
+            },
+        ),
+    )
 
 
 def test_unknown_event_raises_error(handle_event):
-    with pytest.raises(UnknownMessageError):
-        handle_event({"type": "this doesnt exist", "event_id": 1})
+    @dataclass
+    class NotAnEvent:
+        type: str
+        index: int
+
+    with pytest.raises(UnknownEventError):
+        handle_event(NotAnEvent(type="NotAnEvent", index=0))
 
 
 @pytest.mark.asyncio
 async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([CITATION_ADDED, SUMMARY_ADDED, SUMMARY_ADDED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
-    payload = CITATION_ADDED["payload"]
+    payload = CITATION_ADDED.payload
     with Session(db._engine, future=True) as sess:
-        citation_guid = payload["id"]
-        text = payload["text"]
+        citation_guid = payload.id
+        text = payload.text
         res = sess.execute(
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
@@ -242,14 +424,11 @@ async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
 
 @pytest.mark.asyncio
 async def test_person_added(db, handle_event, SUMMARY_ADDED, PERSON_ADDED):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
-    payload = PERSON_ADDED["payload"]
-    names = payload["name"]
-    person_guid = payload["id"]
+    payload = PERSON_ADDED.payload
+    names = payload.name
+    person_guid = payload.id
     with Session(db._engine, future=True) as sess:
 
         res = sess.execute(
@@ -263,15 +442,12 @@ async def test_person_added(db, handle_event, SUMMARY_ADDED, PERSON_ADDED):
 async def test_person_tagged(
     db, handle_event, SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED
 ):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
     handle_event(PERSON_TAGGED)
-    payload = PERSON_ADDED["payload"]
-    names = payload["name"]
-    person_guid = payload["id"]
+    payload = PERSON_ADDED.payload
+    names = payload.name
+    person_guid = payload.id
     with Session(db._engine, future=True) as sess:
 
         res = sess.execute(
@@ -293,13 +469,11 @@ async def test_person_tagged(
 
 @pytest.mark.asyncio
 async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
-    for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
-    payload = PLACE_ADDED["payload"]
-    names = payload["name"]
-    place_guid = payload["id"]
+    payload = PLACE_ADDED.payload
+    names = payload.name
+    place_guid = payload.id
     with Session(db._engine, future=True) as sess:
 
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
@@ -309,18 +483,15 @@ async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
 
 @pytest.mark.asyncio
 async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     handle_event(PLACE_TAGGED)
-    payload = PLACE_ADDED["payload"]
-    names = payload["name"]
-    latitude = payload["latitude"]
-    longitude = payload["longitude"]
-    geoshape = payload["geo_shape"]
-    place_guid = payload["id"]
+    payload = PLACE_ADDED.payload
+    names = payload.name
+    latitude = payload.latitude
+    longitude = payload.longitude
+    geoshape = payload.geo_shape
+    place_guid = payload.id
     with Session(db._engine, future=True) as sess:
 
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
@@ -343,14 +514,11 @@ async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_
 
 @pytest.mark.asyncio
 async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
-    payload = TIME_ADDED["payload"]
-    name = payload["name"]
-    time_guid = payload["id"]
+    payload = TIME_ADDED.payload
+    name = payload.name
+    time_guid = payload.id
     with Session(db._engine, future=True) as sess:
 
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
@@ -360,15 +528,12 @@ async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
 
 @pytest.mark.asyncio
 async def test_time_tagged(db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED]):
-        event["event_id"] = i + 1
     handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     handle_event(TIME_TAGGED)
-    payload = TIME_ADDED["payload"]
-    name = payload["name"]
-    time_guid = payload["id"]
+    payload = TIME_ADDED.payload
+    name = payload.name
+    time_guid = payload.id
     with Session(db._engine, future=True) as sess:
 
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
@@ -387,74 +552,13 @@ async def test_time_tagged(db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAG
 
 
 @pytest.mark.asyncio
-async def test_meta_added_basic(
-    db, handle_event, SUMMARY_ADDED, CITATION_ADDED, META_ADDED_basic
-):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_basic]):
-        event["event_id"] = i + 1
-    citation_guid = CITATION_ADDED["payload"]["id"]
-    meta = dict(**META_ADDED_basic["payload"])
-
-    del meta["citation_id"]
-    del meta["id"]
-    meta_string = json.dumps(meta)
-    handle_event(SUMMARY_ADDED)
-    handle_event(CITATION_ADDED)
-    # make sure meta is starts empty
-    with Session(db._engine, future=True) as sess:
-        res = sess.execute(
-            select(Citation).where(Citation.guid == citation_guid)
-        ).scalar_one()
-        assert res.meta == None
-    handle_event(META_ADDED_basic)
-    with Session(db._engine, future=True) as sess:
-        res = sess.execute(
-            select(Citation).where(Citation.guid == citation_guid)
-        ).scalar_one()
-        assert res.meta == meta_string
-
-
-@pytest.mark.asyncio
-async def test_meta_added_more(
-    db, handle_event, SUMMARY_ADDED, CITATION_ADDED, META_ADDED_more
-):
-    # ensure each event_id is unique to prevent duplicate_event errors
-    for i, event in enumerate([SUMMARY_ADDED, CITATION_ADDED, META_ADDED_more]):
-        event["event_id"] = i + 1
-    citation_guid = CITATION_ADDED["payload"]["id"]
-    meta = dict(**META_ADDED_more["payload"])
-
-    del meta["citation_id"]
-    del meta["id"]
-    meta_string = json.dumps(meta)
-    handle_event(SUMMARY_ADDED)
-    handle_event(CITATION_ADDED)
-    # make sure meta is starts empty
-    with Session(db._engine, future=True) as sess:
-        res = sess.execute(
-            select(Citation).where(Citation.guid == citation_guid)
-        ).scalar_one()
-        assert res.meta == None
-    handle_event(META_ADDED_more)
-    with Session(db._engine, future=True) as sess:
-        res = sess.execute(
-            select(Citation).where(Citation.guid == citation_guid)
-        ).scalar_one()
-        assert res.meta == meta_string
-
-
-@pytest.mark.asyncio
 async def test_reject_event_with_duplicate_id(
     db, handle_event, SUMMARY_ADDED, CITATION_ADDED
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
-    summary_dict = deepcopy(SUMMARY_ADDED)
-    summary_dict["event_id"] = 1
-    citation_dict_1 = deepcopy(CITATION_ADDED)
-    citation_dict_2 = deepcopy(CITATION_ADDED)
-    citation_dict_1["event_id"] = 2
-    citation_dict_2["event_id"] = 2
+    summary_dict = replace(SUMMARY_ADDED, index=1)
+    citation_dict_1 = replace(CITATION_ADDED, index=2)
+    citation_dict_2 = replace(CITATION_ADDED, index=2)
     handle_event(summary_dict)
     handle_event(citation_dict_1)
     with pytest.raises(DuplicateEventError):

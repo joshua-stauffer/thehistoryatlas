@@ -20,6 +20,7 @@ from abstract_domain_model.models import (
     MetaAdded,
 )
 from abstract_domain_model.transform import from_dict
+from abstract_domain_model.types import Event
 from readmodel.errors import (
     UnknownEventError,
     MissingEventFieldError,
@@ -37,10 +38,8 @@ class EventHandler:
         # if the database gets really large in production
         self._event_id_set = set()
 
-    def handle_event(self, event):
+    def handle_event(self, event: Event):
         """Process an incoming event and persist it to the database"""
-        # transform to domain object
-        event = from_dict(event)
 
         if event.index in self._event_id_set:
             log.info(
