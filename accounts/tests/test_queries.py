@@ -42,7 +42,7 @@ def test_add_user(handler, active_admin_token, other_user_details):
 def test_get_user(handler, active_token):
     query = {"type": "GET_USER", "payload": {"token": active_token}}
     res = handler(query)
-    assert res["type"] == "GET_USER"
+    assert res["type"] == "GET_USER_RESPONSE"
     assert isinstance(res["payload"], dict)
     assert res["payload"]["token"] == active_token
     assert isinstance(res["payload"]["user_details"], dict)

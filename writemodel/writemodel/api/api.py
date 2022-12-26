@@ -67,7 +67,7 @@ class GQLApi:
                 elif isinstance(response, CommandFailed):
                     return PublishCitationResponse(
                         success=False,
-                        reason=response.payload.reason,
+                        message=response.payload.reason,
                         token=Annotation.token,
                     )
                 else:

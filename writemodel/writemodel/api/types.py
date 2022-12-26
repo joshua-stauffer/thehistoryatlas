@@ -14,8 +14,8 @@ class MutationResponse:
 @strawberry.type
 class PublishCitationResponse(MutationResponse):
     success: bool
-    message: Optional[str] = None
     token: str
+    message: Optional[str]
 
 
 @strawberry.input

@@ -1,6 +1,14 @@
+from dataclasses import dataclass
+
 import pytest
 from writemodel.state_manager.event_handler import EventHandler
 from writemodel.state_manager.handler_errors import UnknownEventTypeError
+
+
+@dataclass
+class MockEvent:
+    type: str
+    index: int
 
 
 def test_build():
@@ -61,8 +69,8 @@ def test_handle_event(monkeypatch):
     }
 
     [
-        eh.handle_event({"type": tag, "body": "_", "event_id": i + 1})
-        for i, tag in enumerate(handlers.keys())
+        eh.handle_event(MockEvent(type=event_type, index=i))
+        for i, event_type in enumerate(handlers.keys())
     ]
 
     for val in handlers.values():
@@ -72,4 +80,4 @@ def test_handle_event(monkeypatch):
 def test_unknown_type_raises_exception():
     eh = EventHandler(None, None)
     with pytest.raises(UnknownEventTypeError):
-        eh.handle_event({"type": "DOESNT EXIST", "event_id": 1})
+        eh.handle_event(MockEvent(**{"type": "DOESNT EXIST", "index": 1}))

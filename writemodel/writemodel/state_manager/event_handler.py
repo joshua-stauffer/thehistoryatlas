@@ -55,7 +55,7 @@ class EventHandler:
 
         logging.info(f"EventHandler: processing event {event}")
         event_index = event.index
-        if not event_index:
+        if event_index is None:
             raise MissingEventFieldError
         if event_index in self._event_id_set:
             log.info(
