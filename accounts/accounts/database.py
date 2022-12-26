@@ -6,6 +6,7 @@ Allows creation and updating users
 import asyncio
 import logging
 import json
+import os
 from uuid import uuid4
 from typing import (
     Dict,
@@ -30,7 +31,7 @@ from accounts.encryption import encrypt
 from accounts.encryption import check_password
 from accounts.encryption import validate_token
 from accounts.types import Token
-from accounts.types import UserDetails
+from accounts.types import UserDetailsDict
 
 
 log = logging.getLogger(__name__)
@@ -41,8 +42,36 @@ class Database:
         self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
         # initialize the db
         Base.metadata.create_all(self._engine)
+        self._ensure_admin()
 
-    def add_user(self, token: Token, user_details: Dict) -> UserDetails:
+    def _ensure_admin(self):
+        """
+        For development use only. Creates a default admin user
+        if one does not yet exist.
+        """
+        with Session(self._engine, future=True) as session:
+            accounts = session.query(User).all()
+            if len(accounts):
+                log.info("Found an existing account.")
+                return
+            log.info("Creating a default admin account.")
+            username = os.environ.get("ADMIN_USERNAME", "admin")
+            password = os.environ.get("ADMIN_PASSWORD", "admin")
+            user = User(
+                id=str(uuid4()),
+                username=username,
+                password=encrypt(password).decode(),
+                f_name="tha",
+                l_name="admin",
+                email="test@thehistoryatlas.org",
+                type="admin",
+                confirmed=True,
+                deactivated=False,
+            )
+            session.add(user)
+            session.commit()
+
+    def add_user(self, token: Token, user_details: Dict) -> Tuple[str, UserDetailsDict]:
         """Adds a user to the database"""
 
         user_id, token = validate_token(token)
@@ -85,7 +114,7 @@ class Database:
 
     def update_user(
         self, token: str, user_details: dict, credentials: Optional[dict[str, str]]
-    ) -> Tuple[Token, UserDetails]:
+    ) -> Tuple[Token, UserDetailsDict]:
         """Update a user's data"""
         if not credentials:
             credentials = {}
@@ -112,7 +141,7 @@ class Database:
             session.commit()
             return str(token), user.to_dict()
 
-    def get_user(self, token) -> Tuple[Token, UserDetails]:
+    def get_user(self, token) -> Tuple[Token, UserDetailsDict]:
         """Obtain user details"""
 
         user_id, token = validate_token(token)
@@ -149,7 +178,7 @@ class Database:
                 return False
             return True
 
-    def deactivate_account(self, token, username) -> Tuple[Token, UserDetails]:
+    def deactivate_account(self, token, username) -> Tuple[Token, UserDetailsDict]:
         admin_user_id, token = validate_token(token)
         with Session(self._engine, future=True) as session:
             self._require_admin_user(user_id=admin_user_id, session=session)
@@ -159,7 +188,7 @@ class Database:
             session.commit()
             return token, user.to_dict()
 
-    def confirm_account(self, token) -> Tuple[Token, UserDetails]:
+    def confirm_account(self, token) -> Tuple[Token, UserDetailsDict]:
         user_id, token = validate_token(token, force_refresh=True)
         with Session(self._engine, future=True) as session:
             user = self._get_user_by_id(user_id, session)

@@ -24,14 +24,15 @@ type AccountsGenericResponse
 }
 
 input AnnotateCitationInput
-  @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
-  citation_guid: String!
   citation: String!
-  summary_guid: String!
+  citationId: String!
   summary: String!
-  summary_tags: [TagInput!]!
+  summaryId: String
   meta: MetaDataInput!
+  summaryTags: [TagInput!]!
+  token: String!
 }
 
 type Citation
@@ -76,6 +77,7 @@ type EntitySummary
 
 enum EntityType
   @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
   TIME
   PERSON
@@ -126,6 +128,7 @@ scalar join__FieldSet
 
 enum join__Graph {
   API @join__graph(name: "api", url: "http://api:4000/")
+  WRITEMODEL @join__graph(name: "writemodel", url: "http://writemodel:8800/")
 }
 
 scalar link__Import
@@ -168,33 +171,34 @@ type MetaData
 }
 
 input MetaDataInput
-  @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
-  title: String!
+  id: String
   author: String!
-  publisher: String!
-  pubDate: String
   pageNum: Int
-  GUID: String!
+  pubDate: String!
+  publisher: String!
+  title: String!
 }
 
 type Mutation
   @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
-  PublishNewCitation(Annotation: AnnotateCitationInput!): PublishCitationResponse!
-  ConfirmAccount(token: String!): AccountsGenericResponse!
-  DeactivateAccount(token: String!, username: String!): AccountsGenericResponse
-  UpdateUser(token: String!, user_details: UpdateUserDetailsInput!, credentials: CredentialsInput): AccountsGenericResponse!
-  AddUser(token: String!, user_details: NewUserDetailsInput!): AccountsGenericResponse!
-  Login(username: String!, password: String!): LoginResponse!
+  ConfirmAccount(token: String!): AccountsGenericResponse! @join__field(graph: API)
+  DeactivateAccount(token: String!, username: String!): AccountsGenericResponse @join__field(graph: API)
+  UpdateUser(token: String!, user_details: UpdateUserDetailsInput!, credentials: CredentialsInput): AccountsGenericResponse! @join__field(graph: API)
+  AddUser(token: String!, user_details: NewUserDetailsInput!): AccountsGenericResponse! @join__field(graph: API)
+  Login(username: String!, password: String!): LoginResponse! @join__field(graph: API)
+  PublishNewCitation(Annotation: AnnotateCitationInput!): PublishCitationResponse! @join__field(graph: WRITEMODEL)
 }
 
 interface MutationResponse
-  @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
-  code: String!
   success: Boolean!
-  message: String!
+  message: String
+  token: String!
 }
 
 input NewUserDetailsInput
@@ -216,28 +220,30 @@ type PlaceByCoordsResponse
 }
 
 type PublishCitationResponse implements MutationResponse
-  @join__implements(graph: API, interface: "MutationResponse")
-  @join__type(graph: API)
+  @join__implements(graph: WRITEMODEL, interface: "MutationResponse")
+  @join__type(graph: WRITEMODEL)
 {
-  code: String!
   success: Boolean!
-  message: String!
+  message: String
+  token: String!
 }
 
 type Query
   @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
-  GetSummariesByGUID(summary_guids: [String!]!): [Summary]
-  GetEntitySummariesByGUID(guids: [String!]!): [EntitySummary]!
-  GetCitationByGUID(citationGUID: String!): Citation
-  GetManifest(entityType: EntityType!, GUID: String!): Manifest!
-  GetGUIDsByName(name: String!): GUIDSummaries!
-  GetCoordinatesByName(name: String!): [GeoResponse]
-  GetFuzzySearchByName(name: String!): [FuzzySearchResponse]
-  GetTextAnalysis(text: String!): TextAnalysisResponse
-  IsUsernameUnique(username: String!): IsUsernameUniqueResponse!
-  GetUser(token: String!): AccountsGenericResponse!
-  GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse!
+  GetSummariesByGUID(summary_guids: [String!]!): [Summary] @join__field(graph: API)
+  GetEntitySummariesByGUID(guids: [String!]!): [EntitySummary]! @join__field(graph: API)
+  GetCitationByGUID(citationGUID: String!): Citation @join__field(graph: API)
+  GetManifest(entityType: EntityType!, GUID: String!): Manifest! @join__field(graph: API)
+  GetGUIDsByName(name: String!): GUIDSummaries! @join__field(graph: API)
+  GetCoordinatesByName(name: String!): [GeoResponse] @join__field(graph: API)
+  GetFuzzySearchByName(name: String!): [FuzzySearchResponse] @join__field(graph: API)
+  GetTextAnalysis(text: String!): TextAnalysisResponse @join__field(graph: API)
+  IsUsernameUnique(username: String!): IsUsernameUniqueResponse! @join__field(graph: API)
+  GetUser(token: String!): AccountsGenericResponse! @join__field(graph: API)
+  GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse! @join__field(graph: API)
+  status: String! @join__field(graph: WRITEMODEL)
 }
 
 type Summary
@@ -262,16 +268,16 @@ type Tag
 }
 
 input TagInput
-  @join__type(graph: API)
+  @join__type(graph: WRITEMODEL)
 {
-  type: EntityType!
-  start_char: Int!
-  stop_char: Int!
-  GUID: String!
+  id: String
   name: String!
-  latitude: Float
-  longitude: Float
-  geoshape: String
+  startChar: Int!
+  stopChar: Int!
+  type: EntityType!
+  geoshape: String = null
+  latitude: Float = null
+  longitude: Float = null
 }
 
 type TextAnalysis
@@ -289,6 +295,15 @@ type TextAnalysisResponse
 {
   text: String
   text_map: TextMap
+  boundaries: [TextBoundaries]
+}
+
+type TextBoundaries
+  @join__type(graph: API)
+{
+  text: String
+  start_char: Int
+  stop_char: Int
 }
 
 type TextMap

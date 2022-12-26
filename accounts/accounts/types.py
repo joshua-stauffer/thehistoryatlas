@@ -4,7 +4,7 @@ Token = str
 UserId = str
 
 
-class UserDetails(TypedDict):
+class UserDetailsDict(TypedDict):
     """A dict representing all queriable user details"""
 
     f_name: str

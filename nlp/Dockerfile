@@ -1,14 +1,9 @@
-#FROM ilriccio/thehistoryatlas:ner_base
-#COPY /app /nlp
-
 FROM python:3.10-slim-buster
 
-#COPY --from=0 /app/base-models /app/base-models/model-best
-#COPY --from=0 /app/train /app/train
-
-WORKDIR /app
 COPY --from=pylib . /lib
 COPY --from=testlib . /lib
+WORKDIR /app
+
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install /lib/pybroker

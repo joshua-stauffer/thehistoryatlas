@@ -23,6 +23,20 @@ from abstract_domain_model.models import (
     CitationAddedPayload,
     MetaAddedPayload,
 )
+from abstract_domain_model.models.accounts import GetUser, GetUserPayload, UserDetails
+from abstract_domain_model.models.accounts.get_user import (
+    GetUserResponse,
+    GetUserResponsePayload,
+)
+from abstract_domain_model.models.commands import (
+    CommandFailed,
+    CommandFailedPayload,
+    CommandSuccess,
+)
+from abstract_domain_model.models.events.meta_tagged import (
+    MetaTagged,
+    MetaTaggedPayload,
+)
 from abstract_domain_model.transform import from_dict
 
 
@@ -169,8 +183,7 @@ def citation_added_data(baseline_event_data):
             "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "text": "name",
-            "tags": ["one", "two", "three"],
-            "meta": "arbitrary value here",
+            "meta_id": "69a8bc1b-7c7c-49a3-8d05-db110c14b949",
         },
     }
 
@@ -187,6 +200,18 @@ def meta_added_data(baseline_event_data):
             "author": "name",
             "publisher": "some publisher",
             "kwargs": {"accept": "arbitrary_kwargs"},
+        },
+    }
+
+
+@pytest.fixture
+def meta_tagged_data(baseline_event_data):
+    return {
+        **baseline_event_data,
+        "type": "META_TAGGED",
+        "payload": {
+            "citation_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
+            "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
         },
     }
 
@@ -291,6 +316,16 @@ def test_transform_meta_added(meta_added_data):
         assert getattr(res, key) == value
 
 
+def test_transform_meta_tagged(meta_tagged_data):
+    res = from_dict(meta_tagged_data)
+    assert isinstance(res, MetaTagged)
+    assert isinstance(res.payload, MetaTaggedPayload)
+    for key, value in meta_tagged_data.items():
+        if isinstance(value, dict):
+            value = MetaTaggedPayload(**value)
+        assert getattr(res, key) == value
+
+
 def test_transform_without_type_raises_exception():
     with pytest.raises(UnknownMessageError):
         _ = from_dict({})
@@ -300,3 +335,52 @@ def test_transform_with_missing_fields_raises_exception():
     data = {"type": "PERSON_TAGGED"}
     with pytest.raises(MissingFieldsError):
         _ = from_dict(data)
+
+
+def test_transform_command_failed():
+    data = {"type": "COMMAND_FAILED", "payload": {"reason": "some reason"}}
+    res = from_dict(data)
+    assert isinstance(res, CommandFailed)
+    assert isinstance(res.payload, CommandFailedPayload)
+
+
+def test_transform_command_success():
+    data = {
+        "type": "COMMAND_SUCCESS",
+    }
+    res = from_dict(data)
+    assert isinstance(res, CommandSuccess)
+
+
+def test_transform_get_user():
+    get_user = from_dict(
+        {
+            "type": "GET_USER",
+            "payload": {
+                "token": "token-value-here",
+            },
+        }
+    )
+    assert isinstance(get_user, GetUser)
+    assert isinstance(get_user.payload, GetUserPayload)
+
+
+def test_transform_get_user_response():
+    get_user_response = from_dict(
+        {
+            "type": "GET_USER_RESPONSE",
+            "payload": {
+                "token": "token-value-here",
+                "user_details": {
+                    "f_name": "Bilbo",
+                    "l_name": "Baggins",
+                    "username": "dragonslayer",
+                    "email": "bagends@theshire.middleearth",
+                    "last_login": "2022-12-23 16:30:53.368102",
+                },
+            },
+        }
+    )
+    assert isinstance(get_user_response, GetUserResponse)
+    assert isinstance(get_user_response.payload, GetUserResponsePayload)
+    assert isinstance(get_user_response.payload.user_details, UserDetails)

@@ -1,6 +1,5 @@
 // const { gql } = require("apollo-server");
 const { gql } = require("graphql-tag");
-// import { gql } from 'graphql-tag';
 
 export const typeDefs = gql`
   extend schema @link(url: "https://specs.apollo.dev/federation/v2.0", import: ["@key", "@shareable"])
@@ -30,9 +29,6 @@ export const typeDefs = gql`
   }
 
   type Mutation {
-    PublishNewCitation(
-      Annotation: AnnotateCitationInput!
-    ): PublishCitationResponse!
 
     ConfirmAccount(token: String!): AccountsGenericResponse!
 
@@ -185,47 +181,6 @@ export const typeDefs = gql`
   }
 
   # mutation types
-
-  input AnnotateCitationInput {
-    citation_guid: String!
-    citation: String!
-    summary_guid: String!
-    summary: String!
-    summary_tags: [TagInput!]!
-    meta: MetaDataInput!
-  }
-
-  input TagInput {
-    type: EntityType!
-    start_char: Int!
-    stop_char: Int!
-    GUID: String!
-    name: String!
-    latitude: Float
-    longitude: Float
-    geoshape: String
-  }
-
-  input MetaDataInput {
-    title: String!
-    author: String!
-    publisher: String!
-    pubDate: String
-    pageNum: Int
-    GUID: String!
-  }
-
-  interface MutationResponse {
-    code: String!
-    success: Boolean!
-    message: String!
-  }
-
-  type PublishCitationResponse implements MutationResponse {
-    code: String!
-    success: Boolean!
-    message: String!
-  }
 
   # Accounts Service Types
 

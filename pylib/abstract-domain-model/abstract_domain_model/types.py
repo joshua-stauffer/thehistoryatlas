@@ -13,7 +13,18 @@ from abstract_domain_model.models import (
     PublishCitation,
     PublishCitationPayload,
 )
+from abstract_domain_model.models.accounts import (
+    Login,
+    AddUser,
+    GetUser,
+    UpdateUser,
+    IsUsernameUnique,
+    DeactivateAccount,
+    ConfirmAccount,
+)
+from abstract_domain_model.models.accounts.get_user import GetUserResponse
 from abstract_domain_model.models.commands.publish_citation import Meta
+from abstract_domain_model.models.events.meta_tagged import MetaTagged
 
 Event = Union[
     TimeAdded,
@@ -24,6 +35,7 @@ Event = Union[
     PersonAdded,
     CitationAdded,
     MetaAdded,
+    MetaTagged,
     SummaryAdded,
     SummaryTagged,
 ]
@@ -37,6 +49,7 @@ EventTypes = Literal[
     "PERSON_ADDED",
     "CITATION_ADDED",
     "META_ADDED",
+    "META_TAGGED",
     "SUMMARY_ADDED",
     "SUMMARY_TAGGED",
 ]
@@ -45,20 +58,38 @@ Command = Union[PublishCitation]
 
 CommandTypes = Literal["PUBLISH_CITATION"]
 
-# Query = Union[None]
+AccountEvent = Union[
+    Login,
+    AddUser,
+    GetUser,
+    GetUserResponse,
+    UpdateUser,
+    IsUsernameUnique,
+    DeactivateAccount,
+    ConfirmAccount,
+]
 
-# QueryTypes = Literal[]
+AccountEventTypes = Literal[
+    "LOGIN",
+    "ADD_USER",
+    "GET_USER",
+    "GET_USER_RESPONSE",
+    "UPDATE_USER",
+    "IS_USERNAME_UNIQUE",
+    "DEACTIVATE_ACCOUNT",
+    "CONFIRM_ACCOUNT",
+]
 
 DomainObject = Union[
     Command,
     Event,
-    # Query,
+    AccountEvent,
 ]
 
 DomainObjectTypes = Union[
     CommandTypes,
     EventTypes,
-    # QueryTypes,
+    AccountEventTypes,
 ]
 
 PublishCitationType = type(

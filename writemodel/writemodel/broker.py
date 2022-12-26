@@ -5,7 +5,10 @@ April 26th, 2021"""
 import asyncio
 from collections import deque
 import logging
+from typing import Callable, Dict, Awaitable
 from uuid import uuid4
+
+from abstract_domain_model.types import Command
 from pybroker import BrokerBase
 from writemodel.state_manager.handler_errors import CitationExistsError
 from writemodel.state_manager.handler_errors import CitationMissingFieldsError
@@ -16,7 +19,11 @@ log.setLevel("DEBUG")
 
 class Broker(BrokerBase):
     def __init__(
-        self, config, command_handler, event_handler, get_latest_event_id
+        self,
+        config,
+        event_handler: Callable[[Dict], None],
+        auth_handler: Callable[[Dict, str], None],
+        get_latest_event_id,
     ) -> None:
         super().__init__(
             broker_username=config.BROKER_USERNAME,
@@ -30,8 +37,9 @@ class Broker(BrokerBase):
         self._history_queue = deque()
 
         # save main application callbacks
-        self._command_handler = command_handler
         self._event_handler = event_handler
+        self._auth_handler = auth_handler
+        self._AUTH_CALLBACK_ROUTE = "writemodel.auth.response"
         # save method to use when requesting history replay
         self._get_latest_event_id = get_latest_event_id
         self._HISTORY_TIMEOUT = 1  # seconds we wait before remaking our replay
@@ -45,83 +53,23 @@ class Broker(BrokerBase):
 
         await self.connect()
 
-        # register handlers
-        await self.add_message_handler(
-            routing_key="command.writemodel", callback=self._handle_command
-        )
         await self.add_message_handler(
             routing_key="event.persisted", callback=self._handle_persisted_event
         )
         await self.add_message_handler(
             routing_key="event.replay.writemodel", callback=self._handle_replay_history
         )
-
+        await self.add_message_handler(
+            routing_key=self._AUTH_CALLBACK_ROUTE, callback=self._handle_auth_response
+        )
         # get publish methods
+        self._publish_auth_query = self.get_publisher(routing_key="query.accounts")
         self._publish_emitted_event = self.get_publisher(routing_key="event.emitted")
 
         if not is_initialized:
             await self._request_history_replay(last_index=replay_from)
 
     # on message callbacks
-
-    async def _handle_command(self, message):
-        """Wrapper for handling commands"""
-        body = self.decode_message(message)
-        # Now pass message body to main application for processing.
-        # if the processing fails this line with raise an exception
-        # and the context manager which called this method will
-        # nack the message
-        try:
-            event = self._command_handler(body)
-            msg = self.create_message(event, headers=message.headers)
-            log.debug(f"Broker is publishing to emitted.event: {event}")
-            await self._publish_emitted_event(msg)
-            # check if the publisher wants to hear a reply
-            if message.reply_to:
-                body = self.create_message(
-                    {"type": "COMMAND_SUCCESS"},
-                    correlation_id=message.correlation_id,
-                    headers=message.headers,
-                )
-                await self.publish_one(body, message.reply_to)
-        except CitationExistsError as e:
-            log.info(
-                f"Broker caught error from a duplicate event. "
-                + "If sender included a reply_to value they will receive a "
-                + "message now."
-            )
-            if message.reply_to:
-                body = self.create_message(
-                    {
-                        "type": "COMMAND_FAILED",
-                        "payload": {
-                            "reason": "Citation already exists in database.",
-                            "existing_event_guid": e.GUID,
-                        },
-                    },
-                    correlation_id=message.correlation_id,
-                    headers=message.headers,
-                )
-                await self.publish_one(body, message.reply_to)
-        except CitationMissingFieldsError as e:
-            log.info(
-                f"Broker caught an error from a citation missing fields. "
-                + "If sender included a reply_to value they will receive a "
-                + "message now."
-            )
-            log.info(e)
-            if message.reply_to:
-                body = self.create_message(
-                    {
-                        "type": "COMMAND_FAILED",
-                        "payload": {
-                            "reason": "Citation was missing fields (text, GUID, tags, or meta)."
-                        },
-                    },
-                    correlation_id=message.correlation_id,
-                    headers=message.headers,
-                )
-                await self.publish_one(body, message.reply_to)
 
     async def _handle_persisted_event(self, message):
         """wrapper for handling persisted events"""
@@ -131,6 +79,17 @@ class Broker(BrokerBase):
             # history replay
             return self._history_queue.append(body)
         self._event_handler(body)
+
+    async def _handle_auth_response(self, message):
+        body = self.decode_message(message)
+        correlation_id = message.correlation_id
+        self._auth_handler(body, correlation_id)
+
+    async def make_auth_request(self, request: Dict, correlation_id: str) -> None:
+        msg = self.create_message(
+            request, reply_to=self._AUTH_CALLBACK_ROUTE, correlation_id=correlation_id
+        )
+        await self._publish_auth_query(msg)
 
     # history management
 

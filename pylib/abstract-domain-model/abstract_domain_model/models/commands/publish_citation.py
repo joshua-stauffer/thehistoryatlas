@@ -14,7 +14,7 @@ class PublishCitation:
 
 @dataclass(frozen=True)
 class PublishCitationPayload:
-    id: str
+    id: str  # ensure duplicate citations aren't processed
     text: str
     summary: Optional[str]  # won't exist when tagging a summary
     summary_id: Optional[str]  # won't exist when creating new summary

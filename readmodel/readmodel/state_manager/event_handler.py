@@ -20,6 +20,7 @@ from abstract_domain_model.models import (
     MetaAdded,
 )
 from abstract_domain_model.transform import from_dict
+from abstract_domain_model.types import Event
 from readmodel.errors import (
     UnknownEventError,
     MissingEventFieldError,
@@ -37,26 +38,22 @@ class EventHandler:
         # if the database gets really large in production
         self._event_id_set = set()
 
-    def handle_event(self, event):
+    def handle_event(self, event: Event):
         """Process an incoming event and persist it to the database"""
-        event_id = event.pop("event_id")  # ADM doesn't expect this yet
-        if not event_id:
-            raise MissingEventFieldError
-        if event_id in self._event_id_set:
+
+        if event.index in self._event_id_set:
             log.info(
-                f"Discarding malformed or duplicate message with event_id {event_id}."
+                f"Discarding malformed or duplicate message with event_id {event.index}."
             )
             raise DuplicateEventError
 
-        # transform to domain object
-        event = from_dict(event)
         handler = self._event_handlers.get(event.type)
         if not handler:
             raise UnknownEventError(event.type)
         handler(event)
         # update our record of the latest handled event
-        self._db.update_last_event_id(event_id)
-        self._event_id_set.add(event_id)
+        self._db.update_last_event_id(event.index)
+        self._event_id_set.add(event.index)
 
     def _map_event_handlers(self):
         """A dict of known event types and the methods which process them"""

@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 import os
-from typing import Union
+from typing import Union, Tuple
 import logging
-from typing import Tuple, Optional
 from cryptography.fernet import Fernet
 from cryptography.fernet import InvalidToken
 from accounts.types import Token
@@ -34,7 +33,6 @@ fernet = Fernet(SEC_KEY)
 
 def encrypt(password: str) -> bytes:
     """encrypts sensitive user data"""
-
     byte_password = password.encode()
     encrypted_password = fernet.encrypt(byte_password)
     return encrypted_password

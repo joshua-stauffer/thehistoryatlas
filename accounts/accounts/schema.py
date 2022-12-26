@@ -6,7 +6,7 @@ October 16th 2021
 from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import VARCHAR, BOOLEAN
-from accounts.types import UserDetails
+from accounts.types import UserDetailsDict
 from accounts.utils import update_last_login
 
 Base = declarative_base()
@@ -34,8 +34,8 @@ class User(Base):
     def is_admin(self):
         return self.type == "admin"
 
-    def to_dict(self) -> UserDetails:
-        """returns all queriable fields on the User object"""
+    def to_dict(self) -> UserDetailsDict:
+        """returns all queryable fields on the User object"""
         return {
             "f_name": self.f_name,
             "l_name": self.l_name,
