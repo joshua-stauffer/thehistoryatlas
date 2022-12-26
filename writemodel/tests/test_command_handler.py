@@ -54,26 +54,27 @@ def transaction_meta():
 
 @pytest.mark.asyncio
 async def test_transform_publish_citation_to_events_returns_expected_events_list(
-    publish_citation,
+    publish_citation, hash_text, db
 ):
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
 
-    synthetic_events = handler.handle_command(citation0)
+    synthetic_events = handler.handle_command(publish_citation)
     # there are currently 9 types of synthetic tags, and this should
     # include all of them
-    assert len(synthetic_events) == 9
+    assert len(synthetic_events) == 6
     expected_types = [
         "SUMMARY_ADDED",
         "CITATION_ADDED",
         "PERSON_ADDED",
-        "PERSON_TAGGED",
+        # "PERSON_TAGGED",
         "PLACE_ADDED",
-        "PLACE_TAGGED",
+        # "PLACE_TAGGED",
         "TIME_ADDED",
-        "TIME_TAGGED",
+        # "TIME_TAGGED",
         "META_ADDED",
     ]
     for t, s in zip(expected_types, synthetic_events):
-        assert t == s["type"]
+        assert t == s.type
 
 
 @pytest.mark.asyncio
