@@ -6,6 +6,7 @@ Allows creation and updating users
 import asyncio
 import logging
 import json
+import os
 from uuid import uuid4
 from typing import (
     Dict,
@@ -54,10 +55,12 @@ class Database:
                 log.info("Found an existing account.")
                 return
             log.info("Creating a default admin account.")
+            username = os.environ.get("ADMIN_USERNAME", "admin")
+            password = os.environ.get("ADMIN_PASSWORD", "admin")
             user = User(
                 id=str(uuid4()),
-                username="admin",
-                password=encrypt("admin").decode(),
+                username=username,
+                password=encrypt(password).decode(),
                 f_name="tha",
                 l_name="admin",
                 email="test@thehistoryatlas.org",
