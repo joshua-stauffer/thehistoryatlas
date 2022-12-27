@@ -8,28 +8,8 @@ import { theme } from '../../baseStyle'
 
 
 
-// const useStyles = makeStyles(theme => ({
-//   container: {
-//     padding: theme.spacing(10),
-//     width: theme.spacing(38),
-//     border: theme.spacing(.2),
-//     borderStyle: 'solid',
-//     borderColor: theme.palette.primary.main,
-//     justifyContent: 'center',
-//     rowGap: 5,
-//   },
-//   placeholder: {
-//     display: 'flex',
-//     alignItems: 'center',
-//     flexDirection: 'column',
-//     padding: theme.spacing(10),
-//   }
-// }));
-
-
 export const LoginPage = () => {
 
-  // const classes = useStyles();
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
   
