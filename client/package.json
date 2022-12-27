@@ -11,7 +11,8 @@
     "@material-ui/icons": "^4.11.2",
     "@mui/icons-material": "^5.2.5",
     "@mui/lab": "^5.0.0-alpha.62",
-    "@mui/material": "^5.2.6",
+    "@mui/material": "^5.11.1",
+    "@mui/styles": "^5.11.1",
     "@testing-library/jest-dom": "^5.12.0",
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",
@@ -48,9 +49,9 @@
   },
   "browserslist": [
     ">0.2%",
-   "not dead",
-   "not op_mini all"
- ],
+    "not dead",
+    "not op_mini all"
+  ],
   "devDependencies": {
     "@types/d3": "^6.7.3",
     "@types/leaflet": "^1.7.8",
