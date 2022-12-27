@@ -1,34 +1,5 @@
 import { createTheme } from "@mui/material/styles";
 
-// interface Theme {
-//   primary: string;
-//   secondary: string;
-// }
-
-// interface ColorTheme {
-//   dark: Theme;
-//   light: Theme;
-// }
-
-// export const colorTheme: ColorTheme = {
-//   dark: {
-//     primary: '#6a1b9a',
-//     secondary: '#ef6c00'
-//   },
-//   light: {
-//     primary: '#e1bee7',
-//     secondary: '#ffb74d'
-//   }
-// }
-
-
-
-// const CustomButton = styled(Button)(({ theme }) => ({
-//   color: theme.palette.primary,
-//   '&.MuiButton-containedPrimary': {
-//     color: theme.palette.primary,
-//   },
-// }));
 
 export const theme = createTheme({
   palette: {
