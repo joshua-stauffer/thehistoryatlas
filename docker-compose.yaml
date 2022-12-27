@@ -148,6 +148,8 @@ services:
             - TESTING=${TESTING}
             - REFRESH_BY=${ACCOUNTS_REFRESH_BY}
             - CONFIG=${CONFIG}
+            - ADMIN_USERNAME=${ADMIN_USERNAME}
+            - ADMIN_PASSWORD=${ADMIN_PASSWORD}
 
         networks:
             - tha-connect
