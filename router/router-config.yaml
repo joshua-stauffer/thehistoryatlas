@@ -9,3 +9,9 @@ supergraph:
   listen: 0.0.0.0:4400
 #  listen: 127.0.0.1:4400
   introspection: true
+
+cors:
+  origins:
+    - http://localhost:3000
+    - https://studio.apollographql.com
+  allow_credentials: true

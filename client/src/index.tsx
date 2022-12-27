@@ -11,7 +11,7 @@ import { cache } from './graphql/cache';
 
 export const client = new ApolloClient({
   cache,
-  uri: 'http://localhost:4000',
+  uri: 'http://localhost:4400',
   connectToDevTools: true
 });
 
