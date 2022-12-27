@@ -205,11 +205,16 @@ export const TagEntities = (props: TagEntitiesProps) => {
       }
     }))
   }, [data])
-  if (loading) return <h1>loading..</h1> // replace with real loading screen app wide
+  if (loading) return <h1>loading...</h1> // replace with real loading screen app wide
   if (error) return <h1>Oops, there was an error: {error}</h1>
   return (
     <Box>
-      <Grid container spacing={2}>
+      <Grid 
+        container
+        spacing={2}
+        direction='column'
+        alignContent='center'
+      >
         <Grid item xs={12} sm={6}>
           <Paper>
             <Typography align="center">Tag Citation</Typography>
@@ -310,7 +315,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
                   <Button
                     variant="contained"
                     onClick={addNewTag}
-                  >Tag Entity without reference.</Button>
+                  >Tag Entity without reference</Button>
                 </>
             }
           </Paper>

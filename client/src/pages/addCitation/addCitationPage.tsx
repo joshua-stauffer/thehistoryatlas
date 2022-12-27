@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Stepper, Step, StepLabel } from '@material-ui/core'
-import { Box } from '@mui/material';
+import { makeStyles, ListItemSecondaryAction } from '@material-ui/core'
+import Stepper from '@mui/material/Stepper'
+import Step from '@mui/material/Step'
+import StepLabel from '@mui/material/StepLabel'
+import Box from '@mui/material/Box';
 import { v4 } from 'uuid';
+import { theme } from '../../baseStyle'
 
 import { ExploreButton, SettingsButton } from '../../components/navBar';
 import { PublishNewCitationVars } from '../../graphql/publishNewCitation';
@@ -92,7 +96,7 @@ d        if (tag.type === "PLACE") {
         }
       })
       return (
-        <SaveSummary 
+        <SaveSummary
           annotation={{
             citationId: citationGUID,
             citation: quote.text,
@@ -106,7 +110,7 @@ d        if (tag.type === "PLACE") {
           )
   }
   return (
-    <Box>
+    <Box sx={{margin: 10}}>
       <NavBar children={[
         <ExploreButton />,
         <SettingsButton />
@@ -115,7 +119,7 @@ d        if (tag.type === "PLACE") {
       <Stepper activeStep={step}>
         {steps.map((label, index) => (
           <Step key={index} onClick={() => handleStepClick(index)}>
-            <StepLabel>{label}</StepLabel>
+            <StepLabel sx={{color: theme.palette.primary.main}}>{label}</StepLabel>
           </Step>
         ))}
       </Stepper>
