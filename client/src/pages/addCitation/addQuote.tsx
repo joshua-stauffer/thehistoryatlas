@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { Box, Button, Grid, TextField, Typography } from "@material-ui/core";
-
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Grid from '@mui/material/Grid'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import { theme } from '../../baseStyle'
 
 export interface Quote {
   text: string;
@@ -18,8 +22,8 @@ export const AddQuote = (props: AddQuoteProps) => {
     <Box
       component="form"
       sx={{
-        padding: 50,
-        maxWidth: 200, //orig. 500
+        padding: 10,
+        maxWidth: 300,
         marginLeft: 'auto',
         marginRight: 'auto'
       }}
@@ -41,6 +45,7 @@ export const AddQuote = (props: AddQuoteProps) => {
             label="Citation Text"
             value={text}
             onChange={e => setText(e.target.value)}
+            sx={{color: theme.palette.primary.main}}
           />
         </Grid>
 

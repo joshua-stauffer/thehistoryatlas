@@ -1,6 +1,11 @@
 import { useState } from 'react';
-import { Box, Button, Grid, TextField, Typography } from "@material-ui/core";
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Grid from '@mui/material/Grid'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { v4 } from 'uuid';
+import { theme } from '../../baseStyle'
 
 export interface Source {
   title: string
@@ -46,8 +51,8 @@ export const AddSource = (props: AddSourceProps) => {
     <Box
       component="form"
       sx={{
-        padding: 50,
-        maxWidth: 200,
+        paddingTop: 10,
+        maxWidth: 300,
         marginLeft: 'auto',
         marginRight: 'auto'
       }}
@@ -66,6 +71,7 @@ export const AddSource = (props: AddSourceProps) => {
             label="Title"
             value={title}
             onChange={e => setTitle(e.target.value)}
+            sx={{color: theme.palette.primary.main}}
           />
         </Grid>
 

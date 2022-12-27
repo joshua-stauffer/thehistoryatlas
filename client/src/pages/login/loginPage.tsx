@@ -1,65 +1,75 @@
 
 import { useState } from 'react'
-import { makeStyles, Grid, TextField, Typography, Button } from '@material-ui/core'
-import { colorTheme } from '../../baseStyle'
+import Typography from '@mui/material/Typography'
+import Button from '@mui/material/Button'
+import Grid from '@mui/material/Grid'
+import TextField from '@mui/material/TextField'
+import { theme } from '../../baseStyle'
 
 
-const useStyles = makeStyles(theme => ({
-  container: {
-    padding: theme.spacing(10),
-    width: theme.spacing(38),
-    border: theme.spacing(.2),
-    borderStyle: 'solid',
-    borderColor: colorTheme.dark.primary,
-  },
-  placeholder: {
-    display: 'flex',
-    alignItems: 'center',
-    flexDirection: 'column',
-    padding: theme.spacing(10),
-  }
-}));
+
+// const useStyles = makeStyles(theme => ({
+//   container: {
+//     padding: theme.spacing(10),
+//     width: theme.spacing(38),
+//     border: theme.spacing(.2),
+//     borderStyle: 'solid',
+//     borderColor: theme.palette.primary.main,
+//     justifyContent: 'center',
+//     rowGap: 5,
+//   },
+//   placeholder: {
+//     display: 'flex',
+//     alignItems: 'center',
+//     flexDirection: 'column',
+//     padding: theme.spacing(10),
+//   }
+// }));
 
 
 export const LoginPage = () => {
 
-  const classes = useStyles();
+  // const classes = useStyles();
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
   
   return (
-    <Grid className={classes.placeholder}>
-      <Grid className={classes.placeholder}></Grid>
-      <Grid container className={classes.container}>
-        <Grid item xs={12}>
-          <Typography>
-            The History Atlas
-          </Typography>
+    <Grid>
+      <Grid sx={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}></Grid>
+        <Grid container sx={{
+          margin: 80, padding: 10, width: 350, border: 2, borderColor: theme.palette.primary.main, justifyContent: 'center', rowGap: 3
+        }}>
+          <Grid item xs={12} sx={{display: 'flex', justifyContent: 'center'}}>
+            <Typography>
+              The History Atlas
+            </Typography>
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              id="username"
+              label="Username"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              sx={{color: 'primary', padding: .2}}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              id="password"
+              label="Password"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              sx={{color: 'primary', padding: .1}}
+            />
+          </Grid>
+          <Grid item>
+            <Button variant="contained" onClick={() => console.log('submitted')} color='secondary'>
+              Login
+            </Button>
+          </Grid>
         </Grid>
-        <Grid item xs={12}>
-          <TextField
-            id="username"
-            label="Username"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            id="password"
-            label="Password"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-        </Grid>
-        <Grid item alignItems="center">
-          <Button variant="contained" onClick={() => console.log('submitted')}>
-            Login
-          </Button>
-        </Grid>
-      </Grid>
-      <Grid className={classes.placeholder}></Grid>
+      <Grid></Grid>
     </Grid>
   )
 }
