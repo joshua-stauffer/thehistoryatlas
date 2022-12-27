@@ -18,15 +18,15 @@ export interface PublishNewCitationResult {
 
 export interface PublishNewCitationVars {
   Annotation: {
-    citation_guid: string
+    citationId: string
     citation: string
-    summary_guid: string
+    summaryId: string
     summary: string
-    summary_tags: {
+    summaryTags: {
       type: "PERSON" | "PLACE" | "TIME"
-      start_char: number
-      stop_char: number
-      GUID: string
+      startChar: number
+      stopChar: number
+      id?: string
       name: string
       latitude?: number
       longitude?: number
@@ -38,7 +38,8 @@ export interface PublishNewCitationVars {
       publisher: string
       pubDate?: string
       pageNum?: number
-      GUID: string
+      id?: string
     }
+    token: string
   }
 }
