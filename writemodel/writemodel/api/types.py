@@ -31,7 +31,7 @@ class AnnotateCitationInput:
 
 @strawberry.input
 class MetaDataInput:
-    author: strs
+    author: str
     pubDate: str
     publisher: str
     title: str
