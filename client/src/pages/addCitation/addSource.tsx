@@ -112,6 +112,7 @@ export const AddSource = (props: AddSourceProps) => {
             SelectProps={{
               native: true,
             }}
+            InputLabelProps={{shrink: true}}
           >
             {years.reverse().map((year) =>
               <option key={year} value={year}>
@@ -132,6 +133,7 @@ export const AddSource = (props: AddSourceProps) => {
             SelectProps={{
               native: true,
             }}
+            InputLabelProps={{shrink: true}}
           >
             {months.map((month) =>
               <option key={month} value={month}>
@@ -152,6 +154,7 @@ export const AddSource = (props: AddSourceProps) => {
             SelectProps={{
               native: true,
             }}
+            InputLabelProps={{shrink: true}}
           >
             {days.map((day) =>
               <option key={day} value={day}>

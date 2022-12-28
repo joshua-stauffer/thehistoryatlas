@@ -53,6 +53,7 @@ export const AddQuote = (props: AddQuoteProps) => {
           disabled={!validateInput()}
           variant="contained"
           onClick={() => addQuote({ text })}
+          sx={{margin: 2}}
         >
           Save & Continue
         </Button>
