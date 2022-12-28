@@ -3,7 +3,6 @@ import { gql } from "@apollo/client";
 export const PUBLISH_NEW_CITATION = gql`
   mutation PublishNewCitation($Annotation: AnnotateCitationInput!) {
     PublishNewCitation(Annotation: $Annotation) {
-      code
       success
       message
     }
@@ -11,7 +10,6 @@ export const PUBLISH_NEW_CITATION = gql`
 `
 
 export interface PublishNewCitationResult {
-  code: string
   success: boolean
   message: string
 }
@@ -20,7 +18,7 @@ export interface PublishNewCitationVars {
   Annotation: {
     citationId: string
     citation: string
-    summaryId: string
+    summaryId?: string
     summary: string
     summaryTags: {
       type: "PERSON" | "PLACE" | "TIME"

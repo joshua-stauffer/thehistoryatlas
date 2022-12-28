@@ -13,7 +13,7 @@ export interface Source {
   publisher: string
   pubDate?: string
   pageNum?: number
-  GUID: string
+  id?: string
 }
 
 interface AddSourceProps {
@@ -29,17 +29,20 @@ export const AddSource = (props: AddSourceProps) => {
   const [pubYear, setPubYear] = useState('')
   const [pubMonth, setPubMonth] = useState('')
   const [pubDay, setPubDay] = useState('')
-  const [GUID] = useState(v4())
 
-  const validateInput = (): boolean => !!title && !!author && !!publisher;
+  const validateInput = (): boolean => !!title && !!author && !!publisher && !!pubYear;
   const saveSource = () => {
     addSource({
-      GUID: GUID,
+      id: undefined,  // update to allow tagging existing sources
       title: title,
       author: author,
       publisher: publisher,
       pubDate: pubYear && pubMonth && pubDay
         ? `${pubYear}-${pubMonth}-${pubDay}`
+        : pubYear && pubMonth
+        ? `${pubYear}-${pubMonth}`
+        : pubYear
+        ? `${pubYear}`
         : undefined
     })
   }

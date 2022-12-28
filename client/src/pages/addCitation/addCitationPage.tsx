@@ -22,8 +22,8 @@ import { getToken } from '../../hooks/user';
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
 export const AddCitationPage = () => {
-  const [citationGUID, ] = useState<string>(v4())
-  const [summaryGUID, ] = useState<string>(v4())
+  const [citationGUID, ] = useState<string>(v4())  // allows api to reject duplicate requests
+  const [summaryGUID, ] = useState<string | undefined>(undefined)  // for now, can't tag an existing summary
   const [source, setSource] = useState<Source>()
   const [quote, setQuote] = useState<Quote>()
   const [tags, setTags] = useState<Tag[]>()
@@ -76,7 +76,7 @@ export const AddCitationPage = () => {
       if (!quote || !summary || !tags || !source) return <h1>Oops, shouldnt be here..</h1>
       // reshape tags
       const verifiedTags = tags.filter(tag => tag.type !== "NONE").map(tag => {
-d        if (tag.type === "PLACE") {
+        if (tag.type === "PLACE") {
           return {
             type: tag.type,
             id: tag.guid,
@@ -104,7 +104,7 @@ d        if (tag.type === "PLACE") {
             summary: summary.text,
             summaryTags: verifiedTags as PublishNewCitationVars["Annotation"]["summaryTags"],
             meta: source,
-            token: ""  // TODO: plugin token
+            token: "gAAAAABjq1CP4KGpGrC9YNREB-VIWayY9gPJXrpvfRv_UtWvF7FZxAeuUVeJ2fitzd2fgs4tvx1pSgTp1d0veBagmkv3fBxbzZFWSRTN0DoaJoaVlPcHlrTfvaWUTchCYcjCWSYj5GSuqIvNtt2tmCXXOQISjGMgiQ=="  // TODO: plugin token
           }}
         />
           )
