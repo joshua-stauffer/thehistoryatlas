@@ -15,14 +15,15 @@ import { Tag, TagEntities } from './tagEntities'
 import { Summary, AddSummary } from './addSummary'
 import { SaveSummary } from './saveAnnotatedCitation';
 import { NavBar } from '../../components/navBar';
+import { getToken } from '../../hooks/user';
 
 
 
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
 export const AddCitationPage = () => {
-  const [citationGUID, ] = useState<string>(v4())
-  const [summaryGUID, ] = useState<string>(v4())
+  const [citationGUID, ] = useState<string>(v4())  // allows api to reject duplicate requests
+  const [summaryGUID, ] = useState<string | undefined>(undefined)  // for now, can't tag an existing summary
   const [source, setSource] = useState<Source>()
   const [quote, setQuote] = useState<Quote>()
   const [tags, setTags] = useState<Tag[]>()
@@ -75,35 +76,35 @@ export const AddCitationPage = () => {
       if (!quote || !summary || !tags || !source) return <h1>Oops, shouldnt be here..</h1>
       // reshape tags
       const verifiedTags = tags.filter(tag => tag.type !== "NONE").map(tag => {
-        if (!tag.guid) throw new Error("Tag found without GUID")
         if (tag.type === "PLACE") {
           return {
             type: tag.type,
-            GUID: tag.guid,
+            id: tag.guid,
             name: tag.name,
-            start_char: tag.start_char,
-            stop_char: tag.stop_char,
+            startChar: tag.start_char,
+            stopChar: tag.stop_char,
             latitude: tag.latitude,
             longitude: tag.longitude
           }
         }
         return {
           type: tag.type,
-          GUID: tag.guid,
+          id: tag.guid,
           name: tag.name,
-          start_char: tag.start_char,
-          stop_char: tag.stop_char
+          startChar: tag.start_char,
+          stopChar: tag.stop_char
         }
       })
       return (
         <SaveSummary
           annotation={{
-            citation_guid: citationGUID,
+            citationId: citationGUID,
             citation: quote.text,
-            summary_guid: summaryGUID,
+            summaryId: summaryGUID,
             summary: summary.text,
-            summary_tags: verifiedTags as PublishNewCitationVars["Annotation"]["summary_tags"],
-            meta: source
+            summaryTags: verifiedTags as PublishNewCitationVars["Annotation"]["summaryTags"],
+            meta: source,
+            token: "gAAAAABjq1CP4KGpGrC9YNREB-VIWayY9gPJXrpvfRv_UtWvF7FZxAeuUVeJ2fitzd2fgs4tvx1pSgTp1d0veBagmkv3fBxbzZFWSRTN0DoaJoaVlPcHlrTfvaWUTchCYcjCWSYj5GSuqIvNtt2tmCXXOQISjGMgiQ=="  // TODO: plugin token
           }}
         />
           )

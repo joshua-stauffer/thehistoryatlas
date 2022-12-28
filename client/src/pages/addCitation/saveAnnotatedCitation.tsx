@@ -9,12 +9,26 @@ interface SaveSummaryProps {
 
 export const SaveSummary = (props: SaveSummaryProps) => {
   const {annotation: Annotation} = props;
-  const { summary, meta, summary_tags, citation } = Annotation
+  const { summary, meta, summaryTags, citation } = Annotation
+  // remove temporary IDs 
+  const updatedTags = summaryTags.map(tag => tag.id?.startsWith("new") ? {...tag, id: undefined} : tag)
+  const updatedAnnotation = {
+    summary: summary,
+    meta: meta,
+    citation: citation,
+    summaryTags: updatedTags,
+    citationId: Annotation.citationId,
+    summaryId: Annotation.summaryId,
+    token: Annotation.token
+  }
+  console.log("about to publish new citation -----")
+  console.log({updatedAnnotation})
+  console.log({updatedTags})
   const [
     uploadSummary,
     { data, loading, error }
    ] = useMutation<PublishNewCitationResult, PublishNewCitationVars>(PUBLISH_NEW_CITATION)
-
+  console.log({error})
   if (loading) {
       return <Typography variant="h2">Loading</Typography>
   } else if (error) {
@@ -35,13 +49,13 @@ export const SaveSummary = (props: SaveSummaryProps) => {
         <Typography variant="body1">{summary}</Typography>
         <Typography variant="h3">Entity Tags</Typography>
         {
-          summary_tags.map(tag => 
+          summaryTags.map(tag => 
           <Chip label={tag.name}/>
           )
         }
         <br />
         <Button 
-          onClick={() => uploadSummary({ variables: { Annotation } })}
+          onClick={() => uploadSummary({ variables: { Annotation: updatedAnnotation } })}
           variant="contained"
         >Upload</Button>
       </Paper>

@@ -54,7 +54,7 @@ export const TagPlace = (props: TagPlaceWrapperProps) => {
 
 export const TagPlaceHelper = (props: TagPlaceProps) => {
   const { currentEntity, setCurrentEntity, placeName } = props;
-  const [newPlaceGUID] = useState<string>(v4())
+  const [newPlaceGUID] = useState<string>("new-" + v4())
   const [latitude, setLatitude] = useState<number>(0)
   const [searchIndex, setSearchIndex] = useState<number>(0)
 

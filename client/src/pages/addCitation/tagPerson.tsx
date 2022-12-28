@@ -18,7 +18,7 @@ interface TagPersonProps {
 export const TagPerson = (props: TagPersonProps) => {
   const { currentEntity, setCurrentEntity } = props;
   const [personTagName, setPersonTagName] = useState<string>(currentEntity?.text ?? '')
-  const [newPersonGUID] = useState<string>(v4())
+  const [newPersonGUID] = useState<string>("new-" + v4())
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false)
   const {
     data, loading, error
