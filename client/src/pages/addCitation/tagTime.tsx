@@ -73,7 +73,7 @@ export const TagTime = (props: TagTimeProps) => {
         // create a new GUID for this tag
         return {
           ...entity,
-          guid: v4()
+          guid: "new-" + v4()
         } as Tag
       })
     }

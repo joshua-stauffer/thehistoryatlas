@@ -23,25 +23,24 @@ class AnnotateCitationInput:
     citation: str
     citation_id: str
     summary: str
-    summary_id: Optional[str]
     meta: "MetaDataInput"
     summary_tags: List["TagInput"]
     token: str
+    summary_id: Optional[str] = None
 
 
 @strawberry.input
 class MetaDataInput:
-    id: Optional[str]
     author: str
-    pageNum: Optional[int]
     pubDate: str
     publisher: str
     title: str
+    pageNum: Optional[int] = None
+    id: Optional[str] = None
 
 
 @strawberry.input
 class TagInput:
-    id: Optional[str]
     name: str
     start_char: int
     stop_char: int
@@ -49,6 +48,7 @@ class TagInput:
     geoshape: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    id: Optional[str] = None
 
 
 @strawberry.enum

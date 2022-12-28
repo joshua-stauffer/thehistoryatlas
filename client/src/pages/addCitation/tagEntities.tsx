@@ -76,7 +76,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
       return;
     }
     setTags((tags) => {
-      const index = tags.map(t => t.start_char).indexOf(tag.start_char)
+      const index = tags.map(t => t.start_char).indexOf(tag.start_char);
       if (index < 0) return tags
       return [...tags.slice(0, index), tag, ...tags.slice(index + 1)]
     })
@@ -153,6 +153,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
   }
 
   console.log({ tags })
+  console.log({ currentEntity })
 
   useEffect(() => {
     if (!data) return;
