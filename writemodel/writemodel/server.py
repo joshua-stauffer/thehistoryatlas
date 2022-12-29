@@ -30,7 +30,7 @@ def run():
     HOST = writemodel.config.SERVER_HOST
     PORT = int(writemodel.config.SERVER_PORT)
     log.info(f"Starting Sanic server at {HOST}:{PORT}.")
-    server.run(host=HOST, port=PORT)
+    server.run(host=HOST, port=PORT, single_process=True)
 
 
 if __name__ == "__main__":
