@@ -28,18 +28,14 @@ export const LoginPage = (props: LoginPageProps) => {
     login,
     { data, loading, error }
    ] = useMutation<LoginResult, LoginVars>(LOGIN)
-   console.log({data})
 
   useEffect(() => {
     if (!!data) {
       // login mutation has returned
-      console.log("data is not null")
       updateToken(data.Login.token)
       history.push("/")
     }
   }, [data])
-
-
   
   return (
     <Grid>
