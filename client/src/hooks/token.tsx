@@ -9,16 +9,9 @@ export interface TokenManager {
 
 
 export const useTokenManager = (): TokenManager => {
-  const [token, setToken] = useState<string | null>(() => {
-    console.log("hey, i'm resetting")
-    return null
-  })
-  console.log({token})
+  const [token, setToken] = useState<string | null>(null)
 
-  const updateToken = (updatedToken: string) => {
-    console.log(`setting token to : ${updatedToken}`)
-    setToken(updatedToken)
-  }
+  const updateToken = (updatedToken: string) => setToken(updatedToken)
 
   const isLoggedIn = (): boolean => !!token;
 
