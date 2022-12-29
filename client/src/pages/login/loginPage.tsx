@@ -17,7 +17,15 @@ export const LoginPage = () => {
     <Grid>
       <Grid sx={{display: 'flex', alignItems: 'center', flexDirection: 'column'}}></Grid>
         <Grid container sx={{
-          margin: 80, padding: 10, width: 350, border: 2, borderColor: theme.palette.primary.main, justifyContent: 'center', rowGap: 3
+          marginTop: 10, 
+          marginLeft: 'auto',
+          marginRight: 'auto', 
+          padding: 10, 
+          width: 350, 
+          border: 2, 
+          borderColor: theme.palette.primary.main, 
+          justifyContent: 'center', 
+          rowGap: 3
         }}>
           <Grid item xs={12} sx={{display: 'flex', justifyContent: 'center'}}>
             <Typography>
