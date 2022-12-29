@@ -1,6 +1,14 @@
 import { useState } from "react"
 
-export const useToken = () => {
+export interface TokenManager {
+  token: string | null;
+  updateToken: (updatedToken: string) => void;
+  isLoggedIn: () => boolean;
+  logout: () => void;
+}
+
+
+export const useTokenManager = (): TokenManager => {
   const [token, setToken] = useState<string | null>(() => {
     console.log("hey, i'm resetting")
     return null

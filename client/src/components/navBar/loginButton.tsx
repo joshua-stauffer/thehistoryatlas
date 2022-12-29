@@ -1,9 +1,13 @@
 import { Button } from '@mui/material'
 import { useHistory } from 'react-router-dom'
-import { useToken } from '../../hooks/token'
+import { TokenManager } from '../../hooks/token'
 
-export const LoginButton = () => {
-  const { isLoggedIn, logout } = useToken()
+interface LoginButtonProps {
+  tokenManager: TokenManager
+}
+
+export const LoginButton = (props: LoginButtonProps) => {
+  const { tokenManager: {isLoggedIn, logout} } = props
   const history = useHistory()
 
   if (isLoggedIn()) {

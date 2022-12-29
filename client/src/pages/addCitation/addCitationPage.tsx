@@ -14,16 +14,20 @@ import { Tag, TagEntities } from './tagEntities'
 import { Summary, AddSummary } from './addSummary'
 import { SaveSummary } from './saveAnnotatedCitation';
 import { NavBar } from '../../components/navBar';
-import { useToken } from '../../hooks/token';
+import { TokenManager, useTokenManager } from '../../hooks/token';
 import { useHistory } from 'react-router-dom';
 
+
+interface AddCitationPageProps {
+  tokenManager: TokenManager
+}
 
 
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
-export const AddCitationPage = () => {
+export const AddCitationPage = (props: AddCitationPageProps) => {
   const history = useHistory()
-  const { token } = useToken()
+  const { tokenManager: {token, isLoggedIn }} = props
   const [citationGUID, ] = useState<string>(v4())  // allows api to reject duplicate requests
   const [summaryGUID, ] = useState<string | undefined>(undefined)  // for now, can't tag an existing summary
   const [source, setSource] = useState<Source>()
@@ -51,7 +55,7 @@ export const AddCitationPage = () => {
     if (index >= step) return;
     setStep(index as CurrentStep)
   }
-  if (token === null) {
+  if (!isLoggedIn()) {
     // mutation will fail without a valid token
     history.push("/login")
     return <h1>Redirecting to Login</h1>
@@ -111,7 +115,7 @@ export const AddCitationPage = () => {
             summary: summary.text,
             summaryTags: verifiedTags as PublishNewCitationVars["Annotation"]["summaryTags"],
             meta: source,
-            token: token
+            token: token as string // cannot pass isLoggedIn without a token
           }}
         />
           )

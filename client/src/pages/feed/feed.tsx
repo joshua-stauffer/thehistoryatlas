@@ -13,9 +13,10 @@ import { SingleEntityMap } from '../../components/singleEntityMap';
 import { TagBox } from './tagBox';
 import { MarkerData } from '../../types';
 import { Summary } from '../../graphql/getSummariesByGUID'
+import { TokenManager } from '../../hooks/token';
 
 interface FeedProps {
-
+  tokenManager: TokenManager;
 }
 
 export const FeedPage = (props: FeedProps) => {
@@ -37,7 +38,7 @@ export const FeedPage = (props: FeedProps) => {
       <NavBar children={[
         <SearchBar setCurrentEntity={setCurrentEntity}/>,
         <AddCitationButton />,
-        <LoginButton />,
+        <LoginButton tokenManager={props.tokenManager} />,
         <SettingsButton />
       ]} />
       <Box sx={{ height: 70 }}></Box>

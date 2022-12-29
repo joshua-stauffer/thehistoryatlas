@@ -7,17 +7,21 @@ import TextField from '@mui/material/TextField'
 import { theme } from '../../baseStyle'
 import { useMutation } from '@apollo/client'
 import { LOGIN, LoginResult, LoginVars } from '../../graphql/login'
-import { useToken } from '../../hooks/token'
+import { TokenManager } from '../../hooks/token'
 import { useHistory } from 'react-router-dom'
 
 
+interface LoginPageProps {
+  tokenManager: TokenManager
+}
 
-export const LoginPage = () => {
+
+export const LoginPage = (props: LoginPageProps) => {
 
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
 
-  const { updateToken } = useToken()
+  const { tokenManager: { updateToken } } = props
   const history = useHistory()
 
   const [
