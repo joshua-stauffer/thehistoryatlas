@@ -1,17 +1,41 @@
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 import { theme } from '../../baseStyle'
+import { useMutation } from '@apollo/client'
+import { LOGIN, LoginResult, LoginVars } from '../../graphql/login'
+import { TokenManager } from '../../hooks/token'
+import { useHistory } from 'react-router-dom'
 
 
+interface LoginPageProps {
+  tokenManager: TokenManager
+}
 
-export const LoginPage = () => {
+
+export const LoginPage = (props: LoginPageProps) => {
 
   const [username, setUsername] = useState<string>('')
   const [password, setPassword] = useState<string>('')
+
+  const { tokenManager: { updateToken } } = props
+  const history = useHistory()
+
+  const [
+    login,
+    { data, loading, error }
+   ] = useMutation<LoginResult, LoginVars>(LOGIN)
+
+  useEffect(() => {
+    if (!!data) {
+      // login mutation has returned
+      updateToken(data.Login.token)
+      history.push("/")
+    }
+  }, [data])
   
   return (
     <Grid>
@@ -44,7 +68,7 @@ export const LoginPage = () => {
             />
           </Grid>
           <Grid item>
-            <Button variant="contained" onClick={() => console.log('submitted')} color='secondary'>
+            <Button variant="contained" onClick={() => login({ variables: { password: password, username: username }})} color='secondary'>
               Login
             </Button>
           </Grid>

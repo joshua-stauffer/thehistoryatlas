@@ -1,13 +1,18 @@
 import { Typography, Box, Paper } from '@mui/material'
 import { NavBar, ExploreButton, SettingsButton, AddCitationButton, LoginButton } from '../../components/navBar'
+import { TokenManager } from '../../hooks/token'
 
-export const ResourceNotFoundError = () => {
+interface ResourceNotFoundErrorProps {
+  tokenManager: TokenManager
+}
+
+export const ResourceNotFoundError = (props: ResourceNotFoundErrorProps) => {
   return (
     <Box>
       <NavBar children={[
         <ExploreButton />,
         <AddCitationButton />,
-        <LoginButton />,
+        <LoginButton tokenManager={props.tokenManager}/>,
         <SettingsButton />
       ]} />
       <Paper>

@@ -202,4 +202,42 @@ bach_data = [
             "token": "gAAAAABjq1CP4KGpGrC9YNREB-VIWayY9gPJXrpvfRv_UtWvF7FZxAeuUVeJ2fitzd2fgs4tvx1pSgTp1d0veBagmkv3fBxbzZFWSRTN0DoaJoaVlPcHlrTfvaWUTchCYcjCWSYj5GSuqIvNtt2tmCXXOQISjGMgiQ==",
         }
     },
+    {
+        "updatedAnnotation": {
+            "summary": "In 1706, Johann Sebastian Bach took the position of organist in Mühlhausen.",
+            "meta": {
+                "title": "Wikipedia",
+                "author": "the Universe",
+                "publisher": "wikipedia.org",
+                "pubDate": "2023",
+            },
+            "citation": "In 1706, Bach applied for a post as organist at the Blasius Church in Mühlhausen. As part of his application, he had a cantata performed on Easter, 24 April 1707, likely an early version of his Christ lag in Todes Banden. A month later Bach's application was accepted and he took up the post in July.",
+            "summaryTags": [
+                {
+                    "type": "TIME",
+                    "id": "94d422c1-ad10-4c84-8d8e-c07fb06b4c9d",
+                    "name": "1706",
+                    "startChar": 3,
+                    "stopChar": 7,
+                },
+                {
+                    "type": "PERSON",
+                    "id": "c0484f0e-3ddf-44bd-9ed6-7ed4acf242f2",
+                    "name": "Johann Sebastian Bach",
+                    "startChar": 9,
+                    "stopChar": 13,
+                },
+                {
+                    "type": "PLACE",
+                    "name": "Mühlhausen",
+                    "startChar": 70,
+                    "stopChar": 80,
+                    "latitude": 51.20896,
+                    "longitude": 10.45275,
+                },
+            ],
+            "citationId": "7b435ad6-a16c-4faf-9167-2639128d7276",
+            "token": "gAAAAABjrds5WoIKqTShj6dHXcYWK5XBumA4kYrDAuM0whGTfgT88RWKj0EKnfJkOW-pIzpQ8HjWf1SSQUqYZLR3k6ME2NDi8SWPE2TSj4StUZbddtgEsHC3_IpjxRnoZy-7f2Obxxku_8dxtCQ35e9Jr6hmz6Mzhg==",
+        }
+    },
 ]

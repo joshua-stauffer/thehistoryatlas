@@ -21,14 +21,11 @@ export const SaveSummary = (props: SaveSummaryProps) => {
     summaryId: Annotation.summaryId,
     token: Annotation.token
   }
-  console.log("about to publish new citation -----")
-  console.log({updatedAnnotation})
-  console.log({updatedTags})
+  console.log({updatedAnnotation}) // useful to manually grab data and save it to seed
   const [
     uploadSummary,
     { data, loading, error }
    ] = useMutation<PublishNewCitationResult, PublishNewCitationVars>(PUBLISH_NEW_CITATION)
-  console.log({error})
   if (loading) {
       return <Typography variant="h2">Loading</Typography>
   } else if (error) {

@@ -14,13 +14,14 @@ import { ResourceNotFoundError } from './pages/errorPages';
 import { AddCitationPage } from './pages/addCitation'
 import { LoginPage } from './pages/login';
 import { FeedPage } from './pages/feed';
-import { isLoggedIn } from './hooks/user';
+import { useTokenManager } from './hooks/token';
 
 
 import { theme } from './baseStyle';
 
 function App() {
   const entity = useReactiveVar(currentEntity)
+  const tokenManager = useTokenManager()
   
 
   return (
@@ -28,23 +29,16 @@ function App() {
       <Router>
           <Switch>
             <Route path='/login'>
-              <LoginPage />
+              <LoginPage tokenManager={tokenManager}/>
             </Route>
-            <Route 
-              path='/add-citation'
-            >
-              {
-                true ?? isLoggedIn() 
-                  ? <AddCitationPage />
-                  : <LoginPage />
-
-              }
+            <Route path='/add-citation'>
+              <AddCitationPage tokenManager={tokenManager}/>
             </Route>
             <Route path='/'>
-              <FeedPage />
+              <FeedPage tokenManager={tokenManager}/>
             </Route>
             <Route path='*'>
-              <ResourceNotFoundError />
+              <ResourceNotFoundError tokenManager={tokenManager}/>
             </Route>  
           </Switch>
       </Router>
