@@ -3,8 +3,8 @@ name: Writemodel Docker Image CI
 on:
   push:
     branches: [ dev ]
-#  pull_request: # test action configuration
-#    branches: [ dev ]
+  pull_request: # test action configuration
+    branches: [ dev ]
 
 jobs:
 
