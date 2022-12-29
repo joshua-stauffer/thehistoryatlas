@@ -1,10 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_TEXT_ANALYSIS, TextAnalysisResult, TextAnalysisVars } from '../../graphql/getTextAnalysis'
-import {
-  Box, Button, Chip, Grid, Paper, Typography,
-  Radio, RadioGroup, FormLabel, FormControl, FormControlLabel
-} from "@material-ui/core";
+
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Box'
+import Chip from '@mui/material/Chip'
+import FormControl from '@mui/material/FormControl'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import FormLabel from '@mui/material/FormLabel'
+import Grid from '@mui/material/Grid'
+import Paper from '@mui/material/Paper'
+import Typography from '@mui/material/Typography'
+import Radio from '@mui/material/Radio'
+import RadioGroup from '@mui/material/RadioGroup'
 import { TagTime } from './tagTime';
 import { TagPlace } from './tagPlace';
 import { TagPerson } from './tagPerson';
@@ -215,6 +223,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
         spacing={2}
         direction='column'
         alignContent='center'
+        sx={{marginTop: 20}}
       >
         <Grid item xs={12} sm={6}>
           <Paper>
