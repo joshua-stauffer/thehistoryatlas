@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { makeStyles, ListItemSecondaryAction } from '@material-ui/core'
 import Stepper from '@mui/material/Stepper'
 import Step from '@mui/material/Step'
 import StepLabel from '@mui/material/StepLabel'
@@ -15,13 +14,16 @@ import { Tag, TagEntities } from './tagEntities'
 import { Summary, AddSummary } from './addSummary'
 import { SaveSummary } from './saveAnnotatedCitation';
 import { NavBar } from '../../components/navBar';
-import { getToken } from '../../hooks/user';
+import { useToken } from '../../hooks/token';
+import { useHistory } from 'react-router-dom';
 
 
 
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
 export const AddCitationPage = () => {
+  const history = useHistory()
+  const { token } = useToken()
   const [citationGUID, ] = useState<string>(v4())  // allows api to reject duplicate requests
   const [summaryGUID, ] = useState<string | undefined>(undefined)  // for now, can't tag an existing summary
   const [source, setSource] = useState<Source>()
@@ -48,6 +50,11 @@ export const AddCitationPage = () => {
   const handleStepClick = (index: number): void => {
     if (index >= step) return;
     setStep(index as CurrentStep)
+  }
+  if (token === null) {
+    // mutation will fail without a valid token
+    history.push("/login")
+    return <h1>Redirecting to Login</h1>
   }
 
   const steps = ["Add Source", "Add Quote", "Tag Entities", "Add Summary", "Confirm and Save"]
@@ -104,7 +111,7 @@ export const AddCitationPage = () => {
             summary: summary.text,
             summaryTags: verifiedTags as PublishNewCitationVars["Annotation"]["summaryTags"],
             meta: source,
-            token: "gAAAAABjq1CP4KGpGrC9YNREB-VIWayY9gPJXrpvfRv_UtWvF7FZxAeuUVeJ2fitzd2fgs4tvx1pSgTp1d0veBagmkv3fBxbzZFWSRTN0DoaJoaVlPcHlrTfvaWUTchCYcjCWSYj5GSuqIvNtt2tmCXXOQISjGMgiQ=="  // TODO: plugin token
+            token: token
           }}
         />
           )

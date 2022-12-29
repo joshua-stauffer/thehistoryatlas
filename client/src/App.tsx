@@ -14,13 +14,14 @@ import { ResourceNotFoundError } from './pages/errorPages';
 import { AddCitationPage } from './pages/addCitation'
 import { LoginPage } from './pages/login';
 import { FeedPage } from './pages/feed';
-import { isLoggedIn } from './hooks/user';
+import { useToken } from './hooks/token';
 
 
 import { theme } from './baseStyle';
 
 function App() {
   const entity = useReactiveVar(currentEntity)
+  const { isLoggedIn } = useToken()
   
 
   return (
@@ -30,15 +31,8 @@ function App() {
             <Route path='/login'>
               <LoginPage />
             </Route>
-            <Route 
-              path='/add-citation'
-            >
-              {
-                true ?? isLoggedIn() 
-                  ? <AddCitationPage />
-                  : <LoginPage />
-
-              }
+            <Route path='/add-citation'>
+              <AddCitationPage />
             </Route>
             <Route path='/'>
               <FeedPage />
