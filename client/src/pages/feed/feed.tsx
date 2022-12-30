@@ -17,6 +17,7 @@ import { TokenManager } from '../../hooks/token';
 
 interface FeedProps {
   tokenManager: TokenManager;
+  
 }
 
 export const FeedPage = (props: FeedProps) => {

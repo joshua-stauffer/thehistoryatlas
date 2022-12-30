@@ -27,12 +27,30 @@ export const useFeedLogic = () => {
     scrollIntoView: false
   })
 
+  // get default entity
+  const {
+    loading: defaultEntityLoading,
+    error: defaultEntityError,
+    data: defaultEntityData
+  } = useQuery<GetDefaultEntityResult, GetDefaultEntityVars>(GET_DEFAULT_ENTITY)
+
+  useEffect(() => {
+    if (!!defaultEntityData) {
+      addToHistory({}
+        { 
+          guid: defaultEntityData.DefaultEntity.id;
+          type: defaultEntityData.DefaultEntity.entityType;
+          name: defaultEntityData.DefaultEntity.name;
+        },
+        lastSummaryGUID: null}
+      )
+    }
+  }, [defaultEntityData])
+
+
   // hooks & utility functions for state
   const { currentEntity } = readHistory()
   const history = useHistory();
-  if (!currentEntity) history.push('/')
-  // add a little check for TypeScript's sake..
-  if (!currentEntity) throw new Error('No entity selected')
 
   // create an onClick handler for navigating between entities
   const setCurrentEntity = (props: addToHistoryProps): void => {
