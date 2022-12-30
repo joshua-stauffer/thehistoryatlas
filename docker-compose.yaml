@@ -46,6 +46,9 @@ services:
             - DEV_DB_URI=${READMODEL_CONN_STR_DEV}
             - TESTING=${TESTING}
             - CONFIG=${CONFIG}
+            - SERVER_PORT=8801
+        ports:
+            - "8801:8801"
         networks:
             - tha-connect
 
