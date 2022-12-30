@@ -17,4 +17,4 @@ ENV BROKER_USERNAME=guest
 ENV BROKER_PASS=guest
 ENV EXCHANGE_NAME=main
 ENV QUEUE_NAME=readmodel
-CMD ["python3", "-m", "readmodel.read_model"]
+CMD ["python3", "-m", "readmodel.server"]
