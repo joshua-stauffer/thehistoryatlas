@@ -1,4 +1,6 @@
-import { Box, Grid, Paper, Divider, Hidden } from '@mui/material';
+import {Grid, Paper, Divider, Hidden } from '@mui/material';
+
+import Box from '@mui/material/Box';
 
 import { useFeedLogic } from './feedLogic';
 import {
@@ -17,7 +19,7 @@ import { TokenManager } from '../../hooks/token';
 
 interface FeedProps {
   tokenManager: TokenManager;
-  
+
 }
 
 export const FeedPage = (props: FeedProps) => {
