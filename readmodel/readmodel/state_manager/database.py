@@ -6,12 +6,14 @@ Provides read and write access to the Query database.
 import asyncio
 import json
 import logging
+from random import randint
 from time import sleep
-from typing import Tuple, Union
+from typing import Tuple, Union, Literal
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
 
+from abstract_domain_model.models.readmodel import DefaultEntity
 from readmodel.state_manager.schema import (
     Base,
     Citation,
@@ -101,17 +103,17 @@ class Database:
 
     def get_manifest_by_person(self, person_guid: str) -> list[str]:
         """Returns a list of given person's citations"""
-        return self.__get_manifest_util(entity_base=Person, guid=person_guid)
+        return self._get_manifest_util(entity_base=Person, guid=person_guid)
 
     def get_manifest_by_place(self, place_guid: str) -> list[str]:
         """Returns a list of given place's citations"""
-        return self.__get_manifest_util(entity_base=Place, guid=place_guid)
+        return self._get_manifest_util(entity_base=Place, guid=place_guid)
 
     def get_manifest_by_time(self, time_guid: str) -> list[str]:
         """Returns a list of given place's citations"""
-        return self.__get_manifest_util(entity_base=Time, guid=time_guid)
+        return self._get_manifest_util(entity_base=Time, guid=time_guid)
 
-    def __get_manifest_util(
+    def _get_manifest_util(
         self, entity_base, guid
     ) -> tuple[list[str], dict[int, dict[str, Union[str, int]]]]:
         """Utility to query db for manifest -- also calculates timeline summary."""
@@ -240,6 +242,22 @@ class Database:
             if res:
                 return res.guid
             return None
+
+    def get_default_entity(self) -> DefaultEntity:
+        """
+        Get a default starting entity
+        """
+        # always start with a place
+        with Session(self._engine, future=True) as session:
+            tag = session.execute(
+                select(Place).order_by(func.random()).limit(1)
+            ).scalar_one_or_none()
+            if tag is None:
+                raise Exception(
+                    "Database must have at least one entity -- add a new citation, and try again."
+                )
+
+            return DefaultEntity(id=tag.guid, name=tag.names, type="PLACE")
 
     # MUTATIONS
 

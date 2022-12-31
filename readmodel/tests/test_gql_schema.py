@@ -1,5 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 
+from abstract_domain_model.models.readmodel import DefaultEntity
 from readmodel.api import GQLApi
 
 
@@ -26,7 +29,13 @@ async def test_query_handles_query_status():
 @pytest.mark.asyncio
 async def test_query_default_entity():
 
-    api = GQLApi()
+    default_entity = DefaultEntity(
+        id="c0484f0e-3ddf-44bd-9ed6-7ed4acf242f2",
+        type="PERSON",
+        name="Johann Sebastian Bach",
+    )
+
+    api = GQLApi(default_entity_handler=Mock(return_value=default_entity))
 
     query = """
         query TestStatus {
@@ -45,7 +54,7 @@ async def test_query_default_entity():
 
     assert result.errors is None
     assert result.data["defaultEntity"] == {
-        "id": "c0484f0e-3ddf-44bd-9ed6-7ed4acf242f2",
-        "type": "PERSON",
-        "name": "Johann Sebastian Bach",
+        "id": default_entity.id,
+        "type": default_entity.type,
+        "name": default_entity.name,
     }

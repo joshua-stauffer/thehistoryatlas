@@ -8,6 +8,7 @@ import logging
 import signal
 from typing import Dict
 
+from abstract_domain_model.models.readmodel import DefaultEntity
 from abstract_domain_model.transform import from_dict
 from readmodel.api import GQLApi
 from readmodel.broker import Broker
@@ -28,11 +29,14 @@ class ReadModel:
         self.manager = Manager(self.config)
         self.handle_query = self.manager.query_handler.handle_query
         self.broker = None  # created asynchronously in ReadModel.start_broker()
-        self.api = GQLApi()
+        self.api = GQLApi(default_entity_handler=self.default_entity_handler)
 
     def handle_event(self, event: Dict):
         event = from_dict(event)
         self.manager.event_handler.handle_event(event=event)
+
+    def default_entity_handler(self) -> DefaultEntity:
+        return self.manager.db.get_default_entity()
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""

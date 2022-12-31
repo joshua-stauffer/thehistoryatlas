@@ -5,6 +5,8 @@ import random
 from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from abstract_domain_model.models.readmodel import DefaultEntity
 from readmodel.state_manager.database import Database
 from readmodel.state_manager.schema import Citation
 from readmodel.state_manager.schema import TagInstance
@@ -431,3 +433,9 @@ def test_get_place_by_coords_with_new_coords(db_tuple):
 
     guid = db.get_place_by_coords(latitude=latitude, longitude=longitude)
     assert guid == None
+
+
+def test_get_default_entity(db_tuple):
+    db, _ = db_tuple
+    entity = db.get_default_entity()
+    assert isinstance(entity, DefaultEntity)

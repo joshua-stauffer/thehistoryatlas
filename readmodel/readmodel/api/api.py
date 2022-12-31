@@ -1,9 +1,8 @@
-from dataclasses import asdict
 from logging import getLogger
 
 import strawberry
 from strawberry.federation import Schema
-from typing import Callable, Literal, Awaitable
+from typing import Callable
 
 from readmodel.api.types import DefaultEntity
 
@@ -12,11 +11,8 @@ log.setLevel("DEBUG")
 
 
 class GQLApi:
-    def __init__(
-        self,
-        # application callbacks
-    ):
-        pass
+    def __init__(self, default_entity_handler: Callable[[], DefaultEntity]):
+        self._default_entity_handler = default_entity_handler
 
     def get_schema(self) -> Schema:
         """Output a GraphQL Schema."""
@@ -25,7 +21,7 @@ class GQLApi:
         class Query:
             status: str = strawberry.field(resolver=self._status_handler)
             default_entity: DefaultEntity = strawberry.field(
-                resolver=self._default_entity_handler
+                resolver=self._default_entity_resolver
             )
 
         return Schema(query=Query, enable_federation_2=True)
@@ -34,9 +30,10 @@ class GQLApi:
         log.info("Received status request - responding OK.")
         return "OK"
 
-    def _default_entity_handler(self) -> DefaultEntity:
+    def _default_entity_resolver(self) -> DefaultEntity:
+        entity = self._default_entity_handler()
         return DefaultEntity(
-            id="c0484f0e-3ddf-44bd-9ed6-7ed4acf242f2",
-            type="PERSON",
-            name="Johann Sebastian Bach",
+            id=entity.id,
+            type=entity.type,
+            name=entity.name,
         )
