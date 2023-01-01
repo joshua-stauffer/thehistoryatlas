@@ -8,7 +8,9 @@ import logging
 import signal
 from typing import Dict
 
+from abstract_domain_model.models.readmodel import DefaultEntity
 from abstract_domain_model.transform import from_dict
+from readmodel.api import GQLApi
 from readmodel.broker import Broker
 from tha_config import Config
 from readmodel.state_manager.manager import Manager
@@ -27,10 +29,14 @@ class ReadModel:
         self.manager = Manager(self.config)
         self.handle_query = self.manager.query_handler.handle_query
         self.broker = None  # created asynchronously in ReadModel.start_broker()
+        self.api = GQLApi(default_entity_handler=self.default_entity_handler)
 
     def handle_event(self, event: Dict):
         event = from_dict(event)
         self.manager.event_handler.handle_event(event=event)
+
+    def default_entity_handler(self) -> DefaultEntity:
+        return self.manager.db.get_default_entity()
 
     async def start_broker(self):
         """Initializes the message broker and starts listening for requests."""
@@ -53,6 +59,12 @@ class ReadModel:
             )
             await self.shutdown()
 
+    async def init_services(self):
+        """
+        Start up any asynchronous services required by the application.
+        """
+        await self.start_broker()
+
     async def shutdown(self, signal=None):
         """Gracefully close all open connections and cancel tasks"""
         if signal:
@@ -64,19 +76,3 @@ class ReadModel:
         await asyncio.gather(*tasks, return_exceptions=True)
         loop.stop()
         log.info("Asyncio loop has been stopped")
-
-
-if __name__ == "__main__":
-    rm = ReadModel()
-    log.info("ReadModel initialized")
-    loop = asyncio.get_event_loop()
-    loop.create_task(rm.start_broker())
-    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-    for s in signals:
-        loop.add_signal_handler(s, lambda s=s: asyncio.create_task(rm.shutdown(s)))
-    try:
-        log.info("Asyncio loop now running")
-        loop.run_forever()
-    finally:
-        loop.close()
-        log.info("ReadModel shut down successfully.")

@@ -9,7 +9,7 @@ const defaultEntity: HistoryEntity = {
   }
 }
 
-export const currentEntity = makeVar<HistoryEntity | null>(defaultEntity)
+export const currentEntity = makeVar<HistoryEntity | null>(null)
 export const historyBackVar = makeVar<HistoryEntity[]>([])
 export const historyForwardVar = makeVar<HistoryEntity[]>([])
 

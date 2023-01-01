@@ -1,0 +1,1 @@
+from abstract_domain_model.models.readmodel.default_entity import DefaultEntity

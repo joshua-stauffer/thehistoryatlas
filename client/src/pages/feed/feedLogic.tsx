@@ -10,9 +10,10 @@ import {
   GET_SUMMARIES_BY_GUID, GetSummariesByGUIDResult, GetSummariesByGUIDVars
 } from '../../graphql/queries';
 import { readHistory, addToHistory, addToHistoryProps, updateRootSummary } from '../../hooks/history';
-import { MarkerData, FocusedGeoEntity, CurrentFocus, TimeTag } from '../../types';
+import { MarkerData, FocusedGeoEntity, CurrentFocus, TimeTag, HistoryEntity } from '../../types';
 import { getCoords } from '../../pureFunctions/getCoords';
 import { getFocusedGeoData } from '../../pureFunctions/getFocusedGeoData';
+import { DefaultEntityResult, DefaultEntityVars, DEFAULT_ENTITY } from '../../graphql/defaultEntity';
 
 
 export const useFeedLogic = () => {
@@ -30,9 +31,8 @@ export const useFeedLogic = () => {
   // hooks & utility functions for state
   const { currentEntity } = readHistory()
   const history = useHistory();
-  if (!currentEntity) history.push('/')
-  // add a little check for TypeScript's sake..
-  if (!currentEntity) throw new Error('No entity selected')
+
+  if (!currentEntity) throw Error("Default Entity must be loaded before the feed can be rendered.")
 
   // create an onClick handler for navigating between entities
   const setCurrentEntity = (props: addToHistoryProps): void => {
@@ -58,6 +58,7 @@ export const useFeedLogic = () => {
   }
 
   // API Calls
+  
   //  -- load manifest on current entity
   const {
     loading: manifestLoading,

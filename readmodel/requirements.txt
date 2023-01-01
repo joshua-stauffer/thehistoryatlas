@@ -1,2 +1,4 @@
 sqlalchemy
 psycopg2-binary
+strawberry-graphql[sanic]
+sanic

@@ -29,10 +29,10 @@ input AnnotateCitationInput
   citation: String!
   citationId: String!
   summary: String!
-  summaryId: String
   meta: MetaDataInput!
   summaryTags: [TagInput!]!
   token: String!
+  summaryId: String = null
 }
 
 type Citation
@@ -64,6 +64,14 @@ input CredentialsInput
   password: String!
 }
 
+type DefaultEntity
+  @join__type(graph: READMODEL)
+{
+  id: String!
+  type: EntityType!
+  name: String!
+}
+
 type EntitySummary
   @join__type(graph: API)
 {
@@ -77,6 +85,7 @@ type EntitySummary
 
 enum EntityType
   @join__type(graph: API)
+  @join__type(graph: READMODEL)
   @join__type(graph: WRITEMODEL)
 {
   TIME
@@ -128,6 +137,7 @@ scalar join__FieldSet
 
 enum join__Graph {
   API @join__graph(name: "api", url: "http://api:4000/")
+  READMODEL @join__graph(name: "readmodel", url: "http://readmodel:8801/")
   WRITEMODEL @join__graph(name: "writemodel", url: "http://writemodel:8800/")
 }
 
@@ -173,12 +183,12 @@ type MetaData
 input MetaDataInput
   @join__type(graph: WRITEMODEL)
 {
-  id: String
   author: String!
-  pageNum: Int
   pubDate: String!
   publisher: String!
   title: String!
+  pageNum: Int = null
+  id: String = null
 }
 
 type Mutation
@@ -230,6 +240,7 @@ type PublishCitationResponse implements MutationResponse
 
 type Query
   @join__type(graph: API)
+  @join__type(graph: READMODEL)
   @join__type(graph: WRITEMODEL)
 {
   GetSummariesByGUID(summary_guids: [String!]!): [Summary] @join__field(graph: API)
@@ -243,7 +254,8 @@ type Query
   IsUsernameUnique(username: String!): IsUsernameUniqueResponse! @join__field(graph: API)
   GetUser(token: String!): AccountsGenericResponse! @join__field(graph: API)
   GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse! @join__field(graph: API)
-  status: String! @join__field(graph: WRITEMODEL)
+  status: String! @join__field(graph: READMODEL) @join__field(graph: WRITEMODEL)
+  defaultEntity: DefaultEntity! @join__field(graph: READMODEL)
 }
 
 type Summary
@@ -270,7 +282,6 @@ type Tag
 input TagInput
   @join__type(graph: WRITEMODEL)
 {
-  id: String
   name: String!
   startChar: Int!
   stopChar: Int!
@@ -278,6 +289,7 @@ input TagInput
   geoshape: String = null
   latitude: Float = null
   longitude: Float = null
+  id: String = null
 }
 
 type TextAnalysis
