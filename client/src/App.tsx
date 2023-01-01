@@ -32,7 +32,6 @@ function App() {
 
   useEffect(() => {
     if (!!defaultEntityData) {
-      console.log({defaultEntityData})
       addToHistory({
         entity: {
           guid: defaultEntityData.defaultEntity.id,
