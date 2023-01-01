@@ -9,7 +9,7 @@ from readmodel.api import GQLApi
 @pytest.mark.asyncio
 async def test_query_handles_query_status():
 
-    api = GQLApi()
+    api = GQLApi(default_entity_handler=Mock())
 
     query = """
         query TestStatus {
