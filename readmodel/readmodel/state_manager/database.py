@@ -4,16 +4,14 @@ Provides read and write access to the Query database.
 """
 
 import asyncio
-import json
 import logging
-from random import randint
 from time import sleep
-from typing import Tuple, Union, Literal, Optional
+from typing import Tuple, Union, Literal, Optional, List
 
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models.readmodel import DefaultEntity
+from abstract_domain_model.models.readmodel import DefaultEntity, Source as ADMSource
 from readmodel.state_manager.schema import (
     Base,
     Citation,
@@ -42,7 +40,8 @@ class Database:
         self.__short_term_memory = dict()
         self.__stm_timeout = stm_timeout
         # intialize the search trie
-        self._trie = Trie(self.get_all_entity_names())
+        self._entity_trie = Trie(self.get_all_entity_names())
+        self._source_trie = Trie(self.get_all_source_titles_and_authors())
 
     def _connect(self, uri: str, debug: bool, retries: int = -1, timeout=30):
 
@@ -204,7 +203,7 @@ class Database:
         return res
 
     def get_all_entity_names(self) -> Tuple[str, str]:
-        """Util for building search trie. Returns a list of (name, guid) tuples."""
+        """Util for building Entity search trie. Returns a list of (name, guid) tuples."""
         res = []
         with Session(self._engine, future=True) as session:
 
@@ -224,9 +223,42 @@ class Database:
 
         return res
 
+    def get_all_source_titles_and_authors(self) -> Tuple[str, str]:
+        """Util for building Source search trie. Returns a list of (name, id) tuples."""
+        res = []
+        with Session(self._engine, future=True) as session:
+            sources = session.query(Source).all()
+            for source in sources:
+                res.extend(
+                    [
+                        (source.title, source.id),
+                        (source.author, source.id),
+                    ]
+                )
+        return res
+
     def get_name_by_fuzzy_search(self, name: str) -> list[TrieResult]:
         """Search for possible completions to a given string from known entity names."""
-        return self._trie.find(name, res_count=10)
+        return self._entity_trie.find(name, res_count=10)
+
+    def get_sources_by_search_term(self, search_term: str) -> list[ADMSource]:
+        """Match a list of Sources by title and author against a search term."""
+        res: List[ADMSource] = []
+        source_results = self._source_trie.find(search_term, res_count=10)
+        with Session(self._engine, future=True) as session:
+            for result in source_results:
+                for source_id in result["guids"]:
+                    source = session.query(Source).filter(Source.id == source_id)
+                    res.append(
+                        ADMSource(
+                            id=source_id,
+                            title=source.title,
+                            author=source.author,
+                            publisher=source.publisher,
+                            pub_date=source.pub_date,
+                        )
+                    )
+        return res
 
     def get_place_by_coords(
         self, latitude: float, longitude: float
@@ -563,13 +595,13 @@ class Database:
                 raise Exception(
                     f"Update_trie was provided with new_string {new_string} but not a new_string_guid."
                 )
-            self._trie.insert(string=new_string, guid=new_string_guid)
+            self._entity_trie.insert(string=new_string, guid=new_string_guid)
         if old_string:
             if not new_string_guid:
                 raise Exception(
                     f"Update_trie was provided with old_string {new_string} but not a new_string_guid."
                 )
-            self._trie.delete(string=old_string, guid=old_string_guid)
+            self._entity_trie.delete(string=old_string, guid=old_string_guid)
 
     # UTILITY
 
