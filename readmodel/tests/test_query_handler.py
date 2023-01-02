@@ -86,7 +86,8 @@ def db_tuple(db):
         citation = Citation(
             guid=cit_guid,
             text=f"some citation text {n}",
-            meta=json.dumps({"some": "meta data"}),
+            access_date="1/2/3",
+            page_num=55,
         )
         citations.append(citation)
         # create a summary

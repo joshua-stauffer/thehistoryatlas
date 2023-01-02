@@ -73,8 +73,8 @@ class Database:
                 return {
                     "guid": citation_guid,
                     "text": res.text,
-                    "meta": json.loads(res.meta)
-                    # took tags out here -- may want to add them back in later
+                    "meta": {"accessDate": res.access_date, "pageNum": res.page_num},
+                    "source_id": res.source_id,
                 }
             else:
                 log.debug(f"Found no citation for citation GUID {citation_guid}")
