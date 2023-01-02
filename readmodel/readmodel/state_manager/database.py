@@ -272,12 +272,25 @@ class Database:
             session.commit()
             self.add_to_stm(key=summary_guid, value=summary.id)
 
-    def create_citation(self, citation_guid: str, summary_guid: str, text: str) -> None:
+    def create_citation(
+        self,
+        citation_guid: str,
+        summary_guid: str,
+        text: str,
+        page_num: Optional[int] = None,
+        access_date: Optional[str] = None,
+    ) -> None:
         """Initializes a new citation in the database."""
 
         log.info(f"Creating a new citation: {text[:50]}...")
         summary_id = self.get_summary_id(summary_guid=summary_guid)
-        c = Citation(guid=citation_guid, text=text, summary_id=summary_id)
+        c = Citation(
+            guid=citation_guid,
+            text=text,
+            summary_id=summary_id,
+            page_num=page_num,
+            access_date=access_date,
+        )
         with Session(self._engine, future=True) as session:
             session.add(c)
             session.commit()

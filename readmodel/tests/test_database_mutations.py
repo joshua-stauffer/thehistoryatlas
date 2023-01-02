@@ -122,6 +122,8 @@ def meta_data_min():
         "author": "Søren Aabye Kierkegaard",
         "publisher": "University of Copenhagen",
         "title": "Sickness unto Death",
+        "pub_date": "1/1/1",
+        "id": "53c499d4-4ac1-4f48-a978-e7abf263d5e9",
     }
 
 
@@ -133,6 +135,8 @@ def meta_data_more():
         "title": "Sickness unto Death",
         "extra field 1": "who knows",
         "extra field 2": "so much fun!",
+        "pub_date": "1/1/1",
+        "id": "63ff66d2-1145-4b6c-9113-d4db93f6fff2",
     }
 
 
@@ -831,13 +835,15 @@ async def test_add_meta_to_citation_no_extra_args(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.add_source_to_citation(citation_id=citation_guid, **meta_data_min)
+    db.create_source(citation_id=citation_guid, **meta_data_min)
 
     with Session(db._engine, future=True) as sess:
-        res = sess.execute(
+        citation = sess.execute(
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
-        assert res.meta == json.dumps(meta_data_min)
+        assert citation.source.author == meta_data_min["author"]
+        assert citation.source.publisher == meta_data_min["publisher"]
+        assert citation.source.title == meta_data_min["title"]
 
 
 @pytest.mark.asyncio
@@ -850,13 +856,15 @@ async def test_add_meta_to_citation_with_extra_args(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.add_source_to_citation(citation_id=citation_guid, **meta_data_more)
+    db.create_source(citation_id=citation_guid, **meta_data_more)
 
     with Session(db._engine, future=True) as sess:
-        res = sess.execute(
+        citation = sess.execute(
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
-        assert res.meta == json.dumps(meta_data_more)
+        assert citation.source.author == meta_data_more["author"]
+        assert citation.source.publisher == meta_data_more["publisher"]
+        assert citation.source.title == meta_data_more["title"]
 
 
 @pytest.mark.asyncio

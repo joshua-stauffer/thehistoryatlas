@@ -87,7 +87,11 @@ class EventHandler:
         summary_guid = event.payload.summary_id
         text = event.payload.text
         self._db.create_citation(
-            citation_guid=citation_guid, summary_guid=summary_guid, text=text
+            citation_guid=citation_guid,
+            summary_guid=summary_guid,
+            text=text,
+            access_date=event.payload.access_date,
+            page_num=event.payload.page_num,
         )
 
     def _handle_person_added(self, event: PersonAdded):

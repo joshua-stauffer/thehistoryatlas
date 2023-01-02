@@ -44,6 +44,8 @@ class Citation(Base):
     source = relationship("Source", back_populates="citations")
     summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="citations")
+    page_num = Column(INTEGER)
+    access_date = Column(VARCHAR)
 
     def __repr__(self):
         return f"Citation(id: {self.id}, text: {self.text}, meta: {self.meta.id})"
