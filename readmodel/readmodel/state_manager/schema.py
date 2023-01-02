@@ -40,8 +40,8 @@ class Citation(Base):
     id = Column(INTEGER, primary_key=True)
     guid = Column(VARCHAR(36))
     text = Column(VARCHAR)
-    meta_id = Column(UUID(as_uuid=False), ForeignKey("meta.id"))
-    meta = relationship("Meta", back_populates="citations")
+    source_id = Column(UUID(as_uuid=False), ForeignKey("sources.id"))
+    source = relationship("Source", back_populates="citations")
     summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="citations")
 
@@ -49,20 +49,20 @@ class Citation(Base):
         return f"Citation(id: {self.id}, text: {self.text}, meta: {self.meta.id})"
 
 
-class Meta(Base):
+class Source(Base):
     """
     Source meta data.
     """
 
-    __tablename__ = "meta"
+    __tablename__ = "sources"
 
     id = Column(UUID(as_uuid=False), primary_key=True, unique=True)
-    citations = relationship("Citation", back_populates="meta")
-    title = Column(VARCHAR)
-    author = Column(VARCHAR)
-    publisher = Column(VARCHAR)
-    pub_date = Column(VARCHAR)
-    kwargs = Column(JSONB)
+    citations = relationship("Citation", back_populates="source")
+    title = Column(VARCHAR, nullable=False)
+    author = Column(VARCHAR, nullable=False)
+    publisher = Column(VARCHAR, nullable=False)
+    pub_date = Column(VARCHAR, nullable=False)
+    kwargs = Column(JSONB, nullable=False, default={})
 
 
 class TagInstance(Base):

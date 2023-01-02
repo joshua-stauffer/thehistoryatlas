@@ -8,7 +8,7 @@ import json
 import logging
 from random import randint
 from time import sleep
-from typing import Tuple, Union, Literal
+from typing import Tuple, Union, Literal, Optional
 
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
@@ -25,6 +25,7 @@ from readmodel.state_manager.schema import (
     Tag,
     TagInstance,
     Time,
+    Source,
 )
 from readmodel.state_manager.trie import Trie, TrieResult
 
@@ -424,17 +425,47 @@ class Database:
             + f"TagInstance Tag ID is {tag_instance.tag_id}"
         )
 
-    def add_meta_to_citation(self, citation_guid: str, **kwargs) -> None:
-        """Accepts meta data and associates it with a citation.
-
-        Add all meta data as keyword arguments.
+    def add_source_to_citation(self, source_id: str, citation_guid: str) -> None:
         """
-        meta = json.dumps(kwargs)
+        Associate an existing Source with a Citation.
+        """
         with Session(self._engine, future=True) as session:
             citation = session.execute(
                 select(Citation).where(Citation.guid == citation_guid)
             ).scalar_one()
-            citation.meta = meta
+            citation.source_id = source_id
+            session.commit()
+
+    def create_source(
+        self,
+        id: str,
+        title: str,
+        author: str,
+        publisher: str,
+        pub_date: str,
+        citation_id: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Create a new Source record, and optionally associate it with a Citation.
+        """
+        with Session(self._engine, future=True) as session:
+            source = Source(
+                id=id,
+                title=title,
+                author=author,
+                publisher=publisher,
+                pub_date=pub_date,
+                kwargs=kwargs,
+            )
+            session.add(source)
+
+            if citation_id is not None:
+                citation = session.execute(
+                    select(Citation).where(Citation.guid == citation_id)
+                ).scalar_one()
+                citation.source_id = id
+                session.add(citation)
             session.commit()
 
     def _handle_name(self, name, guid, session):

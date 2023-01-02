@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from readmodel.state_manager.database import Database
 
-from readmodel.state_manager.schema import Base
+from readmodel.state_manager.schema import Base, Source
 from readmodel.state_manager.schema import Citation
 from readmodel.state_manager.schema import TagInstance
 from readmodel.state_manager.schema import Tag
@@ -821,7 +821,6 @@ async def test_handle_time_update_existing_and_cache(
     assert called[0] == True
 
 
-# test meta
 @pytest.mark.asyncio
 async def test_add_meta_to_citation_no_extra_args(
     db, citation_data_1, summary_guid, meta_data_min
@@ -832,7 +831,7 @@ async def test_add_meta_to_citation_no_extra_args(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.add_meta_to_citation(citation_guid=citation_guid, **meta_data_min)
+    db.add_source_to_citation(citation_guid=citation_guid, **meta_data_min)
 
     with Session(db._engine, future=True) as sess:
         res = sess.execute(
@@ -851,7 +850,7 @@ async def test_add_meta_to_citation_with_extra_args(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.add_meta_to_citation(citation_guid=citation_guid, **meta_data_more)
+    db.add_source_to_citation(citation_guid=citation_guid, **meta_data_more)
 
     with Session(db._engine, future=True) as sess:
         res = sess.execute(
@@ -1011,3 +1010,37 @@ async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, summary_g
         assert len(res_list) == 1
         name = res_list[0]
         assert len(name.guids) == 1
+
+
+def test_create_source_with_citation_relationship(db):
+    source_id = "cd71d777-f8e6-4b82-bdca-96ef47dcaeb7"
+    citation_id = "c4bd0c8e-801f-46d2-b876-c23c3fd9ce15"
+    title = "new source"
+    author = "new author"
+    publisher = "publisher name"
+    pub_date = "1/1/2023"
+
+    citation = Citation(
+        guid=citation_id,
+    )
+    with Session(db._engine, future=True) as session:
+        session.add(citation)
+        session.commit()
+
+    db.create_source(
+        id=source_id,
+        title=title,
+        author=author,
+        publisher=publisher,
+        pub_date=pub_date,
+        citation_id=citation_id,
+    )
+    with Session(db._engine, future=True) as session:
+        source = session.query(Source).where(Source.id == source_id).one()
+        assert source.id == source_id
+        assert source.title == title
+        assert source.author == author
+        assert source.publisher == publisher
+        assert source.pub_date == pub_date
+        assert len(source.citations) == 1
+        assert source.citations[0].guid == citation_id

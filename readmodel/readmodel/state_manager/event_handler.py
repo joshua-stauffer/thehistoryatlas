@@ -19,6 +19,7 @@ from abstract_domain_model.models import (
     TimeTagged,
     MetaAdded,
 )
+from abstract_domain_model.models.events.meta_tagged import MetaTagged
 from abstract_domain_model.transform import from_dict
 from abstract_domain_model.types import Event
 from readmodel.errors import (
@@ -68,6 +69,7 @@ class EventHandler:
             "PLACE_TAGGED": self._handle_place_tagged,
             "TIME_TAGGED": self._handle_time_tagged,
             "META_ADDED": self._handle_meta_added,
+            "META_TAGGED": self._handle_meta_tagged,
         }
 
     def _handle_summary_added(self, event: SummaryAdded):
@@ -159,4 +161,7 @@ class EventHandler:
         meta_payload = dict(**event["payload"])
         del meta_payload["citation_id"]
         del meta_payload["id"]
-        self._db.add_meta_to_citation(citation_guid=citation_id, **meta_payload)
+        self._db.add_source_to_citation(citation_guid=citation_id, **meta_payload)
+
+    def _handle_meta_tagged(self, event: MetaTagged):
+        ...
