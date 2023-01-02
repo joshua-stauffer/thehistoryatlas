@@ -425,13 +425,13 @@ class Database:
             + f"TagInstance Tag ID is {tag_instance.tag_id}"
         )
 
-    def add_source_to_citation(self, source_id: str, citation_guid: str) -> None:
+    def add_source_to_citation(self, source_id: str, citation_id: str) -> None:
         """
         Associate an existing Source with a Citation.
         """
         with Session(self._engine, future=True) as session:
             citation = session.execute(
-                select(Citation).where(Citation.guid == citation_guid)
+                select(Citation).where(Citation.guid == citation_id)
             ).scalar_one()
             citation.source_id = source_id
             session.commit()

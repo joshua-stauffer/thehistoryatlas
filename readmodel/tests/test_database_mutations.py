@@ -831,7 +831,7 @@ async def test_add_meta_to_citation_no_extra_args(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.add_source_to_citation(citation_guid=citation_guid, **meta_data_min)
+    db.add_source_to_citation(citation_id=citation_guid, **meta_data_min)
 
     with Session(db._engine, future=True) as sess:
         res = sess.execute(
@@ -850,7 +850,7 @@ async def test_add_meta_to_citation_with_extra_args(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.add_source_to_citation(citation_guid=citation_guid, **meta_data_more)
+    db.add_source_to_citation(citation_id=citation_guid, **meta_data_more)
 
     with Session(db._engine, future=True) as sess:
         res = sess.execute(
@@ -1044,3 +1044,32 @@ def test_create_source_with_citation_relationship(db):
         assert source.pub_date == pub_date
         assert len(source.citations) == 1
         assert source.citations[0].guid == citation_id
+
+
+def test_tag_source(db):
+    source_id = "08ea9177-66e6-4494-b2f3-c8f4f05456a7"
+    citation_id = "29a34448-099e-44bc-9bf8-5e4222ccf509"
+    title = "another source"
+    author = "another author"
+    publisher = "another publisher name"
+    pub_date = "1/1/2023"
+
+    citation = Citation(
+        guid=citation_id,
+    )
+    source = Source(
+        id=source_id,
+        title=title,
+        author=author,
+        publisher=publisher,
+        pub_date=pub_date,
+    )
+    with Session(db._engine, future=True) as session:
+        session.add_all([citation, source])
+        session.commit()
+
+    db.add_source_to_citation(source_id=source_id, citation_id=citation_id)
+
+    with Session(db._engine, future=True) as session:
+        citation = session.query(Citation).where(Citation.guid == citation_id).one()
+        assert citation.source.id == source_id
