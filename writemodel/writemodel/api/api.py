@@ -98,7 +98,7 @@ class GQLApi:
                     kwargs={
                         k: v
                         for k, v in asdict(data.meta).items()
-                        if k in {"pageNum", "pubDate"}
+                        if k in {"pageNum", "pubDate", "accessDate"}
                     },
                 ),
             ),
