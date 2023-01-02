@@ -7,7 +7,7 @@ from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
 from readmodel.errors import EmptyNameError
 
 Base = declarative_base()
@@ -40,14 +40,29 @@ class Citation(Base):
     id = Column(INTEGER, primary_key=True)
     guid = Column(VARCHAR(36))
     text = Column(VARCHAR)
-    # meta data stored as json string with arbitrary fields
-    # not planning on querying against this, just need it available
-    meta = Column(VARCHAR)
+    meta_id = Column(UUID(as_uuid=False), ForeignKey("meta.id"))
+    meta = relationship("Meta", back_populates="citations")
     summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="citations")
 
     def __repr__(self):
-        return f"Citation(id: {self.id}, text: {self.text}, meta: {self.meta})"
+        return f"Citation(id: {self.id}, text: {self.text}, meta: {self.meta.id})"
+
+
+class Meta(Base):
+    """
+    Source meta data.
+    """
+
+    __tablename__ = "meta"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, unique=True)
+    citations = relationship("Citation", back_populates="meta")
+    title = Column(VARCHAR)
+    author = Column(VARCHAR)
+    publisher = Column(VARCHAR)
+    pub_date = Column(VARCHAR)
+    kwargs = Column(JSONB)
 
 
 class TagInstance(Base):
