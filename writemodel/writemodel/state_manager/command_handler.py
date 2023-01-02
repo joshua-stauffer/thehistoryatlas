@@ -130,24 +130,19 @@ class CommandHandler:
         # handle meta
         if command.payload.meta.id is not None:
             # tag existing meta
-            kwargs = command.payload.meta.kwargs
-            page_num = kwargs.get("pageNum", None)
-            access_date = kwargs.get("accessDate", None)
+
             meta = MetaTagged(
                 type="META_TAGGED",
                 **transaction_meta,
                 payload=MetaTaggedPayload(
                     id=command.payload.meta.id,
                     citation_id=command.payload.id,
-                    page_num=page_num,
-                    access_date=access_date,
                 ),
             )
         else:
             # create a new meta
             kwargs = deepcopy(command.payload.meta.kwargs)
-            page_num = kwargs.pop("pageNum", None)
-            access_date = kwargs.pop("accessDate", None)
+
             pub_date = kwargs.pop("pubDate", None)
             meta = MetaAdded(
                 type="META_ADDED",
@@ -159,8 +154,6 @@ class CommandHandler:
                     title=command.payload.meta.title,
                     publisher=command.payload.meta.publisher,
                     pub_date=pub_date,
-                    page_num=page_num,
-                    access_date=access_date,
                     kwargs=command.payload.meta.kwargs,
                 ),
             )
@@ -185,6 +178,8 @@ class CommandHandler:
                 text=command.payload.text,
                 summary_id=summary_id,
                 meta_id=meta.payload.id,
+                access_date=command.payload.meta.kwargs.pop("accessDate", None),
+                page_num=command.payload.meta.kwargs.pop("pageNum", None),
             ),
         )
 
