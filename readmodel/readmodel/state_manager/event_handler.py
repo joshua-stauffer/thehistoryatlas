@@ -156,12 +156,15 @@ class EventHandler:
         )
 
     def _handle_meta_added(self, event: MetaAdded):
-        citation_id = event.payload.citation_id
-        event = asdict(event)
-        meta_payload = dict(**event["payload"])
-        del meta_payload["citation_id"]
-        del meta_payload["id"]
-        self._db.add_source_to_citation(citation_id=citation_id, **meta_payload)
+        source = event.payload
+        self._db.create_source(
+            id=source.id,
+            title=source.title,
+            author=source.author,
+            publisher=source.publisher,
+            pub_date=source.pub_date,
+            citation_id=source.citation_id,
+        )
 
     def _handle_meta_tagged(self, event: MetaTagged):
         self._db.add_source_to_citation(
