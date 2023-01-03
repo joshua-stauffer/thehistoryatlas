@@ -19,7 +19,7 @@ from abstract_domain_model.models.commands.publish_citation import (
     Place,
     PublishCitation,
 )
-from seed import PUBLISH_CITATIONS
+from seed import PUBLISH_CITATION_DOMAIN_OBJECTS
 from writemodel.state_manager.command_handler import CommandHandler
 from writemodel.state_manager.text_processor import TextHasher
 from writemodel.state_manager.handler_errors import (
@@ -39,7 +39,7 @@ def hash_text():
 
 @pytest.fixture
 def publish_citation():
-    return PUBLISH_CITATIONS[0]
+    return PUBLISH_CITATION_DOMAIN_OBJECTS[0]
 
 
 @pytest.fixture
