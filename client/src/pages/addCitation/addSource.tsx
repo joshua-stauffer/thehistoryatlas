@@ -5,15 +5,9 @@ import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { theme } from '../../baseStyle'
+import { Source } from './addCitationPage';
 
-export interface Source {
-  title: string
-  author: string
-  publisher: string
-  pubDate?: string
-  pageNum?: number
-  id?: string
-}
+
 
 interface AddSourceProps {
   addSource: (source: Source) => void;
@@ -32,7 +26,7 @@ export const AddSource = (props: AddSourceProps) => {
   const validateInput = (): boolean => !!title && !!author && !!publisher && !!pubYear;
   const saveSource = () => {
     addSource({
-      id: undefined,  // update to allow tagging existing sources
+      id: undefined,
       title: title,
       author: author,
       publisher: publisher,

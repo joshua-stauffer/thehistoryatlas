@@ -8,7 +8,7 @@ import { theme } from '../../baseStyle'
 
 import { ExploreButton, SettingsButton } from '../../components/navBar';
 import { PublishNewCitationVars } from '../../graphql/publishNewCitation';
-import { Source, AddSource } from './addSource'
+import { AddSource } from './addSource'
 import { Quote, AddQuote } from './addQuote'
 import { Tag, TagEntities } from './tagEntities'
 import { Summary, AddSummary } from './addSummary'
@@ -16,6 +16,16 @@ import { SaveSummary } from './saveAnnotatedCitation';
 import { NavBar } from '../../components/navBar';
 import { TokenManager, useTokenManager } from '../../hooks/token';
 import { useHistory } from 'react-router-dom';
+import { FindSource } from './findSource';
+
+export interface Source {
+  title: string
+  author: string
+  publisher: string
+  pubDate?: string
+  pageNum?: number
+  id?: string
+}
 
 
 interface AddCitationPageProps {
@@ -31,6 +41,7 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
   const [citationGUID, ] = useState<string>(v4())  // allows api to reject duplicate requests
   const [summaryGUID, ] = useState<string | undefined>(undefined)  // for now, can't tag an existing summary
   const [source, setSource] = useState<Source>()
+  const [exhaustedSourceSearch, setExhaustedSourceSearch] = useState<boolean>(false)
   const [quote, setQuote] = useState<Quote>()
   const [tags, setTags] = useState<Tag[]>()
   const [summary, setSummary] = useState<Summary>()
@@ -61,12 +72,18 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
     return <h1>Redirecting to Login</h1>
   }
 
+  console.log({source})
+
   const steps = ["Add Source", "Add Quote", "Tag Entities", "Add Summary", "Confirm and Save"]
   let child;
   switch (step) {
 
     case 0:
-      child = <AddSource addSource={addSource} />
+      if (exhaustedSourceSearch === false) {
+        child = <FindSource addSource={addSource} finishedSearch={() => setExhaustedSourceSearch(true)}/>
+      } else {
+        child = <AddSource addSource={addSource} />
+      }
       break
     case 1:
       child = <AddQuote addQuote={addQuote} />
