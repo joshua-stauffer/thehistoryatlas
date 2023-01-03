@@ -239,10 +239,14 @@ class Database:
 
     def get_name_by_fuzzy_search(self, name: str) -> list[TrieResult]:
         """Search for possible completions to a given string from known entity names."""
+        if name == "":
+            return []
         return self._entity_trie.find(name, res_count=10)
 
     def get_sources_by_search_term(self, search_term: str) -> list[ADMSource]:
         """Match a list of Sources by title and author against a search term."""
+        if search_term == "":
+            return []
         res: List[ADMSource] = []
         source_results = self._source_trie.find(search_term, res_count=10)
         with Session(self._engine, future=True) as session:
@@ -512,6 +516,28 @@ class Database:
                 citation.source_id = id
                 session.add(citation)
             session.commit()
+            self._add_to_source_trie(source)
+
+    def _add_to_source_trie(self, source: Source):
+        """
+        Add source title and author to the search trie,
+        as well as their individual words.
+        """
+        id = source.id
+
+        # add title
+        self._source_trie.insert(source.title, guid=id)
+        title_words = source.title.split(" ")
+        if title_words > 1:
+            for word in title_words:
+                self._source_trie.insert(word, guid=id)
+
+        # add author
+        self._source_trie.insert(source.author, guid=id)
+        author_words = source.title.split(" ")
+        if author_words > 1:
+            for word in author_words:
+                self._source_trie.insert(word, guid=id)
 
     def _handle_name(self, name, guid, session):
         """Accepts a name and GUID and links the two in the Name table and
