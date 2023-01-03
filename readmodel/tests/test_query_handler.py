@@ -259,7 +259,7 @@ def test_get_fuzzy_search_by_name(handle_query):
     assert res["payload"]["name"] == name
     for r in res["payload"]["results"]:
         assert isinstance(r["name"], str)
-        assert isinstance(r["guids"], list)
+        assert isinstance(r["guids"], frozenset)
         for id_ in r["guids"]:
             assert isinstance(id_, str)
 

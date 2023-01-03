@@ -253,19 +253,19 @@ class Database:
             return []
         res: List[ADMSource] = []
         source_results = self._source_trie.find(search_term, res_count=10)
+        source_ids = set([id for source in source_results for id in source.guids])
         with Session(self._engine, future=True) as session:
-            for result in source_results:
-                for source_id in result.guids:
-                    source = session.query(Source).filter(Source.id == source_id).one()
-                    res.append(
-                        ADMSource(
-                            id=source_id,
-                            title=source.title,
-                            author=source.author,
-                            publisher=source.publisher,
-                            pub_date=source.pub_date,
-                        )
+            for source_id in source_ids:
+                source = session.query(Source).filter(Source.id == source_id).one()
+                res.append(
+                    ADMSource(
+                        id=source_id,
+                        title=source.title,
+                        author=source.author,
+                        publisher=source.publisher,
+                        pub_date=source.pub_date,
                     )
+                )
         return res
 
     def get_place_by_coords(
@@ -551,13 +551,13 @@ class Database:
         ).scalar_one_or_none()
         if not res:
             res = Name(name=name, guids=guid)
-            self.update_trie(new_string=name, new_string_guid=guid)
+            self.update_entity_trie(new_string=name, new_string_guid=guid)
         else:
             # check if guid is already represented
             if guid in res.guids:
                 return  # this name/guid pair isn't new
             res.add_guid(guid)
-            self.update_trie(new_string=name, new_string_guid=guid)
+            self.update_entity_trie(new_string=name, new_string_guid=guid)
         session.add(res)
 
     # CACHE LAYER FOR INCOMING CITATIONS
@@ -608,7 +608,7 @@ class Database:
 
     # TRIE MANAGEMENT
 
-    def update_trie(
+    def update_entity_trie(
         self,
         new_string=None,
         new_string_guid=None,

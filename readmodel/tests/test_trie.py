@@ -32,9 +32,11 @@ def test_find_with_single_match(trie):
     assert len(res) == 1
     assert res[0] == TrieResult(
         name="ab",
-        guids=[
-            "de6d9ea9-9478-4759-8a12-03d6fcab7b1f",
-        ],
+        guids=frozenset(
+            [
+                "de6d9ea9-9478-4759-8a12-03d6fcab7b1f",
+            ]
+        ),
     )
 
 

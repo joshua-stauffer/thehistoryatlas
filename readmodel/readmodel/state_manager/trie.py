@@ -7,7 +7,7 @@ Saturday, November 13th 2021
 from collections import deque
 import logging
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import TypedDict, Set
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
@@ -18,7 +18,7 @@ class TrieResult:
     """The result of a trie search"""
 
     name: str
-    guids: list[str]
+    guids: frozenset[str]
 
 
 class Node:
@@ -101,15 +101,16 @@ class Trie:
                 break
             node = node.children[char]
         log.debug(f"closest neighbor found is {node.name}, {node.value}")
-        res = list()
+        res = set()
         queue = deque([node])
-        while len(queue) and res_count > 0:
+        while len(queue) and len(res) < res_count:
             current_node = queue.popleft()
             queue.extend(current_node.children.values())
             if current_node.name:
-                res.append(
-                    TrieResult(name=current_node.name, guids=list(current_node.ids))
+                res.add(
+                    TrieResult(
+                        name=current_node.name, guids=frozenset(current_node.ids)
+                    )
                 )
-                res_count -= 1
         log.debug(f"result is {res}")
-        return res
+        return list(res)

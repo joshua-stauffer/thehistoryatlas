@@ -430,7 +430,7 @@ def test_get_name_by_fuzzy_search(db_tuple):
     assert len(res1) <= 10
     trie_result = res1[0]
     assert isinstance(trie_result["name"], str)
-    assert isinstance(trie_result["guids"], list)
+    assert isinstance(trie_result["guids"], frozenset)
     for id_ in trie_result["guids"]:
         assert isinstance(id_, str)
 
