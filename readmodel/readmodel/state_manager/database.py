@@ -5,8 +5,9 @@ Provides read and write access to the Query database.
 
 import asyncio
 import logging
+from dataclasses import asdict
 from time import sleep
-from typing import Tuple, Union, Literal, Optional, List
+from typing import Tuple, Union, Literal, Optional, List, Dict
 
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
@@ -237,11 +238,14 @@ class Database:
                 )
         return res
 
-    def get_name_by_fuzzy_search(self, name: str) -> list[TrieResult]:
+    def get_name_by_fuzzy_search(self, name: str) -> List[Dict]:
         """Search for possible completions to a given string from known entity names."""
         if name == "":
             return []
-        return self._entity_trie.find(name, res_count=10)
+        return [
+            asdict(trie_result)
+            for trie_result in self._entity_trie.find(name, res_count=10)
+        ]
 
     def get_sources_by_search_term(self, search_term: str) -> list[ADMSource]:
         """Match a list of Sources by title and author against a search term."""
@@ -251,7 +255,7 @@ class Database:
         source_results = self._source_trie.find(search_term, res_count=10)
         with Session(self._engine, future=True) as session:
             for result in source_results:
-                for source_id in result["guids"]:
+                for source_id in result.guids:
                     source = session.query(Source).filter(Source.id == source_id).one()
                     res.append(
                         ADMSource(
@@ -528,14 +532,14 @@ class Database:
         # add title
         self._source_trie.insert(source.title, guid=id)
         title_words = source.title.split(" ")
-        if title_words > 1:
+        if len(title_words) > 1:
             for word in title_words:
                 self._source_trie.insert(word, guid=id)
 
         # add author
         self._source_trie.insert(source.author, guid=id)
         author_words = source.title.split(" ")
-        if author_words > 1:
+        if len(author_words) > 1:
             for word in author_words:
                 self._source_trie.insert(word, guid=id)
 

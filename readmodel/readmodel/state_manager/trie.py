@@ -6,13 +6,15 @@ Saturday, November 13th 2021
 
 from collections import deque
 import logging
+from dataclasses import dataclass
 from typing import TypedDict
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
 
 
-class TrieResult(TypedDict):
+@dataclass(frozen=True)
+class TrieResult:
     """The result of a trie search"""
 
     name: str
@@ -105,7 +107,9 @@ class Trie:
             current_node = queue.popleft()
             queue.extend(current_node.children.values())
             if current_node.name:
-                res.append({"name": current_node.name, "guids": list(current_node.ids)})
+                res.append(
+                    TrieResult(name=current_node.name, guids=list(current_node.ids))
+                )
                 res_count -= 1
         log.debug(f"result is {res}")
         return res

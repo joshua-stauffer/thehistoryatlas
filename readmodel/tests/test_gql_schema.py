@@ -10,7 +10,7 @@ from readmodel.api import GQLApi
 @pytest.mark.asyncio
 async def test_query_handles_query_status():
 
-    api = GQLApi(default_entity_handler=Mock())
+    api = GQLApi(default_entity_handler=Mock(), search_sources_handler=Mock())
 
     query = """
         query TestStatus {
@@ -36,7 +36,10 @@ async def test_query_default_entity():
         name="Johann Sebastian Bach",
     )
 
-    api = GQLApi(default_entity_handler=Mock(return_value=default_entity))
+    api = GQLApi(
+        default_entity_handler=Mock(return_value=default_entity),
+        search_sources_handler=Mock(),
+    )
 
     query = """
         query TestStatus {
