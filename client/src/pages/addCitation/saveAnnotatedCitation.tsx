@@ -1,7 +1,10 @@
-import { Paper, Button, Typography, Chip } from '@material-ui/core'
-
+import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
+import Paper from '@mui/material/Paper'
+import Typography from '@mui/material/Typography'
 import { PUBLISH_NEW_CITATION, PublishNewCitationResult, PublishNewCitationVars } from '../../graphql/publishNewCitation';
 import { useMutation } from '@apollo/client'
+import { isParameter } from 'typescript';
 
 interface SaveSummaryProps {
   annotation: PublishNewCitationVars["Annotation"]
@@ -37,17 +40,17 @@ export const SaveSummary = (props: SaveSummaryProps) => {
     return <Typography variant="h2">Thanks for contributing to the History Atlas!</Typography>
   } else {
     return (
-      <Paper>
-        <Typography variant="h2">Confirm and Upload Citation</Typography>
-        <Typography variant="h3">Source</Typography>
+      <Paper sx={{display: 'flex'}}>
+        <Typography variant="h2" align='center' sx={{alignItems: 'center'}}>Confirm and Upload Citation</Typography>
+        <Typography variant="h3" sx={{marginTop: 20}}>Source</Typography>
         <Typography variant="body1">Author: {meta.author}</Typography>
         <Typography variant="body1">Title: {meta.title}</Typography>
         <Typography variant="body1">Publisher: {meta.publisher}</Typography>
-        <Typography variant="h3">Citation Text</Typography>
+        <Typography variant="h3" sx={{marginTop: 20}}>Citation Text</Typography>
         <Typography variant="body1">{citation}</Typography>
-        <Typography variant="h3">Summary Text</Typography>
+        <Typography variant="h3" sx={{marginTop: 20}}>Summary Text</Typography>
         <Typography variant="body1">{summary}</Typography>
-        <Typography variant="h3">Entity Tags</Typography>
+        <Typography variant="h3" sx={{marginTop: 20}}>Entity Tags</Typography>
         {
           summaryTags.map(tag => 
           <Chip label={tag.name}/>
@@ -57,6 +60,8 @@ export const SaveSummary = (props: SaveSummaryProps) => {
         <Button 
           onClick={() => uploadSummary({ variables: { Annotation: updatedAnnotation } })}
           variant="contained"
+          sx={{marginTop: 20}}
+          color='secondary'
         >Upload</Button>
       </Paper>
     )

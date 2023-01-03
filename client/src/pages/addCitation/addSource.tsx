@@ -5,7 +5,9 @@ import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { v4 } from 'uuid';
-import { theme } from '../../baseStyle'
+// import { theme } from '../../baseStyle'
+import { useTheme } from '@mui/material/styles';
+
 
 export interface Source {
   title: string
@@ -49,6 +51,7 @@ export const AddSource = (props: AddSourceProps) => {
   const days = Array.from({ length: 31 }, (_, i) => i + 1)
   const months = Array.from({ length: 12 }, (_, i) => i + 1)
   const years = Array.from({ length: 2023 }, (_, i) => i + 1)
+  const theme = useTheme()
 
   return (
     <Box
@@ -74,7 +77,7 @@ export const AddSource = (props: AddSourceProps) => {
             label="Title"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            sx={{color: theme.palette.primary.main}}
+            sx={{color: 'primary'}}
           />
         </Grid>
 
@@ -173,6 +176,7 @@ export const AddSource = (props: AddSourceProps) => {
             disabled={!validateInput()}
             variant="contained"
             onClick={saveSource}
+            color='secondary'
           >
             Save & Continue
           </Button>

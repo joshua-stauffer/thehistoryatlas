@@ -29,7 +29,7 @@ export const theme = createTheme({
   },
   typography: {
     button: {
-      color: 'secondary'
+      color: 'primary'
     }
   }
 })

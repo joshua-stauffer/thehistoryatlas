@@ -3,7 +3,7 @@ import { useQuery } from '@apollo/client';
 import { GET_TEXT_ANALYSIS, TextAnalysisResult, TextAnalysisVars } from '../../graphql/getTextAnalysis'
 
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Box'
+import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import FormControl from '@mui/material/FormControl'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -223,11 +223,11 @@ export const TagEntities = (props: TagEntitiesProps) => {
         spacing={2}
         direction='column'
         alignContent='center'
-        sx={{marginTop: 20}}
+        sx={{marginTop: 10}}
       >
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={6} minWidth={400}>
           <Paper>
-            <Typography align="center">Tag Citation</Typography>
+            <Typography align="center" marginLeft={0}>Tag Citation</Typography>
             {
               tags.map(tag =>
                 tag.type === "PERSON"
@@ -266,12 +266,13 @@ export const TagEntities = (props: TagEntitiesProps) => {
           <Paper>
             {currentEntity ?
               <>
-                <Typography align="center">Create Tag "{currentEntity.text}"</Typography>
+                <Typography align="center">Create Tag {currentEntity.text}</Typography>
                 <FormControl component="fieldset">
-                  <FormLabel component="legend">Entity Type</FormLabel>
+                  <FormLabel component="legend" color='primary'>Entity Type</FormLabel>
                   <RadioGroup
                     row aria-label="entity-type"
                     name="row-radio-buttons-group"
+                    sx={{minWidth: 400, justifyContent: 'center'}}
                     onChange={(event) => setCurrentEntity(entity => {
                       // save the currentEntity type as the value of the radio button
                       if (!entity) return entity
@@ -285,8 +286,8 @@ export const TagEntities = (props: TagEntitiesProps) => {
                     <FormControlLabel value="PLACE" control={<Radio />} label="Place" />
                     <FormControlLabel value="TIME" control={<Radio />} label="Time" />
                   </RadioGroup>
-                  <Button onClick={extendTagLeft}>Extend tag left</Button>
-                  <Button onClick={extendTagRight}>Extend tag right</Button>
+                  <Button onClick={extendTagLeft} color='primary'>Extend tag left</Button>
+                  <Button onClick={extendTagRight} color='primary'>Extend tag right</Button>
                 </FormControl>
                 { // render sub component based on current radio value, as saved in currentEntity.type
                   currentEntity.type === "PERSON"
@@ -302,7 +303,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
                 }
                 <br />
 
-                <Button onClick={() => {
+                <Button color='primary' onClick={() => {
                   setCurrentEntity(null)
                   if (restoreState) {
                     setTags(restoreState)
@@ -311,6 +312,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
                 }}>Reset</Button>
                 {canSaveTag(currentEntity) ?  // only show save button if complete
                   <Button
+                    color='primary'
                     onClick={() => saveTag(currentEntity)}
                     disabled={!canSaveTag(currentEntity)}
                   >Save</Button>
@@ -321,10 +323,11 @@ export const TagEntities = (props: TagEntitiesProps) => {
                 <ViewEntity tag={focusedEntity} />
                 :
                 <>
-                  <Typography align="center">Click a word to tag a Person, Place, or Time</Typography>
+                  <Typography align="center" margin={10} minHeight={30} minWidth={30}>Click a word to tag a Person, Place, or Time</Typography>
                   <Button
                     variant="contained"
                     onClick={addNewTag}
+                    color='secondary'
                   >Tag Entity without reference</Button>
                 </>
             }
@@ -335,6 +338,7 @@ export const TagEntities = (props: TagEntitiesProps) => {
             variant="contained"
             onClick={() => tagEntities(tags.filter(tag => tag.type !== "NONE"))}
             disabled={!tagsAreComplete}
+            color='secondary'
           >Save Tags & Continue</Button>
         </Grid>
       </Grid>

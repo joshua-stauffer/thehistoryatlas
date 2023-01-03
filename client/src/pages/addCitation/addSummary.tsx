@@ -1,6 +1,11 @@
 import { useState } from 'react';
-import { Box, Chip, Grid, Paper, Typography, Button, TextField } from '@material-ui/core'
-
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Chip from '@mui/material/Chip'
+import Grid from '@mui/material/Grid'
+import Paper from '@mui/material/Paper'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { Source } from './addSource'
 import { Quote } from './addQuote'
 import { Tag } from './tagEntities'
@@ -62,7 +67,7 @@ export const AddSummary = (props: AddSummaryProps) => {
   return (
     <Box
       component="form"
-      sx={{ padding: 50, minWidth: 400 }}
+      sx={{ margin: 10, minWidth: 400 }}
     >
       <Grid container spacing={2}>
       <Grid item xs={12} sm={6}>
@@ -77,8 +82,9 @@ export const AddSummary = (props: AddSummaryProps) => {
           <Typography variant="h3">Summary</Typography>
             <TextField
               id="summary"
-              variant="filled"
+              variant="outlined"
               label="Summary"
+              InputLabelProps={{ shrink: true }}
               placeholder="Create Summary"
               multiline
               rows={10}
@@ -87,9 +93,9 @@ export const AddSummary = (props: AddSummaryProps) => {
               color={summaryText.length === MAX_SUMMARY_LENGTH ? "secondary" : "primary"}
             />
             <Typography>{summaryText.length}/{MAX_SUMMARY_LENGTH} characters remaining</Typography>
-            <Button 
-              variant="contained" 
-              color="primary"
+            <Button
+              variant="contained"
+              color="secondary"
               onClick={() => addSummary({text: summaryText})}
             >Save Summary</Button>
           </Paper>
@@ -112,4 +118,3 @@ export const AddSummary = (props: AddSummaryProps) => {
     </Box>
   )
 }
-

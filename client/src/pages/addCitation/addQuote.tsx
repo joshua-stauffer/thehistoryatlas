@@ -45,7 +45,9 @@ export const AddQuote = (props: AddQuoteProps) => {
             label="Citation Text"
             value={text}
             onChange={e => setText(e.target.value)}
-            sx={{color: theme.palette.primary.main}}
+            // sx={{color: theme.palette.primary.main}}
+            color='primary'
+            sx={{minWidth: 300}}
           />
         </Grid>
 
@@ -54,6 +56,7 @@ export const AddQuote = (props: AddQuoteProps) => {
           variant="contained"
           onClick={() => addQuote({ text })}
           sx={{margin: 2}}
+          color='secondary'
         >
           Save & Continue
         </Button>
