@@ -6,9 +6,9 @@ from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models.readmodel import DefaultEntity
+from abstract_domain_model.models.readmodel import DefaultEntity, Source as ADMSource
 from readmodel.state_manager.database import Database
-from readmodel.state_manager.schema import Citation
+from readmodel.state_manager.schema import Citation, Source
 from readmodel.state_manager.schema import TagInstance
 from readmodel.state_manager.schema import Tag
 from readmodel.state_manager.schema import Time
@@ -16,6 +16,7 @@ from readmodel.state_manager.schema import Person
 from readmodel.state_manager.schema import Place
 from readmodel.state_manager.schema import Name
 from readmodel.state_manager.schema import Summary
+from readmodel.state_manager.trie import Trie
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
@@ -27,7 +28,17 @@ FUZZ_ITERATIONS = 10
 
 
 @pytest.fixture
-def db_tuple(db):
+def source_title():
+    return "Source Title"
+
+
+@pytest.fixture
+def source_author():
+    return "Source Author"
+
+
+@pytest.fixture
+def db_tuple(db, source_title, source_author):
     """
     This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
     of people, places, and times (each). It then associates each citation
@@ -84,6 +95,13 @@ def db_tuple(db):
         citation = Citation(
             guid=cit_guid,
             text=f"some citation text {n}",
+            source=Source(
+                id=str(uuid4()),
+                title=f"{source_title} {n}",
+                author=f"{source_author} {n}",
+                publisher="Source Publishing Company",
+                pub_date="2023-01-02",
+            ),
         )
         citations.append(citation)
         # create a summary
@@ -196,6 +214,16 @@ def test_all_summaries_have_timetag_cache(db_tuple):
                 select(Summary).where(Summary.guid == guid)
             ).scalar_one()
             assert isinstance(res.time_tag, str)
+
+
+def test_all_citations_have_a_source(db_tuple):
+    db, db_dict = db_tuple
+    with Session(db._engine, future=True) as session:
+        citations = session.query(Citation).all()
+        for citation in citations:
+            assert citation.source.id
+            assert citation.source.title
+            assert citation.source.author
 
 
 # test sad path
@@ -405,6 +433,24 @@ def test_get_name_by_fuzzy_search(db_tuple):
     assert isinstance(trie_result["guids"], list)
     for id_ in trie_result["guids"]:
         assert isinstance(id_, str)
+
+
+def test_get_sources_by_search_term_title(db_tuple, source_title):
+    db, _ = db_tuple
+
+    # ensure data is fresh
+    db._source_trie = Trie(db.get_all_source_titles_and_authors())
+
+    sources = db.get_sources_by_search_term(source_title)
+    assert isinstance(sources, list)
+    assert len(sources) == 10
+    for source in sources:
+        assert isinstance(source, ADMSource)
+        assert isinstance(source.id, str)
+        assert isinstance(source.title, str)
+        assert isinstance(source.publisher, str)
+        assert isinstance(source.author, str)
+        assert isinstance(source.pub_date, str)
 
 
 def test_get_place_by_coords(db_tuple):

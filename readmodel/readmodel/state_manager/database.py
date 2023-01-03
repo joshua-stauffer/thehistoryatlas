@@ -202,7 +202,7 @@ class Database:
                 )
         return res
 
-    def get_all_entity_names(self) -> Tuple[str, str]:
+    def get_all_entity_names(self) -> List[Tuple[str, str]]:
         """Util for building Entity search trie. Returns a list of (name, guid) tuples."""
         res = []
         with Session(self._engine, future=True) as session:
@@ -223,9 +223,9 @@ class Database:
 
         return res
 
-    def get_all_source_titles_and_authors(self) -> Tuple[str, str]:
+    def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:
         """Util for building Source search trie. Returns a list of (name, id) tuples."""
-        res = []
+        res: List[Tuple[str, str]] = []
         with Session(self._engine, future=True) as session:
             sources = session.query(Source).all()
             for source in sources:
@@ -248,7 +248,7 @@ class Database:
         with Session(self._engine, future=True) as session:
             for result in source_results:
                 for source_id in result["guids"]:
-                    source = session.query(Source).filter(Source.id == source_id)
+                    source = session.query(Source).filter(Source.id == source_id).one()
                     res.append(
                         ADMSource(
                             id=source_id,
