@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from unittest.mock import Mock
 
 import pytest
 from writemodel.state_manager.event_handler import EventHandler
@@ -27,7 +28,8 @@ def test_handle_event(monkeypatch):
         "TIME_TAGGED": False,
     }
     assert all(h == False for h in handlers.values())
-    eh = EventHandler(None, None)
+    db = Mock()
+    eh = EventHandler(db, None)
 
     # patch the individual methods responsible for handling events
 
