@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { EntityType } from '../types';
+import { EntityType } from "../types";
 
 export const GET_GUIDS_BY_NAME = gql`
   query GUIDQuery($name: String!) {
@@ -27,8 +27,8 @@ export interface GUIDsByNameResult {
       names: string[];
       first_citation_date: string;
       last_citation_date: string;
-    }[]
-  }
+    }[];
+  };
 }
 
 export interface GUIDsByNameVars {

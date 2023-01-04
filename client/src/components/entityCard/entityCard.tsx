@@ -1,5 +1,5 @@
-import { Container, Title, Body } from "./style"
-import { prettifyDate } from '../../pureFunctions/prettifyDate';
+import { Container, Title, Body } from "./style";
+import { prettifyDate } from "../../pureFunctions/prettifyDate";
 import { HistoryEntity } from "../../types";
 
 interface EntityCardProps {
@@ -11,13 +11,15 @@ interface EntityCardProps {
 }
 
 export const EntityCard = (props: EntityCardProps) => {
-  const { name, startDate, endDate, summaryCount } = props
-  const start = prettifyDate({dateString: startDate})
-  const end = prettifyDate({dateString: endDate})
+  const { name, startDate, endDate, summaryCount } = props;
+  const start = prettifyDate({ dateString: startDate });
+  const end = prettifyDate({ dateString: endDate });
   return (
     <Container>
       <Title>{name}</Title>
-      <Body>{summaryCount} events from {start} to {end}.</Body>
+      <Body>
+        {summaryCount} events from {start} to {end}.
+      </Body>
     </Container>
-  )
-}
+  );
+};

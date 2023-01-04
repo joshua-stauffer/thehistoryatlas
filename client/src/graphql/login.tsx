@@ -7,17 +7,16 @@ export const LOGIN = gql`
       token
     }
   }
-`
+`;
 
 export interface LoginResult {
   Login: {
-    success: boolean
-    token: string
-  }
+    success: boolean;
+    token: string;
+  };
 }
 
-
 export interface LoginVars {
-  username: string
-  password: string
+  username: string;
+  password: string;
 }

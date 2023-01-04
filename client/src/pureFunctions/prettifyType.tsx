@@ -1,17 +1,14 @@
-
 import { EntityType } from "../types";
 
 export const prettifyType = (type: EntityType): string => {
-
   switch (type) {
-
     case "PERSON":
-      return "person"
+      return "person";
 
     case "PLACE":
-      return "place"
-    
+      return "place";
+
     case "TIME":
-      return  "time"
+      return "time";
   }
-}
+};

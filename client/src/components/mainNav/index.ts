@@ -1,1 +1,1 @@
-export * from './mainNav';
+export * from "./mainNav";

@@ -10,13 +10,12 @@ export const GET_PLACE_BY_COORDS = gql`
   }
 `;
 
-
 export interface GetPlaceByCoordsResult {
   GetPlaceByCoords: {
     guid: string | null;
     latitude: number;
     longitude: number;
-  }
+  };
 }
 
 export interface GetPlaceByCoordsVars {

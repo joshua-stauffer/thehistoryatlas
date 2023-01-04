@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
 export const Container = styled.div`
   height: 800px;
@@ -8,6 +8,6 @@ export const Container = styled.div`
   border: none;
   border-radius: 0;
   scrollbar-background: inherit;
-  scrollbar-color: #FFFFF1 #FFFFF!;
+  scrollbar-color: #fffff1 #FFFFF!;
   scrollbar: hidden;
-`
+`;

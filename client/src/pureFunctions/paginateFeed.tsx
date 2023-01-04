@@ -1,4 +1,3 @@
-
 interface paginateFeedProps {
   scrollTop: number;
   offsetHeight: number;
@@ -9,13 +8,8 @@ interface paginateFeedProps {
 type indicesOnDataPage = number[];
 
 export const paginateFeed = (props: paginateFeedProps): indicesOnDataPage => {
-  const {
-    scrollTop, 
-    offsetHeight, 
-    scrollHeight, 
-    listLength, 
-    elementHeight, 
-  } = props;
+  const { scrollTop, offsetHeight, scrollHeight, listLength, elementHeight } =
+    props;
   const topPercent = scrollTop / scrollHeight;
   const firstIndex = Math.ceil(topPercent * listLength);
   const elementsInView = Math.floor(offsetHeight / elementHeight);
@@ -30,16 +24,20 @@ export const paginateFeed = (props: paginateFeedProps): indicesOnDataPage => {
   } else if (firstIndex < edgeIndex) {
     // we're close to the beginning, return a full page from the beginning
     indicesOnPage = Array.from({ length: elementsInPage }).map((_, i) => i);
-  } else if ((listLength - firstIndex) < edgeIndex) {
+  } else if (listLength - firstIndex < edgeIndex) {
     // we're close to the end, a full page from the end
     const startI = listLength - elementsInPage;
-    indicesOnPage =  Array.from({ length: elementsInPage }).map((_, i) => i + startI)
+    indicesOnPage = Array.from({ length: elementsInPage }).map(
+      (_, i) => i + startI
+    );
   } else {
     // we're in the middle, return a page
     const pageOffset = firstIndex % elementsInView;
     const startI = firstIndex - pageOffset - elementsInView;
-    indicesOnPage =  Array.from({ length: elementsInPage }).map((_, i) => i + startI)
+    indicesOnPage = Array.from({ length: elementsInPage }).map(
+      (_, i) => i + startI
+    );
   }
 
-  return indicesOnPage
-}
+  return indicesOnPage;
+};

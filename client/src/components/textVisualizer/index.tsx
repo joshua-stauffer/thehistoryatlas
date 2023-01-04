@@ -1,2 +1,1 @@
-
-export * from './textVisualizer'
+export * from "./textVisualizer";

@@ -1,5 +1,5 @@
 import { MarkerData } from "../types";
-import L from "leaflet"
+import L from "leaflet";
 
 export const getBoundingBox = (markers: MarkerData[]): L.LatLngBounds => {
   let maxLat: number = markers[0].coords[0];
@@ -9,19 +9,19 @@ export const getBoundingBox = (markers: MarkerData[]): L.LatLngBounds => {
   for (const { coords } of markers) {
     // check latitude
     if (coords[0] > maxLat) {
-      maxLat = coords[0]
+      maxLat = coords[0];
     } else if (coords[0] < minLat) {
-      minLat = coords[0]
+      minLat = coords[0];
     }
     // check longitude
     if (coords[1] > maxLng) {
-      maxLng = coords[1]
+      maxLng = coords[1];
     } else if (coords[1] < minLng) {
-      minLng = coords[1]
+      minLng = coords[1];
     }
   }
-  const maxCorner = L.latLng(maxLat, maxLng)
-  const minCorner = L.latLng(minLat, minLng)
-  const boundingBox = new L.LatLngBounds(maxCorner, minCorner)
-  return boundingBox
-}
+  const maxCorner = L.latLng(maxLat, maxLng);
+  const minCorner = L.latLng(minLat, minLng);
+  const boundingBox = new L.LatLngBounds(maxCorner, minCorner);
+  return boundingBox;
+};

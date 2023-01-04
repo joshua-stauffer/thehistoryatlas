@@ -22,8 +22,8 @@ export interface GetCitationByGUIDResult {
       title: string;
       author: string;
       publisher: string;
-    }
-  }
+    };
+  };
 }
 
 export interface GetCitationByGUIDVars {

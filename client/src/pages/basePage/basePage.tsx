@@ -1,9 +1,5 @@
-import { Main } from './style';
+import { Main } from "./style";
 
 export const BasePage = (children: any) => {
-  return (
-    <Main>
-      {children}
-    </Main>
-  )
-}
+  return <Main>{children}</Main>;
+};

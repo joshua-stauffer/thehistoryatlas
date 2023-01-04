@@ -1,5 +1,5 @@
-import { GetSummariesByGUIDResult } from '../graphql/getSummariesByGUID';
-import { MarkerData } from '../types';
+import { GetSummariesByGUIDResult } from "../graphql/getSummariesByGUID";
+import { MarkerData } from "../types";
 
 interface GetCoordsProps {
   indices: number[];
@@ -7,14 +7,14 @@ interface GetCoordsProps {
 }
 
 interface GetCoordsResult {
-  markerData: MarkerData[]
+  markerData: MarkerData[];
 }
 
-export const getCoords = (props: GetCoordsProps ): GetCoordsResult => {
+export const getCoords = (props: GetCoordsProps): GetCoordsResult => {
   const { indices, currentSummaries } = props;
   const markerData: MarkerData[] = [];
   for (const index of indices) {
-    const event = currentSummaries[index]
+    const event = currentSummaries[index];
     if (event) {
       for (const tag of event.tags) {
         if (tag.tag_type === "PLACE") {
@@ -24,15 +24,14 @@ export const getCoords = (props: GetCoordsProps ): GetCoordsResult => {
             guid: tag.tag_guid,
             coordsObj: {
               latitude: tag.coords.latitude,
-              longitude: tag.coords.longitude
-            }
-          })
+              longitude: tag.coords.longitude,
+            },
+          });
         }
       }
     }
-
   }
   return {
-    markerData: markerData
-  }
-}
+    markerData: markerData,
+  };
+};
