@@ -7,13 +7,13 @@ export const GET_COORDINATES_BY_NAME = gql`
       latitude
     }
   }
-`
+`;
 
 export interface CoordinatesByNameResult {
   GetCoordinatesByName: {
     latitude: number;
-    longitude: number
-  }[]
+    longitude: number;
+  }[];
 }
 
 export interface CoordinatesByNameVars {

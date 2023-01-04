@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
 export const NavBar = styled.nav`
   width: 600px;
@@ -7,7 +7,7 @@ export const NavBar = styled.nav`
   display: flex;
   justify-content: space-evenly;
   align-content: center;
-`
+`;
 
 export const NavButton = styled.button`
   border: none;
@@ -16,7 +16,7 @@ export const NavButton = styled.button`
   margin: auto auto;
   background-color: inherit;
   font-family: inherit;
-`
+`;
 
 export const FocusHeader = styled.h2`
   width: 250px;
@@ -24,4 +24,4 @@ export const FocusHeader = styled.h2`
   margin: auto;
   text-align: center;
   font-size: 2rem;
-`
+`;

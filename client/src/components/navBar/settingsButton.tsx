@@ -1,6 +1,5 @@
-import { IconButton } from '@mui/material'
-import SettingsIcon from '@mui/icons-material/Settings';
-
+import { IconButton } from "@mui/material";
+import SettingsIcon from "@mui/icons-material/Settings";
 
 export const SettingsButton = () => {
   return (
@@ -13,5 +12,5 @@ export const SettingsButton = () => {
     >
       <SettingsIcon />
     </IconButton>
-  )
-}
+  );
+};

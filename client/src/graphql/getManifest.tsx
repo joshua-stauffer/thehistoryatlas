@@ -14,7 +14,6 @@ export const GET_MANIFEST = gql`
   }
 `;
 
-
 export interface GetManifestResult {
   GetManifest: {
     guid: string;
@@ -23,8 +22,8 @@ export interface GetManifestResult {
       year: number;
       root_guid: string;
       count: number;
-    }[]
-  }
+    }[];
+  };
 }
 
 export interface GetManifestVars {

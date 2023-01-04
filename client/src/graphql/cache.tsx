@@ -4,21 +4,21 @@ import { historyBackVar } from "../hooks/history";
 export const cache: InMemoryCache = new InMemoryCache({
   typePolicies: {
     ManifestQuery: {
-      keyFields: ["GUID"]
+      keyFields: ["GUID"],
     },
     SummaryQuery: {
-      keyFields: ["GUID"]
+      keyFields: ["GUID"],
     },
     History: {
-      keyFields: ['GUID'],
+      keyFields: ["GUID"],
       fields: {
         back: {
           read() {
             const all = historyBackVar();
-            return all[all.length - 1]
-          }
-        }
-      }
-    }
-  }
-})
+            return all[all.length - 1];
+          },
+        },
+      },
+    },
+  },
+});

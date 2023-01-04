@@ -11,9 +11,9 @@ export const GET_FUZZY_SEARCH_BY_NAME = gql`
 
 export interface GetFuzzySearchByNameResult {
   GetFuzzySearchByName: {
-    name: string
-    guids: string[]
-  }[]
+    name: string;
+    guids: string[];
+  }[];
 }
 
 export interface GetFuzzySearchByNameVars {

@@ -1,1 +1,1 @@
-export * from "./singleEntityMap"
+export * from "./singleEntityMap";

@@ -1,14 +1,14 @@
-import { useEffect } from 'react';
-import * as d3 from 'd3'
-import { extent, timeParse, line } from 'd3';
-import { scaleTime, scaleLinear } from 'd3-scale';
-import { useRef } from 'react';
-import { GetManifestResult } from '../../graphql/getManifest'
-import { Container } from './style'
-import { XAxis, YAxis } from './axis';
+import { useEffect } from "react";
+import * as d3 from "d3";
+import { extent, timeParse, line } from "d3";
+import { scaleTime, scaleLinear } from "d3-scale";
+import { useRef } from "react";
+import { GetManifestResult } from "../../graphql/getManifest";
+import { Container } from "./style";
+import { XAxis, YAxis } from "./axis";
 //GetManifestResult["GetManifest"]["timeline"]
 interface TimelineProps {
-  data:{
+  data: {
     count: number;
     year: number;
     root_guid: string;
@@ -47,56 +47,56 @@ export const Timeline = (props: TimelineProps) => {
     marginBottom: 0,
     marginLeft: 30,
     marginRight: 0,
-    boundedHeight: containerRef.current ? containerRef.current.offsetHeight - 30 : 40,
-    boundedWidth: containerRef.current ? containerRef.current.offsetWidth + 40 : 40
-  }
-  const dateParser = timeParse("%Y")
+    boundedHeight: containerRef.current
+      ? containerRef.current.offsetHeight - 30
+      : 40,
+    boundedWidth: containerRef.current
+      ? containerRef.current.offsetWidth + 40
+      : 40,
+  };
+  const dateParser = timeParse("%Y");
   const xAccessor = (datum: Datum) => {
-    const date = dateParser(String(datum.year))
-    if (!date) return new Date()
-    return date
+    const date = dateParser(String(datum.year));
+    if (!date) return new Date();
+    return date;
   };
   const yAccessor = (datum: Datum) => datum.count;
 
-  const xScale = d3.scaleTime()
+  const xScale = d3
+    .scaleTime()
     .domain(d3.extent(data, xAccessor) as any)
-    .range([0, dimensions.boundedWidth])
+    .range([0, dimensions.boundedWidth]);
 
-  const yScale = d3.scaleLinear()
+  const yScale = d3
+    .scaleLinear()
     .domain(d3.extent(data, yAccessor) as any)
     .range([dimensions.boundedHeight, 0])
-    .nice()
+    .nice();
 
-  const yAccessorScaled = (datum: Datum) => yScale(yAccessor(datum))
-  const xAccessorScaled = (datum: Datum) => xScale(xAccessor(datum))
+  const yAccessorScaled = (datum: Datum) => yScale(yAccessor(datum));
+  const xAccessorScaled = (datum: Datum) => xScale(xAccessor(datum));
 
   const lineGenerator = line()
-    .x(d => xAccessorScaled(d as any))
-    .y(d => yAccessorScaled(d as any))
+    .x((d) => xAccessorScaled(d as any))
+    .y((d) => yAccessorScaled(d as any));
 
-  console.log(yScale.ticks())
+  console.log(yScale.ticks());
 
-  useEffect(() => console.log('dimensions are ', dimensions))
+  useEffect(() => console.log("dimensions are ", dimensions));
   return (
     <Container ref={containerRef}>
       <svg
         className="timeline"
         width={dimensions.width}
-        height={dimensions.height}>
-
+        height={dimensions.height}
+      >
         <g
           className={"g1"}
           transform={`translate(${dimensions.marginLeft}, ${dimensions.marginTop})`}
           ref={chartRef}
         >
-        <XAxis
-          scale={xScale}
-          dimensions={dimensions}
-        />
-        <YAxis
-          scale={yScale}
-          dimensions={dimensions}
-        />
+          <XAxis scale={xScale} dimensions={dimensions} />
+          <YAxis scale={yScale} dimensions={dimensions} />
           <path
             d={lineGenerator(data as any) as string}
             fill={"none"}
@@ -104,9 +104,7 @@ export const Timeline = (props: TimelineProps) => {
             strokeWidth={2}
           />
         </g>
-
       </svg>
-      
     </Container>
-  )
-}
+  );
+};

@@ -14,13 +14,13 @@ export interface HistoryEntity {
 }
 
 export interface MarkerData {
-  coords: [number, number],
+  coords: [number, number];
   text: string;
   guid: string;
   coordsObj: {
     latitude: number;
     longitude: number;
-  }
+  };
 }
 
 export interface Coordinates {
@@ -49,7 +49,7 @@ export interface PlaceTag {
   coords: {
     latitude: number;
     longitude: number;
-  }
+  };
 }
 
 export interface TimeTag {

@@ -19,11 +19,10 @@ export interface GetEntitySummariesByGUIDResult {
     last_citation_date: string;
     names: string[];
     citation_count: number;
-    type: "PERSON" | "PLACE" | "TIME"
+    type: "PERSON" | "PLACE" | "TIME";
     guid: string;
-  }[]
+  }[];
 }
-
 
 export interface GetEntitySummariesByGUIDVars {
   guids: string[];

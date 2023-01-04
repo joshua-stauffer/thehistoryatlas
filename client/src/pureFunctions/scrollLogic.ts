@@ -1,5 +1,3 @@
-
-
 interface handleScrollProps {
   scrollTop: number;
   scrollHeight: number;
@@ -12,28 +10,25 @@ export interface handleScrollResult {
   loadFromEnd: boolean;
 }
 
-export const handleFeedScroll = (props: handleScrollProps): handleScrollResult => {
+export const handleFeedScroll = (
+  props: handleScrollProps
+): handleScrollResult => {
   // calculate if we've scrolled into reload territory
-  const {
-    scrollTop,
-    scrollHeight,
-    offsetHeight,
-    pixelsBeforeReload
-  } = props;
+  const { scrollTop, scrollHeight, offsetHeight, pixelsBeforeReload } = props;
   if (scrollTop < pixelsBeforeReload) {
     return {
       loadFromBeginning: true,
-      loadFromEnd: false
-    }
-  } else if ((scrollTop + offsetHeight) > (scrollHeight - pixelsBeforeReload)) {
+      loadFromEnd: false,
+    };
+  } else if (scrollTop + offsetHeight > scrollHeight - pixelsBeforeReload) {
     return {
       loadFromBeginning: false,
-      loadFromEnd: true
-    }
+      loadFromEnd: true,
+    };
   } else {
     return {
       loadFromBeginning: false,
-      loadFromEnd: false
-    }
+      loadFromEnd: false,
+    };
   }
-}
+};

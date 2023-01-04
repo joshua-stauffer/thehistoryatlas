@@ -1,17 +1,23 @@
-import { Paper, Button, Typography, Chip } from '@material-ui/core'
+import { Paper, Button, Typography, Chip } from "@material-ui/core";
 
-import { PUBLISH_NEW_CITATION, PublishNewCitationResult, PublishNewCitationVars } from '../../graphql/publishNewCitation';
-import { useMutation } from '@apollo/client'
+import {
+  PUBLISH_NEW_CITATION,
+  PublishNewCitationResult,
+  PublishNewCitationVars,
+} from "../../graphql/publishNewCitation";
+import { useMutation } from "@apollo/client";
 
 interface SaveSummaryProps {
-  annotation: PublishNewCitationVars["Annotation"]
+  annotation: PublishNewCitationVars["Annotation"];
 }
 
 export const SaveSummary = (props: SaveSummaryProps) => {
-  const {annotation: Annotation} = props;
-  const { summary, meta, summaryTags, citation } = Annotation
-  // remove temporary IDs 
-  const updatedTags = summaryTags.map(tag => tag.id?.startsWith("new") ? {...tag, id: undefined} : tag)
+  const { annotation: Annotation } = props;
+  const { summary, meta, summaryTags, citation } = Annotation;
+  // remove temporary IDs
+  const updatedTags = summaryTags.map((tag) =>
+    tag.id?.startsWith("new") ? { ...tag, id: undefined } : tag
+  );
   const updatedAnnotation = {
     summary: summary,
     meta: meta,
@@ -19,19 +25,23 @@ export const SaveSummary = (props: SaveSummaryProps) => {
     summaryTags: updatedTags,
     citationId: Annotation.citationId,
     summaryId: Annotation.summaryId,
-    token: Annotation.token
-  }
-  console.log({updatedAnnotation}) // useful to manually grab data and save it to seed
-  const [
-    uploadSummary,
-    { data, loading, error }
-   ] = useMutation<PublishNewCitationResult, PublishNewCitationVars>(PUBLISH_NEW_CITATION)
+    token: Annotation.token,
+  };
+  console.log({ updatedAnnotation }); // useful to manually grab data and save it to seed
+  const [uploadSummary, { data, loading, error }] = useMutation<
+    PublishNewCitationResult,
+    PublishNewCitationVars
+  >(PUBLISH_NEW_CITATION);
   if (loading) {
-      return <Typography variant="h2">Loading</Typography>
+    return <Typography variant="h2">Loading</Typography>;
   } else if (error) {
-      return <Typography variant="h2">there was an error</Typography>
+    return <Typography variant="h2">there was an error</Typography>;
   } else if (data) {
-    return <Typography variant="h2">Thanks for contributing to the History Atlas!</Typography>
+    return (
+      <Typography variant="h2">
+        Thanks for contributing to the History Atlas!
+      </Typography>
+    );
   } else {
     return (
       <Paper>
@@ -45,17 +55,19 @@ export const SaveSummary = (props: SaveSummaryProps) => {
         <Typography variant="h3">Summary Text</Typography>
         <Typography variant="body1">{summary}</Typography>
         <Typography variant="h3">Entity Tags</Typography>
-        {
-          summaryTags.map(tag => 
-          <Chip label={tag.name}/>
-          )
-        }
+        {summaryTags.map((tag) => (
+          <Chip label={tag.name} />
+        ))}
         <br />
-        <Button 
-          onClick={() => uploadSummary({ variables: { Annotation: updatedAnnotation } })}
+        <Button
+          onClick={() =>
+            uploadSummary({ variables: { Annotation: updatedAnnotation } })
+          }
           variant="contained"
-        >Upload</Button>
+        >
+          Upload
+        </Button>
       </Paper>
-    )
+    );
   }
-}
+};

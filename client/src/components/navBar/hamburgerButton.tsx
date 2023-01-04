@@ -1,5 +1,5 @@
-import MenuIcon from '@mui/icons-material/Menu';
-import { IconButton } from '@mui/material'
+import MenuIcon from "@mui/icons-material/Menu";
+import { IconButton } from "@mui/material";
 
 export const HamburgerButton = () => {
   return (
@@ -9,8 +9,8 @@ export const HamburgerButton = () => {
       color="inherit"
       aria-label="menu"
       sx={{ mr: 2 }}
-      >
+    >
       <MenuIcon />
     </IconButton>
-  )
-}
+  );
+};
