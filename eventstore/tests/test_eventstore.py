@@ -3,7 +3,7 @@ from dataclasses import asdict
 from sqlalchemy.orm import Session
 
 from abstract_domain_model.types import Event
-from .seed import SYNTHETIC_EVENTS
+from seed import SYNTHETIC_EVENTS
 from event_schema.EventSchema import Event as EventModel
 
 

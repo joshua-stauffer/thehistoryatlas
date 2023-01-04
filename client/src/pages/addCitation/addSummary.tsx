@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box, Chip, Grid, Paper, Typography, Button, TextField } from '@material-ui/core'
 
-import { Source } from './addSource'
+import { Source } from './addCitationPage'
 import { Quote } from './addQuote'
 import { Tag } from './tagEntities'
 

@@ -15,12 +15,8 @@ class Event(Base):
 
     index = Column(INTEGER, primary_key=True)
     type = Column(VARCHAR, nullable=False)
-    transaction_id = Column(
-        VARCHAR, nullable=False
-    )
-    app_version = Column(
-        VARCHAR, nullable=False
-    )
+    transaction_id = Column(VARCHAR, nullable=False)
+    app_version = Column(VARCHAR, nullable=False)
     timestamp = Column(VARCHAR, nullable=False)  # Www, dd Mmm yyyy hh:mm:ss GMT
     user_id = Column(VARCHAR, nullable=False)
     payload = Column(JSONB, nullable=False)

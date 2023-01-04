@@ -66,6 +66,7 @@ class EventHandler:
         if not handler:
             raise UnknownEventTypeError
         handler(event)
+        self._db.update_last_event_id(event.index)
         self._event_id_set.add(event_index)
 
     def _map_event_handlers(self):
@@ -114,17 +115,12 @@ class EventHandler:
             f"Successfully persisted CITATION with GUID {citation_id} to database."
         )
 
-        # update our record of the latest handled event
-        self._db.update_last_event_id(event.index)
-        self._event_id_set.add(event.index)
-
     def _handle_summary_added(self, event: SummaryAdded):
         """a new summary has been created"""
         self._db.add_guid(value=event.payload.id, type="SUMMARY")
 
     def _handle_summary_tagged(self, event: SummaryTagged):
         """An existing summary has been tagged"""
-        # GUID already exists, no need to do anything
         pass
 
     def _handle_meta_added(self, event: MetaAdded):
@@ -132,7 +128,6 @@ class EventHandler:
         self._db.add_guid(value=event.payload.id, type="META")
 
     def _handle_meta_tagged(self, event: MetaTagged):
-        # no op
         pass
 
     def _handle_person_added(self, event: PersonAdded):
@@ -149,15 +144,12 @@ class EventHandler:
 
     def _handle_person_tagged(self, event: PersonTagged):
         """an existing person has been tagged"""
-        # GUID already exists, no need to do anything
         pass
 
     def _handle_place_tagged(self, event: PlaceTagged):
         """an existing place has been tagged"""
-        # GUID already exists, no need to do anything
         pass
 
     def _handle_time_tagged(self, event: TimeTagged):
         """an existing time has been tagged"""
-        # GUID already exists, no need to do anything
         pass

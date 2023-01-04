@@ -4,6 +4,7 @@ Friday, April 9th 2021
 """
 
 import logging
+from copy import deepcopy
 from typing import Union, Dict, List
 from uuid import uuid4
 
@@ -129,15 +130,20 @@ class CommandHandler:
         # handle meta
         if command.payload.meta.id is not None:
             # tag existing meta
+
             meta = MetaTagged(
                 type="META_TAGGED",
                 **transaction_meta,
                 payload=MetaTaggedPayload(
-                    id=command.payload.meta.id, citation_id=command.payload.id
+                    id=command.payload.meta.id,
+                    citation_id=command.payload.id,
                 ),
             )
         else:
             # create a new meta
+            kwargs = deepcopy(command.payload.meta.kwargs)
+
+            pub_date = kwargs.pop("pubDate", None)
             meta = MetaAdded(
                 type="META_ADDED",
                 **transaction_meta,
@@ -147,6 +153,7 @@ class CommandHandler:
                     author=command.payload.meta.author,
                     title=command.payload.meta.title,
                     publisher=command.payload.meta.publisher,
+                    pub_date=pub_date,
                     kwargs=command.payload.meta.kwargs,
                 ),
             )
@@ -171,6 +178,8 @@ class CommandHandler:
                 text=command.payload.text,
                 summary_id=summary_id,
                 meta_id=meta.payload.id,
+                access_date=command.payload.meta.kwargs.pop("accessDate", None),
+                page_num=command.payload.meta.kwargs.pop("pageNum", None),
             ),
         )
 

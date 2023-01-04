@@ -4,16 +4,15 @@ Provides read and write access to the Query database.
 """
 
 import asyncio
-import json
 import logging
-from random import randint
+from dataclasses import asdict
 from time import sleep
-from typing import Tuple, Union, Literal
+from typing import Tuple, Union, Literal, Optional, List, Dict
 
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models.readmodel import DefaultEntity
+from abstract_domain_model.models.readmodel import DefaultEntity, Source as ADMSource
 from readmodel.state_manager.schema import (
     Base,
     Citation,
@@ -25,6 +24,7 @@ from readmodel.state_manager.schema import (
     Tag,
     TagInstance,
     Time,
+    Source,
 )
 from readmodel.state_manager.trie import Trie, TrieResult
 
@@ -41,7 +41,8 @@ class Database:
         self.__short_term_memory = dict()
         self.__stm_timeout = stm_timeout
         # intialize the search trie
-        self._trie = Trie(self.get_all_entity_names())
+        self._entity_trie = Trie(self.get_all_entity_names())
+        self._source_trie = Trie(self.get_all_source_titles_and_authors())
 
     def _connect(self, uri: str, debug: bool, retries: int = -1, timeout=30):
 
@@ -72,8 +73,8 @@ class Database:
                 return {
                     "guid": citation_guid,
                     "text": res.text,
-                    "meta": json.loads(res.meta)
-                    # took tags out here -- may want to add them back in later
+                    "meta": {"accessDate": res.access_date, "pageNum": res.page_num},
+                    "source_id": res.source_id,
                 }
             else:
                 log.debug(f"Found no citation for citation GUID {citation_guid}")
@@ -202,8 +203,8 @@ class Database:
                 )
         return res
 
-    def get_all_entity_names(self) -> Tuple[str, str]:
-        """Util for building search trie. Returns a list of (name, guid) tuples."""
+    def get_all_entity_names(self) -> List[Tuple[str, str]]:
+        """Util for building Entity search trie. Returns a list of (name, guid) tuples."""
         res = []
         with Session(self._engine, future=True) as session:
 
@@ -223,9 +224,49 @@ class Database:
 
         return res
 
-    def get_name_by_fuzzy_search(self, name: str) -> list[TrieResult]:
+    def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:
+        """Util for building Source search trie. Returns a list of (name, id) tuples."""
+        res: List[Tuple[str, str]] = []
+        with Session(self._engine, future=True) as session:
+            sources = session.query(Source).all()
+            for source in sources:
+                res.extend(
+                    [
+                        (source.title, source.id),
+                        (source.author, source.id),
+                    ]
+                )
+        return res
+
+    def get_name_by_fuzzy_search(self, name: str) -> List[Dict]:
         """Search for possible completions to a given string from known entity names."""
-        return self._trie.find(name, res_count=10)
+        if name == "":
+            return []
+        return [
+            asdict(trie_result)
+            for trie_result in self._entity_trie.find(name, res_count=10)
+        ]
+
+    def get_sources_by_search_term(self, search_term: str) -> list[ADMSource]:
+        """Match a list of Sources by title and author against a search term."""
+        if search_term == "":
+            return []
+        res: List[ADMSource] = []
+        source_results = self._source_trie.find(search_term, res_count=10)
+        source_ids = set([id for source in source_results for id in source.guids])
+        with Session(self._engine, future=True) as session:
+            for source_id in source_ids:
+                source = session.query(Source).filter(Source.id == source_id).one()
+                res.append(
+                    ADMSource(
+                        id=source_id,
+                        title=source.title,
+                        author=source.author,
+                        publisher=source.publisher,
+                        pub_date=source.pub_date,
+                    )
+                )
+        return res
 
     def get_place_by_coords(
         self, latitude: float, longitude: float
@@ -271,12 +312,25 @@ class Database:
             session.commit()
             self.add_to_stm(key=summary_guid, value=summary.id)
 
-    def create_citation(self, citation_guid: str, summary_guid: str, text: str) -> None:
+    def create_citation(
+        self,
+        citation_guid: str,
+        summary_guid: str,
+        text: str,
+        page_num: Optional[int] = None,
+        access_date: Optional[str] = None,
+    ) -> None:
         """Initializes a new citation in the database."""
 
         log.info(f"Creating a new citation: {text[:50]}...")
         summary_id = self.get_summary_id(summary_guid=summary_guid)
-        c = Citation(guid=citation_guid, text=text, summary_id=summary_id)
+        c = Citation(
+            guid=citation_guid,
+            text=text,
+            summary_id=summary_id,
+            page_num=page_num,
+            access_date=access_date,
+        )
         with Session(self._engine, future=True) as session:
             session.add(c)
             session.commit()
@@ -424,18 +478,70 @@ class Database:
             + f"TagInstance Tag ID is {tag_instance.tag_id}"
         )
 
-    def add_meta_to_citation(self, citation_guid: str, **kwargs) -> None:
-        """Accepts meta data and associates it with a citation.
-
-        Add all meta data as keyword arguments.
+    def add_source_to_citation(self, source_id: str, citation_id: str) -> None:
         """
-        meta = json.dumps(kwargs)
+        Associate an existing Source with a Citation.
+        """
         with Session(self._engine, future=True) as session:
             citation = session.execute(
-                select(Citation).where(Citation.guid == citation_guid)
+                select(Citation).where(Citation.guid == citation_id)
             ).scalar_one()
-            citation.meta = meta
+            citation.source_id = source_id
             session.commit()
+
+    def create_source(
+        self,
+        id: str,
+        title: str,
+        author: str,
+        publisher: str,
+        pub_date: str,
+        citation_id: Optional[str] = None,
+        **kwargs,
+    ):
+        """
+        Create a new Source record, and optionally associate it with a Citation.
+        """
+        with Session(self._engine, future=True) as session:
+            source = Source(
+                id=id,
+                title=title,
+                author=author,
+                publisher=publisher,
+                pub_date=pub_date,
+                kwargs=kwargs,
+            )
+            session.add(source)
+
+            if citation_id is not None:
+                citation = session.execute(
+                    select(Citation).where(Citation.guid == citation_id)
+                ).scalar_one()
+                citation.source_id = id
+                session.add(citation)
+            session.commit()
+            self._add_to_source_trie(source)
+
+    def _add_to_source_trie(self, source: Source):
+        """
+        Add source title and author to the search trie,
+        as well as their individual words.
+        """
+        id = source.id
+
+        # add title
+        self._source_trie.insert(source.title, guid=id)
+        title_words = source.title.split(" ")
+        if len(title_words) > 1:
+            for word in title_words:
+                self._source_trie.insert(word, guid=id)
+
+        # add author
+        self._source_trie.insert(source.author, guid=id)
+        author_words = source.title.split(" ")
+        if len(author_words) > 1:
+            for word in author_words:
+                self._source_trie.insert(word, guid=id)
 
     def _handle_name(self, name, guid, session):
         """Accepts a name and GUID and links the two in the Name table and
@@ -445,13 +551,13 @@ class Database:
         ).scalar_one_or_none()
         if not res:
             res = Name(name=name, guids=guid)
-            self.update_trie(new_string=name, new_string_guid=guid)
+            self.update_entity_trie(new_string=name, new_string_guid=guid)
         else:
             # check if guid is already represented
             if guid in res.guids:
                 return  # this name/guid pair isn't new
             res.add_guid(guid)
-            self.update_trie(new_string=name, new_string_guid=guid)
+            self.update_entity_trie(new_string=name, new_string_guid=guid)
         session.add(res)
 
     # CACHE LAYER FOR INCOMING CITATIONS
@@ -502,7 +608,7 @@ class Database:
 
     # TRIE MANAGEMENT
 
-    def update_trie(
+    def update_entity_trie(
         self,
         new_string=None,
         new_string_guid=None,
@@ -519,13 +625,13 @@ class Database:
                 raise Exception(
                     f"Update_trie was provided with new_string {new_string} but not a new_string_guid."
                 )
-            self._trie.insert(string=new_string, guid=new_string_guid)
+            self._entity_trie.insert(string=new_string, guid=new_string_guid)
         if old_string:
             if not new_string_guid:
                 raise Exception(
                     f"Update_trie was provided with old_string {new_string} but not a new_string_guid."
                 )
-            self._trie.delete(string=old_string, guid=old_string_guid)
+            self._entity_trie.delete(string=old_string, guid=old_string_guid)
 
     # UTILITY
 

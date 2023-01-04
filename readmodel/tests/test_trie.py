@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from readmodel.state_manager.trie import Trie, Node
+from readmodel.state_manager.trie import Trie, Node, TrieResult
 
 
 @pytest.fixture
@@ -30,25 +30,25 @@ def test_find_with_single_match(trie):
     res = trie.find("ab")
     assert isinstance(res, list)
     assert len(res) == 1
-    assert res[0] == {
-        "name": "ab",
-        "guids": [
-            "de6d9ea9-9478-4759-8a12-03d6fcab7b1f",
-        ],
-    }
+    assert res[0] == TrieResult(
+        name="ab",
+        guids=frozenset(
+            [
+                "de6d9ea9-9478-4759-8a12-03d6fcab7b1f",
+            ]
+        ),
+    )
 
 
 def test_find_with_multiple_match(trie):
     res = trie.find("aa")
     assert isinstance(res, list)
     assert len(res) == 1
-    assert res[0]["name"] == "aa"
-    assert set(res[0]["guids"]) == set(
-        [
-            "84a03b1b-be16-4c39-85b5-65db589f7980",
-            "671ce5f2-9224-4444-a6d2-f873c2cf5d9e",
-        ]
-    )
+    assert res[0].name == "aa"
+    assert set(res[0].guids) == {
+        "84a03b1b-be16-4c39-85b5-65db589f7980",
+        "671ce5f2-9224-4444-a6d2-f873c2cf5d9e",
+    }
 
 
 def test_fuzzy_match(trie):

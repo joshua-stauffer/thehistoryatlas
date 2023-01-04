@@ -19,3 +19,6 @@ class CitationAddedPayload:
     text: str
     summary_id: str
     meta_id: str
+    # optional Source values
+    page_num: Optional[int] = None
+    access_date: Optional[str] = None

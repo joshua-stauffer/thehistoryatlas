@@ -1,10 +1,11 @@
 from abstract_domain_model.models import PublishCitation, PublishCitationPayload
 from abstract_domain_model.models.commands import Person, Place, Time, Meta
+from seed.util import get_version
 
-PUBLISH_CITATIONS = [
+PUBLISH_CITATION_DOMAIN_OBJECTS = [
     PublishCitation(
         user_id="c4bc4280-8258-41a9-b8f4-350dc4c15031",
-        app_version="0.0.0",
+        app_version=get_version(),
         timestamp="2022-08-15 21:32:28.133457",
         payload=PublishCitationPayload(
             id="21d1e9cc-af4c-444b-abef-2f9ee851b89b",
@@ -48,11 +49,18 @@ PUBLISH_CITATIONS = [
     )
 ]
 
-bach_data = [
+
+ADD_CITATION_GQL_VARIABLES = [
     {
         "updatedAnnotation": {
             "summary": "Johann Sebastian Bach was born in Eisenach in 1685.",
-            "meta": {"title": "test", "author": "t", "publisher": "s"},
+            "meta": {
+                "title": "Johann Sebastian Bach",
+                "author": "various",
+                "publisher": "wikipedia.org",
+                "pub_date": "2022-12-22",
+                "access_date": "2023-01-03 02:03:50.611953",
+            },
             "citation": "Johann Sebastian Bach was born in Eisenach, the capital of the duchy of Saxe-Eisenach, in present-day Germany, on 21 March 1685.",
             "summaryTags": [
                 {
@@ -81,10 +89,12 @@ bach_data = [
     {
         "summary": "When Johann Sebastian Bach's mother and father died in 1694, he moved in with his eldest brother Johann Christoph Bach in Berlin.",
         "meta": {
-            "title": "Wikipedia",
-            "author": "The Universe",
+            "id": None,  # this needs to be replaced
+            "title": "Johann Sebastian Bach",
+            "author": "various",
             "publisher": "wikipedia.org",
-            "pubDate": "2023-12-28",
+            "pub_date": "2022-12-22",
+            "access_date": "2023-01-03 02:03:50.611953",
         },
         "citation": "Bach's mother died in 1694, and his father died eight months later. The 10-year-old Bach moved in with his eldest brother, Johann Christoph Bach, the organist at St. Michael's Church in Ohrdruf, Saxe-Gotha-Altenburg.",
         "summaryTags": [
@@ -118,10 +128,12 @@ bach_data = [
     {
         "summary": "In January 1703, Bach took a job as court musician for Duke Johann Ernst III in Weimar.",
         "meta": {
-            "title": "Wikipedia",
-            "author": "The Universe",
+            "id": None,  # this needs to be replaced
+            "title": "Johann Sebastian Bach",
+            "author": "various",
             "publisher": "wikipedia.org",
-            "pubDate": "2023",
+            "pub_date": "2022-12-22",
+            "access_date": "2023-01-03 02:03:50.611953",
         },
         "citation": "In January 1703, shortly after graduating from St. Michael's and being turned down for the post of organist at Sangerhausen, Bach was appointed court musician in the chapel of Duke Johann Ernst III in Weimar.",
         "summaryTags": [
@@ -143,16 +155,18 @@ bach_data = [
         ],
         "citationId": "2b319357-421e-4c51-a8d4-aa6143ec6240",
         "summaryId": None,
-        "token": "gAAAAABjq1CP4KGpGrC9YNREB-VIWayY9gPJXrpvfRv_UtWvF7FZxAeuUVeJ2fitzd2fgs4tvx1pSgTp1d0veBagmkv3fBxbzZFWSRTN0DoaJoaVlPcHlrTfvaWUTchCYcjCWSYj5GSuqIvNtt2tmCXXOQISjGMgiQ==",
+        "token": None,
     },
     {
         "updatedAnnotation": {
             "summary": "In 1703, Johann Sebastian Bach moved from Weimar to Arnstadt.",
             "meta": {
-                "title": "Wikipedia",
-                "author": "The Universe",
+                "id": None,  # this needs to be replaced
+                "title": "Johann Sebastian Bach",
+                "author": "various",
                 "publisher": "wikipedia.org",
-                "pubDate": "2023",
+                "pub_date": "2022-12-22",
+                "access_date": "2023-01-03 02:03:50.611953",
             },
             "citation": "During his seven-month tenure at Weimar, his reputation as a keyboardist spread so much that he was invited to inspect the new organ and give the inaugural recital at the New Church (now Bach Church) in Arnstadt, located about 30 kilometres (19 mi) southwest of Weimar. On 14 August 1703, he became the organist at the New Church, with light duties, a relatively generous salary, and a new organ tuned in a temperament that allowed music written in a wider range of keys to be played.",
             "summaryTags": [
@@ -199,17 +213,19 @@ bach_data = [
             ],
             "citationId": "021f3501-aee9-4b77-8dae-c3d3ced8903f",
             "summaryId": None,
-            "token": "gAAAAABjq1CP4KGpGrC9YNREB-VIWayY9gPJXrpvfRv_UtWvF7FZxAeuUVeJ2fitzd2fgs4tvx1pSgTp1d0veBagmkv3fBxbzZFWSRTN0DoaJoaVlPcHlrTfvaWUTchCYcjCWSYj5GSuqIvNtt2tmCXXOQISjGMgiQ==",
+            "token": None,
         }
     },
     {
         "updatedAnnotation": {
             "summary": "In 1706, Johann Sebastian Bach took the position of organist in Mühlhausen.",
             "meta": {
-                "title": "Wikipedia",
-                "author": "the Universe",
+                "id": None,  # this needs to be replaced
+                "title": "Johann Sebastian Bach",
+                "author": "various",
                 "publisher": "wikipedia.org",
-                "pubDate": "2023",
+                "pub_date": "2022-12-22",
+                "access_date": "2023-01-03 02:03:50.611953",
             },
             "citation": "In 1706, Bach applied for a post as organist at the Blasius Church in Mühlhausen. As part of his application, he had a cantata performed on Easter, 24 April 1707, likely an early version of his Christ lag in Todes Banden. A month later Bach's application was accepted and he took up the post in July.",
             "summaryTags": [
@@ -237,7 +253,7 @@ bach_data = [
                 },
             ],
             "citationId": "7b435ad6-a16c-4faf-9167-2639128d7276",
-            "token": "gAAAAABjrds5WoIKqTShj6dHXcYWK5XBumA4kYrDAuM0whGTfgT88RWKj0EKnfJkOW-pIzpQ8HjWf1SSQUqYZLR3k6ME2NDi8SWPE2TSj4StUZbddtgEsHC3_IpjxRnoZy-7f2Obxxku_8dxtCQ35e9Jr6hmz6Mzhg==",
+            "token": None,
         }
     },
 ]

@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import text
 
-from readmodel.state_manager.schema import Base
+from readmodel.state_manager.schema import Base, Source
 from readmodel.state_manager.schema import Citation
 from readmodel.state_manager.schema import TagInstance
 from readmodel.state_manager.schema import Tag
@@ -40,16 +40,14 @@ def summary_data_2():
 def citation_data_1():
     guid = str(uuid4())
     text = "A sample text to test"
-    meta = "someone said this once"
-    return guid, text, meta
+    return guid, text
 
 
 @pytest.fixture
 def citation_data_2():
     guid = str(uuid4())
     text = "Some further sample text to test"
-    meta = "someone never said this"
-    return guid, text, meta
+    return guid, text
 
 
 @pytest.fixture
@@ -95,9 +93,9 @@ def test_summary_and_taginstance(summary_data_1, engine, tag1, tag2):
 def test_summary_and_citation(summary_data_1, citation_data_1, engine):
     """verify relationship between citations and summaries are correct"""
     guid, text = summary_data_1
-    guid, text, meta = citation_data_1
+    guid, text = citation_data_1
     summary = Summary(guid=guid, text=text)
-    citation = Citation(guid=guid, text=text, meta=meta)
+    citation = Citation(guid=guid, text=text)
     summary.citations = [citation]
 
     with Session(engine, future=True) as sess, sess.begin():
@@ -184,3 +182,16 @@ def test_name_on_del():
     n.add_guid("Frank")
     n.del_guid("Frank")
     assert len(n.guids) == 1
+
+
+def test_create_source(db):
+    source = Source(
+        id="cd71d777-f8e6-4b82-bdca-96ef47dcaeb7",
+        title="new source",
+        author="new author",
+        publisher="publisher name",
+        pub_date="1/1/2023",
+    )
+    with Session(db._engine, future=True) as session:
+        session.add(source)
+        session.commit()

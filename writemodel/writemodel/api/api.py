@@ -23,7 +23,7 @@ from writemodel.api.types import (
     TagInput,
     EntityType,
 )
-from writemodel.utils import get_timestamp
+from writemodel.utils import get_timestamp, get_app_version
 
 log = getLogger(__name__)
 log.setLevel("DEBUG")
@@ -83,7 +83,7 @@ class GQLApi:
         citation = PublishCitation(
             user_id=user_id,
             timestamp=get_timestamp(),
-            app_version="0.0.1",
+            app_version=get_app_version(),
             payload=PublishCitationPayload(
                 id=data.citation_id,
                 text=data.citation,
@@ -98,7 +98,7 @@ class GQLApi:
                     kwargs={
                         k: v
                         for k, v in asdict(data.meta).items()
-                        if k in {"pageNum", "pubDate"}
+                        if k in {"pageNum", "pubDate", "accessDate"}
                     },
                 ),
             ),

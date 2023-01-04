@@ -7,8 +7,6 @@ from event_schema.EventSchema import Base, Event as EventModel
 from eventstore.database import Database
 import pytest
 
-from .seed import SYNTHETIC_EVENTS
-
 
 @pytest.fixture
 def mock_db():

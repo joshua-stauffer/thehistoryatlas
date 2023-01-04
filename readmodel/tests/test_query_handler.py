@@ -86,7 +86,8 @@ def db_tuple(db):
         citation = Citation(
             guid=cit_guid,
             text=f"some citation text {n}",
-            meta=json.dumps({"some": "meta data"}),
+            access_date="1/2/3",
+            page_num=55,
         )
         citations.append(citation)
         # create a summary
@@ -258,7 +259,7 @@ def test_get_fuzzy_search_by_name(handle_query):
     assert res["payload"]["name"] == name
     for r in res["payload"]["results"]:
         assert isinstance(r["name"], str)
-        assert isinstance(r["guids"], list)
+        assert isinstance(r["guids"], frozenset)
         for id_ in r["guids"]:
             assert isinstance(id_, str)
 

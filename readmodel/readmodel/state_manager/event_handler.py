@@ -19,6 +19,7 @@ from abstract_domain_model.models import (
     TimeTagged,
     MetaAdded,
 )
+from abstract_domain_model.models.events.meta_tagged import MetaTagged
 from abstract_domain_model.transform import from_dict
 from abstract_domain_model.types import Event
 from readmodel.errors import (
@@ -68,6 +69,7 @@ class EventHandler:
             "PLACE_TAGGED": self._handle_place_tagged,
             "TIME_TAGGED": self._handle_time_tagged,
             "META_ADDED": self._handle_meta_added,
+            "META_TAGGED": self._handle_meta_tagged,
         }
 
     def _handle_summary_added(self, event: SummaryAdded):
@@ -85,7 +87,11 @@ class EventHandler:
         summary_guid = event.payload.summary_id
         text = event.payload.text
         self._db.create_citation(
-            citation_guid=citation_guid, summary_guid=summary_guid, text=text
+            citation_guid=citation_guid,
+            summary_guid=summary_guid,
+            text=text,
+            access_date=event.payload.access_date,
+            page_num=event.payload.page_num,
         )
 
     def _handle_person_added(self, event: PersonAdded):
@@ -154,9 +160,17 @@ class EventHandler:
         )
 
     def _handle_meta_added(self, event: MetaAdded):
-        citation_id = event.payload.citation_id
-        event = asdict(event)
-        meta_payload = dict(**event["payload"])
-        del meta_payload["citation_id"]
-        del meta_payload["id"]
-        self._db.add_meta_to_citation(citation_guid=citation_id, **meta_payload)
+        source = event.payload
+        self._db.create_source(
+            id=source.id,
+            title=source.title,
+            author=source.author,
+            publisher=source.publisher,
+            pub_date=source.pub_date,
+            citation_id=source.citation_id,
+        )
+
+    def _handle_meta_tagged(self, event: MetaTagged):
+        self._db.add_source_to_citation(
+            source_id=event.payload.id, citation_id=event.payload.citation_id
+        )

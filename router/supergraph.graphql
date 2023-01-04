@@ -188,6 +188,7 @@ input MetaDataInput
   publisher: String!
   title: String!
   pageNum: Int = null
+  accessDate: String = null
   id: String = null
 }
 
@@ -256,6 +257,17 @@ type Query
   GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse! @join__field(graph: API)
   status: String! @join__field(graph: READMODEL) @join__field(graph: WRITEMODEL)
   defaultEntity: DefaultEntity! @join__field(graph: READMODEL)
+  searchSources(searchTerm: String!): [Source!]! @join__field(graph: READMODEL)
+}
+
+type Source
+  @join__type(graph: READMODEL)
+{
+  id: String!
+  title: String!
+  author: String!
+  publisher: String!
+  pubDate: String!
 }
 
 type Summary

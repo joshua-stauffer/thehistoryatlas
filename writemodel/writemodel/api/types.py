@@ -36,6 +36,7 @@ class MetaDataInput:
     publisher: str
     title: str
     pageNum: Optional[int] = None
+    accessDate: Optional[str] = None
     id: Optional[str] = None
 
 

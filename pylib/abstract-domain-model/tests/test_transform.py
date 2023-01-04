@@ -199,6 +199,7 @@ def meta_added_data(baseline_event_data):
             "title": "name",
             "author": "name",
             "publisher": "some publisher",
+            "pub_date": "1/2/23",
             "kwargs": {"accept": "arbitrary_kwargs"},
         },
     }

@@ -9,6 +9,7 @@ class MetaAddedPayload:
     title: str
     author: str
     publisher: str
+    pub_date: str
     kwargs: dict
 
 
