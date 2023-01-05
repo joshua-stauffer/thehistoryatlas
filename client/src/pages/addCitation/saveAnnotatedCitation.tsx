@@ -40,7 +40,7 @@ export const SaveSummary = (props: SaveSummaryProps) => {
     return <Typography variant="h2">Thanks for contributing to the History Atlas!</Typography>
   } else {
     return (
-      <Paper sx={{display: 'flex'}}>
+      <Paper>
         <Typography variant="h2" align='center' sx={{alignItems: 'center'}}>Confirm and Upload Citation</Typography>
         <Typography variant="h3" sx={{marginTop: 20}}>Source</Typography>
         <Typography variant="body1">Author: {meta.author}</Typography>
