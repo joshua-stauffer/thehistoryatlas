@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import Literal, Optional, List
 
-from abstract_domain_model.models.events.description import Description
-from abstract_domain_model.models.events.name import Name
-from abstract_domain_model.models.events.time import Time
+from abstract_domain_model.models.core.description import Description
+from abstract_domain_model.models.core.name import Name
+from abstract_domain_model.models.core.time import Time
 
 
 @dataclass(frozen=True)

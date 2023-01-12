@@ -41,14 +41,14 @@ from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
     CommandFailedPayload,
 )
-from abstract_domain_model.models.events.description import Description
-from abstract_domain_model.models.events.geo import Geo
+from abstract_domain_model.models.core.description import Description
+from abstract_domain_model.models.core.geo import Geo
 from abstract_domain_model.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
 )
-from abstract_domain_model.models.events.name import Name
-from abstract_domain_model.models.events.time import Time
+from abstract_domain_model.models.core.name import Name
+from abstract_domain_model.models.core.time import Time
 from abstract_domain_model.types import (
     Event,
     DomainObject,
