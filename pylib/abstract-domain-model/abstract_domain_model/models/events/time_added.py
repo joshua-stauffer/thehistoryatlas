@@ -1,15 +1,9 @@
 from dataclasses import dataclass
-from typing import Literal, TypedDict, Optional
+from typing import Literal, Optional, List
 
-
-@dataclass(frozen=True)
-class TimeAddedPayload:
-    summary_id: str
-    citation_id: str
-    id: str
-    name: str
-    citation_start: int
-    citation_end: int
+from abstract_domain_model.models.events.description import Description
+from abstract_domain_model.models.events.name import Name
+from abstract_domain_model.models.events.time import Time
 
 
 @dataclass(frozen=True)
@@ -18,6 +12,16 @@ class TimeAdded:
     app_version: str
     timestamp: str
     user_id: str
-    payload: TimeAddedPayload
+    payload: "TimeAddedPayload"
     type: Literal["TIME_ADDED"] = "TIME_ADDED"
     index: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class TimeAddedPayload:
+    id: str
+    names: List[Name]
+    time: Time
+    desc: Optional[Description] = None
+    wiki_link: Optional[str] = None
+    wiki_data_id: Optional[str] = None

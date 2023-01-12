@@ -1,15 +1,8 @@
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
-
-@dataclass(frozen=True)
-class PersonAddedPayload:
-    summary_id: str
-    citation_id: str
-    id: str
-    name: str
-    citation_start: int
-    citation_end: int
+from abstract_domain_model.models.events.description import Description
+from abstract_domain_model.models.events.name import Name
 
 
 @dataclass(frozen=True)
@@ -18,6 +11,15 @@ class PersonAdded:
     app_version: str
     timestamp: str
     user_id: str
-    payload: PersonAddedPayload
+    payload: "PersonAddedPayload"
     type: Literal["PERSON_ADDED"] = "PERSON_ADDED"
     index: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class PersonAddedPayload:
+    id: str
+    names: List[Name]
+    desc: Optional[Description]
+    wiki_link: Optional[str] = None
+    wiki_data_id: Optional[str] = None

@@ -1,27 +1,28 @@
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
-
-@dataclass(frozen=True)
-class PlaceAddedPayload:
-    summary_id: str
-    citation_id: str
-    id: str
-    name: str
-    citation_start: int
-    citation_end: int
-    longitude: float
-    latitude: float
-    geo_shape: Optional[str]
+from abstract_domain_model.models.events.description import Description
+from abstract_domain_model.models.events.name import Name
+from abstract_domain_model.models.events.geo import Geo
 
 
 @dataclass(frozen=True)
 class PlaceAdded:
-
     transaction_id: str
     app_version: str
     timestamp: str
     user_id: str
-    payload: PlaceAddedPayload
+    payload: "PlaceAddedPayload"
     type: Literal["PLACE_ADDED"] = "PLACE_ADDED"
     index: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class PlaceAddedPayload:
+    id: str
+    names: List[Name]
+    desc: Optional[Description]
+    geo: Geo
+    wiki_link: Optional[str] = None
+    wiki_data_id: Optional[str] = None
+    geo_names_id: Optional[str] = None

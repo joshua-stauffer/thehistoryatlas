@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
@@ -33,10 +35,14 @@ from abstract_domain_model.models.commands import (
     CommandFailedPayload,
     CommandSuccess,
 )
+from abstract_domain_model.models.events.description import Description
+from abstract_domain_model.models.events.geo import Geo
 from abstract_domain_model.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
 )
+from abstract_domain_model.models.events.name import Name
+from abstract_domain_model.models.events.time import Time
 from abstract_domain_model.transform import from_dict
 
 
@@ -81,12 +87,17 @@ def time_added_data(baseline_event_data):
         **baseline_event_data,
         "type": "TIME_ADDED",
         "payload": {
-            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
-            "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "name": "name",
-            "citation_start": 10,
-            "citation_end": 20,
+            "time": {
+                "timestamp": str(datetime(year=1750, month=1, day=1)),
+                "precision": 9,
+            },
+            "names": [{"name": "1750", "lang": "en", "is_default": True}],
+            "desc": {
+                "text": "The year 1750.",
+                "lang": "en",
+                "updated_at": "2023-01-12 01:43:06.822993",
+            },
         },
     }
 
@@ -113,15 +124,18 @@ def place_added_data(baseline_event_data):
         **baseline_event_data,
         "type": "PLACE_ADDED",
         "payload": {
-            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
-            "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "name": "name",
-            "citation_start": 10,
-            "citation_end": 20,
-            "latitude": 50.12345,
-            "longitude": 45.23456,
-            "geo_shape": None,
+            "names": [{"name": "Berlin", "lang": "en", "is_default": True}],
+            "desc": {
+                "text": "the city Berlin.",
+                "lang": "en",
+                "updated_at": "2023-01-12 01:43:06.822993",
+            },
+            "geo": {
+                "latitude": 50.12345,
+                "longitude": 45.23456,
+            },
+            "geo_names_id": 12345,
         },
     }
 
@@ -148,12 +162,13 @@ def person_added_data(baseline_event_data):
         **baseline_event_data,
         "type": "PERSON_ADDED",
         "payload": {
-            "citation_id": "67ac5bd6-8508-487d-bd8f-0d9847e13be9",
-            "summary_id": "1c9ad5a6-834d-4af1-b8bf-69a9fbac5e81",
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
-            "name": "name",
-            "citation_start": 10,
-            "citation_end": 20,
+            "names": [{"name": "Bach", "lang": "en", "is_default": True}],
+            "desc": {
+                "text": "Baroque composer Johann Sebastian Bach.",
+                "lang": "en",
+                "updated_at": "2023-01-12 01:43:06.822993",
+            },
         },
     }
 
@@ -241,10 +256,11 @@ def test_transform_time_added(time_added_data):
     res = from_dict(time_added_data)
     assert isinstance(res, TimeAdded)
     assert isinstance(res.payload, TimeAddedPayload)
-    for key, value in time_added_data.items():
-        if isinstance(value, dict):
-            value = TimeAddedPayload(**value)
-        assert getattr(res, key) == value
+    assert isinstance(res.payload.time, Time)
+    assert isinstance(res.payload.names, list)
+    for name in res.payload.names:
+        assert isinstance(name, Name)
+    assert isinstance(res.payload.desc, Description)
 
 
 def test_transform_time_tagged(time_tagged_data):
@@ -261,10 +277,11 @@ def test_transform_place_added(place_added_data):
     res = from_dict(place_added_data)
     assert isinstance(res, PlaceAdded)
     assert isinstance(res.payload, PlaceAddedPayload)
-    for key, value in place_added_data.items():
-        if isinstance(value, dict):
-            value = PlaceAddedPayload(**value)
-        assert getattr(res, key) == value
+    assert isinstance(res.payload.names, list)
+    for name in res.payload.names:
+        assert isinstance(name, Name)
+    assert isinstance(res.payload.desc, Description)
+    assert isinstance(res.payload.geo, Geo)
 
 
 def test_transform_place_tagged(place_tagged_data):
@@ -281,10 +298,10 @@ def test_transform_person_added(person_added_data):
     res = from_dict(person_added_data)
     assert isinstance(res, PersonAdded)
     assert isinstance(res.payload, PersonAddedPayload)
-    for key, value in person_added_data.items():
-        if isinstance(value, dict):
-            value = PersonAddedPayload(**value)
-        assert getattr(res, key) == value
+    assert isinstance(res.payload.names, list)
+    for name in res.payload.names:
+        assert isinstance(name, Name)
+    assert isinstance(res.payload.desc, Description)
 
 
 def test_transform_person_tagged(person_tagged_data):

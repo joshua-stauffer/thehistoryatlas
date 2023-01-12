@@ -41,10 +41,14 @@ from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
     CommandFailedPayload,
 )
+from abstract_domain_model.models.events.description import Description
+from abstract_domain_model.models.events.geo import Geo
 from abstract_domain_model.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
 )
+from abstract_domain_model.models.events.name import Name
+from abstract_domain_model.models.events.time import Time
 from abstract_domain_model.types import (
     Event,
     DomainObject,
@@ -88,14 +92,17 @@ class Translator:
             "PERSON_ADDED": TranslatorSpec(
                 obj_cls=PersonAdded,
                 obj_payload=PersonAddedPayload,
+                resolve_func=cls.resolve_person_added,
             ),
             "PLACE_ADDED": TranslatorSpec(
                 obj_cls=PlaceAdded,
                 obj_payload=PlaceAddedPayload,
+                resolve_func=cls.resolve_place_added,
             ),
             "TIME_ADDED": TranslatorSpec(
                 obj_cls=TimeAdded,
                 obj_payload=TimeAddedPayload,
+                resolve_func=cls.resolve_time_added,
             ),
             "PERSON_TAGGED": TranslatorSpec(
                 obj_cls=PersonTagged,
@@ -172,6 +179,47 @@ class Translator:
         if credentials is not None:
             payload["credentials"] = Credentials(**credentials)
         payload = spec.obj_payload(**payload)
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_time_added(data: Dict, spec: TranslatorSpec) -> TimeAdded:
+        payload = data.pop("payload")
+        time = payload.pop("time")
+        desc = payload.pop("desc", None)
+        if desc is not None:
+            desc = Description(**desc)
+        names = payload.pop("names")
+        payload = spec.obj_payload(
+            **payload,
+            desc=desc,
+            time=Time(**time),
+            names=[Name(**name) for name in names],
+        )
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_place_added(data: Dict, spec: TranslatorSpec) -> PlaceAdded:
+        payload = data.pop("payload")
+        geo = payload.pop("geo")
+        desc = payload.pop("desc", None)
+        if desc is not None:
+            desc = Description(**desc)
+        names = payload.pop("names")
+        payload = spec.obj_payload(
+            **payload, desc=desc, geo=Geo(**geo), names=[Name(**name) for name in names]
+        )
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_person_added(data: Dict, spec: TranslatorSpec) -> PersonAdded:
+        payload = data.pop("payload")
+        desc = payload.pop("desc", None)
+        if desc is not None:
+            desc = Description(**desc)
+        names = payload.pop("names")
+        payload = spec.obj_payload(
+            **payload, desc=desc, names=[Name(**name) for name in names]
+        )
         return spec.obj_cls(**data, payload=payload)
 
     @staticmethod
