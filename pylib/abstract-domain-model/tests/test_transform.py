@@ -94,9 +94,10 @@ def time_added_data(baseline_event_data):
             },
             "names": [{"name": "1750", "lang": "en", "is_default": True}],
             "desc": {
+                "id": "0654d706-379d-4324-9b86-0b2aad305a09",
                 "text": "The year 1750.",
                 "lang": "en",
-                "updated_at": "2023-01-12 01:43:06.822993",
+                "source_updated_at": "2023-01-12 01:43:06.822993",
             },
         },
     }
@@ -127,9 +128,10 @@ def place_added_data(baseline_event_data):
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "names": [{"name": "Berlin", "lang": "en", "is_default": True}],
             "desc": {
+                "id": "a25d4631-b98d-4874-bbec-695b8eab0b35",
                 "text": "the city Berlin.",
                 "lang": "en",
-                "updated_at": "2023-01-12 01:43:06.822993",
+                "source_updated_at": "2023-01-12 01:43:06.822993",
             },
             "geo": {
                 "latitude": 50.12345,
@@ -165,9 +167,10 @@ def person_added_data(baseline_event_data):
             "id": "961b6524-693f-4f41-8153-e99e2d27a5cf",
             "names": [{"name": "Bach", "lang": "en", "is_default": True}],
             "desc": {
+                "id": "99522ba1-31a1-4906-b32c-8c37f08053d6",
                 "text": "Baroque composer Johann Sebastian Bach.",
                 "lang": "en",
-                "updated_at": "2023-01-12 01:43:06.822993",
+                "source_updated_at": "2023-01-12 01:43:06.822993",
             },
         },
     }
