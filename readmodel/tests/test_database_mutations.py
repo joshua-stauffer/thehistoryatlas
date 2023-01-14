@@ -215,13 +215,11 @@ async def test_handle_person_update_new_no_cache(
     with Session(db._engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
-        person_name=person_name_1,
+    db.tag_entity(
+        id=person_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
-        is_new=True,
     )
 
     with Session(db._engine, future=True) as sess, sess.begin():
@@ -268,13 +266,11 @@ async def test_handle_person_update_existing_no_cache(
 
         sess.add(Person(guid=person_guid, names=person_name_1))
 
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
-        person_name=person_name_2,
+    db.tag_entity(
+        id=person_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
-        is_new=False,
     )
 
     with Session(db._engine, future=True) as sess, sess.begin():
@@ -317,13 +313,11 @@ async def test_handle_person_update_new_and_cache(
     # this time use create summary to cache summary_guid
     db.create_summary(summary_guid=summary_guid, text="not important")
     assert len(db._Database__short_term_memory.keys()) == 1
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
-        person_name=person_name_1,
+    db.tag_entity(
+        id=person_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
-        is_new=True,
     )
 
     with Session(db._engine, future=True) as sess, sess.begin():
@@ -368,13 +362,11 @@ async def test_handle_person_update_existing_and_cache(
     assert len(db._Database__short_term_memory.keys()) == 1
     with Session(db._engine, future=True) as sess, sess.begin():
         sess.add(Person(guid=person_guid, names=person_name_1))
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
-        person_name=person_name_2,
+    db.tag_entity(
+        id=person_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
-        is_new=False,
     )
 
     with Session(db._engine, future=True) as sess, sess.begin():
@@ -424,12 +416,12 @@ async def test_handle_place_update_new_no_cache(
         sess.add(Summary(guid=summary_guid, text="not important"))
     lat, long = coords
 
-    db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
-        place_name=place_name_1,
+    db.tag_place(
+        place_id=place_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
+        place_name=place_name_1,
         latitude=lat,
         longitude=long,
         geoshape=geoshape,
@@ -491,12 +483,12 @@ async def test_handle_place_update_existing_no_cache(
             )
         )
 
-    db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
-        place_name=place_name_2,
+    db.tag_place(
+        place_id=place_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
+        place_name=place_name_2,
         is_new=False,
     )
 
@@ -543,12 +535,12 @@ async def test_handle_place_update_new_and_cache(
     db.create_summary(summary_guid=summary_guid, text="not important")
     assert len(db._Database__short_term_memory.keys()) == 1
     lat, long = coords
-    db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
-        place_name=place_name_1,
+    db.tag_place(
+        place_id=place_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
+        place_name=place_name_1,
         latitude=lat,
         longitude=long,
         geoshape=geoshape,
@@ -606,12 +598,12 @@ async def test_handle_place_update_existing_and_cache(
                 geoshape=geoshape,
             )
         )
-    db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
-        place_name=place_name_2,
+    db.tag_place(
+        place_id=place_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
+        place_name=place_name_2,
         is_new=False,
     )
 
@@ -657,10 +649,9 @@ async def test_handle_time_update_new_no_cache(
     with Session(db._engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
-    db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
-        time_name=time_name,
+    db.tag_time(
+        time_id=time_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
         is_new=True,
@@ -707,10 +698,9 @@ async def test_handle_time_update_existing_no_cache(
 
         sess.add(Time(guid=time_guid, name=time_name))
 
-    db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
-        time_name=time_name,
+    db.tag_time(
+        time_id=time_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
         is_new=False,
@@ -753,10 +743,9 @@ async def test_handle_time_update_new_and_cache(
     # this time use create summary to cache summary_guid
     db.create_summary(summary_guid=summary_guid, text="not important")
     assert len(db._Database__short_term_memory.keys()) == 1
-    db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
-        time_name=time_name,
+    db.tag_time(
+        time_id=time_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
         is_new=True,
@@ -801,10 +790,9 @@ async def test_handle_time_update_existing_and_cache(
     assert len(db._Database__short_term_memory.keys()) == 1
     with Session(db._engine, future=True) as sess, sess.begin():
         sess.add(Time(guid=time_guid, name=time_name))
-    db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
-        time_name=time_name,
+    db.tag_time(
+        time_id=time_guid,
+        summary_id=summary_guid,
         start_char=start_char,
         stop_char=stop_char,
         is_new=False,
@@ -875,28 +863,20 @@ async def test_handle_name_only_new(db, citation_data_1, summary_guid):
     db.create_citation(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid="test-guid-1",
-        person_name="test-name-1",
+    db.tag_entity(id="test-guid-1", summary_id=summary_guid, start_char=1, stop_char=5)
+    db.tag_place(
+        place_id="test-guid-2",
+        summary_id=summary_guid,
         start_char=1,
         stop_char=5,
-        is_new=True,
-    )
-    db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid="test-guid-2",
         place_name="test-name-2",
-        start_char=1,
-        stop_char=5,
         latitude=random.random(),
         longitude=random.random(),
         is_new=True,
     )
-    db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid="test-guid-3",
-        time_name="test-name-3",
+    db.tag_time(
+        time_id="test-guid-3",
+        summary_id=summary_guid,
         start_char=1,
         stop_char=5,
         is_new=True,
@@ -916,28 +896,22 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
     summary_guid_2 = str(uuid4())
     _, text = citation_data_1
     db.create_summary(summary_guid=summary_guid_1, text=text)
-    db.handle_person_update(
-        summary_guid=summary_guid_1,
-        person_guid="test-guid-1",
-        person_name="test-name-1",
-        start_char=1,
-        stop_char=5,
-        is_new=True,
+    db.tag_entity(
+        id="test-guid-1", summary_id=summary_guid_1, start_char=1, stop_char=5
     )
-    db.handle_place_update(
-        summary_guid=summary_guid_1,
-        place_guid="test-guid-2",
-        place_name="test-name-2",
+    db.tag_place(
+        place_id="test-guid-2",
+        summary_id=summary_guid_1,
         start_char=1,
         stop_char=5,
+        place_name="test-name-2",
         latitude=random.random(),
         longitude=random.random(),
         is_new=True,
     )
-    db.handle_time_update(
-        summary_guid=summary_guid_1,
-        time_guid="test-guid-3",
-        time_name="test-name-3",
+    db.tag_time(
+        time_id="test-guid-3",
+        summary_id=summary_guid_1,
         start_char=1,
         stop_char=5,
         is_new=True,
@@ -946,28 +920,22 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
     # add a second citation
     _, text_2 = citation_data_2
     db.create_summary(summary_guid=summary_guid_2, text=text_2)
-    db.handle_person_update(
-        summary_guid=summary_guid_2,
-        person_guid="test-guid-4",
-        person_name="test-name-1",
-        start_char=1,
-        stop_char=5,
-        is_new=True,
+    db.tag_entity(
+        id="test-guid-4", summary_id=summary_guid_2, start_char=1, stop_char=5
     )
-    db.handle_place_update(
-        summary_guid=summary_guid_2,
-        place_guid="test-guid-5",
-        place_name="test-name-2",
+    db.tag_place(
+        place_id="test-guid-5",
+        summary_id=summary_guid_2,
         start_char=1,
         stop_char=5,
+        place_name="test-name-2",
         latitude=random.random(),
         longitude=random.random(),
         is_new=True,
     )
-    db.handle_time_update(
-        summary_guid=summary_guid_2,
-        time_guid="test-guid-6",
-        time_name="test-name-3",
+    db.tag_time(
+        time_id="test-guid-6",
+        summary_id=summary_guid_2,
         start_char=1,
         stop_char=5,
         is_new=True,
@@ -996,23 +964,9 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
 async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, summary_guid):
     citation_guid, text = citation_data_1
     db.create_summary(summary_guid=summary_guid, text=text)
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid="test-guid-1",
-        person_name="test-name-1",
-        start_char=1,
-        stop_char=5,
-        is_new=True,
-    )
+    db.tag_entity(id="test-guid-1", summary_id=summary_guid, start_char=1, stop_char=5)
     # now add exactly the same name and GUID
-    db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid="test-guid-1",
-        person_name="test-name-1",
-        start_char=1,
-        stop_char=5,
-        is_new=False,
-    )
+    db.tag_entity(id="test-guid-1", summary_id=summary_guid, start_char=1, stop_char=5)
     with Session(db._engine, future=True) as session:
         res = session.execute(select(Name)).scalars()
         res_list = [r for r in res]

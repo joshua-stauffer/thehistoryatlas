@@ -66,9 +66,9 @@ class EventHandler:
             "PERSON_ADDED": self._handle_person_added,
             "PLACE_ADDED": self._handle_place_added,
             "TIME_ADDED": self._handle_time_added,
-            "PERSON_TAGGED": self._handle_person_tagged,
-            "PLACE_TAGGED": self._handle_place_tagged,
-            "TIME_TAGGED": self._handle_time_tagged,
+            "PERSON_TAGGED": self._handle_entity_tagged,
+            "PLACE_TAGGED": self._handle_entity_tagged,
+            "TIME_TAGGED": self._handle_entity_tagged,
             "META_ADDED": self._handle_meta_added,
             "META_TAGGED": self._handle_meta_tagged,
         }
@@ -98,65 +98,21 @@ class EventHandler:
     def _handle_person_added(self, event: PersonAdded):
         self._db.create_person(self, event=event)
 
-    def _handle_person_tagged(self, event: PersonTagged):
-        self._db.handle_person_update(
-            person_guid=event.payload.id,
-            summary_guid=event.payload.summary_id,
-            person_name=event.payload.name,
+    def _handle_entity_tagged(
+        self, event: Union[PersonTagged, PlaceTagged, TimeTagged]
+    ):
+        self._db.tag_entity(
+            id=event.payload.id,
+            summary_id=event.payload.summary_id,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
         )
-
-    def __handle_person_util(self, event: Union[PersonTagged, PersonAdded], is_new):
-        """Merges person added and person tagged functionality"""
 
     def _handle_place_added(self, event: PlaceAdded):
-        latitude = event.payload.latitude
-        longitude = event.payload.longitude
-        geo_shape = event.payload.geo_shape
-        self.__handle_place_util(
-            event=event,
-            is_new=True,
-            latitude=latitude,
-            longitude=longitude,
-            geoshape=geo_shape,
-        )
-
-    def _handle_place_tagged(self, event: PlaceTagged):
-        self.__handle_place_util(event=event, is_new=False)
-
-    def __handle_place_util(
-        self, event: Union[PlaceAdded, PlaceTagged], is_new, **kwargs
-    ):
-        """Merges place added and place tagged functionality"""
-        # latitude, longitude, and geoshape are passed through as keyword
-        # arguments since they are only needed by place added
-        self._db.handle_place_update(
-            place_guid=event.payload.id,
-            summary_guid=event.payload.summary_id,
-            place_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-            is_new=is_new,
-            **kwargs,
-        )
+        self._db.create_place(event)
 
     def _handle_time_added(self, event: TimeAdded):
-        self.__handle_time_util(event=event, is_new=True)
-
-    def _handle_time_tagged(self, event: TimeTagged):
-        self.__handle_time_util(event=event, is_new=False)
-
-    def __handle_time_util(self, event: Union[TimeAdded, TimeTagged], is_new):
-        """Merges time added and time tagged functionality"""
-        self._db.handle_time_update(
-            time_guid=event.payload.id,
-            summary_guid=event.payload.summary_id,
-            time_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-            is_new=is_new,
-        )
+        self._db.create_place(event)
 
     def _handle_meta_added(self, event: MetaAdded):
         source = event.payload

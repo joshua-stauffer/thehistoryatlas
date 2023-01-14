@@ -214,17 +214,18 @@ class Database:
 
             people = session.execute(select(Person)).scalars()
             for person in people:
-                for name in person.names.split("|"):
-                    res.append((name, person.guid))
+                for name in person.names:
+                    res.append((name.name, person.id))
 
             places = session.execute(select(Place)).scalars()
             for place in places:
-                for name in place.names.split("|"):
-                    res.append((name, place.guid))
+                for name in place.names:
+                    res.append((name.name, place.id))
 
             times = session.execute(select(Time)).scalars()
             for time in times:
-                res.append((time.name, time.guid))
+                for name in time.names:
+                    res.append((name.name, time.id))
 
         return res
 
@@ -339,148 +340,33 @@ class Database:
             session.add(c)
             session.commit()
 
-    def handle_person_update(
-        self,
-        person_guid: str,
-        summary_guid: str,
-        person_name: str,
-        start_char: int,
-        stop_char: int,
-        is_new: bool,
+    def tag_entity(
+        self, id: str, summary_id: str, start_char: int, stop_char: int
     ) -> None:
         """Accepts the data from a person event and persists it to the database."""
         # since this is a primary entry point to the database,
         # get a session for the duration of this transaction
         with Session(self._engine, future=True) as session:
-            # resolve person
-            if is_new:
-                log.debug(f"Creating a new person: {person_name}")
-                person = Person(guid=person_guid, names=person_name)
-            else:
-                log.debug(f"Tagging an existing person: {person_name}")
-                person = session.execute(
-                    select(Person).where(Person.guid == person_guid)
-                ).scalar_one()
-                cur_names = self.split_names(person.names)
-                if person_name not in cur_names:
-                    log.debug(f"found new person name {person_name}")
-                    person.names += f"|{person_name}"
-                    log.debug(f"person.names is now {person.names}")
-            # add name to Name registry
-            self._handle_name(person_name, person_guid, session)
-            self._create_tag_instance(
-                tag=person,
-                summary_guid=summary_guid,
+            log.debug("Creating a TagInstance")
+
+            summary_id = self.get_summary_id(summary_guid=summary_id, session=session)
+
+            # create Tag Instance
+            tag_instance = TagInstance(
+                summary_id=summary_id,
+                tag_id=id,
                 start_char=start_char,
                 stop_char=stop_char,
-                session=session,
             )
 
-    def handle_place_update(
-        self,
-        place_guid: str,
-        summary_guid: str,
-        place_name: str,
-        start_char: int,
-        stop_char: int,
-        is_new: bool,
-        latitude: float = None,
-        longitude: float = None,
-        geoshape: str = None,
-    ) -> None:
-        """Accepts the data from a place event and persists it to the database."""
-        # since this is a primary entry point to the database,
-        # get a session for the duration of this transaction
-        with Session(self._engine, future=True) as session:
-            # resolve place
-            if is_new:
-                place = Place(
-                    guid=place_guid,
-                    names=place_name,
-                    latitude=latitude,
-                    longitude=longitude,
-                    geoshape=geoshape,
-                )
-            else:
-                place = session.execute(
-                    select(Place).where(Place.guid == place_guid)
-                ).scalar_one()
-                cur_names = self.split_names(place.names)
-                if place_name not in cur_names:
-                    place.names += f"|{place_name}"
-            self._handle_name(place_name, place_guid, session)
-            self._create_tag_instance(
-                tag=place,
-                summary_guid=summary_guid,
-                start_char=start_char,
-                stop_char=stop_char,
-                session=session,
+            session.add_all([id, tag_instance])
+            session.commit()
+            log.debug(
+                "☀️ ☀️ ☀️ Created tag instance and tag. "
+                + f"TagInstance id is {tag_instance.id}, "
+                + f"TagInstance Summary ID is {tag_instance.summary_id}, "
+                + f"TagInstance Tag ID is {tag_instance.tag_id}"
             )
-
-    def handle_time_update(
-        self,
-        time_guid: str,
-        summary_guid: str,
-        time_name: str,
-        start_char: int,
-        stop_char: int,
-        is_new: bool,
-    ) -> None:
-        """Accepts the data from a time event and persists it to the database"""
-        # since this is a primary entry point to the database,
-        # get a session for the duration of this transaction
-        with Session(self._engine, future=True) as session:
-            # resolve time
-            if is_new:
-                time = Time(guid=time_guid, name=time_name)
-            else:
-                time = session.execute(
-                    select(Time).where(Time.guid == time_guid)
-                ).scalar_one()
-            # cache timetag name on summary
-            # NOTE: this currently results in a 'last write wins' scenario
-            summary = session.execute(
-                select(Summary).where(Summary.guid == summary_guid)
-            ).scalar_one()
-            summary.time_tag = time_name
-            session.add(summary)
-            self._handle_name(time_name, time_guid, session)
-            self._create_tag_instance(
-                tag=time,
-                summary_guid=summary_guid,
-                start_char=start_char,
-                stop_char=stop_char,
-                session=session,
-            )
-
-    def _create_tag_instance(
-        self,
-        tag: Tag,
-        summary_guid: str,
-        start_char: int,
-        stop_char: int,
-        session: Session,
-    ):
-        """Second: step of handle updates: creates a tag instance, and
-        associates it with citation and tag"""
-        # resolve citation
-        log.debug("Creating a TagInstance")
-        summary_id = self.get_summary_id(summary_guid=summary_guid, session=session)
-
-        # create Tag Instance
-        tag_instance = TagInstance(
-            summary_id=summary_id, tag=tag, start_char=start_char, stop_char=stop_char
-        )
-
-        session.add_all([tag, tag_instance])
-        session.commit()
-        print("just committed the session: ", tag)
-        log.debug(
-            "☀️ ☀️ ☀️ Created tag instance and tag. "
-            + f"TagInstance id is {tag_instance.id}, "
-            + f"TagInstance Summary ID is {tag_instance.summary_id}, "
-            + f"TagInstance Tag ID is {tag_instance.tag_id}"
-        )
 
     def add_source_to_citation(self, source_id: str, citation_id: str) -> None:
         """
@@ -531,18 +417,6 @@ class Database:
         Update the database with a new Person tag.
         """
         with Session(self._engine, future=True) as session:
-            descriptions = [
-                Description(
-                    id=description.id,
-                    text=description.text,
-                    lang=description.lang,
-                    source_last_updated=description.source_updated_at,
-                    wiki_link=description.wiki_link,
-                    wiki_data_id=description.wiki_data_id,
-                    tag_id=event.id,
-                )
-                for description in event.desc
-            ]
             person = Person(id=event.id)
             for name in event.names:
                 self._handle_name(
@@ -550,7 +424,11 @@ class Database:
                     entity=person,
                     session=session,
                 )
-            session.add_all([person, *descriptions])
+            for description in event.desc:
+                self._handle_description(
+                    description=description, entity_id=event.id, session=session
+                )
+            session.add(person)
             session.commit()
 
     def _add_to_source_trie(self, source: Source):
@@ -595,6 +473,21 @@ class Database:
         entity.names.append(name)
         self.update_entity_trie(new_string=adm_name.name, new_string_guid=entity.id)
         session.add(name)
+
+    @staticmethod
+    def _handle_description(
+        description: Description, entity_id: str, session: Session
+    ) -> None:
+        description = Description(
+            id=description.id,
+            text=description.text,
+            lang=description.lang,
+            source_last_updated=description.source_updated_at,
+            wiki_link=description.wiki_link,
+            wiki_data_id=description.wiki_data_id,
+            tag_id=entity_id,
+        )
+        session.add(description)
 
     # CACHE LAYER FOR INCOMING CITATIONS
 
@@ -684,7 +577,7 @@ class Database:
 
     @staticmethod
     def split_names(names):
-        return names.split("|")
+        return [name.name for name in names]
 
     def get_tag_instance_data(self, tag_instance):
         """Accepts a TagInstance object and returns a dict representation"""
