@@ -16,7 +16,7 @@ from readmodel.state_manager.schema import Person
 from readmodel.state_manager.schema import Place
 from readmodel.state_manager.schema import Name
 from readmodel.state_manager.schema import Summary
-from seed.events import PEOPLE_ADDED
+from seed.events import PEOPLE_ADDED, PLACES_ADDED, TIMES_ADDED
 
 
 @pytest.fixture
@@ -1041,3 +1041,13 @@ def test_tag_source(db):
 def test_create_person(db):
     person_added = PEOPLE_ADDED[0]
     db.create_person(event=person_added.payload)
+
+
+def test_create_place(db):
+    place_added = PLACES_ADDED[0]
+    db.create_place(place_added.payload)
+
+
+def test_create_time(db):
+    time_added = TIMES_ADDED[0]
+    db.create_time(time_added.payload)

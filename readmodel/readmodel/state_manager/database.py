@@ -13,7 +13,11 @@ from uuid import uuid4
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models import PersonAddedPayload
+from abstract_domain_model.models import (
+    PersonAddedPayload,
+    PlaceAddedPayload,
+    TimeAddedPayload,
+)
 from abstract_domain_model.models.readmodel import DefaultEntity, Source as ADMSource
 from abstract_domain_model.models.core import Name as ADMName
 from readmodel.state_manager.schema import (
@@ -429,6 +433,61 @@ class Database:
                     description=description, entity_id=event.id, session=session
                 )
             session.add(person)
+            session.commit()
+
+    def create_place(self, event: PlaceAddedPayload) -> None:
+        """
+        Update the database with a new Place tag.
+        """
+        with Session(self._engine, future=True) as session:
+            place = Place(
+                id=event.id,
+                latitude=event.geo.latitude,
+                longitude=event.geo.longitude,
+                geoshape=event.geo.geoshape,
+                population=event.geo.population,
+                feature_code=event.geo.feature_code,
+                feature_class=event.geo.feature_class,
+                country_code=event.geo.country_code,
+            )
+            for name in event.names:
+                self._handle_name(
+                    adm_name=name,
+                    entity=place,
+                    session=session,
+                )
+            for description in event.desc:
+                self._handle_description(
+                    description=description, entity_id=event.id, session=session
+                )
+            session.add(place)
+            session.commit()
+
+    def create_time(self, event: TimeAddedPayload) -> None:
+        """
+        Update the database with a new Person tag.
+        """
+        with Session(self._engine, future=True) as session:
+            time = Time(
+                id=event.id,
+                timestamp=event.time.timestamp,
+                precision=event.time.precision,
+                calendar_type=event.time.calendar_type,
+                circa=event.time.circa,
+                latest=event.time.latest,
+                earliest=event.time.earliest,
+            )
+            for name in event.names:
+                self._handle_name(
+                    adm_name=name,
+                    entity=time,
+                    session=session,
+                )
+            for description in event.desc:
+                self._handle_description(
+                    description=description, entity_id=event.id, session=session
+                )
+            session.add(time)
             session.commit()
 
     def _add_to_source_trie(self, source: Source):
