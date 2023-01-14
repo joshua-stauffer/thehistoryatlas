@@ -8,11 +8,14 @@ import logging
 from dataclasses import asdict
 from time import sleep
 from typing import Tuple, Union, Literal, Optional, List, Dict
+from uuid import uuid4
 
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
 
+from abstract_domain_model.models import PersonAddedPayload
 from abstract_domain_model.models.readmodel import DefaultEntity, Source as ADMSource
+from abstract_domain_model.models.core import Name as ADMName
 from readmodel.state_manager.schema import (
     Base,
     Citation,
@@ -25,6 +28,7 @@ from readmodel.state_manager.schema import (
     TagInstance,
     Time,
     Source,
+    Description,
 )
 from readmodel.state_manager.trie import Trie, TrieResult
 
@@ -522,6 +526,33 @@ class Database:
             session.commit()
             self._add_to_source_trie(source)
 
+    def create_person(self, event: PersonAddedPayload) -> None:
+        """
+        Update the database with a new Person tag.
+        """
+        with Session(self._engine, future=True) as session:
+            descriptions = [
+                Description(
+                    id=description.id,
+                    text=description.text,
+                    lang=description.lang,
+                    source_last_updated=description.source_updated_at,
+                    wiki_link=description.wiki_link,
+                    wiki_data_id=description.wiki_data_id,
+                    tag_id=event.id,
+                )
+                for description in event.desc
+            ]
+            person = Person(id=event.id)
+            for name in event.names:
+                self._handle_name(
+                    adm_name=name,
+                    entity=person,
+                    session=session,
+                )
+            session.add_all([person, *descriptions])
+            session.commit()
+
     def _add_to_source_trie(self, source: Source):
         """
         Add source title and author to the search trie,
@@ -543,22 +574,27 @@ class Database:
             for word in author_words:
                 self._source_trie.insert(word, guid=id)
 
-    def _handle_name(self, name, guid, session):
+    def _handle_name(
+        self, adm_name: ADMName, entity: Union[Person, Place, Time], session
+    ):
         """Accepts a name and GUID and links the two in the Name table and
         updates the name search trie."""
-        res = session.execute(
-            select(Name).where(Name.name == name)
+        name = session.execute(
+            select(Name).where(Name.name == adm_name.name)
         ).scalar_one_or_none()
-        if not res:
-            res = Name(name=name, guids=guid)
-            self.update_entity_trie(new_string=name, new_string_guid=guid)
-        else:
-            # check if guid is already represented
-            if guid in res.guids:
-                return  # this name/guid pair isn't new
-            res.add_guid(guid)
-            self.update_entity_trie(new_string=name, new_string_guid=guid)
-        session.add(res)
+        if not name:
+            name = Name(
+                id=str(uuid4()),
+                name=adm_name.name,
+                lang=adm_name.lang,
+                is_default=adm_name.is_default,
+                is_historic=adm_name.is_historic,
+                start_time=adm_name.start_time,
+                end_time=adm_name.end_time,
+            )
+        entity.names.append(name)
+        self.update_entity_trie(new_string=adm_name.name, new_string_guid=entity.id)
+        session.add(name)
 
     # CACHE LAYER FOR INCOMING CITATIONS
 

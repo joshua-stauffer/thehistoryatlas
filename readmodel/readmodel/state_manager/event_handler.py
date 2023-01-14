@@ -5,7 +5,7 @@ Monday, May 3rd 2021
 
 import logging
 from dataclasses import asdict
-from typing import Union
+from typing import Union, List
 
 from abstract_domain_model.models import (
     SummaryAdded,
@@ -19,6 +19,7 @@ from abstract_domain_model.models import (
     TimeTagged,
     MetaAdded,
 )
+from abstract_domain_model.models.core import Name
 from abstract_domain_model.models.events.meta_tagged import MetaTagged
 from abstract_domain_model.transform import from_dict
 from abstract_domain_model.types import Event
@@ -95,21 +96,19 @@ class EventHandler:
         )
 
     def _handle_person_added(self, event: PersonAdded):
-        self.__handle_person_util(event=event, is_new=True)
+        self._db.create_person(self, event=event)
 
     def _handle_person_tagged(self, event: PersonTagged):
-        self.__handle_person_util(event=event, is_new=False)
-
-    def __handle_person_util(self, event: Union[PersonTagged, PersonAdded], is_new):
-        """Merges person added and person tagged functionality"""
         self._db.handle_person_update(
             person_guid=event.payload.id,
             summary_guid=event.payload.summary_id,
             person_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
-            is_new=is_new,
         )
+
+    def __handle_person_util(self, event: Union[PersonTagged, PersonAdded], is_new):
+        """Merges person added and person tagged functionality"""
 
     def _handle_place_added(self, event: PlaceAdded):
         latitude = event.payload.latitude

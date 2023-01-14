@@ -3,11 +3,11 @@
 May 3rd 2021
 """
 
-from sqlalchemy import Column
+from sqlalchemy import Column, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB, BOOLEAN
 from readmodel.errors import EmptyNameError
 
 Base = declarative_base()
@@ -79,30 +79,45 @@ class TagInstance(Base):
     summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="tags")
     # parent tag
-    tag_id = Column(INTEGER, ForeignKey("tags.id"))
+    tag_id = Column(UUID(as_uuid=False), ForeignKey("tags.id"))
     tag = relationship("Tag", back_populates="tag_instances")
 
     def __repr__(self):
         return f"{self.tag.type}"
 
 
+association_table = Table(
+    "association",
+    Base.metadata,
+    Column("tag_id", UUID(as_uuid=False), ForeignKey("tags.id")),
+    Column("name_id", UUID(as_uuid=False), ForeignKey("names.id")),
+)
+
+
 class Tag(Base):
     """Base class for time, person, and place tags"""
 
     __tablename__ = "tags"
-    id = Column(INTEGER, primary_key=True)
-    guid = Column(VARCHAR)
+    id = Column(UUID(as_uuid=False), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
+    names = relationship("Name", secondary=association_table, back_populates="tags")
+    descriptions = relationship("Description", back_populates="tag")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
 
 
 class Time(Tag):
 
-    __tablename__ = "time"
-    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    name = Column(VARCHAR)
+    __tablename__ = "times"
+
+    id = Column(UUID(as_uuid=False), ForeignKey("tags.id"), primary_key=True)
+    timestamp = Column(VARCHAR)
+    precision = Column(INTEGER)
+    calendar_type = Column(VARCHAR)
+    circa = Column(BOOLEAN)
+    latest = Column(BOOLEAN)
+    earliest = Column(BOOLEAN)
 
     __mapper_args__ = {"polymorphic_identity": "TIME"}
 
@@ -112,9 +127,9 @@ class Time(Tag):
 
 class Person(Tag):
 
-    __tablename__ = "person"
-    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    names = Column(VARCHAR)
+    __tablename__ = "people"
+
+    id = Column(UUID(as_uuid=False), ForeignKey("tags.id"), primary_key=True)
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
 
@@ -124,13 +139,16 @@ class Person(Tag):
 
 class Place(Tag):
 
-    __tablename__ = "place"
+    __tablename__ = "places"
 
-    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    names = Column(VARCHAR)
-    latitude = Column(FLOAT)
-    longitude = Column(FLOAT)
+    id = Column(UUID(as_uuid=False), ForeignKey("tags.id"), primary_key=True)
+    latitude = Column(FLOAT, nullable=False)
+    longitude = Column(FLOAT, nullable=False)
     geoshape = Column(VARCHAR)
+    population = Column(INTEGER)
+    feature_class = Column(VARCHAR)
+    feature_code = Column(VARCHAR)
+    country_code = Column(VARCHAR)
 
     __mapper_args__ = {"polymorphic_identity": "PLACE"}
 
@@ -139,42 +157,37 @@ class Place(Tag):
 
 
 class Name(Base):
+    """
+    map entity IDs to known names.
+    """
 
-    __tablename__ = "name"
+    __tablename__ = "names"
 
-    id = Column(INTEGER, primary_key=True)
-    name = Column(VARCHAR)
-    _guids = Column(VARCHAR)  # save as | separated values and parse on exit
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    tags = relationship("Tag", secondary=association_table, back_populates="names")
+    name = Column(VARCHAR, unique=True)
+    lang = Column(VARCHAR)
+    is_default = Column(BOOLEAN)
+    is_historic = Column(BOOLEAN)
+    start_time = Column(VARCHAR)  # historic
+    end_time = Column(VARCHAR)  # historic
 
-    @property
-    def guids(self):
-        return self._guids.split("|")
 
-    @guids.setter
-    def guids(self, guid):
-        if self._guids:
-            raise Exception("GUIDs is already set -- do you mean to erase it?")
-        self._guids = guid
+class Description(Base):
+    """
+    store tag descriptions
+    """
 
-    def add_guid(self, guid):
-        if self._guids:
-            self._guids += "|" + guid
-        else:
-            self._guids = "|" + guid
+    __tablename__ = "descriptions"
 
-    def del_guid(self, guid):
-        if guid not in self.guids:
-            raise ValueError("That GUID isn't associated with this name")
-        if len(self.guids) == 1:
-            raise EmptyNameError(
-                "This is the last GUID associated with this name."
-                + " Please delete entire Name instead of just the GUID."
-            )
-        tmp = [val for val in self.guids if val != guid]
-        self._guids = "|".join(tmp)
-
-    def __repr__(self):
-        return f"Name(id: {self.id}, name: {self.name}, guids: {self._guids})"
+    id = Column(UUID(as_uuid=False), primary_key=True)
+    text = Column(VARCHAR)
+    tag_id = Column(UUID(as_uuid=False), ForeignKey("tags.id"))
+    tag = relationship("Tag", back_populates="descriptions")
+    lang = Column(VARCHAR)
+    source_last_updated = Column(VARCHAR)
+    wiki_link = Column(VARCHAR)
+    wiki_data_id = Column(VARCHAR)
 
 
 class History(Base):

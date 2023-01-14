@@ -16,6 +16,7 @@ from readmodel.state_manager.schema import Person
 from readmodel.state_manager.schema import Place
 from readmodel.state_manager.schema import Name
 from readmodel.state_manager.schema import Summary
+from seed.events import PEOPLE_ADDED
 
 
 @pytest.fixture
@@ -1081,3 +1082,8 @@ def test_tag_source(db):
     with Session(db._engine, future=True) as session:
         citation = session.query(Citation).where(Citation.guid == citation_id).one()
         assert citation.source.id == source_id
+
+
+def test_create_person(db):
+    person_added = PEOPLE_ADDED[0]
+    db.create_person(event=person_added.payload)
