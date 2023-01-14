@@ -20,6 +20,6 @@ class PersonAdded:
 class PersonAddedPayload:
     id: str
     names: List[Name]
-    desc: Optional[Description]
+    desc: Optional[List[Description]] = None
     wiki_link: Optional[str] = None
     wiki_data_id: Optional[str] = None

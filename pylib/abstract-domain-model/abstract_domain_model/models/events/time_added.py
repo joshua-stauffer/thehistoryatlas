@@ -22,6 +22,6 @@ class TimeAddedPayload:
     id: str
     names: List[Name]
     time: Time
-    desc: Optional[Description] = None
+    desc: Optional[List[Description]] = None
     wiki_link: Optional[str] = None
     wiki_data_id: Optional[str] = None

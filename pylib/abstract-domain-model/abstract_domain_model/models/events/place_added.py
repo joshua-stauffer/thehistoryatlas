@@ -21,8 +21,8 @@ class PlaceAdded:
 class PlaceAddedPayload:
     id: str
     names: List[Name]
-    desc: Optional[Description]
     geo: Geo
+    desc: Optional[List[Description]] = None
     wiki_link: Optional[str] = None
     wiki_data_id: Optional[str] = None
     geo_names_id: Optional[str] = None
