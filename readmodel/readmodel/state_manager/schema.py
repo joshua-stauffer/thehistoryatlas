@@ -86,8 +86,8 @@ class TagInstance(Base):
         return f"{self.tag.type}"
 
 
-association_table = Table(
-    "association",
+tags_to_names = Table(
+    "tags_to_names",
     Base.metadata,
     Column("tag_id", UUID(as_uuid=False), ForeignKey("tags.id")),
     Column("name_id", UUID(as_uuid=False), ForeignKey("names.id")),
@@ -101,7 +101,7 @@ class Tag(Base):
     id = Column(UUID(as_uuid=False), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
-    names = relationship("Name", secondary=association_table, back_populates="tags")
+    names = relationship("Name", secondary=tags_to_names, back_populates="tags")
     descriptions = relationship("Description", back_populates="tag")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
@@ -164,7 +164,7 @@ class Name(Base):
     __tablename__ = "names"
 
     id = Column(UUID(as_uuid=False), primary_key=True)
-    tags = relationship("Tag", secondary=association_table, back_populates="names")
+    tags = relationship("Tag", secondary=tags_to_names, back_populates="names")
     name = Column(VARCHAR, unique=True)
     lang = Column(VARCHAR)
     is_default = Column(BOOLEAN)
