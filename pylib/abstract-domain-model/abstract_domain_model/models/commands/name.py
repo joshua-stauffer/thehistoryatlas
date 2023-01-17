@@ -3,12 +3,11 @@ from typing import Optional
 
 
 @dataclass(frozen=True)
-class Name:
+class AddName:
     """
-    Canonical Name Event.
+    Canonical Name Command.
     """
 
-    id: str
     name: str
     lang: str
     is_default: bool
