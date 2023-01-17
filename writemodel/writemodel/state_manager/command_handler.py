@@ -85,6 +85,8 @@ class CommandHandler:
         self.validate_command(command)
         handler = self._command_handlers[command.type]
         events = handler(command)
+        if not isinstance(events, list):
+            events = [events]
         return events
 
     def validate_command(self, command: Command) -> bool:

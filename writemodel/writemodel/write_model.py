@@ -120,6 +120,7 @@ class WriteModel:
         self.broker = Broker(
             config=self.config,
             event_handler=self.handle_event,
+            command_handler=self.handle_command,
             auth_handler=self.handle_auth_response,
             get_latest_event_id=self.manager.db.check_database_init,
         )

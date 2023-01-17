@@ -5,9 +5,11 @@ April 26th, 2021"""
 import asyncio
 from collections import deque
 import logging
-from typing import Callable, Dict, Awaitable
+from typing import Callable, Dict, Awaitable, Coroutine
 from uuid import uuid4
 
+from abstract_domain_model.models.commands import CommandResponse
+from abstract_domain_model.transform import from_dict
 from abstract_domain_model.types import Command
 from pybroker import BrokerBase
 from writemodel.state_manager.handler_errors import CitationExistsError
@@ -22,6 +24,7 @@ class Broker(BrokerBase):
         self,
         config,
         event_handler: Callable[[Dict], None],
+        command_handler: Callable,
         auth_handler: Callable[[Dict, str], None],
         get_latest_event_id,
     ) -> None:
@@ -38,6 +41,7 @@ class Broker(BrokerBase):
 
         # save main application callbacks
         self._event_handler = event_handler
+        self._command_handler = command_handler
         self._auth_handler = auth_handler
         self._AUTH_CALLBACK_ROUTE = "writemodel.auth.response"
         # save method to use when requesting history replay
@@ -55,6 +59,9 @@ class Broker(BrokerBase):
 
         await self.add_message_handler(
             routing_key="event.persisted", callback=self._handle_persisted_event
+        )
+        await self.add_message_handler(
+            routing_key="command.emitted", callback=self._handle_command_emitted
         )
         await self.add_message_handler(
             routing_key="event.replay.writemodel", callback=self._handle_replay_history
@@ -79,6 +86,13 @@ class Broker(BrokerBase):
             # history replay
             return self._history_queue.append(body)
         self._event_handler(body)
+
+    async def _handle_command_emitted(self, message):
+        body = self.decode_message(message)
+        correlation_id = message.correlation_id
+        reply_to = message.reply_to
+        command = from_dict(body)
+        result = await self._command_handler(command)
 
     async def _handle_auth_response(self, message):
         body = self.decode_message(message)
