@@ -37,10 +37,15 @@ from abstract_domain_model.models.accounts.get_user import (
     GetUserResponsePayload,
 )
 from abstract_domain_model.models.commands import CommandSuccess
+from abstract_domain_model.models.commands.add_person import AddPerson, AddPersonPayload
+from abstract_domain_model.models.commands.add_place import AddPlacePayload, AddPlace
+from abstract_domain_model.models.commands.add_time import AddTime, AddTimePayload
 from abstract_domain_model.models.commands.command_failed import (
     CommandFailed,
     CommandFailedPayload,
 )
+from abstract_domain_model.models.commands.description import AddDescription
+from abstract_domain_model.models.commands.name import AddName
 from abstract_domain_model.models.core.description import Description
 from abstract_domain_model.models.core.geo import Geo
 from abstract_domain_model.models.events.meta_tagged import (
@@ -138,6 +143,21 @@ class Translator:
                 obj_payload=GetUserResponsePayload,
                 resolve_func=cls.resolve_account_event,
             ),
+            "ADD_PERSON": TranslatorSpec(
+                obj_cls=AddPerson,
+                obj_payload=AddPersonPayload,
+                resolve_func=cls.resolve_add_person,
+            ),
+            "ADD_PLACE": TranslatorSpec(
+                obj_cls=AddPlace,
+                obj_payload=AddPlacePayload,
+                resolve_func=cls.resolve_add_place,
+            ),
+            "ADD_TIME": TranslatorSpec(
+                obj_cls=AddTime,
+                obj_payload=AddTimePayload,
+                resolve_func=cls.resolve_add_time,
+            ),
         }
 
     @classmethod
@@ -187,7 +207,7 @@ class Translator:
         time = payload.pop("time")
         desc = payload.pop("desc", None)
         if desc is not None:
-            desc = Description(**desc)
+            desc = [Description(**d) for d in desc]
         names = payload.pop("names")
         payload = spec.obj_payload(
             **payload,
@@ -203,7 +223,7 @@ class Translator:
         geo = payload.pop("geo")
         desc = payload.pop("desc", None)
         if desc is not None:
-            desc = Description(**desc)
+            desc = [Description(**d) for d in desc]
         names = payload.pop("names")
         payload = spec.obj_payload(
             **payload, desc=desc, geo=Geo(**geo), names=[Name(**name) for name in names]
@@ -215,11 +235,51 @@ class Translator:
         payload = data.pop("payload")
         desc = payload.pop("desc", None)
         if desc is not None:
-            desc = Description(**desc)
+            desc = [Description(**d) for d in desc]
         names = payload.pop("names")
         payload = spec.obj_payload(
             **payload, desc=desc, names=[Name(**name) for name in names]
         )
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_add_time(data: Dict, spec: TranslatorSpec) -> AddTime:
+        payload = data.pop("payload")
+        time = payload.pop("time")
+        desc = payload.pop("desc", None)
+        if desc is not None:
+            desc = [AddDescription(**d) for d in desc]
+        names = payload.pop("names")
+        names = [AddName(**name) for name in names]
+        payload = spec.obj_payload(
+            **payload,
+            desc=desc,
+            time=Time(**time),
+            names=names,
+        )
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_add_place(data: Dict, spec: TranslatorSpec) -> AddPlace:
+        payload = data.pop("payload")
+        geo = payload.pop("geo")
+        desc = payload.pop("desc", None)
+        if desc is not None:
+            desc = [AddDescription(**d) for d in desc]
+        names = payload.pop("names")
+        names = [AddName(**name) for name in names]
+        payload = spec.obj_payload(**payload, desc=desc, geo=Geo(**geo), names=names)
+        return spec.obj_cls(**data, payload=payload)
+
+    @staticmethod
+    def resolve_add_person(data: Dict, spec: TranslatorSpec) -> AddPerson:
+        payload = data.pop("payload")
+        desc = payload.pop("desc", None)
+        if desc is not None:
+            desc = [AddDescription(**d) for d in desc]
+        names = payload.pop("names")
+        names = [AddName(**name) for name in names]
+        payload = spec.obj_payload(**payload, desc=desc, names=names)
         return spec.obj_cls(**data, payload=payload)
 
     @staticmethod

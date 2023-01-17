@@ -23,6 +23,9 @@ from abstract_domain_model.models.accounts import (
     ConfirmAccount,
 )
 from abstract_domain_model.models.accounts.get_user import GetUserResponse
+from abstract_domain_model.models.commands.add_person import AddPerson
+from abstract_domain_model.models.commands.add_place import AddPlace
+from abstract_domain_model.models.commands.add_time import AddTime
 from abstract_domain_model.models.commands.publish_citation import Meta
 from abstract_domain_model.models.events.meta_tagged import MetaTagged
 
@@ -54,7 +57,7 @@ EventTypes = Literal[
     "SUMMARY_TAGGED",
 ]
 
-Command = Union[PublishCitation]
+Command = Union[PublishCitation, AddPerson, AddPlace, AddTime]
 
 CommandTypes = Literal["PUBLISH_CITATION"]
 
