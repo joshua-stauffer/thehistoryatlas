@@ -1,5 +1,9 @@
 from abstract_domain_model.models import PublishCitation, PublishCitationPayload
 from abstract_domain_model.models.commands import Person, Place, Time, Meta
+from abstract_domain_model.models.commands.add_person import AddPerson, AddPersonPayload
+from abstract_domain_model.models.commands.description import AddDescription
+from abstract_domain_model.models.commands.name import AddName
+from seed.events import USER_ID
 from seed.util import get_version
 
 PUBLISH_CITATION_DOMAIN_OBJECTS = [
@@ -256,4 +260,42 @@ ADD_CITATION_GQL_VARIABLES = [
             "token": None,
         }
     },
+]
+
+
+ADD_PEOPLE = [
+    AddPerson(
+        app_version=get_version(),
+        timestamp="2023-01-14 05:00:57.383971",
+        user_id=USER_ID,
+        payload=AddPersonPayload(
+            names=[
+                AddName(
+                    name="Bach",
+                    lang="en",
+                    is_default=False,
+                ),
+                AddName(
+                    name="Johann Sebastian Bach",
+                    lang="en",
+                    is_default=False,
+                ),
+                AddName(
+                    name="J.S. Bach",
+                    lang="en",
+                    is_default=False,
+                ),
+            ],
+            desc=[
+                AddDescription(
+                    text="German composer (1685–1750)",
+                    lang="en",
+                    source_updated_at="2023-01-14 05:00:57.383971",
+                )
+            ],
+            wiki_link="https://www.wikidata.org/wiki/Q1339",
+            wiki_data_id="Q1339",
+        ),
+        type="ADD_PERSON",
+    )
 ]

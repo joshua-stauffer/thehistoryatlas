@@ -5,9 +5,7 @@ class EventHandlerError(Exception):
 
 
 class CommandHandlerError(Exception):
-    def __init__(self):
-        """Base class for all command handler errors"""
-        pass
+    pass
 
 
 # Command Exceptions
@@ -60,6 +58,10 @@ class NoValidatorError(CommandHandlerError):
 class MissingResourceError(CommandHandlerError):
     """Raised when an unknown ID is passed to the writemodel"""
 
+    ...
+
+
+class ValidationError(CommandHandlerError):
     ...
 
 

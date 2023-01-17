@@ -12,6 +12,7 @@ from abstract_domain_model.models import (
     PersonTagged,
     PlaceTagged,
     TimeTagged,
+    PersonAddedPayload,
 )
 from abstract_domain_model.models.commands.publish_citation import (
     Time,
@@ -20,6 +21,7 @@ from abstract_domain_model.models.commands.publish_citation import (
     PublishCitation,
 )
 from seed import PUBLISH_CITATION_DOMAIN_OBJECTS
+from seed.commands import ADD_PEOPLE
 from writemodel.state_manager.command_handler import CommandHandler
 from writemodel.state_manager.text_processor import TextHasher
 from writemodel.state_manager.handler_errors import (
@@ -484,3 +486,16 @@ async def test_tag_to_event_tags_time(transaction_meta):
         citation_id=citation_id,
     )
     assert isinstance(event, TimeTagged)
+
+
+@pytest.mark.asyncio
+async def test_add_person_success(hash_text):
+    db = Mock()
+
+    add_person = ADD_PEOPLE[0]
+
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+
+    person_added = handler.handle_command(add_person)
+    assert isinstance(person_added, PersonAdded)
+    assert isinstance(person_added.payload, PersonAddedPayload)

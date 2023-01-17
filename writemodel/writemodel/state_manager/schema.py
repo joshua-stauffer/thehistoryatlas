@@ -5,7 +5,7 @@ the WriteModel service.
 
 from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import INTEGER, VARCHAR
+from sqlalchemy.dialects.postgresql import INTEGER, VARCHAR, UUID
 
 Base = declarative_base()
 
@@ -36,6 +36,17 @@ class GUID(Base):
 
     def __repr__(self):
         return f"GUID( type: {self.type}, value: {self.value})"
+
+
+class Name(Base):
+    """
+    Names and their IDs.
+    """
+
+    __tablename__ = "names"
+
+    name = Column(VARCHAR, primary_key=True, unique=True)
+    id = Column(UUID(as_uuid=False))
 
 
 class History(Base):

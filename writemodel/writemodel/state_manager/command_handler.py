@@ -5,7 +5,8 @@ Friday, April 9th 2021
 
 import logging
 from copy import deepcopy
-from typing import Union, Dict, List
+from dataclasses import asdict
+from typing import Union, Dict, List, Optional
 from uuid import uuid4
 
 from abstract_domain_model.models import (
@@ -30,21 +31,32 @@ from abstract_domain_model.models import (
     PlaceTaggedPayload,
     PlaceAddedPayload,
 )
+from abstract_domain_model.models.commands.add_person import AddPerson
+from abstract_domain_model.models.commands.description import AddDescription
+from abstract_domain_model.models.commands.name import AddName
 from abstract_domain_model.models.commands.publish_citation import (
     PublishCitation,
     Time,
     Place,
     Person,
 )
+from abstract_domain_model.models.core import Name, Description
 from abstract_domain_model.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
 )
-from abstract_domain_model.types import Command, Event, PublishCitationType
+from abstract_domain_model.transform import to_dict, from_dict
+from abstract_domain_model.types import (
+    Command,
+    Event,
+    PublishCitationType,
+    CommandTypes,
+)
 from writemodel.state_manager.handler_errors import (
     CitationExistsError,
     NoValidatorError,
     MissingResourceError,
+    ValidationError,
 )
 from writemodel.state_manager.handler_errors import GUIDError
 from writemodel.state_manager.handler_errors import UnknownTagTypeError
@@ -69,26 +81,32 @@ class CommandHandler:
         or raises an Exception"""
         log.debug(f"handling command {command}")
         self.validate_command(command)
-        handler = self._command_handlers[type(command)]
+        handler = self._command_handlers[command.type]
         events = handler(command)
         return events
 
     def validate_command(self, command: Command) -> bool:
-        validate = self._command_validators.get(type(command), None)
+        validate = self._command_validators.get(command.type, None)
         if validate is None:
             raise NoValidatorError
         return validate(command)
 
-    def _map_command_handlers(self) -> Dict[type, callable]:
+    def _map_command_handlers(self) -> Dict[CommandTypes, callable]:
         """Returns a dict of known commands mapping to their handle method."""
         return {
-            PublishCitationType: self.transform_publish_citation_to_events,
+            "PUBLISH_CITATION": self.transform_publish_citation_to_events,
+            "ADD_PERSON": self.transform_add_person,
+            "ADD_TIME": self.transform_add_time,
+            "ADD_PLACE": self.transform_add_place,
         }
 
-    def _map_command_validators(self) -> Dict[type, callable]:
+    def _map_command_validators(self) -> Dict[CommandTypes, callable]:
         """Returns a dict of known commands mapping to their validator method."""
         return {
-            PublishCitationType: self.validate_publish_citation,
+            "PUBLISH_CITATION": self.validate_publish_citation,
+            "ADD_PERSON": self.validate_add_person,
+            "ADD_TIME": self.validate_add_time,
+            "ADD_PLACE": self.validate_add_place,
         }
 
     def transform_publish_citation_to_events(
@@ -325,4 +343,91 @@ class CommandHandler:
             if existing_type != "META":
                 raise GUIDError(f"Meta id collided with id of type {existing_type}")
 
+        return True
+
+    def transform_add_person(self, command: AddPerson) -> PersonAdded:
+        names = [
+            Name(**asdict(name), id=str(uuid4())) for name in command.payload.names
+        ]
+        descriptions = [
+            Description(**asdict(desc), id=str(uuid4()))
+            for desc in command.payload.desc
+        ]
+        return PersonAdded(
+            transaction_id=str(uuid4()),
+            user_id=command.user_id,
+            timestamp=command.timestamp,
+            app_version=command.app_version,
+            type="PERSON_ADDED",
+            index=None,
+            payload=PersonAddedPayload(
+                id=str(uuid4()),
+                names=names,
+                desc=descriptions,
+                wiki_link=command.payload.wiki_link,
+                wiki_data_id=command.payload.wiki_data_id,
+            ),
+        )
+
+    def validate_add_person(self, command) -> bool:
+        for name in command.payload.names:
+            self.validate_name(name=name)
+        for description in command.payload.desc:
+            self.validate_description(desc=description)
+        self.validate_wiki_data_id(id=command.payload.wiki_data_id)
+        return True
+
+    def transform_add_place(self, command) -> PlaceAdded:
+        ...
+
+    def validate_add_place(self, command) -> bool:
+        ...
+
+    def transform_add_time(self, command) -> TimeAdded:
+        ...
+
+    def validate_add_time(self, command) -> bool:
+        ...
+
+    def validate_name(self, name: AddName) -> bool:
+        self.validate_non_null_string(field=name.name, name="Name.name")
+        self.validate_lang(field=name.lang, name="Name.lang")
+        self.validate_nullable_string(field=name.start_time, name="Name.start_time")
+        self.validate_nullable_string(field=name.end_time, name="Name.end_time")
+        assert isinstance(name.is_historic, bool), "Name.is_historic must be a boolean."
+        assert isinstance(name.is_default, bool), "Name.is_default must be a boolean."
+        return True
+
+    def validate_description(self, desc: AddDescription) -> bool:
+        self.validate_non_null_string(field=desc.text, name="Description.text")
+        self.validate_lang(field=desc.lang, name="Description.lang")
+        self.validate_wiki_data_id(id=desc.wiki_data_id)
+        return True
+
+    @staticmethod
+    def validate_lang(field: str, name: str) -> bool:
+        if not isinstance(field, str) or len(field) != 2:
+            raise ValidationError(f"{name} must be valid language code.")
+        return True
+
+    @staticmethod
+    def validate_non_null_string(field: str, name) -> bool:
+        if field is None or field == "":
+            raise ValidationError(f"{name} must be non-null.")
+        return True
+
+    @staticmethod
+    def validate_nullable_string(field: str, name) -> bool:
+        if field is None:
+            return True
+        if field == "":
+            raise ValidationError(f"{name} must be None or a valid string.")
+        return True
+
+    @staticmethod
+    def validate_wiki_data_id(id: Optional[str]):
+        if id is None:
+            return True
+        if len(id) < 2 or id[0] != "Q":
+            raise ValidationError(f"Wikidata ID {id} is malformed.")
         return True
