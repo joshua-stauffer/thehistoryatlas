@@ -26,6 +26,7 @@ from writemodel.broker import Broker
 from writemodel.state_manager.handler_errors import (
     CitationExistsError,
     CitationMissingFieldsError,
+    ValidationError,
 )
 from writemodel.state_manager.manager import Manager
 
@@ -84,6 +85,9 @@ class WriteModel:
                     reason="Citation was missing fields.",
                 ),
             )
+        except ValidationError as e:
+            log.info(f"Encountered validation error while validating command: \n{e}\n")
+            return CommandFailed(payload=CommandFailedPayload(reason=str(e)))
 
     def handle_event(self, event: dict) -> None:
         event = from_dict(event)

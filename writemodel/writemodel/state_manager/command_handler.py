@@ -401,13 +401,15 @@ class CommandHandler:
                 wiki_link=command.payload.wiki_link,
                 wiki_data_id=command.payload.wiki_data_id,
                 geo_names_id=command.payload.geo_names_id,
-                geo=command.payload.geo
+                geo=command.payload.geo,
             ),
         )
 
     def validate_add_place(self, command: AddPlace) -> bool:
         self.validate_geo(command.payload.geo)
-        self.validate_nullable_string(field=command.payload.geo_names_id, name="AddPlace.geo_names_id")
+        self.validate_nullable_string(
+            field=command.payload.geo_names_id, name="AddPlace.geo_names_id"
+        )
         for name in command.payload.names:
             self.validate_name(name=name)
         for description in command.payload.desc:
@@ -436,7 +438,7 @@ class CommandHandler:
                 desc=descriptions,
                 wiki_link=command.payload.wiki_link,
                 wiki_data_id=command.payload.wiki_data_id,
-                time=command.payload.time
+                time=command.payload.time,
             ),
         )
 
@@ -450,17 +452,14 @@ class CommandHandler:
         return True
 
     def validate_time(self, time: Time) -> bool:
-        self.validate_non_null_string(
-            field=time.timestamp, name="Time.timestamp"
-        )
+        self.validate_non_null_string(field=time.timestamp, name="Time.timestamp")
         assert (
-            isinstance(time.precision, int)
-            and 6 <= time.precision <= 11,
-            "Time.precision must be an integer between 6 and 11."
+            isinstance(time.precision, int) and 6 <= time.precision <= 11,
+            "Time.precision must be an integer between 6 and 11.",
         )
         assert (
             time.calendar_type in {"gregorian", "julian"},
-            "Time.calendar_type must be either `gregorian` or `julian`."
+            "Time.calendar_type must be either `gregorian` or `julian`.",
         )
         assert isinstance(time.circa, bool), "Time.circa must be a boolean."
         assert isinstance(time.latest, bool), "Time.latest must be a boolean."
@@ -470,67 +469,41 @@ class CommandHandler:
     @classmethod
     def validate_geo(cls, geo: Geo) -> bool:
         assert (
-            isinstance(geo.latitude, float)
-            and -90.0 <= geo.latitude <= 90.0,
-            "Geo.latitude must be a float between -90 and 90."
+            isinstance(geo.latitude, float) and -90.0 <= geo.latitude <= 90.0,
+            "Geo.latitude must be a float between -90 and 90.",
         )
         assert (
-            isinstance(geo.longitude, float)
-            and -180.0 <= geo.longitude <= 180,
-            "Geo.longitude must be a float between -180 and 180."
+            isinstance(geo.longitude, float) and -180.0 <= geo.longitude <= 180,
+            "Geo.longitude must be a float between -180 and 180.",
         )
-        cls.validate_nullable_string(
-            field=geo.geoshape,
-            name="Geo.geoshape"
-        )
-        cls.validate_nullable_string(
-            field=geo.feature_code,
-            name="Geo.feature_code"
-        )
-        cls.validate_nullable_string(
-            field=geo.feature_class,
-            name="Geo.feature_class"
-        )
-        cls.validate_nullable_string(
-            field=geo.timezone,
-            name="Geo.timezone"
-        )
+        cls.validate_nullable_string(field=geo.geoshape, name="Geo.geoshape")
+        cls.validate_nullable_string(field=geo.feature_code, name="Geo.feature_code")
+        cls.validate_nullable_string(field=geo.feature_class, name="Geo.feature_class")
+        cls.validate_nullable_string(field=geo.timezone, name="Geo.timezone")
         cls.validate_nullable_string(
             field=geo.admin1_code,
             name="Geo.admin1_code",
         )
-        cls.validate_nullable_string(
-            field=geo.admin2_code,
-            name="Geo.admin2_code"
-        )
-        cls.validate_nullable_string(
-            field=geo.admin3_code,
-            name="Geo.admin3_code"
-        )
+        cls.validate_nullable_string(field=geo.admin2_code, name="Geo.admin2_code")
+        cls.validate_nullable_string(field=geo.admin3_code, name="Geo.admin3_code")
 
-        cls.validate_nullable_string(
-            field=geo.admin4_code,
-            name="Geo.admin4_code"
-        )
-        cls.validate_nullable_string(
-            field=geo.country_code,
-            name="Geo.country_code"
-        )
+        cls.validate_nullable_string(field=geo.admin4_code, name="Geo.admin4_code")
+        cls.validate_nullable_string(field=geo.country_code, name="Geo.country_code")
         if geo.alternate_country_codes is not None:
             assert (
                 isinstance(geo.alternate_country_codes, list)
-                and all([isinstance(code, str) for code in geo.alternate_country_codes]),
-                "Geo.alternate_country_codes must be a list of strings."
+                and all(
+                    [isinstance(code, str) for code in geo.alternate_country_codes]
+                ),
+                "Geo.alternate_country_codes must be a list of strings.",
             )
         assert (
-            isinstance(geo.population, int)
-            and 0 <= geo.population,
-            "Geo.population must be a positive integer."
+            isinstance(geo.population, int) and 0 <= geo.population,
+            "Geo.population must be a positive integer.",
         )
         assert (
-            isinstance(geo.elevation, int)
-            and 0 <= geo.elevation,
-            "Geo.elevation must be a positive integer."
+            isinstance(geo.elevation, int) and 0 <= geo.elevation,
+            "Geo.elevation must be a positive integer.",
         )
         return True
 

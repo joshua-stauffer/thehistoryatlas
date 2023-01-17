@@ -12,7 +12,9 @@ from abstract_domain_model.models import (
     PersonTagged,
     PlaceTagged,
     TimeTagged,
-    PersonAddedPayload, TimeAddedPayload, PlaceAddedPayload,
+    PersonAddedPayload,
+    TimeAddedPayload,
+    PlaceAddedPayload,
 )
 from abstract_domain_model.models.commands.publish_citation import (
     LegacyTime,
@@ -501,7 +503,6 @@ async def test_add_person_success(hash_text):
     assert isinstance(person_added.payload, PersonAddedPayload)
 
 
-
 @pytest.mark.asyncio
 async def test_add_place_success(hash_text):
     db = Mock()
@@ -515,7 +516,6 @@ async def test_add_place_success(hash_text):
     assert isinstance(place_added.payload, PlaceAddedPayload)
 
 
-
 @pytest.mark.asyncio
 async def test_add_time_success(hash_text):
     db = Mock()
@@ -527,4 +527,3 @@ async def test_add_time_success(hash_text):
     time_added = handler.handle_command(add_time)
     assert isinstance(time_added, TimeAdded)
     assert isinstance(time_added.payload, TimeAddedPayload)
-
