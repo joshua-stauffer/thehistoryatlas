@@ -18,7 +18,7 @@ class PublishCitationPayload:
     text: str
     summary: Optional[str]  # won't exist when tagging a summary
     summary_id: Optional[str]  # won't exist when creating new summary
-    tags: List[Union["Person", "Place", "Time"]]
+    tags: List[Union["Person", "Place", "LegacyTime"]]
     meta: "Meta"
 
 
@@ -45,7 +45,7 @@ class Place(Tag):
 
 
 @dataclass(frozen=True)
-class Time(Tag):
+class LegacyTime(Tag):
     type: Literal["TIME"]
 
 

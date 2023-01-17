@@ -10,10 +10,10 @@ from abstract_domain_model.models.commands.publish_citation import (
     PublishCitationPayload,
     Person,
     Place,
-    Time,
+    LegacyTime,
     Meta,
 )
 
 Command = Union[PublishCitation]
 CommandResponse = Union[CommandSuccess, CommandFailed]
-Entity = Union[Person, Place, Time]
+Entity = Union[Person, Place, LegacyTime]
