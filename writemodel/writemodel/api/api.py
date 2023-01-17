@@ -14,7 +14,7 @@ from abstract_domain_model.models.commands import (
     Entity,
     Person,
     Place,
-    Time,
+    LegacyTime,
     Meta,
 )
 from writemodel.api.types import (
@@ -127,7 +127,7 @@ class GQLApi:
                 geo_shape=tag.geoshape,
             )
         elif tag.type == EntityType.TIME:
-            return Time(
+            return LegacyTime(
                 id=tag.id,
                 type="TIME",
                 start_char=tag.start_char,

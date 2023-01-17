@@ -32,15 +32,17 @@ from abstract_domain_model.models import (
     PlaceAddedPayload,
 )
 from abstract_domain_model.models.commands.add_person import AddPerson
+from abstract_domain_model.models.commands.add_place import AddPlace
+from abstract_domain_model.models.commands.add_time import AddTime
 from abstract_domain_model.models.commands.description import AddDescription
 from abstract_domain_model.models.commands.name import AddName
 from abstract_domain_model.models.commands.publish_citation import (
     PublishCitation,
-    Time,
+    LegacyTime,
     Place,
     Person,
 )
-from abstract_domain_model.models.core import Name, Description
+from abstract_domain_model.models.core import Name, Description, Time, Geo
 from abstract_domain_model.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
@@ -205,7 +207,7 @@ class CommandHandler:
 
     @staticmethod
     def tag_to_event(
-        tag: Union[Person, Place, Time],
+        tag: Union[Person, Place, LegacyTime],
         transaction_meta: dict,
         citation_id: str,
         summary_id: str,
@@ -241,7 +243,7 @@ class CommandHandler:
                     ),
                 )
 
-        elif isinstance(tag, Time):
+        elif isinstance(tag, LegacyTime):
             if tag.id is None:
                 return TimeAdded(
                     type="TIME_ADDED",
@@ -369,7 +371,7 @@ class CommandHandler:
             ),
         )
 
-    def validate_add_person(self, command) -> bool:
+    def validate_add_person(self, command: AddPerson) -> bool:
         for name in command.payload.names:
             self.validate_name(name=name)
         for description in command.payload.desc:
@@ -377,17 +379,160 @@ class CommandHandler:
         self.validate_wiki_data_id(id=command.payload.wiki_data_id)
         return True
 
-    def transform_add_place(self, command) -> PlaceAdded:
-        ...
+    def transform_add_place(self, command: AddPlace) -> PlaceAdded:
+        names = [
+            Name(**asdict(name), id=str(uuid4())) for name in command.payload.names
+        ]
+        descriptions = [
+            Description(**asdict(desc), id=str(uuid4()))
+            for desc in command.payload.desc
+        ]
+        return PlaceAdded(
+            transaction_id=str(uuid4()),
+            user_id=command.user_id,
+            timestamp=command.timestamp,
+            app_version=command.app_version,
+            type="PLACE_ADDED",
+            index=None,
+            payload=PlaceAddedPayload(
+                id=str(uuid4()),
+                names=names,
+                desc=descriptions,
+                wiki_link=command.payload.wiki_link,
+                wiki_data_id=command.payload.wiki_data_id,
+                geo_names_id=command.payload.geo_names_id,
+                geo=command.payload.geo
+            ),
+        )
 
-    def validate_add_place(self, command) -> bool:
-        ...
+    def validate_add_place(self, command: AddPlace) -> bool:
+        self.validate_geo(command.payload.geo)
+        self.validate_nullable_string(field=command.payload.geo_names_id, name="AddPlace.geo_names_id")
+        for name in command.payload.names:
+            self.validate_name(name=name)
+        for description in command.payload.desc:
+            self.validate_description(desc=description)
+        self.validate_wiki_data_id(id=command.payload.wiki_data_id)
+        return True
 
-    def transform_add_time(self, command) -> TimeAdded:
-        ...
+    def transform_add_time(self, command: AddTime) -> TimeAdded:
+        names = [
+            Name(**asdict(name), id=str(uuid4())) for name in command.payload.names
+        ]
+        descriptions = [
+            Description(**asdict(desc), id=str(uuid4()))
+            for desc in command.payload.desc
+        ]
+        return TimeAdded(
+            transaction_id=str(uuid4()),
+            user_id=command.user_id,
+            timestamp=command.timestamp,
+            app_version=command.app_version,
+            type="TIME_ADDED",
+            index=None,
+            payload=TimeAddedPayload(
+                id=str(uuid4()),
+                names=names,
+                desc=descriptions,
+                wiki_link=command.payload.wiki_link,
+                wiki_data_id=command.payload.wiki_data_id,
+                time=command.payload.time
+            ),
+        )
 
-    def validate_add_time(self, command) -> bool:
-        ...
+    def validate_add_time(self, command: AddTime) -> bool:
+        self.validate_time(time=command.payload.time)
+        for name in command.payload.names:
+            self.validate_name(name=name)
+        for description in command.payload.desc:
+            self.validate_description(desc=description)
+        self.validate_wiki_data_id(id=command.payload.wiki_data_id)
+        return True
+
+    def validate_time(self, time: Time) -> bool:
+        self.validate_non_null_string(
+            field=time.timestamp, name="Time.timestamp"
+        )
+        assert (
+            isinstance(time.precision, int)
+            and 6 <= time.precision <= 11,
+            "Time.precision must be an integer between 6 and 11."
+        )
+        assert (
+            time.calendar_type in {"gregorian", "julian"},
+            "Time.calendar_type must be either `gregorian` or `julian`."
+        )
+        assert isinstance(time.circa, bool), "Time.circa must be a boolean."
+        assert isinstance(time.latest, bool), "Time.latest must be a boolean."
+        assert isinstance(time.earliest, bool), "Time.earliest must be a boolean."
+        return True
+
+    @classmethod
+    def validate_geo(cls, geo: Geo) -> bool:
+        assert (
+            isinstance(geo.latitude, float)
+            and -90.0 <= geo.latitude <= 90.0,
+            "Geo.latitude must be a float between -90 and 90."
+        )
+        assert (
+            isinstance(geo.longitude, float)
+            and -180.0 <= geo.longitude <= 180,
+            "Geo.longitude must be a float between -180 and 180."
+        )
+        cls.validate_nullable_string(
+            field=geo.geoshape,
+            name="Geo.geoshape"
+        )
+        cls.validate_nullable_string(
+            field=geo.feature_code,
+            name="Geo.feature_code"
+        )
+        cls.validate_nullable_string(
+            field=geo.feature_class,
+            name="Geo.feature_class"
+        )
+        cls.validate_nullable_string(
+            field=geo.timezone,
+            name="Geo.timezone"
+        )
+        cls.validate_nullable_string(
+            field=geo.admin1_code,
+            name="Geo.admin1_code",
+        )
+        cls.validate_nullable_string(
+            field=geo.admin2_code,
+            name="Geo.admin2_code"
+        )
+        cls.validate_nullable_string(
+            field=geo.admin3_code,
+            name="Geo.admin3_code"
+        )
+
+        cls.validate_nullable_string(
+            field=geo.admin4_code,
+            name="Geo.admin4_code"
+        )
+        cls.validate_nullable_string(
+            field=geo.country_code,
+            name="Geo.country_code"
+        )
+        if geo.alternate_country_codes is not None:
+            assert (
+                isinstance(geo.alternate_country_codes, list)
+                and all([isinstance(code, str) for code in geo.alternate_country_codes]),
+                "Geo.alternate_country_codes must be a list of strings."
+            )
+        assert (
+            isinstance(geo.population, int)
+            and 0 <= geo.population,
+            "Geo.population must be a positive integer."
+        )
+        assert (
+            isinstance(geo.elevation, int)
+            and 0 <= geo.elevation,
+            "Geo.elevation must be a positive integer."
+        )
+        return True
 
     def validate_name(self, name: AddName) -> bool:
         self.validate_non_null_string(field=name.name, name="Name.name")

@@ -12,16 +12,16 @@ from abstract_domain_model.models import (
     PersonTagged,
     PlaceTagged,
     TimeTagged,
-    PersonAddedPayload,
+    PersonAddedPayload, TimeAddedPayload, PlaceAddedPayload,
 )
 from abstract_domain_model.models.commands.publish_citation import (
-    Time,
+    LegacyTime,
     Person,
     Place,
     PublishCitation,
 )
 from seed import PUBLISH_CITATION_DOMAIN_OBJECTS
-from seed.commands import ADD_PEOPLE
+from seed.commands import ADD_PEOPLE, ADD_TIMES, ADD_PLACES
 from writemodel.state_manager.command_handler import CommandHandler
 from writemodel.state_manager.text_processor import TextHasher
 from writemodel.state_manager.handler_errors import (
@@ -449,7 +449,7 @@ async def test_tag_to_event_adds_time(transaction_meta):
     """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
-    entity = Time(
+    entity = LegacyTime(
         id=None,
         type="TIME",
         name="test-time",
@@ -472,7 +472,7 @@ async def test_tag_to_event_tags_time(transaction_meta):
     """
     citation_id = "a4809b4a-7261-45f4-99fe-f23d9d9885a6"
     summary_id = "842adf92-dd18-4c07-bcd7-5e1ae57da21b"
-    entity = Time(
+    entity = LegacyTime(
         id="d2b578fd-df8b-4ea0-a784-8fbbfdb05c40",
         type="TIME",
         name="test-time",
@@ -499,3 +499,32 @@ async def test_add_person_success(hash_text):
     person_added = handler.handle_command(add_person)
     assert isinstance(person_added, PersonAdded)
     assert isinstance(person_added.payload, PersonAddedPayload)
+
+
+
+@pytest.mark.asyncio
+async def test_add_place_success(hash_text):
+    db = Mock()
+
+    add_place = ADD_PLACES[0]
+
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+
+    place_added = handler.handle_command(add_place)
+    assert isinstance(place_added, PlaceAdded)
+    assert isinstance(place_added.payload, PlaceAddedPayload)
+
+
+
+@pytest.mark.asyncio
+async def test_add_time_success(hash_text):
+    db = Mock()
+
+    add_time = ADD_TIMES[0]
+
+    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+
+    time_added = handler.handle_command(add_time)
+    assert isinstance(time_added, TimeAdded)
+    assert isinstance(time_added.payload, TimeAddedPayload)
+

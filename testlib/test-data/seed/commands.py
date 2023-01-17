@@ -1,8 +1,13 @@
+from datetime import datetime
+
 from abstract_domain_model.models import PublishCitation, PublishCitationPayload
-from abstract_domain_model.models.commands import Person, Place, Time, Meta
+from abstract_domain_model.models.commands import Person, Place, LegacyTime, Meta
 from abstract_domain_model.models.commands.add_person import AddPerson, AddPersonPayload
+from abstract_domain_model.models.commands.add_place import AddPlace, AddPlacePayload
+from abstract_domain_model.models.commands.add_time import AddTime, AddTimePayload
 from abstract_domain_model.models.commands.description import AddDescription
 from abstract_domain_model.models.commands.name import AddName
+from abstract_domain_model.models.core import Geo, Time
 from seed.events import USER_ID
 from seed.util import get_version
 
@@ -34,7 +39,7 @@ PUBLISH_CITATION_DOMAIN_OBJECTS = [
                     longitude=10.3147,
                     geo_shape=None,
                 ),
-                Time(
+                LegacyTime(
                     id=None,
                     type="TIME",
                     name="1685|3|21",
@@ -297,5 +302,81 @@ ADD_PEOPLE = [
             wiki_data_id="Q1339",
         ),
         type="ADD_PERSON",
+    )
+]
+
+
+ADD_PLACES = [
+    AddPlace(
+        app_version=get_version(),
+        timestamp="2023-01-14 06:54:43.405897",
+        user_id=USER_ID,
+        type="ADD_PLACE",
+        payload=AddPlacePayload(
+            names=[
+                AddName(
+                    name="Eisenach",
+                    lang="en",
+                    is_default=True,
+                )
+            ],
+            desc=[
+                AddDescription(
+                    text="municipality in Thuringia, Germany",
+                    lang="en",
+                    source_updated_at="2023-01-14 02:05:58",
+                    wiki_link="https://www.wikidata.org/wiki/Q7070",
+                    wiki_data_id="Q7070",
+                )
+            ],
+            wiki_link="https://www.wikidata.org/wiki/Q7070",
+            wiki_data_id="Q7070",
+            geo_names_id="6547386",
+            geo=Geo(
+                latitude=50.97443,
+                longitude=10.33407,
+                geoshape=None,
+                population=42250,
+                feature_code="historical third-order administrative division",
+                feature_class="country, state, region,... (A)",
+            ),
+        ),
+    )
+]
+
+ADD_TIMES = [
+    AddTime(
+        app_version=get_version(),
+        timestamp="2023-01-14 10:54:16",
+        user_id=USER_ID,
+        type="ADD_TIME",
+        payload=AddTimePayload(
+            names=[
+                AddName(
+                    name="21 March 1685",
+                    lang="en",
+                    is_default=True,
+                )
+            ],
+            desc=[
+                AddDescription(
+                    text="Date in gregorian calendar.",
+                    lang="en",
+                    source_updated_at="2023-01-14 16:53:02",
+                    wiki_link="https://www.wikidata.org/wiki/Q69125225",
+                    wiki_data_id="Q69125225",
+                )
+            ],
+            wiki_link="https://www.wikidata.org/wiki/Q69125225",
+            wiki_data_id="Q69125225",
+            time=Time(
+                timestamp=str(datetime(year=1685, month=3, day=21)),
+                precision=11,
+                calendar_type="gregorian",
+                circa=False,
+                latest=False,
+                earliest=False,
+            ),
+        ),
     )
 ]
