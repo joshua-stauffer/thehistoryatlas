@@ -156,6 +156,24 @@ services:
         networks:
             - tha-connect
 
+    integration_tests:
+        profiles: ["integration-test"]
+        build: ./integration_tests
+        restart: "no"
+        depends_on:
+            - broker
+            - db
+            - writemodel
+            - readmodel
+            - geo
+            - nlp
+            - eventstore
+            - history
+        environment:
+            - API_URL=${API_URL}
+        networks:
+            - tha-connect
+
     db:
         # NOTE: using postgres 13.3 to avoid m1 libpq issue:
         #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
