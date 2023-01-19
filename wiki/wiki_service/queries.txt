@@ -1,0 +1,11 @@
+
+Query a person by name
+https://w.wiki/6EmN
+
+SELECT ?person ?personDescription ?personLabel
+WHERE
+{
+  ?person rdfs:label "Claudio Monteverdi"@en .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+}
+
