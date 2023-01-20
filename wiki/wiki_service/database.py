@@ -62,7 +62,7 @@ class Database:
                 return False
             return True
 
-    def add_local_id(self, wiki_id: str, local_id: str) -> None:
+    def correlate_local_id_to_wiki_id(self, wiki_id: str, local_id: str) -> None:
         with Session(self._engine, future=True) as session:
             row = (
                 session.query(IDLookup)
@@ -75,7 +75,9 @@ class Database:
             session.add(row)
             session.commit()
 
-    def update_wiki_id(self, wiki_id: str, last_modified_at: Optional[str] = None):
+    def record_wiki_id_checked(
+        self, wiki_id: str, last_modified_at: Optional[str] = None
+    ):
         with Session(self._engine, future=True) as session:
             row = (
                 session.query(IDLookup)

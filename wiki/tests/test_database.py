@@ -87,7 +87,7 @@ def test_add_local_id(config):
             )
         )
         session.commit()
-    db.add_local_id(wiki_id=wiki_id, local_id=local_id)
+    db.correlate_local_id_to_wiki_id(wiki_id=wiki_id, local_id=local_id)
     with Session(db._engine, future=True) as session:
         row = session.query(IDLookup).filter(IDLookup.wiki_id == wiki_id).one()
         assert row.local_id == local_id
