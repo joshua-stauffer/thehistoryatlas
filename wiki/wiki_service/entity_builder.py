@@ -17,8 +17,8 @@ class Entity:
     lastrevid: int
     modified: str
     type: str
-    labels: List[Dict[str, "Property"]]
-    descriptions: List[Dict[str, "Property"]]
+    labels: Dict[str, "Property"]
+    descriptions: Dict[str, "Property"]
     aliases: Dict[str, List["Property"]]
     claims: Dict[str, List[Dict]]
     sitelinks: Dict[str, Dict]
@@ -81,8 +81,8 @@ class WikiDataQueryService:
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
         result = requests.get(url)
         json_result = result.json()
-        person = Entity(**json_result["entities"][id])
-        return person
+        entity_dict = json_result["entities"][id]
+        return self.build_entity(entity_dict)
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """
@@ -114,6 +114,32 @@ class WikiDataQueryService:
             return None
         time_claim = claims[0]
         return self.build_time_definition(time_claim=time_claim)
+
+    @staticmethod
+    def build_entity(entity_dict: Dict) -> Entity:
+
+        return Entity(
+            id=entity_dict["id"],
+            pageid=entity_dict["pageid"],
+            ns=entity_dict["ns"],
+            title=entity_dict["title"],
+            lastrevid=entity_dict["lastrevid"],
+            modified=entity_dict["modified"],
+            type=entity_dict["type"],
+            labels={
+                lang: Property(**prop) for lang, prop in entity_dict["labels"].items()
+            },
+            descriptions={
+                lang: Property(**prop)
+                for lang, prop in entity_dict["descriptions"].items()
+            },
+            aliases={
+                key: [Property(**prop) for prop in val]
+                for key, val in entity_dict["aliases"].items()
+            },
+            claims=entity_dict["claims"],
+            sitelinks=entity_dict["sitelinks"],
+        )
 
     @staticmethod
     def build_coordinate_location(geoclaim: Dict) -> CoordinateLocation:

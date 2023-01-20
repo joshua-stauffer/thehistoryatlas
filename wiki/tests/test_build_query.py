@@ -2,12 +2,22 @@ from wiki_service.entity_builder import (
     WikiDataQueryService,
     Entity,
     CoordinateLocation,
-    GeoshapeLocation, TimeDefinition,
+    GeoshapeLocation,
+    TimeDefinition,
+    Property,
 )
 
 
-def test_search():
-    person = WikiDataQueryService().get_entity(id="Q937")
+def test_query_person():
+    EINSTEIN = "Q937"
+    service = WikiDataQueryService()
+    person = service.get_entity(id=EINSTEIN)
+    for lang, prop in person.descriptions.items():
+        assert isinstance(prop, Property)
+    for lang, prop in person.labels.items():
+        assert isinstance(prop, Property)
+    for key, prop_list in person.aliases.items():
+        assert all([isinstance(prop, Property) for prop in prop_list])
 
 
 def test_query_place():
