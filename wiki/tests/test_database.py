@@ -1,23 +1,10 @@
-import os
 from datetime import datetime
 
-import pytest
 from sqlalchemy.orm import Session
 
-from tha_config import Config
 from wiki_service.database import Database, Item
 from wiki_service.schema import IDLookup, WikiQueue
 from wiki_service.types import WikiType, EntityType
-
-
-@pytest.fixture
-def config():
-    test_db_uri = os.environ.get("TEST_DB_URI", None)
-    if test_db_uri is None:
-        raise Exception("Env var TEST_DB_URI is required to run database tests.")
-    config = Config()
-    config.DB_URI = test_db_uri
-    return config
 
 
 def test_wiki_id_exists_with_non_existent_id(config):
@@ -137,7 +124,7 @@ def test_add_ids_to_queue(config):
     entity_type: EntityType = "PERSON"
     wiki_type: WikiType = "WIKIDATA"
 
-    db.add_ids_to_queue(wiki_type=wiki_type, entity_type=entity_type, ids=ids)
+    db.add_items_to_queue(wiki_type=wiki_type, entity_type=entity_type, items=ids)
     end_time = str(datetime.utcnow())
     with Session(db._engine, future=True) as session:
         for id in ids:

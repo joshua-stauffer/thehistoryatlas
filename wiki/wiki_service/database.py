@@ -5,12 +5,15 @@ from typing import Optional, List
 
 from sqlalchemy import create_engine
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
+from wiki_service.config import WikiServiceConfig
 from wiki_service.schema import Base, WikiQueue
 from wiki_service.schema import IDLookup
-from wiki_service.types import WikiType, EntityType
+from wiki_service.schema import Config as ConfigModel
+from wiki_service.types import WikiType, EntityType, WikiDataItem
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +27,7 @@ class Item:
     wiki_id: str
     wiki_type: WikiType
     entity_type: EntityType
+    wiki_link: Optional[str] = None
 
 
 class Database:
@@ -92,22 +96,27 @@ class Database:
             session.add(row)
             session.commit()
 
-    def add_ids_to_queue(
-        self, wiki_type: WikiType, entity_type: EntityType, ids: List[str]
+    def add_items_to_queue(
+        self, wiki_type: WikiType, entity_type: EntityType, items: List[WikiDataItem]
     ):
         with Session(self._engine, future=True) as session:
             now = str(datetime.utcnow())
-            items = [
-                WikiQueue(
-                    wiki_id=wiki_id,
-                    wiki_type=wiki_type,
-                    entity_type=entity_type,
-                    time_added=now,
-                )
-                for wiki_id in ids
-            ]
-            session.add_all(items)
-            session.commit()
+            for item in items:
+                try:
+                    session.add(
+                        WikiQueue(
+                            wiki_id=item.qid,
+                            wiki_url=item.url,
+                            wiki_type=wiki_type,
+                            entity_type=entity_type,
+                            time_added=now,
+                        )
+                    )
+                    session.commit()
+                except Exception as e:
+                    # this qid is still in the queue
+                    log.debug(f"Encountered exception: {e}")
+                    session.rollback()
 
     def get_oldest_item_from_queue(self) -> Optional[Item]:
         with Session(self._engine, future=True) as session:
@@ -123,6 +132,7 @@ class Database:
                 wiki_id=row.wiki_id,
                 wiki_type=row.wiki_type,
                 entity_type=row.entity_type,
+                wiki_link=row.wiki_url,
             )
 
     def remove_item_from_queue(self, wiki_id: str):
@@ -137,6 +147,17 @@ class Database:
             session.delete(row)
             session.commit()
 
+    def is_wiki_id_in_queue(self, wiki_id: str) -> bool:
+        with Session(self._engine, future=True) as session:
+            row = (
+                session.query(WikiQueue)
+                .filter(WikiQueue.wiki_id == wiki_id)
+                .one_or_none()
+            )
+            if row is None:
+                return False
+            return True
+
     def report_queue_error(self, wiki_id: str, error_time: str, errors: str):
         with Session(self._engine, future=True) as session:
             row = (
@@ -150,3 +171,30 @@ class Database:
             flag_modified(key="errors", instance=row)
             session.add(row)
             session.commit()
+
+    def save_last_person_offset(self, offset: int) -> None:
+        with Session(self._engine, future=True) as session:
+            row = session.query(ConfigModel).one()
+            row.last_person_search_offset = offset
+            session.commit()
+
+    def get_last_person_offset(self) -> int:
+        with Session(self._engine, future=True) as session:
+            row = session.query(ConfigModel).one_or_none()
+            if row is None:
+                session.add(self._get_default_config())
+                session.commit()
+                return 0
+            return row.last_person_search_offset
+
+    @staticmethod
+    def _get_default_config() -> ConfigModel:
+        return ConfigModel(id=1, last_person_search_offset=0)
+
+    @classmethod
+    def factory(cls) -> "Database":
+        """
+        Get a configured Database instance.
+        """
+        database = cls(config=WikiServiceConfig())
+        return database

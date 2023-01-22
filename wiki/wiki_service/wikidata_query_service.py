@@ -1,9 +1,17 @@
 from dataclasses import dataclass
-from typing import List, Dict, Optional
+from re import search
+from typing import List, Dict, Optional, Set
+from urllib.error import HTTPError
 
 import requests
+from SPARQLWrapper import SPARQLWrapper, JSON
 
-from abstract_domain_model.models.core import Geo
+from wiki_service.config import WikiServiceConfig
+from wiki_service.types import WikiDataItem
+
+
+class WikiDataQueryServiceError(Exception):
+    ...
 
 
 @dataclass(frozen=True)
@@ -77,16 +85,72 @@ class Property:
 
 
 class WikiDataQueryService:
+    def __init__(self, config: WikiServiceConfig):
+        self._config = config
+
+    def find_people(self, limit: int, offset: int) -> Set[WikiDataItem]:
+
+        query = f"""
+        SELECT DISTINCT ?item
+        WHERE 
+        {{
+          ?item wdt:P31 wd:Q5 .
+        }}
+        LIMIT {limit} OFFSET {offset}
+        """
+        res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
+        items = res.get("bindings", [])
+        items = {
+            WikiDataItem(
+                url=item["item"]["value"],
+                qid=self.get_qid_from_uri(item["item"]["value"]),
+            )
+            for item in items
+        }
+        return items
+
+    def get_wikidata_people_count(self) -> int:
+
+        query = """
+        SELECT (COUNT(*) AS ?count)
+        WHERE {
+          ?item wdt:P31 wd:Q5 .
+        }
+        """
+        res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
+        return res.get["bindings"][0]["value"]
+
+    def make_sparql_query(self, query: str, url: str) -> Dict:
+        sparql = SPARQLWrapper(url)
+        sparql.setQuery(query=query)
+        sparql.setReturnFormat(JSON)
+
+        # Run the query
+        try:
+            result = sparql.query()
+        except HTTPError as e:
+            raise WikiDataQueryServiceError(e)
+        converted_result = result.convert()
+
+        results = converted_result["results"]
+        return results
+
     def get_entity(self, id: str) -> Entity:
+        """
+        Query the WikiData REST API to retrieve an item by ID.
+        """
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
         result = requests.get(url)
         json_result = result.json()
+        error = json_result.get("error", None)
+        if error is not None:
+            raise WikiDataQueryServiceError(error)
         entity_dict = json_result["entities"][id]
         return self.build_entity(entity_dict)
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """
-        Return an entities geo properties or None.
+        Get an entity's location properties or None.
         """
         geo_claim = entity.claims.get("P625", None)
         if geo_claim is None:
@@ -95,6 +159,9 @@ class WikiDataQueryService:
         return coordinate_location
 
     def get_geoshape_location(self, entity: Entity) -> Optional[GeoshapeLocation]:
+        """
+        Get an Entity's geoshape property or None.
+        """
         claims = entity.claims.get("P3896", None)
         if claims is None:
             return None
@@ -108,6 +175,9 @@ class WikiDataQueryService:
         )
 
     def get_time(self, entity: Entity) -> Optional[TimeDefinition]:
+        """
+        Get an Entity's point in time property or None.
+        """
         point_in_time_claim = "P585"
         claims = entity.claims.get(point_in_time_claim)
         if len(claims) == 0:
@@ -117,7 +187,6 @@ class WikiDataQueryService:
 
     @staticmethod
     def build_entity(entity_dict: Dict) -> Entity:
-
         return Entity(
             id=entity_dict["id"],
             pageid=entity_dict["pageid"],
@@ -191,3 +260,10 @@ class WikiDataQueryService:
             precision=time_claim["mainsnak"]["datavalue"]["value"]["precision"],
             calendarmodel=time_claim["mainsnak"]["datavalue"]["value"]["calendarmodel"],
         )
+
+    @staticmethod
+    def get_qid_from_uri(uri: str) -> Optional[str]:
+        # 'http://www.wikidata.org/entity/Q23'
+        pattern = "(Q[1-9]+)"
+        res = search(pattern=pattern, string=uri)
+        return res.group()

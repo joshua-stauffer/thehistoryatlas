@@ -1,6 +1,6 @@
 from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB
+from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER
 
 Base = declarative_base()
 
@@ -25,8 +25,18 @@ class WikiQueue(Base):
 
     __tablename__ = "wiki_queue"
 
-    wiki_id = Column(VARCHAR, unique=True, primary_key=True)
+    wiki_id = Column(VARCHAR, primary_key=True)
+    wiki_url = Column(VARCHAR)
     entity_type = Column(VARCHAR, nullable=False)
     wiki_type = Column(VARCHAR, nullable=False)
     errors = Column(JSONB, default={})
     time_added = Column(VARCHAR, nullable=False)
+
+
+class Config(Base):
+    """Values for application use."""
+
+    __tablename__ = "config"
+
+    id = Column(INTEGER, primary_key=True, default=1)
+    last_person_search_offset = Column(INTEGER, default=0)
