@@ -17,7 +17,7 @@ class RPCSuccess:
 class RPCFailure:
     """Returned when no response is received from the remote call."""
 
-    pass
+    errors: Optional[Dict] = None
 
 
 RPCResponse = Union[RPCSuccess, RPCFailure]
@@ -65,3 +65,6 @@ class RPCManager:
                 return RPCSuccess(message=response)
 
         return RPCFailure()
+
+    def get_response_handler(self) -> Callable[[Dict, str], None]:
+        return self.handle_response
