@@ -266,4 +266,6 @@ class WikiDataQueryService:
         # 'http://www.wikidata.org/entity/Q23'
         pattern = "(Q[1-9]+)"
         res = search(pattern=pattern, string=uri)
+        if res is None:
+            return None
         return res.group()
