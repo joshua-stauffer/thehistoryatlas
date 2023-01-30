@@ -566,7 +566,7 @@ def test_wiki_service_init(config):
     assert isinstance(wiki_service, WikiService)
 
 
-def test_get_people_success(config, people):
+def test_search_for_people_success(config, people):
     """
     Given:
         WikiDataQueryService returns a set of people
@@ -607,6 +607,131 @@ def test_get_people_success(config, people):
         entity_type="PERSON", wiki_type="WIKIDATA", items=list(people)
     )
     database.save_last_person_offset.assert_called_with(offset=limit + offset)
+
+
+def test_search_for_people_ignores_ids_that_already_exist(config, people):
+    """
+    Given:
+        WikiDataQueryService returns a set of people
+        WikiID exists
+        WikiID is not in the queue
+    Expect:
+        no people are added to the queue
+        the last person offset is updated
+    """
+    limit = 10
+    offset = 0
+    config.WIKIDATA_SEARCH_LIMIT = limit
+
+    broker = Mock()
+    broker.publish_command = AsyncMock()
+
+    wdqs = Mock()
+    wdqs.find_people.return_value = people
+
+    database = Mock()
+    database.is_wiki_id_in_queue.return_value = False
+    database.wiki_id_exists.return_value = True
+    database.get_last_person_offset.return_value = offset
+
+    command_publisher = Mock()
+
+    wiki_service = WikiService(
+        broker_factory=lambda config_factory, event_handler: broker,
+        wikidata_query_service_factory=lambda: wdqs,
+        database_factory=lambda: database,
+        config_factory=lambda: config,
+        command_publisher=lambda timeout, pub_function: command_publisher,
+    )
+
+    wiki_service.search_for_people()
+
+    database.add_items_to_queue.assert_called_with(
+        entity_type="PERSON", wiki_type="WIKIDATA", items=[]
+    )
+    database.save_last_person_offset.assert_called_with(offset=limit + offset)
+
+
+def test_search_for_people_ignores_id_already_in_queue(config, people):
+    """
+    Given:
+        WikiDataQueryService returns a set of people
+        WikiID doesn't exist
+        WikiID is already in the queue
+    Expect:
+        no people are added to the queue
+        the last person offset is updated
+    """
+    limit = 10
+    offset = 0
+    config.WIKIDATA_SEARCH_LIMIT = limit
+
+    broker = Mock()
+    broker.publish_command = AsyncMock()
+
+    wdqs = Mock()
+    wdqs.find_people.return_value = people
+
+    database = Mock()
+    database.is_wiki_id_in_queue.return_value = True
+    database.wiki_id_exists.return_value = False
+    database.get_last_person_offset.return_value = offset
+
+    command_publisher = Mock()
+
+    wiki_service = WikiService(
+        broker_factory=lambda config_factory, event_handler: broker,
+        wikidata_query_service_factory=lambda: wdqs,
+        database_factory=lambda: database,
+        config_factory=lambda: config,
+        command_publisher=lambda timeout, pub_function: command_publisher,
+    )
+
+    wiki_service.search_for_people()
+
+    database.add_items_to_queue.assert_called_with(
+        entity_type="PERSON", wiki_type="WIKIDATA", items=[]
+    )
+    database.save_last_person_offset.assert_called_with(offset=limit + offset)
+
+
+def test_search_for_people_handles_wiki_service_error(config):
+    """
+    Given:
+        WikiDataQueryService raises an error
+    Expect:
+        no people are added to the queue
+        the last person offset is not updated
+    """
+    limit = 10
+    offset = 0
+    config.WIKIDATA_SEARCH_LIMIT = limit
+
+    broker = Mock()
+    broker.publish_command = AsyncMock()
+
+    wdqs = Mock()
+    wdqs.find_people.side_effect = WikiDataQueryServiceError
+
+    database = Mock()
+    database.is_wiki_id_in_queue.return_value = False
+    database.wiki_id_exists.return_value = False
+    database.get_last_person_offset.return_value = offset
+
+    command_publisher = Mock()
+
+    wiki_service = WikiService(
+        broker_factory=lambda config_factory, event_handler: broker,
+        wikidata_query_service_factory=lambda: wdqs,
+        database_factory=lambda: database,
+        config_factory=lambda: config,
+        command_publisher=lambda timeout, pub_function: command_publisher,
+    )
+
+    wiki_service.search_for_people()
+
+    database.add_items_to_queue.assert_not_called()
+    database.save_last_person_offset.assert_not_called()
 
 
 @pytest.mark.asyncio
