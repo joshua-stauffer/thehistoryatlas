@@ -1,3 +1,5 @@
+import pytest
+
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     Entity,
@@ -9,7 +11,8 @@ from wiki_service.wikidata_query_service import (
 from wiki_service.types import WikiDataItem
 
 
-def test_query_person(config):
+
+def test_query_person(config, einstein_json_result):
     EINSTEIN = "Q937"
     service = WikiDataQueryService(config)
     person = service.get_entity(id=EINSTEIN)
