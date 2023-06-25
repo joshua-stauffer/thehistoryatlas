@@ -9,12 +9,12 @@ venv
 *.egg-info
 bits-and-pieces/
 .pytest_cache
-nlp/models
+server/the_history_atlas/apps/nlp/models
 .DS_STORE
 .DS_Store
 *.DS_Store
 test_build_constraints.txt
-geo/data/
+legacy/geo/data/
 
 # react gitignore
 # dependencies
@@ -41,12 +41,12 @@ yarn-error.log*
 
 # builder
 /builder/data/fake
-nlp/nlp_service/models/
+server/the_history_atlas/apps/nlp_service/models/
 
 # IDE configs
 .vscode/
 .idea/
-geo/app/data/
+legacy/geo/app/data/
 secrets.yaml
 
 # vim

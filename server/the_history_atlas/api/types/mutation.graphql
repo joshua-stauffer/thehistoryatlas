@@ -1,0 +1,22 @@
+type Mutation {
+
+    ConfirmAccount(token: String!): AccountsGenericResponse!
+
+    DeactivateAccount(
+      token: String!
+      username: String!
+    ): AccountsGenericResponse
+
+    UpdateUser(
+      token: String!
+      user_details: UpdateUserDetailsInput!
+      credentials: CredentialsInput
+    ): AccountsGenericResponse!
+
+    AddUser(
+      token: String!
+      user_details: NewUserDetailsInput!
+    ): AccountsGenericResponse!
+
+    Login(username: String!, password: String!): LoginResponse!
+}

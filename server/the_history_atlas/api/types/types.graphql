@@ -1,0 +1,110 @@
+
+# todo: break out into modules
+
+type Summary {
+    guid: String!
+    text: String!
+    tags: [Tag!]!
+    citation_guids: [String!]!
+}
+
+type CitationByGUID {
+citation_guid: String
+}
+
+type Citation {
+guid: String!
+text: String!
+# tags: [Tag!]!
+meta: MetaData!
+}
+
+type Manifest {
+guid: String!
+citation_guids: [String]
+timeline: [Timeline]!
+}
+
+type Timeline {
+year: Int!
+count: Int!
+root_guid: String!
+}
+
+type GUIDSummaries {
+guids: [String]
+summaries: [GUIDSummary]
+}
+
+type GUIDSummary {
+type: String
+guid: String
+citation_count: Int
+names: [String]
+first_citation_date: String
+last_citation_date: String
+}
+
+type EntitySummary {
+type: EntityType!
+guid: String!
+citation_count: Int!
+names: [String!]!
+first_citation_date: String!
+last_citation_date: String!
+}
+
+type Tag {
+tag_type: EntityType!
+tag_guid: String! # which entity does this tag refer to?
+start_char: Int! # index of character in text
+stop_char: Int! # index of character in text
+name: String
+names: [String]
+coords: Coords
+}
+
+type MetaData {
+title: String!
+author: String!
+publisher: String!
+pubDate: String
+pageNum: Int
+}
+
+enum EntityType {
+TIME
+PERSON
+PLACE
+}
+
+type TextAnalysisResponse {
+text: String
+text_map: TextMap
+boundaries: [TextBoundaries]
+}
+
+type TextAnalysis {
+text: String
+start_char: Int
+stop_char: Int
+guids: [String]
+coords: [GeoResponse]
+}
+
+type TextMap {
+PERSON: [TextAnalysis]
+PLACE: [TextAnalysis]
+TIME: [TextAnalysis]
+}
+
+type TextBoundaries {
+text: String
+start_char: Int
+stop_char: Int
+}
+
+type FuzzySearchResponse {
+name: String!
+guids: [String]!
+}

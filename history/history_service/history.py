@@ -14,7 +14,7 @@ from typing import Optional
 from abstract_domain_model.transform import to_dict
 from history_service.database import Database
 from history_service.broker import Broker
-from tha_config import Config
+from server.the_history_atlas import Config
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ services:
 
     router:
         image: ilriccio/thehistoryatlas:router-${VERSION}
-        build: ./router
+        build: legacy/router
         restart: always
         ports:
             - "4400:4400"
@@ -34,7 +34,7 @@ services:
             - tha-connect
 
     readmodel:
-        build: ./readmodel
+        build: legacy/readmodel
         restart: always
         depends_on:
             - db
@@ -52,7 +52,7 @@ services:
             - tha-connect
 
     writemodel:
-        build: ./writemodel
+        build: legacy/writemodel
         restart: always
         depends_on:
             - db
@@ -71,7 +71,7 @@ services:
             - "8800:8800"
 
     eventstore:
-        build: ./eventstore
+        build: legacy/eventstore
         restart: always
         depends_on:
             - broker
@@ -99,7 +99,7 @@ services:
             - TESTING=${TESTING}
 
     nlp:
-        build: ./nlp
+        build: legacy/nlp
         restart: always
         depends_on:
             - broker
@@ -118,7 +118,7 @@ services:
             - tha-connect
 
     geo:
-        build: ./geo
+        build: legacy/geo
         restart: always
         depends_on:
             - db
@@ -173,7 +173,7 @@ services:
     provisioner:
         build:
             context:
-                ./provisioner
+                legacy/provisioner
         depends_on:
             - db
         restart: "no"
