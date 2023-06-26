@@ -1,0 +1,28 @@
+version: "3"
+services:
+    db:
+        # NOTE: using postgres 13.3 to avoid m1 libpq issue:
+        #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
+        image: postgres:13.3
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=${POSTGRES_PASS}
+        networks:
+            - tha-connect
+        ports:
+            - 5432:5432
+
+    provisioner:
+        build:
+            context:
+                provisioner
+        depends_on:
+            - db
+        restart: "no"
+        networks:
+            - tha-connect
+        environment:
+            - THA_DB_URI=${THA_DB_URI}
+            - THA_TEST_PASSWORD=${THA_TEST_PASSWORD}
+networks:
+    tha-connect:

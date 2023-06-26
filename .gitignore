@@ -52,3 +52,4 @@ secrets.yaml
 # vim
 *.swp
 *.swo
+.legacy_env

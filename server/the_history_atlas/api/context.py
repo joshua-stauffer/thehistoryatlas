@@ -1,6 +1,19 @@
+from graphql import GraphQLResolveInfo
+
 from the_history_atlas.apps.app_manager import AppManager
 
 
-def get_context(request, _apps: AppManager):
+class Context:
+    """Custom fields provided to resolvers."""
 
-    return {"request": request, "test": "TEST", "apps": _apps}
+    apps: AppManager
+
+
+class Info(GraphQLResolveInfo):
+    """Extend GraphQLResolveInfo with our custom Context."""
+
+    context: Context
+
+
+def get_context(request, _apps: AppManager):
+    return {"request": request, "apps": _apps}

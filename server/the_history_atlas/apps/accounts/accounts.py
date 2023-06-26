@@ -22,21 +22,14 @@ class Accounts:
         self._config = config
         self._db = Database(self._config)
 
-    def login(self, query):
+    def login(self, username: str, password: str):
         """Attempt to verify user credentials and return token if successful"""
-
-        username = query["payload"]["username"]
-        password = query["payload"]["password"]
-        # raises error if unsuccessful
         try:
             token = self._db.login(username, password)
-            return {"type": "LOGIN", "payload": {"success": True, "token": token}}
+            return {"success": True, "token": token}
         except MissingUserError or DeactivatedUserError or AuthenticationError:
             return {
-                "type": "LOGIN",
-                "payload": {
-                    "success": False,
-                },
+                "success": False,
             }
 
     def add_user(self, query):

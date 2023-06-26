@@ -1,4 +1,4 @@
-from the_history_atlas.apps.accounts import Accounts
+from the_history_atlas.apps.accounts.accounts import Accounts
 from the_history_atlas.apps.config import Config
 
 
