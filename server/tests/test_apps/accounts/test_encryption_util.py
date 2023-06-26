@@ -1,15 +1,15 @@
 import datetime
 from uuid import UUID
 import pytest
-from server.the_history_atlas import ExpiredTokenError
-from server.the_history_atlas import InvalidTokenError
-from server.the_history_atlas import encrypt
-from server.the_history_atlas import check_password
-from server.the_history_atlas import get_token
-from server.the_history_atlas import validate_token
-from server.the_history_atlas import parse_token_str
-from server.the_history_atlas import str_to_time
-from server.the_history_atlas import fernet
+from the_history_atlas.apps.accounts.errors import ExpiredTokenError
+from the_history_atlas.apps.accounts.errors import InvalidTokenError
+from the_history_atlas.apps.accounts.encryption import encrypt
+from the_history_atlas.apps.accounts.encryption import check_password
+from the_history_atlas.apps.accounts.encryption import get_token
+from the_history_atlas.apps.accounts.encryption import validate_token
+from the_history_atlas.apps.accounts.encryption import parse_token_str
+from the_history_atlas.apps.accounts.encryption import str_to_time
+from the_history_atlas.apps.accounts.encryption import fernet
 
 
 def test_encrypt():

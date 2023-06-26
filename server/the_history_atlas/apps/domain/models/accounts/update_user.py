@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal, Optional, Dict
 
 from the_history_atlas.apps.domain.models.accounts.credentials import Credentials
 from the_history_atlas.apps.domain.models.accounts.user_details import UserDetails
@@ -13,7 +13,7 @@ class UpdateUser:
 
 @dataclass(frozen=True)
 class UpdateUserPayload:
-    user_details: UserDetails
+    user_details: Dict
     token: str
     credentials: Optional[Credentials]
 

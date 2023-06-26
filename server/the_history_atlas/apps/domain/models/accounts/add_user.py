@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Dict
 
-from the_history_atlas.apps.domain.models.accounts.user_details import UserDetails
+from the_history_atlas.apps.domain.models.accounts import UserDetails
 
 
 @dataclass(frozen=True)
@@ -12,5 +12,11 @@ class AddUser:
 
 @dataclass(frozen=True)
 class AddUserPayload:
+    token: str
+    user_details: Dict
+
+
+@dataclass(frozen=True)
+class AddUserResponsePayload:
     token: str
     user_details: UserDetails

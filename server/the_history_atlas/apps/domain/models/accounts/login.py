@@ -12,8 +12,8 @@ class Login:
 
 @dataclass(frozen=True)
 class LoginResponse:
-    type: Literal["LOGIN_RESPONSE"]
-    payload: "LoginResponsePayload"
+    success: bool
+    token: str | None
 
 
 @dataclass(frozen=True)

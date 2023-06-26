@@ -1,10 +1,10 @@
 import pytest
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from server.the_history_atlas import User
-from server.the_history_atlas import PROTECTED_FIELDS
-from server.the_history_atlas import UnauthorizedUserError
-from server.the_history_atlas import fernet
+from the_history_atlas.apps.accounts.schema import User
+from the_history_atlas.apps.accounts.database import PROTECTED_FIELDS
+from the_history_atlas.apps.accounts.errors import UnauthorizedUserError
+from the_history_atlas.apps.accounts.encryption import fernet
 
 
 def test_db_has_one_user(db):

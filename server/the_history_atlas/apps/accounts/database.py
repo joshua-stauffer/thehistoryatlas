@@ -8,6 +8,7 @@ from typing import (
 )
 from sqlalchemy import create_engine
 from sqlalchemy import select
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.accounts.encryption import (
@@ -26,14 +27,15 @@ from the_history_atlas.apps.accounts.errors import UnauthorizedUserError
 from the_history_atlas.apps.accounts.errors import UnconfirmedUserError
 from the_history_atlas.apps.accounts.errors import DuplicateUsernameError
 from the_history_atlas.apps.accounts.types import Token, UserDetailsDict
+from the_history_atlas.apps.config import Config
 
 log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, config):
-        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    def __init__(self, engine: Engine):
         # initialize the db
+        self._engine = engine
         Base.metadata.create_all(self._engine)
         self._ensure_admin()
 

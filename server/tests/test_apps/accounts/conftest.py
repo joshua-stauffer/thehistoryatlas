@@ -5,13 +5,15 @@ from unittest.mock import MagicMock
 
 from cryptography.fernet import Fernet
 import pytest
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from server.the_history_atlas import Database
-from server.the_history_atlas import get_token
-from server.the_history_atlas import fernet
-from server.the_history_atlas import TTL
-from server.the_history_atlas import encrypt
-from server.the_history_atlas import User, Base
+from the_history_atlas.apps.accounts.database import Database
+from the_history_atlas.apps.accounts.encryption import get_token
+from the_history_atlas.apps.accounts.encryption import fernet
+from the_history_atlas.apps.accounts.encryption import TTL
+from the_history_atlas.apps.accounts.encryption import encrypt
+from the_history_atlas.apps.accounts.schema import User, Base
+from the_history_atlas.apps.config.config import Config
 
 
 @pytest.fixture
@@ -20,51 +22,56 @@ def mock_db():
 
 
 @pytest.fixture
-def bare_db():
+def config():
+    config = Config()
     TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
-
     if not TEST_DB_URI:
         raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
+    config.DB_URI = TEST_DB_URI
+    config.DEBUG = False
+    config.TESTING = True
+    return config
 
-    class Config:
-        """minimal class for setting up an in memory db for this test"""
 
-        def __init__(self):
-            self.DB_URI = TEST_DB_URI
-            self.DEBUG = False
+@pytest.fixture
+def engine(config):
+    return create_engine(config.DB_URI, echo=config.DEBUG, future=True)
 
-    config = Config()
-    db = Database(config)
+
+@pytest.fixture
+def bare_db(engine):
+
+    db = Database(engine=engine)
 
     # if we're using db, ensure its fresh
-    Base.metadata.drop_all(db._engine)
-    Base.metadata.create_all(db._engine)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
 
     return db
 
 
 @pytest.fixture
-def db(bare_db, admin_user_details):
+def db(bare_db, admin_user_details, engine):
     """An active database instance with one admin user"""
     # must start with an admin user
     encrypted_admin_details = {
         **admin_user_details,
         "password": encrypt(admin_user_details["password"]).decode(),
     }
-    with Session(bare_db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add(User(**encrypted_admin_details))
         session.commit()
     return bare_db
 
 
 @pytest.fixture
-def loaded_db(db, user_details, unconfirmed_user):
+def loaded_db(db, user_details, unconfirmed_user, engine):
     """An active database instance with two users -- one admin, one contrib"""
     encrypted_user_details = {
         **user_details,
         "password": encrypt(user_details["password"]).decode(),
     }
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add(User(**encrypted_user_details))
         session.add(User(**unconfirmed_user))
         session.commit()

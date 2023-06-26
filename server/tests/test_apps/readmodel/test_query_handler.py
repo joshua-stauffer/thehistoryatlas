@@ -132,8 +132,8 @@ def handler(db_tuple):
 
 
 @pytest.fixture
-def handle_query(handler):
-    return handler.handle_query
+def handle_query(accounts):
+    return accounts.handle_query
 
 
 def test_handle_query_exists(handle_query):

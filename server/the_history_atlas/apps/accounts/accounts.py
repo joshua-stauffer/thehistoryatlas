@@ -1,4 +1,8 @@
 import logging
+from dataclasses import asdict
+from typing import Dict
+
+from sqlalchemy.engine import Engine
 
 from the_history_atlas.apps.accounts.errors import (
     MissingUserError,
@@ -8,87 +12,106 @@ from the_history_atlas.apps.accounts.errors import (
 from the_history_atlas.apps.config import Config
 
 from the_history_atlas.apps.accounts.database import Database
-
+from the_history_atlas.apps.domain.models.accounts import (
+    LoginResponse,
+    Credentials,
+    UserDetails,
+)
+from the_history_atlas.apps.domain.models.accounts.add_user import (
+    AddUserPayload,
+    AddUserResponsePayload,
+)
+from the_history_atlas.apps.domain.models.accounts.confirm_account import (
+    ConfirmAccountResponsePayload,
+)
+from the_history_atlas.apps.domain.models.accounts.deactivate_account import (
+    DeactivateAccountResponsePayload,
+    DeactivateAccountPayload,
+)
+from the_history_atlas.apps.domain.models.accounts.get_user import (
+    GetUserResponsePayload,
+    GetUserPayload,
+)
+from the_history_atlas.apps.domain.models.accounts.is_username_unique import (
+    IsUsernameUniqueResponsePayload,
+    IsUsernameUniquePayload,
+)
+from the_history_atlas.apps.domain.models.accounts.update_user import (
+    UpdateUserResponsePayload,
+    UpdateUserPayload,
+)
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
 
 class Accounts:
-    """Primary class for application. Primarily coordinates AMQP broker with
-    database connection."""
+    """Business logic for managing Accounts."""
 
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, database_client: Engine):
         self._config = config
-        self._db = Database(self._config)
+        self._db = Database(engine=database_client)
 
-    def login(self, username: str, password: str):
+    def login(self, data: Credentials) -> LoginResponse:
         """Attempt to verify user credentials and return token if successful"""
         try:
-            token = self._db.login(username, password)
-            return {"success": True, "token": token}
+            token = self._db.login(data.username, data.password)
+            success = True
         except MissingUserError or DeactivatedUserError or AuthenticationError:
-            return {
-                "success": False,
-            }
+            success = False
+            token = None
+        return LoginResponse(success=success, token=token)
 
-    def add_user(self, query):
+    def add_user(self, data: AddUserPayload) -> AddUserResponsePayload:
         """Add a user. Requires admin credentials"""
-        token = query["payload"]["token"]
-        user_details = query["payload"]["user_details"]
-        token, user_details = self._db.add_user(token=token, user_details=user_details)
-        return {
-            "type": "ADD_USER",
-            "payload": {"token": token, "user_details": user_details},
-        }
-
-    def update_user(self, query):
-        """Updates a user's information"""
-        token = query["payload"]["token"]
-        user_details = query["payload"]["user_details"]
-        credentials = query["payload"].get("credentials", None)
-        token, user_details = self._db.update_user(
-            token=token, user_details=user_details, credentials=credentials
+        token, user_details = self._db.add_user(
+            token=data.token, user_details=data.user_details
         )
-        return {
-            "type": "UPDATE_USER",
-            "payload": {"token": token, "user_details": user_details},
-        }
+        return AddUserResponsePayload(
+            token=token, user_details=UserDetails(**user_details)
+        )
 
-    def get_user(self, query):
+    def update_user(self, data: UpdateUserPayload) -> UpdateUserResponsePayload:
+        """Updates a user's information"""
+
+        token, user_details = self._db.update_user(
+            token=data.token,
+            user_details=data.user_details,
+            credentials=data.credentials,
+        )
+        return UpdateUserResponsePayload(
+            token=token, user_details=UserDetails(**user_details)
+        )
+
+    def get_user(self, data: GetUserPayload) -> GetUserResponsePayload:
         """Fetches a user's information"""
-        token = query["payload"]["token"]
-        token, user_details = self._db.get_user(token=token)
-        return {
-            "type": "GET_USER_RESPONSE",
-            "payload": {"token": token, "user_details": user_details},
-        }
+        token, user_details = self._db.get_user(token=data.token)
+        return GetUserResponsePayload(
+            token=token, user_details=UserDetails(**user_details)
+        )
 
-    def is_username_unique(self, query):
+    def is_username_unique(
+        self, data: IsUsernameUniquePayload
+    ) -> IsUsernameUniqueResponsePayload:
         """Test if a given username is already in use."""
 
-        username = query["payload"]["username"]
-        res = self._db.check_if_username_is_unique(username)
-        return {
-            "type": "IS_USERNAME_UNIQUE",
-            "payload": {"is_unique": res, "username": username},
-        }
+        res = self._db.check_if_username_is_unique(data.username)
+        return IsUsernameUniqueResponsePayload(is_unique=res, username=data.username)
 
-    def deactivate_account(self, query):
+    def deactivate_account(
+        self, data: DeactivateAccountPayload
+    ) -> DeactivateAccountResponsePayload:
         """Deactivate a user's account. Requires admin credentials"""
-        token = query["payload"]["token"]
-        username = query["payload"]["username"]
-        token, user_details = self._db.deactivate_account(token, username)
-        return {
-            "type": "DEACTIVATE_ACCOUNT",
-            "payload": {"token": token, "user_details": user_details},
-        }
+        token, user_details = self._db.deactivate_account(
+            token=data.token, username=data.username
+        )
+        return DeactivateAccountResponsePayload(
+            token=token, user_details=UserDetails(**user_details)
+        )
 
-    def confirm_account(self, query):
+    def confirm_account(self, token: str) -> ConfirmAccountResponsePayload:
         """Path for user to verify their email address"""
-        token = query["payload"]["token"]
         token, user_details = self._db.confirm_account(token)
-        return {
-            "type": "CONFIRM_ACCOUNT",
-            "payload": {"token": token, "user_details": user_details},
-        }
+        return ConfirmAccountResponsePayload(
+            token=token, user_details=UserDetails(**user_details)
+        )

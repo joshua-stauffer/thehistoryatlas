@@ -1,8 +1,9 @@
 from the_history_atlas.api.context import Info
-from the_history_atlas.apps.domain.models.accounts import LoginResponse
+from the_history_atlas.apps.domain.models.accounts import LoginResponse, Credentials
 
 
-def resolve_login(_, info: Info, username, password) -> LoginResponse:
-    app = info.context["apps"].accounts_app
-    result = app.login(username=username, password=password)
-    return result
+def resolve_login(_, info: Info, username: str, password: str) -> LoginResponse:
+    app = info.context.apps.accounts_app
+    input = Credentials(username=username, password=password)
+    output = app.login(input)
+    return output

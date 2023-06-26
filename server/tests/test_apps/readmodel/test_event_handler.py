@@ -40,8 +40,8 @@ def handler(db):
 
 
 @pytest.fixture
-def handle_event(handler):
-    return handler.handle_event
+def handle_event(accounts):
+    return accounts.handle_event
 
 
 @pytest.fixture
