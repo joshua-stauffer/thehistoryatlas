@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import Literal
 
-TYPE = "COMMAND_SUCCESS"
+from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
-@dataclass
-class CommandSuccess:
-    type: Literal[TYPE] = TYPE
+class CommandSuccess(ConfiguredBaseModel):
+    type: Literal["COMMAND_SUCCESS"] = "COMMAND_SUCCESS"
+    token: str

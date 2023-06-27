@@ -1,20 +1,29 @@
-from sqlalchemy import create_engine
-
 from the_history_atlas.apps.accounts.accounts import Accounts
 from the_history_atlas.apps.config import Config
+from the_history_atlas.apps.database import DatabaseApp
+from the_history_atlas.apps.eventstore import EventStore
+from the_history_atlas.apps.writemodel import WriteModelApp
 
 
 class AppManager:
-    config: Config
+    config_app: Config
+    database_app: DatabaseApp
+    events_app: EventStore
     accounts_app: Accounts
+    writemodel_app: WriteModelApp
 
     def __init__(self):
-
-        self.config = Config()
-        database_client = self._build_database_client()
-        self.accounts_app = Accounts(
-            config=self.config, database_client=database_client
+        self.config_app = Config()
+        self.database_app = DatabaseApp(config_app=self.config_app)
+        self.events_app = EventStore(
+            config=self.config_app, database_client=self.database_app.client()
         )
-
-    def _build_database_client(self):
-        return create_engine(self.config.DB_URI, echo=self.config.DEBUG, future=True)
+        self.accounts_app = Accounts(
+            config=self.config_app, database_client=self.database_app.client()
+        )
+        self.writemodel_app = WriteModelApp(
+            config=self.config_app,
+            database_client=self.database_app.client(),
+            events_app=self.events_app,
+            accounts_app=self.accounts_app,
+        )

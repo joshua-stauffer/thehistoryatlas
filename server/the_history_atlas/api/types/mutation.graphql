@@ -1,5 +1,7 @@
 type Mutation {
 
+    PublishNewCitation(Annotation: AnnotateCitationInput!): PublishCitationResponse! @join__field(graph: WRITEMODEL)
+
     ConfirmAccount(token: String!): AccountsGenericResponse!
 
     DeactivateAccount(

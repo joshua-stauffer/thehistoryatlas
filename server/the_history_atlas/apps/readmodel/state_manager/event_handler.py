@@ -13,7 +13,7 @@ from the_history_atlas.apps.domain.models import (
     TimeTagged,
     MetaAdded,
 )
-from the_history_atlas.apps.domain.modelsevents.meta_tagged import MetaTagged
+from the_history_atlas.apps.domain.models.events.meta_tagged import MetaTagged
 from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.errors import (
     UnknownEventError,

@@ -13,3 +13,6 @@ from the_history_atlas.api.resolvers.accounts.resolve_update_user import (
     resolve_update_user,
 )
 from the_history_atlas.api.resolvers.accounts.resolve_add_user import resolve_add_user
+from the_history_atlas.api.resolvers.writemodel.resolve_publish_new_citation import (
+    resolve_publish_new_citation,
+)

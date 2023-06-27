@@ -4,6 +4,8 @@ from typing import Union
 from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from the_history_atlas.apps.database.database_app import DatabaseClient
 from the_history_atlas.apps.writemodel.state_manager.schema import Base
 from the_history_atlas.apps.writemodel.state_manager.schema import CitationHash
 from the_history_atlas.apps.writemodel.state_manager.schema import GUID
@@ -13,9 +15,9 @@ log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, config, stm_timeout: int = 60):
-        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    def __init__(self, database_client: DatabaseClient, stm_timeout: int = 60):
         # initialize the db
+        self._engine = database_client
         Base.metadata.create_all(self._engine)
         self.__short_term_memory = dict()
         self.__stm_timeout = stm_timeout

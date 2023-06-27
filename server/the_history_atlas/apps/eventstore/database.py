@@ -2,26 +2,25 @@ import logging
 from dataclasses import asdict
 from typing import List, Dict
 
-from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.domain.transform import from_dict
 from the_history_atlas.apps.domain.types import Event
-from the_history_atlas.apps.event_schema.event_schema import Event as EventModel, Base
+from the_history_atlas.apps.eventstore.event_schema import Event as EventModel, Base
 
 log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, config):
-        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    def __init__(self, engine: Engine):
+        self._engine = engine
         # initialize the db
         Base.metadata.create_all(self._engine)
 
-    def commit_event(self, synthetic_event: List[Dict]) -> list[Event]:
+    def commit_events(self, events: List[Event]) -> list[Event]:
         """Commit an event to the database"""
-        log.info(f"Committing event {synthetic_event} to the event store database.")
-        events: List[Event] = [from_dict(event) for event in synthetic_event]
+        log.info(f"Committing event {events} to the event store database.")
 
         with Session(self._engine, future=True) as session:
             emitted_events: List[EventModel] = [

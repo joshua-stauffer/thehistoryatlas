@@ -1,4 +1,8 @@
 import os
+from datetime import datetime
+from typing import Final
+
+VERSION: Final = "0.1.0"
 
 
 class Config:
@@ -58,3 +62,13 @@ class Config:
         if not val:
             return False
         return "true" in val or "True" in val or "t" in val or "1" in val or "T" in val
+
+    @staticmethod
+    def get_timestamp() -> str:
+        """Get the current time."""
+        # todo: ensure tz
+        return str(datetime.utcnow())
+
+    @staticmethod
+    def get_app_version() -> str:
+        return VERSION

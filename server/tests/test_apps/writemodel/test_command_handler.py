@@ -54,7 +54,7 @@ async def test_transform_publish_citation_to_events_returns_expected_events_list
 ):
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
 
-    synthetic_events = handler.handle_command(publish_citation)
+    synthetic_events = handler.publish_citation(publish_citation)
     # there are currently 9 types of synthetic tags, and this should
     # include all of them
     assert len(synthetic_events) == 6

@@ -9,7 +9,7 @@ from event_schema.EventSchema import Event as EventModel
 
 def test_commit_event_persists_synthetic_events(db):
     event = SYNTHETIC_EVENTS[0]
-    persisted_events = db.commit_event(event)
+    persisted_events = db.commit_events(event)
     assert isinstance(persisted_events, list)
     with Session(db._engine, future=True) as session:
         for event in persisted_events:

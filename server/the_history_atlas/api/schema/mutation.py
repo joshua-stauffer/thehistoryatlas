@@ -6,6 +6,7 @@ from the_history_atlas.api.resolvers import (
     resolve_update_user,
     resolve_add_user,
     resolve_confirm_account,
+    resolve_publish_new_citation,
 )
 
 
@@ -17,4 +18,6 @@ def build_mutation() -> ObjectType:
     object.set_field(name="UpdateUser", resolver=resolve_update_user)
     object.set_field(name="AddUser", resolver=resolve_add_user)
     object.set_field(name="Login", resolver=resolve_login)
+    object.set_field(name="PublishNewCitation", resolver=resolve_publish_new_citation)
+
     return object

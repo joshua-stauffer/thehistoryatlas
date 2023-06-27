@@ -1,6 +1,9 @@
 import logging
+from typing import List, Callable
 
-from the_history_atlas.apps.domain.transform import to_dict
+from sqlalchemy.engine import Engine
+
+from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.eventstore.database import Database
 from the_history_atlas.apps.config import Config
 
@@ -8,16 +11,25 @@ logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
 
-class EventStore:
-    def __init__(self):
-        self.config = Config()
-        self.db = Database(self.config)
+SubscriberCallback = Callable[[Event], None]
 
-    async def process_event(self, event, pub_func):
-        """accepts an event and submits it to the datastore for storage.
-        Returns a json string representation of the persisted event."""
-        log.debug(f"processing event {event}")
-        persisted_events = self.db.commit_event(event)
+
+class EventStore:
+    def __init__(self, config: Config, database_client: Engine):
+        self._config = config
+        self._db = Database(engine=database_client)
+        self._subscribers: List[SubscriberCallback] = []
+
+    def publish_events(self, events: List[Event]) -> None:
+        log.debug(f"processing event {events}")
+        persisted_events = self._db.commit_events(events)
         for event in persisted_events:
-            await pub_func(to_dict(event))
+            self._publish_to_subscribers(event)
         log.info("Finished processing event")
+
+    def subscribe(self, callback: SubscriberCallback) -> None:
+        self._subscribers.append(callback)
+
+    def _publish_to_subscribers(self, event: Event) -> None:
+        for callback in self._subscribers:
+            callback(event)

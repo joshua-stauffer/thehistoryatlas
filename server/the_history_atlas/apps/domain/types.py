@@ -1,4 +1,5 @@
 from typing import Union, Literal
+
 from the_history_atlas.apps.domain.models import (
     TimeAdded,
     TimeTagged,
@@ -99,6 +100,7 @@ PublishCitationType = type(
         timestamp="",
         payload=PublishCitationPayload(
             id="",
+            token="",
             text="",
             summary="",
             summary_id=None,

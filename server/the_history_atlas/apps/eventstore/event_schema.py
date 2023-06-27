@@ -1,8 +1,3 @@
-"""
-SQLAlchemy database schema for the primary store of events in the History Atlas.
-Used by both the History service and the EventStore.
-"""
-
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, JSONB
 from sqlalchemy.orm import declarative_base

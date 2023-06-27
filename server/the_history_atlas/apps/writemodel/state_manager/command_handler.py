@@ -88,6 +88,11 @@ class CommandHandler:
             PublishCitationType: self.validate_publish_citation,
         }
 
+    def publish_citation(self, command: PublishCitation) -> List[Event]:
+        self.validate_publish_citation(command=command)
+        events = self.transform_publish_citation_to_events(command=command)
+        return events
+
     def transform_publish_citation_to_events(
         self, command: PublishCitation
     ) -> List[Event]:

@@ -1,58 +1,65 @@
 from dataclasses import dataclass
 from typing import Literal, List, Optional, Union
+from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
-@dataclass(frozen=True)
-class PublishCitation:
-
-    user_id: str
-    timestamp: str
-    app_version: str
-    payload: "PublishCitationPayload"
-    type: Literal["PUBLISH_CITATION"] = "PUBLISH_CITATION"
+class MetaKwargs(ConfiguredBaseModel):
+    pageNum: int | None = None
+    pubDate: str | None = None
+    accessDate: str | None = None
 
 
-@dataclass(frozen=True)
-class PublishCitationPayload:
-    id: str  # ensure duplicate citations aren't processed
-    text: str
-    summary: Optional[str]  # won't exist when tagging a summary
-    summary_id: Optional[str]  # won't exist when creating new summary
-    tags: List[Union["Person", "Place", "Time"]]
-    meta: "Meta"
+class Meta(ConfiguredBaseModel):
+    id: str | None
+    author: str
+    publisher: str
+    title: str
+    kwargs: MetaKwargs
 
 
-@dataclass(frozen=True)
-class Tag:
-    id: Optional[str]
+class Tag(ConfiguredBaseModel):
+    id: str | None = None
     type: Literal["PERSON", "PLACE", "TIME"]
     start_char: int
     stop_char: int
     name: str
 
 
-@dataclass(frozen=True)
 class Person(Tag):
     type: Literal["PERSON"]
 
 
-@dataclass(frozen=True)
 class Place(Tag):
-    latitude: float
-    longitude: float
-    geo_shape: Optional[str]
+    latitude: float | None = None
+    longitude: float | None = None
+    geo_shape: str | None = None
     type: Literal["PLACE"]
 
 
-@dataclass(frozen=True)
 class Time(Tag):
     type: Literal["TIME"]
 
 
-@dataclass(frozen=True)
-class Meta:
-    id: Optional[str]
-    author: str
-    publisher: str
-    title: str
-    kwargs: dict
+class PublishCitationPayload(ConfiguredBaseModel):
+    id: str  # ensure duplicate citations aren't processed
+    text: str
+    summary: str | None  # won't exist when tagging a summary
+    summary_id: str | None = None  # won't exist when creating new summary
+    tags: List[Union[Person, Place, Time]]
+    meta: Meta
+    token: str
+
+
+class PublishCitation(ConfiguredBaseModel):
+
+    user_id: str
+    timestamp: str
+    app_version: str
+    payload: PublishCitationPayload
+    type: Literal["PUBLISH_CITATION"] = "PUBLISH_CITATION"
+
+
+class PublishCitationResponse(ConfiguredBaseModel):
+    success: bool
+    token: str
+    message: str | None
