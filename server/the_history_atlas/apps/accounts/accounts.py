@@ -77,7 +77,7 @@ class Accounts:
         token, user_details = self._db.update_user(
             token=data.token,
             user_details=data.user_details,
-            credentials=data.credentials,
+            credentials=data.credentials.dict(),  # todo: update db to use object
         )
         return UpdateUserResponsePayload(
             token=token, user_details=UserDetails(**user_details)

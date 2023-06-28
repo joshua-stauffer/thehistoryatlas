@@ -1,7 +1,7 @@
 import pytest
 import string
 import random
-from server.the_history_atlas.apps.writemodel import TextHasher
+from the_history_atlas.apps.writemodel.state_manager.text_processor import TextHasher
 
 
 @pytest.fixture

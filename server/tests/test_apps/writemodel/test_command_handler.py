@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from abstract_domain_model.models import (
+from the_history_atlas.apps.domain.models import (
     PersonAdded,
     PlaceAdded,
     TimeAdded,
@@ -11,15 +11,17 @@ from abstract_domain_model.models import (
     PlaceTagged,
     TimeTagged,
 )
-from abstract_domain_model.models.commands.publish_citation import (
+from the_history_atlas.apps.domain.models.commands.publish_citation import (
     Time,
     Person,
     Place,
 )
-from seed import PUBLISH_CITATION_DOMAIN_OBJECTS
-from server.the_history_atlas.apps.writemodel import CommandHandler
-from server.the_history_atlas.apps.writemodel import TextHasher
-from server.the_history_atlas.apps.writemodel import (
+from tests.seed import PUBLISH_CITATION_DOMAIN_OBJECTS
+from the_history_atlas.apps.writemodel.state_manager.command_handler import (
+    CommandHandler,
+)
+from the_history_atlas.apps.writemodel.state_manager.text_processor import TextHasher
+from the_history_atlas.apps.writemodel.state_manager.handler_errors import (
     GUIDError,
     CitationExistsError,
     UnknownTagTypeError,
@@ -50,9 +52,9 @@ def transaction_meta():
 
 @pytest.mark.asyncio
 async def test_transform_publish_citation_to_events_returns_expected_events_list(
-    publish_citation, hash_text, db
+    publish_citation, hash_text, writemodel_db
 ):
-    handler = CommandHandler(database_instance=db, hash_text=hash_text)
+    handler = CommandHandler(database_instance=writemodel_db, hash_text=hash_text)
 
     synthetic_events = handler.publish_citation(publish_citation)
     # there are currently 9 types of synthetic tags, and this should
@@ -83,14 +85,7 @@ async def test_validate_publish_citation_success_with_tagged_summary(
     db = Mock()
     db.check_citation_for_uniqueness.return_value = None
     db.check_id_for_uniqueness.return_value = "SUMMARY"
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            # add an ID so we tag this summary
-            summary_id="8f856919-6c46-4837-a41a-69d48c6129a5",
-        ),
-    )
+    publish_citation.payload.summary_id = "8f856919-6c46-4837-a41a-69d48c6129a5"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     handler.validate_publish_citation(publish_citation)
 
@@ -105,17 +100,7 @@ async def test_validate_publish_citation_success_with_tagged_meta(
     db = Mock()
     db.check_citation_for_uniqueness.return_value = None
     db.check_id_for_uniqueness.return_value = "META"
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            meta=replace(
-                publish_citation.payload.meta,
-                # add an ID so we tag this meta
-                id="7eee5f0c-14dd-4701-a951-5857beb54405",
-            ),
-        ),
-    )
+    publish_citation.payload.meta.id = "7eee5f0c-14dd-4701-a951-5857beb54405"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     handler.validate_publish_citation(publish_citation)
 
@@ -130,19 +115,8 @@ async def test_validate_publish_citation_success_with_tagged_summary_and_meta(
     db = Mock()
     db.check_citation_for_uniqueness.return_value = None
     db.check_id_for_uniqueness.side_effect = ["SUMMARY", "META"]
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            # add an ID so we tag this summary
-            summary_id="8f856919-6c46-4837-a41a-69d48c6129a5",
-            meta=replace(
-                publish_citation.payload.meta,
-                # add an ID so we tag this meta
-                id="7eee5f0c-14dd-4701-a951-5857beb54405",
-            ),
-        ),
-    )
+    publish_citation.payload.summary_id = "8f856919-6c46-4837-a41a-69d48c6129a5"
+    publish_citation.payload.meta.id = "7eee5f0c-14dd-4701-a951-5857beb54405"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     handler.validate_publish_citation(publish_citation)
 
@@ -171,14 +145,7 @@ async def test_validate_publish_citation_raises_missing_resource_error_for_summa
     db = Mock()
     db.check_citation_for_uniqueness.return_value = None
     db.check_id_for_uniqueness.return_value = None
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            # add an ID so we tag this summary
-            summary_id="8f856919-6c46-4837-a41a-69d48c6129a5",
-        ),
-    )
+    publish_citation.payload.summary_id = "8f856919-6c46-4837-a41a-69d48c6129a5"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(MissingResourceError):
         handler.validate_publish_citation(publish_citation)
@@ -195,12 +162,8 @@ async def test_validate_publish_citation_raises_guid_error_for_summary(
     db = Mock()
     db.check_id_for_uniqueness.return_value = "THIS-TYPE-IS-NOT-SUMMARY"
     db.check_citation_for_uniqueness.return_value = None
-    payload = replace(
-        publish_citation.payload,
-        # add an ID so we tag this summary
-        summary_id="8f856919-6c46-4837-a41a-69d48c6129a5",
-    )
-    publish_citation = replace(publish_citation, payload=payload)
+    publish_citation.payload.summary_id = "8f856919-6c46-4837-a41a-69d48c6129a5"
+
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(GUIDError):
         handler.validate_publish_citation(publish_citation)
@@ -216,17 +179,7 @@ async def test_validate_publish_citation_raises_missing_resource_error_for_meta(
     db = Mock()
     db.check_id_for_uniqueness.return_value = None
     db.check_citation_for_uniqueness.return_value = None
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            meta=replace(
-                publish_citation.payload.meta,
-                # add an ID so we tag this meta
-                id="7eee5f0c-14dd-4701-a951-5857beb54405",
-            ),
-        ),
-    )
+    publish_citation.payload.meta.id = "7eee5f0c-14dd-4701-a951-5857beb54405"
 
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(MissingResourceError):
@@ -244,17 +197,7 @@ async def test_validate_publish_citation_raises_guid_error_for_meta(
     db = Mock()
     db.check_id_for_uniqueness.return_value = "WRONG-TYPE"
     db.check_citation_for_uniqueness.return_value = None
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            meta=replace(
-                publish_citation.payload.meta,
-                # add an ID so we tag this meta
-                id="7eee5f0c-14dd-4701-a951-5857beb54405",
-            ),
-        ),
-    )
+    publish_citation.payload.meta.id = "7eee5f0c-14dd-4701-a951-5857beb54405"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
     with pytest.raises(GUIDError):
         handler.validate_publish_citation(publish_citation)
@@ -270,18 +213,7 @@ async def test_validate_publish_citation_raises_missing_resource_error_for_tag(
     db = Mock()
     db.check_id_for_uniqueness.return_value = None
     db.check_citation_for_uniqueness.return_value = None
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            tags=[
-                replace(
-                    publish_citation.payload.tags[0],
-                    id="5f3434ea-f05b-42de-af37-f315c670b90d",
-                )
-            ],
-        ),
-    )
+    publish_citation.payload.tags[0].id = "5f3434ea-f05b-42de-af37-f315c670b90d"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
 
     with pytest.raises(MissingResourceError):
@@ -298,18 +230,7 @@ async def test_validate_publish_citation_raises_guid_error_for_tag(
     db = Mock()
     db.check_id_for_uniqueness.side_effect = None
     db.check_citation_for_uniqueness.return_value = None
-    publish_citation = replace(
-        publish_citation,
-        payload=replace(
-            publish_citation.payload,
-            tags=[
-                replace(
-                    publish_citation.payload.tags[0],
-                    id="5f3434ea-f05b-42de-af37-f315c670b90d",
-                )
-            ],
-        ),
-    )
+    publish_citation.payload.tags[0].id = "5f3434ea-f05b-42de-af37-f315c670b90d"
     handler = CommandHandler(database_instance=db, hash_text=hash_text)
 
     with pytest.raises(GUIDError):

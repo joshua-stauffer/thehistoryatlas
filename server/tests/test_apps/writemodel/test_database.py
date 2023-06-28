@@ -2,7 +2,7 @@ import asyncio
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from server.the_history_atlas.apps.writemodel import CitationHash, GUID
+from the_history_atlas.apps.writemodel.state_manager.schema import CitationHash, GUID
 
 
 @pytest.fixture
@@ -25,21 +25,21 @@ def type():
     return "ANIMAL"
 
 
-def test_check_citation_for_uniqueness(db, hash, guid):
+def test_check_citation_for_uniqueness(writemodel_db, hash, guid):
     # returns none if table is empty
-    res1 = db.check_citation_for_uniqueness(hash)
+    res1 = writemodel_db.check_citation_for_uniqueness(hash)
     assert res1 == None
     # add something and make sure it's there
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(writemodel_db._engine, future=True) as sess, sess.begin():
         sess.add(CitationHash(hash=hash, GUID=guid))
-    res2 = db.check_citation_for_uniqueness(hash)
+    res2 = writemodel_db.check_citation_for_uniqueness(hash)
     assert res2 == guid
 
 
-def test_add_citation_hash(db, hash, guid):
-    db.add_citation_hash(hash, guid)
+def test_add_citation_hash(writemodel_db, hash, guid):
+    writemodel_db.add_citation_hash(hash, guid)
     # retrieve it manually
-    with Session(db._engine, future=True) as sess:
+    with Session(writemodel_db._engine, future=True) as sess:
         result = sess.execute(
             select(CitationHash).where(CitationHash.hash == hash)
         ).scalar_one_or_none()
@@ -49,34 +49,34 @@ def test_add_citation_hash(db, hash, guid):
         assert result.GUID == guid
 
 
-def test_check_guid_for_uniqueness(db, value, type):
+def test_check_guid_for_uniqueness(writemodel_db, value, type):
     # returns none if table is empty
-    res1 = db.check_id_for_uniqueness(value)
+    res1 = writemodel_db.check_id_for_uniqueness(value)
     assert res1 == None
     # add something and make sure it's there
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(writemodel_db._engine, future=True) as sess, sess.begin():
         sess.add(GUID(value=value, type=type))
-    res2 = db.check_id_for_uniqueness(value)
+    res2 = writemodel_db.check_id_for_uniqueness(value)
     assert res2 == type
 
 
 @pytest.mark.asyncio
-async def test_citation_short_term_memory(db):
-    db.add_to_stm(key="a2c4e", value="it worked!")
-    assert db._Database__short_term_memory.get("a2c4e") == "it worked!"
-    res = db.check_citation_for_uniqueness(text_hash="a2c4e")
+async def test_citation_short_term_memory(writemodel_db):
+    writemodel_db.add_to_stm(key="a2c4e", value="it worked!")
+    assert writemodel_db._Database__short_term_memory.get("a2c4e") == "it worked!"
+    res = writemodel_db.check_citation_for_uniqueness(text_hash="a2c4e")
     assert res == "it worked!"
     await asyncio.sleep(0.000001)
-    res = db.check_citation_for_uniqueness(text_hash="a2c4e")
+    res = writemodel_db.check_citation_for_uniqueness(text_hash="a2c4e")
     assert res == None
 
 
 @pytest.mark.asyncio
-async def test_guid_short_term_memory(db):
-    db.add_to_stm(key="a2c4e", value="it worked!")
-    assert db._Database__short_term_memory.get("a2c4e") == "it worked!"
-    res = db.check_id_for_uniqueness(id_="a2c4e")
+async def test_guid_short_term_memory(writemodel_db):
+    writemodel_db.add_to_stm(key="a2c4e", value="it worked!")
+    assert writemodel_db._Database__short_term_memory.get("a2c4e") == "it worked!"
+    res = writemodel_db.check_id_for_uniqueness(id_="a2c4e")
     assert res == "it worked!"
     await asyncio.sleep(0.000001)
-    res = db.check_id_for_uniqueness(id_="a2c4e")
+    res = writemodel_db.check_id_for_uniqueness(id_="a2c4e")
     assert res == None

@@ -143,7 +143,7 @@ class CommandHandler:
             )
         else:
             # create a new meta
-            kwargs = deepcopy(command.payload.meta.kwargs)
+            kwargs = command.payload.meta.kwargs.dict()
 
             pub_date = kwargs.pop("pubDate", None)
             meta = MetaAdded(
@@ -156,7 +156,7 @@ class CommandHandler:
                     title=command.payload.meta.title,
                     publisher=command.payload.meta.publisher,
                     pub_date=pub_date,
-                    kwargs=command.payload.meta.kwargs,
+                    kwargs=kwargs,
                 ),
             )
 
@@ -180,8 +180,8 @@ class CommandHandler:
                 text=command.payload.text,
                 summary_id=summary_id,
                 meta_id=meta.payload.id,
-                access_date=command.payload.meta.kwargs.pop("accessDate", None),
-                page_num=command.payload.meta.kwargs.pop("pageNum", None),
+                access_date=command.payload.meta.kwargs.accessDate,
+                page_num=command.payload.meta.kwargs.pageNum,
             ),
         )
 

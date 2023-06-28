@@ -21,6 +21,7 @@ from the_history_atlas.apps.writemodel.state_manager.event_handler import EventH
 from the_history_atlas.apps.writemodel.state_manager.handler_errors import (
     CitationExistsError,
     CitationMissingFieldsError,
+    MissingResourceError,
 )
 from the_history_atlas.apps.writemodel.state_manager.text_processor import TextHasher
 
@@ -45,10 +46,10 @@ class WriteModelApp:
         database = Database(database_client=database_client)
         hasher = TextHasher()
         self._event_handler = EventHandler(
-            database_instance=database,
+            database_instance=database, hash_text=hasher.get_hash
         )
         self._command_handler = CommandHandler(
-            database_instance=database, hash_text=hasher
+            database_instance=database, hash_text=hasher.get_hash
         )
 
         # subscribe to Event stream
@@ -73,11 +74,6 @@ class WriteModelApp:
             self._events_app.publish_events(events=events)
             return CommandSuccess(token=user.token)
         except CitationExistsError as e:
-            log.info(
-                f"Broker caught error from a duplicate event. "
-                + "If sender included a reply_to value they will receive a "
-                + "message now."
-            )
             return CommandFailed(
                 payload=CommandFailedPayload(
                     reason=f"Citation with ID `{e.GUID}`already exists in database.",
@@ -85,15 +81,16 @@ class WriteModelApp:
                 token=user.token,
             )
         except CitationMissingFieldsError as e:
-            log.info(
-                f"Broker caught an error from a citation missing fields. "
-                + "If sender included a reply_to value they will receive a "
-                + "message now."
-            )
-            log.info(e)
             return CommandFailed(
                 payload=CommandFailedPayload(
                     reason="Citation was missing fields.",
+                ),
+                token=user.token,
+            )
+        except MissingResourceError as e:
+            return CommandFailed(
+                payload=CommandFailedPayload(
+                    reason="A resource referenced by ID in this query was not found.",
                 ),
                 token=user.token,
             )

@@ -12,8 +12,8 @@ class AppManager:
     accounts_app: Accounts
     writemodel_app: WriteModelApp
 
-    def __init__(self):
-        self.config_app = Config()
+    def __init__(self, config_app: Config):
+        self.config_app = config_app
         self.database_app = DatabaseApp(config_app=self.config_app)
         self.events_app = EventStore(
             config=self.config_app, database_client=self.database_app.client()

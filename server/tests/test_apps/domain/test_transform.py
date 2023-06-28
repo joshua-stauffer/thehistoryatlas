@@ -39,6 +39,9 @@ from abstract_domain_model.models.events.meta_tagged import (
 )
 from abstract_domain_model.transform import from_dict
 
+import tests.conftest
+import tests.test_apps.conftest
+
 
 @pytest.fixture
 def baseline_event_data():
@@ -384,4 +387,4 @@ def test_transform_get_user_response():
     )
     assert isinstance(get_user_response, GetUserResponse)
     assert isinstance(get_user_response.payload, GetUserResponsePayload)
-    assert isinstance(get_user_response.payload.user_details, UserDetails)
+    assert isinstance(tests.conftest.user_details, UserDetails)

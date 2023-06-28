@@ -19,8 +19,8 @@ from the_history_atlas.apps.domain.models.accounts.update_user import UpdateUser
 
 
 @pytest.fixture
-def accounts(loaded_db, config):
-    accounts = Accounts(config=config, database_client=loaded_db._engine)
+def accounts(accounts_loaded_db, config):
+    accounts = Accounts(config=config, database_client=accounts_loaded_db._engine)
     return accounts
 
 

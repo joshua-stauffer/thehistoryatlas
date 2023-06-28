@@ -96,11 +96,13 @@ DomainObjectTypes = Union[
 PublishCitationType = type(
     PublishCitation(
         user_id="",
+        token="",
         app_version="",
         timestamp="",
         payload=PublishCitationPayload(
             id="",
             token="",
+            citation="",
             text="",
             summary="",
             summary_id=None,

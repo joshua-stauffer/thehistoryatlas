@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from unittest.mock import Mock
 
 import pytest
-from server.the_history_atlas.apps.writemodel import EventHandler
-from server.the_history_atlas.apps.writemodel import UnknownEventTypeError
+from the_history_atlas.apps.writemodel.state_manager.event_handler import EventHandler
+from the_history_atlas.apps.writemodel.state_manager.handler_errors import (
+    UnknownEventTypeError,
+)
 
 
 @dataclass

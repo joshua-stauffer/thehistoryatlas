@@ -1,6 +1,7 @@
-from abstract_domain_model.models import PublishCitation, PublishCitationPayload
-from abstract_domain_model.models.commands import Person, Place, Time, Meta
-from seed.util import get_version
+from tests.seed.util import get_version
+from the_history_atlas.apps.domain.models import PublishCitation, PublishCitationPayload
+from the_history_atlas.apps.domain.models.commands import Person, Place, Time, Meta
+from the_history_atlas.apps.domain.models.commands.publish_citation import MetaKwargs
 
 PUBLISH_CITATION_DOMAIN_OBJECTS = [
     PublishCitation(
@@ -8,6 +9,7 @@ PUBLISH_CITATION_DOMAIN_OBJECTS = [
         app_version=get_version(),
         timestamp="2022-08-15 21:32:28.133457",
         payload=PublishCitationPayload(
+            token="",
             id="21d1e9cc-af4c-444b-abef-2f9ee851b89b",
             text="In fact, for private purposes Bach had actually put down a bare outline of his professional career for a family Genealogy he was compiling around 1735: No. 24. Joh. Sebastian Bach, youngest son of Joh. Ambrosius Bach, was born in Eisenach in the year 1685 on March 21.",
             summary="J.S. Bach was born in Eisenach on March 21st, 1685.",
@@ -43,7 +45,7 @@ PUBLISH_CITATION_DOMAIN_OBJECTS = [
                 title="Johann Sebastian Bach, The Learned Musician",
                 author="Wolff, Christoph",
                 publisher="W.W. Norton and Company",
-                kwargs={"pageNumber": 3},
+                kwargs=MetaKwargs(pageNum=3),
             ),
         ),
     )

@@ -1,7 +1,6 @@
-from dataclasses import dataclass
+from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
-@dataclass(frozen=True)
-class Credentials:
+class Credentials(ConfiguredBaseModel):
     username: str
     password: str

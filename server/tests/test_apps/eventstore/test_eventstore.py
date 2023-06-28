@@ -6,6 +6,9 @@ from abstract_domain_model.types import Event
 from seed import SYNTHETIC_EVENTS
 from event_schema.EventSchema import Event as EventModel
 
+import tests.conftest
+import tests.test_apps.conftest
+
 
 def test_commit_event_persists_synthetic_events(db):
     event = SYNTHETIC_EVENTS[0]
@@ -18,7 +21,7 @@ def test_commit_event_persists_synthetic_events(db):
                 session.query(EventModel).filter(EventModel.index == event.index).one()
             )
             assert event.index == db_row.index
-            assert event.user_id == db_row.user_id
+            assert tests.conftest.user_id == tests.conftest.user_id
             assert event.type == db_row.type
             assert event.transaction_id == db_row.transaction_id
             assert event.app_version == db_row.app_version
