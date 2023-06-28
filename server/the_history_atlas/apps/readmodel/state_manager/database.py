@@ -7,6 +7,7 @@ from typing import Tuple, Union, Optional, List, Dict
 from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import Session
 
+from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
     Source as ADMSource,
@@ -30,10 +31,8 @@ log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, config, stm_timeout: int = 5):
-        self._engine = self._connect(
-            uri=config.DB_URI, debug=config.DEBUG, retries=-1, timeout=1  # infinite
-        )
+    def __init__(self, engine: DatabaseClient, stm_timeout: int = 5):
+        self._engine = engine
         # initialize the db
         Base.metadata.create_all(self._engine)
         self.__short_term_memory = dict()
@@ -42,26 +41,10 @@ class Database:
         self._entity_trie = Trie(self.get_all_entity_names())
         self._source_trie = Trie(self.get_all_source_titles_and_authors())
 
-    def _connect(self, uri: str, debug: bool, retries: int = -1, timeout=30):
-
-        while True:
-            # while retries != 0:  # negative number allows infinite retries
-            try:
-                eng = create_engine(uri, echo=debug, echo_pool=True, future=True)
-                return eng
-            except BaseException:
-                print(f"hit exception {e}")
-                retries -= 1
-                sleep(timeout)
-
-        raise Exception("Exceeded max retries -- cannot connect to database.")
-
     # QUERIES
 
     def get_citation(self, citation_guid: str) -> dict:
         """Resolves citation GUID to its value in the database"""
-        # NOTE: refactored as part of resolving issue 11 on 6.14.21
-        #       previously known as get_citations, and returned a list
         log.debug(f"Looking up citation for citation GUID {citation_guid}")
         with Session(self._engine, future=True) as session:
             res = session.execute(
@@ -69,7 +52,7 @@ class Database:
             ).scalar_one_or_none()
             if res:
                 return {
-                    "guid": citation_guid,
+                    "id": citation_guid,
                     "text": res.text,
                     "meta": {"accessDate": res.access_date, "pageNum": res.page_num},
                     "source_id": res.source_id,
@@ -143,7 +126,7 @@ class Database:
             {
                 "year": year,
                 "count": timeline_dict[year]["count"],
-                "root_guid": timeline_dict[year]["root_guid"],
+                "root_id": timeline_dict[year]["root_guid"],
             }
             for year in timeline_dict.keys()
         ]
@@ -192,7 +175,7 @@ class Database:
                 res.append(
                     {
                         "type": entity.type,
-                        "guid": guid,
+                        "id": guid,
                         "citation_count": len(entity.tag_instances),
                         "names": name_list,
                         "first_citation_date": min_time,
