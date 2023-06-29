@@ -13,14 +13,14 @@ from the_history_atlas.apps.domain.models.readmodel.queries.get_manifest import 
 )
 from the_history_atlas.apps.domain.models.readmodel.queries.get_entity_summaries_by_name import (
     GetEntitySummariesByName,
-    EntitySummariesByNameResult,
+    EntitySummariesByName,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries.entity_summary import (
     EntitySummary,
 )
-from the_history_atlas.apps.domain.models.readmodel.queries.get_entity_summaries_by_name_batch import (
+from the_history_atlas.apps.domain.models.readmodel.queries.get_entity_ids_by_names import (
     GetEntityIDsByNames,
-    EntityIDsByNamesResult,
+    EntityIDsByNames,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries.get_fuzzy_search_by_name import (
     GetFuzzySearchByName,
@@ -31,5 +31,5 @@ from the_history_atlas.apps.domain.models.readmodel.queries.get_entity_summaries
 )
 from the_history_atlas.apps.domain.models.readmodel.queries.get_place_by_coords import (
     GetPlaceByCoords,
-    GetPlaceByCoordsResult,
+    PlaceByCoords,
 )

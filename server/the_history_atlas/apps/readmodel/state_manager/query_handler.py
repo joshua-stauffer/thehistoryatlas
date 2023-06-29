@@ -16,9 +16,9 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
     FuzzySearchByName,
     GetEntitySummariesByIDs,
     GetPlaceByCoords,
-    GetPlaceByCoordsResult,
-    EntitySummariesByNameResult,
-    EntityIDsByNamesResult,
+    PlaceByCoords,
+    EntitySummariesByName,
+    EntityIDsByNames,
 )
 from the_history_atlas.apps.readmodel.errors import (
     UnknownManifestTypeError,
@@ -63,23 +63,21 @@ class QueryHandler:
 
     def get_entity_summaries_by_name(
         self, query: GetEntitySummariesByName
-    ) -> EntitySummariesByNameResult:
+    ) -> EntitySummariesByName:
         """Fetch a list of guids associated with a given name"""
         name_ids = self._db.get_guids_by_name(query.name)
         entity_summaries = self._db.get_entity_summary_by_guid_batch(name_ids)
-        return EntitySummariesByNameResult.parse_obj(
+        return EntitySummariesByName.parse_obj(
             {"ids": name_ids, "summaries": entity_summaries}
         )
 
-    def get_entity_ids_by_names(
-        self, query: GetEntityIDsByNames
-    ) -> EntityIDsByNamesResult:
+    def get_entity_ids_by_names(self, query: GetEntityIDsByNames) -> EntityIDsByNames:
         """Fetch GUIDs for a series of names. Used internally by other services."""
         name_ids_map: dict[str, list[str]] = dict()
         for name in query.names:
             ids = self._db.get_guids_by_name(name)
             name_ids_map[name] = ids
-        return EntityIDsByNamesResult(names=name_ids_map)
+        return EntityIDsByNames(names=name_ids_map)
 
     def get_fuzzy_search_by_name(
         self, query: GetFuzzySearchByName
@@ -98,11 +96,9 @@ class QueryHandler:
             for entity_summary in entity_summaries
         ]
 
-    def get_place_by_coords(self, query: GetPlaceByCoords) -> GetPlaceByCoordsResult:
+    def get_place_by_coords(self, query: GetPlaceByCoords) -> PlaceByCoords:
         """Resolve a place, if any, from a set of latitude and longitude"""
         id = self._db.get_place_by_coords(
             latitude=query.latitude, longitude=query.longitude
         )
-        return GetPlaceByCoordsResult(
-            latitude=query.latitude, longitude=query.longitude, id=id
-        )
+        return PlaceByCoords(latitude=query.latitude, longitude=query.longitude, id=id)

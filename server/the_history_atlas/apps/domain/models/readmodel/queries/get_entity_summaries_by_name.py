@@ -8,6 +8,6 @@ class GetEntitySummariesByName(ConfiguredBaseModel):
     name: str
 
 
-class EntitySummariesByNameResult(ConfiguredBaseModel):
+class EntitySummariesByName(ConfiguredBaseModel):
     ids: List[str]
     summaries: List[EntitySummary]

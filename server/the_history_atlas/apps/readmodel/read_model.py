@@ -17,7 +17,7 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
     FuzzySearchByName,
     GetEntitySummariesByIDs,
     GetPlaceByCoords,
-    GetPlaceByCoordsResult,
+    PlaceByCoords,
 )
 from the_history_atlas.apps.domain.transform import from_dict
 from the_history_atlas.apps.readmodel.api.api import GQLApi
@@ -75,5 +75,5 @@ class ReadModel:
     ) -> List[EntitySummary]:
         return self._query_handler.get_entity_summaries_by_id(query)
 
-    def get_place_by_coords(self, query: GetPlaceByCoords) -> GetPlaceByCoordsResult:
+    def get_place_by_coords(self, query: GetPlaceByCoords) -> PlaceByCoords:
         return self._query_handler.get_place_by_coords(query)

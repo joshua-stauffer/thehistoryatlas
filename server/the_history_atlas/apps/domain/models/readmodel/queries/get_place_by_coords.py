@@ -6,7 +6,7 @@ class GetPlaceByCoords(ConfiguredBaseModel):
     longitude: float
 
 
-class GetPlaceByCoordsResult(ConfiguredBaseModel):
+class PlaceByCoords(ConfiguredBaseModel):
     id: str | None
     latitude: float
     longitude: float
