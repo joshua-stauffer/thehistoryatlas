@@ -15,7 +15,7 @@ services:
     provisioner:
         build:
             context:
-                provisioner
+                test_provisioner
         depends_on:
             - db
         restart: "no"

@@ -27,8 +27,6 @@ class EventHandler:
     def __init__(self, database_instance):
         self._db = database_instance
         self._event_handlers = self._map_event_handlers()
-        # using this for now, may need to transition to a different solution
-        # if the database gets really large in production
         self._event_id_set = set()
 
     def handle_event(self, event: Event):

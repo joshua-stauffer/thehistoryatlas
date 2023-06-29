@@ -1,10 +1,9 @@
 import asyncio
 import logging
 from dataclasses import asdict
-from time import sleep
 from typing import Tuple, Union, Optional, List, Dict
 
-from sqlalchemy import create_engine, select, func
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -12,7 +11,7 @@ from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
     Source as ADMSource,
 )
-from the_history_atlas.apps.readmodel.state_manager.schema import (
+from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
     History,
@@ -25,7 +24,7 @@ from the_history_atlas.apps.readmodel.state_manager.schema import (
     Time,
     Source,
 )
-from the_history_atlas.apps.readmodel.state_manager.trie import Trie
+from the_history_atlas.apps.readmodel.trie import Trie
 
 log = logging.getLogger(__name__)
 
@@ -610,7 +609,7 @@ class Database:
         if old_string:
             if not new_string_guid:
                 raise Exception(
-                    f"Update_trie was provided with old_string {new_string} but not a new_string_guid."
+                    f"Update_trie was provided with old_string {old_string} but not a new_string_guid."
                 )
             self._entity_trie.delete(string=old_string, guid=old_string_guid)
 

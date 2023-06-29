@@ -111,3 +111,5 @@ PublishCitationType = type(
         ),
     )
 )
+
+EntityType = Literal["PERSON", "PLACE", "TIME"]

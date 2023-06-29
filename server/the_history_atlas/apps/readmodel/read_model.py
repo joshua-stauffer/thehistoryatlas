@@ -2,6 +2,7 @@ import logging
 from typing import Dict, List
 
 from the_history_atlas.apps.database import DatabaseClient
+from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetSummariesByID,
     Summary,
@@ -12,19 +13,19 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetEntitySummariesByName,
     EntitySummary,
     GetEntityIDsByNames,
-    EntitySummariesByNameBatchResult,
+    EntityIDsByNames,
     GetFuzzySearchByName,
     FuzzySearchByName,
     GetEntitySummariesByIDs,
     GetPlaceByCoords,
     PlaceByCoords,
+    EntitySummariesByName,
 )
 from the_history_atlas.apps.domain.transform import from_dict
-from the_history_atlas.apps.readmodel.api.api import GQLApi
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.readmodel.state_manager.database import Database
-from the_history_atlas.apps.readmodel.state_manager.event_handler import EventHandler
-from the_history_atlas.apps.readmodel.state_manager.query_handler import QueryHandler
+from the_history_atlas.apps.readmodel.database import Database
+from the_history_atlas.apps.readmodel.event_handler import EventHandler
+from the_history_atlas.apps.readmodel.query_handler import QueryHandler
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
@@ -36,11 +37,6 @@ class ReadModel:
         self._database = Database(engine=database_client)
         self._query_handler = QueryHandler(database_instance=self._database)
         self._event_handler = EventHandler(database_instance=self._database)
-
-        self.api = GQLApi(
-            default_entity_handler=self.manager.db.get_default_entity,
-            search_sources_handler=self.manager.db.get_sources_by_search_term,
-        )
 
     def handle_event(self, event: Dict):
         event = from_dict(event)
@@ -57,17 +53,17 @@ class ReadModel:
 
     def get_entity_summaries_by_name(
         self, query: GetEntitySummariesByName
-    ) -> List[EntitySummary]:
+    ) -> EntitySummariesByName:
         return self._query_handler.get_entity_summaries_by_name(query)
 
     def get_entity_summaries_by_name_batch(
         self, query: GetEntityIDsByNames
-    ) -> EntitySummariesByNameBatchResult:
+    ) -> EntityIDsByNames:
         return self._query_handler.get_entity_ids_by_names(query)
 
     def get_fuzzy_search_by_name(
         self, query: GetFuzzySearchByName
-    ) -> FuzzySearchByName:
+    ) -> List[FuzzySearchByName]:
         return self._query_handler.get_fuzzy_search_by_name(query)
 
     def get_entity_summaries_by_ids(
@@ -77,3 +73,9 @@ class ReadModel:
 
     def get_place_by_coords(self, query: GetPlaceByCoords) -> PlaceByCoords:
         return self._query_handler.get_place_by_coords(query)
+
+    def get_default_entity(self) -> DefaultEntity:
+        return self._database.get_default_entity()
+
+    def get_sources_by_search_term(self, search_term: str) -> List[Source]:
+        return self._database.get_sources_by_search_term(search_term=search_term)

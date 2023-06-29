@@ -1,0 +1,22 @@
+
+
+type DefaultEntity {
+    id: String!
+    type: EntityType!
+    name: String!
+}
+
+enum EntityType {
+    TIME
+    PERSON
+    PLACE
+}
+
+type Source {
+    id: String!
+    title: String!
+    author: String!
+    publisher: String!
+    pubDate: String!
+}
+

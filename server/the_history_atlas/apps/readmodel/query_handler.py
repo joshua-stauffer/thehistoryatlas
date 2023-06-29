@@ -23,7 +23,7 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
 from the_history_atlas.apps.readmodel.errors import (
     UnknownManifestTypeError,
 )
-from the_history_atlas.apps.readmodel.state_manager.database import Database
+from the_history_atlas.apps.readmodel.database import Database
 
 log = logging.getLogger(__name__)
 
@@ -81,10 +81,10 @@ class QueryHandler:
 
     def get_fuzzy_search_by_name(
         self, query: GetFuzzySearchByName
-    ) -> FuzzySearchByName:
+    ) -> List[FuzzySearchByName]:
         """Perform a fuzzy search on the given string and return possible completions."""
         results = self._db.get_name_by_fuzzy_search(query.name)
-        return FuzzySearchByName.parse_obj({"name": query.name, "results": results})
+        return [FuzzySearchByName.parse_obj(res) for res in results]
 
     def get_entity_summaries_by_id(
         self, query: GetEntitySummariesByIDs

@@ -20,6 +20,12 @@ type Query {
     GetUser(token: String!): AccountsGenericResponse!
 
     GetPlaceByCoords(latitude: Float!, longitude: Float!): PlaceByCoordsResponse!
+
+    defaultEntity: DefaultEntity!
+
+    searchSources(searchTerm: String!): [Source]
+
+
 }
 
 
