@@ -5,7 +5,7 @@ from pydantic import Field
 from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
-class GetSummariesByID(ConfiguredBaseModel):
+class GetSummariesByIDs(ConfiguredBaseModel):
     summary_ids: List[str]
 
 

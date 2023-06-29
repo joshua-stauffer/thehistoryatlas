@@ -1,10 +1,10 @@
 import logging
-from typing import Dict, List
+from typing import List
 
 from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from the_history_atlas.apps.domain.models.readmodel.queries import (
-    GetSummariesByID,
+    GetSummariesByIDs,
     Summary,
     GetCitationByID,
     Citation,
@@ -21,8 +21,8 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
     PlaceByCoords,
     EntitySummariesByName,
 )
-from the_history_atlas.apps.domain.transform import from_dict
 from the_history_atlas.apps.config import Config
+from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.database import Database
 from the_history_atlas.apps.readmodel.event_handler import EventHandler
 from the_history_atlas.apps.readmodel.query_handler import QueryHandler
@@ -31,18 +31,17 @@ logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
 
-class ReadModel:
+class ReadModelApp:
     def __init__(self, config_app: Config, database_client: DatabaseClient):
         self.config = config_app
         self._database = Database(engine=database_client)
         self._query_handler = QueryHandler(database_instance=self._database)
         self._event_handler = EventHandler(database_instance=self._database)
 
-    def handle_event(self, event: Dict):
-        event = from_dict(event)
+    def handle_event(self, event: Event):
         self._event_handler.handle_event(event=event)
 
-    def get_summaries_by_id(self, query: GetSummariesByID) -> List[Summary]:
+    def get_summaries_by_ids(self, query: GetSummariesByIDs) -> List[Summary]:
         return self._query_handler.get_summaries_by_id(query)
 
     def get_citation_by_id(self, query: GetCitationByID) -> Citation:
@@ -56,9 +55,10 @@ class ReadModel:
     ) -> EntitySummariesByName:
         return self._query_handler.get_entity_summaries_by_name(query)
 
-    def get_entity_summaries_by_name_batch(
+    def get_entity_summaries_by_names(
         self, query: GetEntityIDsByNames
     ) -> EntityIDsByNames:
+        # todo
         return self._query_handler.get_entity_ids_by_names(query)
 
     def get_fuzzy_search_by_name(

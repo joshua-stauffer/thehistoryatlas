@@ -25,21 +25,21 @@ from the_history_atlas.api.resolvers.readmodel.get_citation_by_id import (
 from the_history_atlas.api.resolvers.readmodel.get_coordinates_by_name import (
     resolve_get_coordinates_by_name,
 )
-from the_history_atlas.api.resolvers.readmodel.get_entity_summaries_by_id import (
-    resolve_get_entity_summaries_by_id,
+from the_history_atlas.api.resolvers.readmodel.get_summaries_by_ids import (
+    resolve_get_summaries_by_ids,
 )
 from the_history_atlas.api.resolvers.readmodel.get_fuzzy_search_by_name import (
     resolve_get_fuzzy_search_by_name,
 )
-from the_history_atlas.api.resolvers.readmodel.get_ids_by_name import (
-    resolve_get_ids_by_name,
+from the_history_atlas.api.resolvers.readmodel.get_entity_summaries_by_name import (
+    resolve_get_entity_summaries_by_name,
 )
 from the_history_atlas.api.resolvers.readmodel.get_manifest import resolve_get_manifest
 from the_history_atlas.api.resolvers.readmodel.get_place_by_coords import (
     resolve_get_place_by_coords,
 )
-from the_history_atlas.api.resolvers.readmodel.get_summaries_by_id import (
-    resolve_get_summaries_by_id,
+from the_history_atlas.api.resolvers.readmodel.get_entity_summaries_by_ids import (
+    resolve_get_entity_summaries_by_ids,
 )
 from the_history_atlas.api.resolvers.readmodel.get_text_analysis import (
     resolve_get_text_analysis_by_name,

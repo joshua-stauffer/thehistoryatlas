@@ -3,7 +3,7 @@ from the_history_atlas.apps.domain.models.readmodel.queries.get_citation_by_id i
     Citation,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries.get_summaries_by_id import (
-    GetSummariesByID,
+    GetSummariesByIDs,
     Summary,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries.get_manifest import (

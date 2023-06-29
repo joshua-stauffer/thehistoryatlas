@@ -4,7 +4,7 @@ from typing import List
 from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetCitationByID,
     Citation,
-    GetSummariesByID,
+    GetSummariesByIDs,
     Summary,
     GetManifest,
     Manifest,
@@ -32,7 +32,7 @@ class QueryHandler:
     def __init__(self, database_instance: Database):
         self._db = database_instance
 
-    def get_summaries_by_id(self, query: GetSummariesByID) -> List[Summary]:
+    def get_summaries_by_id(self, query: GetSummariesByIDs) -> List[Summary]:
         """Fetch a series of summaries by a list of guids"""
         summaries = self._db.get_summaries(summary_guids=query.summary_ids)
         return [Summary.parse_obj(summary) for summary in summaries]

@@ -1,1 +1,1 @@
-from the_history_atlas.apps.readmodel.read_model import ReadModel
+from the_history_atlas.apps.readmodel.read_model import ReadModelApp

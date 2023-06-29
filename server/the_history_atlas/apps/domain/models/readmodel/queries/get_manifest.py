@@ -1,10 +1,11 @@
 from typing import Literal, List
 
 from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
+from the_history_atlas.apps.domain.types import EntityType
 
 
 class GetManifest(ConfiguredBaseModel):
-    entity_type = Literal["PERSON", "PLACE", "TIME"]
+    entity_type = EntityType
     id: str
 
 
