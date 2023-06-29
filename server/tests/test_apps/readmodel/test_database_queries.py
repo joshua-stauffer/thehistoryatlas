@@ -5,14 +5,17 @@ from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models.readmodel import DefaultEntity, Source as ADMSource
-from server.the_history_atlas import Citation, Source
-from server.the_history_atlas import TagInstance
-from server.the_history_atlas import Time
-from server.the_history_atlas import Person
-from server.the_history_atlas import Place
-from server.the_history_atlas import Summary
-from server.the_history_atlas import Trie
+from the_history_atlas.apps.domain.models.readmodel import (
+    DefaultEntity,
+    Source as ADMSource,
+)
+from the_history_atlas.apps.readmodel.schema import Citation, Source
+from the_history_atlas.apps.readmodel.schema import TagInstance
+from the_history_atlas.apps.readmodel.schema import Time
+from the_history_atlas.apps.readmodel.schema import Person
+from the_history_atlas.apps.readmodel.schema import Place
+from the_history_atlas.apps.readmodel.schema import Summary
+from the_history_atlas.apps.readmodel.trie import Trie
 
 log = logging.getLogger(__name__)
 log.setLevel("DEBUG")
@@ -34,7 +37,7 @@ def source_author():
 
 
 @pytest.fixture
-def db_tuple(db, source_title, source_author):
+def db_tuple(readmodel_db, source_title, source_author, engine):
     """
     This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
     of people, places, and times (each). It then associates each citation
@@ -121,15 +124,15 @@ def db_tuple(db, source_title, source_author):
             )
         )
 
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
-            db._handle_name(person.names, person.guid, session)
+            readmodel_db._handle_name(person.names, person.guid, session)
         for place in places:
-            db._handle_name(place.names, place.guid, session)
+            readmodel_db._handle_name(place.names, place.guid, session)
         for time in times:
-            db._handle_name(time.name, time.guid, session)
+            readmodel_db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
         "summary_guids": sum_guids,
@@ -139,7 +142,7 @@ def db_tuple(db, source_title, source_author):
         "time_guids": time_guids,
         "names": names,
     }
-    return db, db_dict
+    return readmodel_db, db_dict
 
 
 def load_db(db_tuple):
@@ -150,10 +153,10 @@ def load_db(db_tuple):
 # test that database preconditions are valid
 
 
-def test_each_summary_has_tags(db_tuple):
+def test_each_summary_has_tags(db_tuple, engine):
     db, db_dict = db_tuple
     summary_guids = db_dict["summary_guids"]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         for guid in summary_guids:
             res = session.execute(
                 select(Summary).where(Summary.guid == guid)
@@ -161,10 +164,10 @@ def test_each_summary_has_tags(db_tuple):
             assert len(res.tags) > 0
 
 
-def test_each_person_has_tags(db_tuple):
+def test_each_person_has_tags(db_tuple, engine):
     db, db_dict = db_tuple
     person_guids = db_dict["person_guids"]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         for guid in person_guids:
             res = session.execute(
                 select(Person).where(Person.guid == guid)
@@ -172,28 +175,28 @@ def test_each_person_has_tags(db_tuple):
             assert len(res.tag_instances) > 0
 
 
-def test_each_place_has_tags(db_tuple):
+def test_each_place_has_tags(db_tuple, engine):
     db, db_dict = db_tuple
     place_guids = db_dict["place_guids"]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         for guid in place_guids:
             res = session.execute(select(Place).where(Place.guid == guid)).scalar_one()
             assert len(res.tag_instances) > 0
 
 
-def test_each_time_has_tags(db_tuple):
+def test_each_time_has_tags(db_tuple, engine):
     db, db_dict = db_tuple
     time_guids = db_dict["time_guids"]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         for guid in time_guids:
             res = session.execute(select(Time).where(Time.guid == guid)).scalar_one()
             assert len(res.tag_instances) > 0
 
 
-def test_each_summary_has_a_timetag(db_tuple):
+def test_each_summary_has_a_timetag(db_tuple, engine):
     db, db_dict = db_tuple
     summary_guids = db_dict["summary_guids"]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         for guid in summary_guids:
             res = session.execute(
                 select(Summary).where(Summary.guid == guid)
@@ -201,10 +204,10 @@ def test_each_summary_has_a_timetag(db_tuple):
             assert any(t.tag.type == "TIME" for t in res.tags)
 
 
-def test_all_summaries_have_timetag_cache(db_tuple):
+def test_all_summaries_have_timetag_cache(db_tuple, engine):
     db, db_dict = db_tuple
     summary_guids = db_dict["summary_guids"]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         for guid in summary_guids:
             res = session.execute(
                 select(Summary).where(Summary.guid == guid)
@@ -212,9 +215,9 @@ def test_all_summaries_have_timetag_cache(db_tuple):
             assert isinstance(res.time_tag, str)
 
 
-def test_all_citations_have_a_source(db_tuple):
+def test_all_citations_have_a_source(db_tuple, engine):
     db, db_dict = db_tuple
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         citations = session.query(Citation).all()
         for citation in citations:
             assert citation.source.id
@@ -360,9 +363,9 @@ def test_get_guids_by_name_returns_empty(db_tuple):
     assert len(res) == 0
 
 
-def test_tag_instances(db_tuple):
+def test_tag_instances(db_tuple, engine):
     db, db_dict = db_tuple
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         res = session.execute(select(TagInstance)).scalars()
         count = [1 for _ in res]
         assert len(count) == 300
@@ -449,12 +452,12 @@ def test_get_sources_by_search_term_title(db_tuple, source_title):
         assert isinstance(source.pub_date, str)
 
 
-def test_get_place_by_coords(db_tuple):
+def test_get_place_by_coords(db_tuple, engine):
     """Cover successful path - coordinates are found"""
     db, db_dict = db_tuple
     # find a set of coordinates to query
     place_guid = db_dict["place_guids"][0]
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         res = session.execute(
             select(Place).where(Place.guid == place_guid)
         ).scalar_one()

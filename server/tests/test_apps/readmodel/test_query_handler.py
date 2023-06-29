@@ -2,9 +2,12 @@ import random
 from uuid import UUID, uuid4
 
 import pytest
-from server.the_history_atlas import UnknownManifestTypeError, UnknownQueryError
-from server.the_history_atlas import QueryHandler
-from server.the_history_atlas import (
+from the_history_atlas.apps.readmodel.errors import (
+    UnknownManifestTypeError,
+    UnknownQueryError,
+)
+from the_history_atlas.apps.readmodel.query_handler import QueryHandler
+from the_history_atlas.apps.readmodel.schema import (
     Citation,
     Person,
     Place,
@@ -22,7 +25,7 @@ FUZZ_ITERATIONS = 10
 
 
 @pytest.fixture
-def db_tuple(db):
+def db_tuple(readmodel_db, engine):
     """
     This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
     of people, places, and times (each). It then associates each citation
@@ -104,15 +107,15 @@ def db_tuple(db):
             )
         )
 
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add_all([*summaries, *citations, *people, *places, *times])
         # manually update names
         for person in people:
-            db._handle_name(person.names, person.guid, session)
+            readmodel_db._handle_name(person.names, person.guid, session)
         for place in places:
-            db._handle_name(place.names, place.guid, session)
+            readmodel_db._handle_name(place.names, place.guid, session)
         for time in times:
-            db._handle_name(time.name, time.guid, session)
+            readmodel_db._handle_name(time.name, time.guid, session)
         session.commit()
     db_dict = {
         "summary_guids": sum_guids,
@@ -122,7 +125,7 @@ def db_tuple(db):
         "time_guids": time_guids,
         "names": names,
     }
-    return db, db_dict
+    return readmodel_db, db_dict
 
 
 @pytest.fixture

@@ -30,8 +30,8 @@ log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, engine: DatabaseClient, stm_timeout: int = 5):
-        self._engine = engine
+    def __init__(self, database_client: DatabaseClient, stm_timeout: int = 5):
+        self._engine = database_client
         # initialize the db
         Base.metadata.create_all(self._engine)
         self.__short_term_memory = dict()

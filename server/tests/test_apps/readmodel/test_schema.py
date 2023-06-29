@@ -2,21 +2,21 @@ import pytest
 from uuid import uuid4
 from sqlalchemy.orm import Session
 
-from server.the_history_atlas import Source
-from server.the_history_atlas import Citation
-from server.the_history_atlas import TagInstance
-from server.the_history_atlas import Tag
-from server.the_history_atlas import Time
-from server.the_history_atlas import Person
-from server.the_history_atlas import Place
-from server.the_history_atlas import Name
-from server.the_history_atlas import Summary
-from server.the_history_atlas import EmptyNameError
+from the_history_atlas.apps.readmodel.schema import Source
+from the_history_atlas.apps.readmodel.schema import Citation
+from the_history_atlas.apps.readmodel.schema import TagInstance
+from the_history_atlas.apps.readmodel.schema import Tag
+from the_history_atlas.apps.readmodel.schema import Time
+from the_history_atlas.apps.readmodel.schema import Person
+from the_history_atlas.apps.readmodel.schema import Place
+from the_history_atlas.apps.readmodel.schema import Name
+from the_history_atlas.apps.readmodel.schema import Summary
+from the_history_atlas.apps.readmodel.schema import EmptyNameError
 
 
 @pytest.fixture
-def engine(db):
-    return db._engine
+def engine(readmodel_db):
+    return readmodel_db._engine
 
 
 @pytest.fixture
@@ -181,7 +181,7 @@ def test_name_on_del():
     assert len(n.guids) == 1
 
 
-def test_create_source(db):
+def test_create_source(readmodel_db):
     source = Source(
         id="cd71d777-f8e6-4b82-bdca-96ef47dcaeb7",
         title="new source",
@@ -189,6 +189,6 @@ def test_create_source(db):
         publisher="publisher name",
         pub_date="1/1/2023",
     )
-    with Session(db._engine, future=True) as session:
+    with Session(readmodel_db._engine, future=True) as session:
         session.add(source)
         session.commit()

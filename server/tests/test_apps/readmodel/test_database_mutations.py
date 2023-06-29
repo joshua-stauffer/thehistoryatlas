@@ -5,13 +5,13 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from server.the_history_atlas import Source
-from server.the_history_atlas import Citation
-from server.the_history_atlas import Time
-from server.the_history_atlas import Person
-from server.the_history_atlas import Place
-from server.the_history_atlas import Name
-from server.the_history_atlas import Summary
+from the_history_atlas.apps.readmodel.schema import Source
+from the_history_atlas.apps.readmodel.schema import Citation
+from the_history_atlas.apps.readmodel.schema import Time
+from the_history_atlas.apps.readmodel.schema import Person
+from the_history_atlas.apps.readmodel.schema import Place
+from the_history_atlas.apps.readmodel.schema import Name
+from the_history_atlas.apps.readmodel.schema import Summary
 
 
 @pytest.fixture
@@ -151,28 +151,28 @@ def was_called():
     return hit, outer
 
 
-def test_database_exists(db):
-    assert db != None
+def test_database_exists(readmodel_db):
+    assert readmodel_db != None
 
 
 @pytest.mark.asyncio
-async def test_create_summary(db, summary_data_1):
+async def test_create_summary(readmodel_db, summary_data_1):
     ...
 
 
 @pytest.mark.asyncio
-async def test_create_citation(db, citation_data_1, summary_guid):
-    assert len(db._Database__short_term_memory.keys()) == 0
+async def test_create_citation(readmodel_db, citation_data_1, summary_guid):
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 0
     # seed database with a root summary
-    db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
-    db.create_citation(
+    readmodel_db.create_citation(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
-    assert len(db._Database__short_term_memory.keys()) == 1
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
 
     # double check that citation has made it into the database
-    with Session(db._engine, future=True) as sess:
+    with Session(readmodel_db._engine, future=True) as sess:
         res = sess.execute(
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
@@ -181,7 +181,7 @@ async def test_create_citation(db, citation_data_1, summary_guid):
 
     # check that short term memory is cleared
     await asyncio.sleep(0.000001)
-    assert len(db._Database__short_term_memory.keys()) == 0
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 0
 
 
 # test person
@@ -189,7 +189,7 @@ async def test_create_citation(db, citation_data_1, summary_guid):
 
 @pytest.mark.asyncio
 async def test_handle_person_update_new_no_cache(
-    db,
+    readmodel_db,
     summary_guid,
     was_called,
     person_guid,
@@ -197,20 +197,21 @@ async def test_handle_person_update_new_no_cache(
     stop_char,
     person_name_1,
     monkeypatch,
+    engine,
 ):
     # UPDATE 6.14.21: cache is now always checked
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # seed the db with a summary
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
-    db.handle_person_update(
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid=person_guid,
         person_name=person_name_1,
@@ -219,7 +220,7 @@ async def test_handle_person_update_new_no_cache(
         is_new=True,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(
             select(Person).where(Person.guid == person_guid)
         ).scalar_one()
@@ -239,7 +240,7 @@ async def test_handle_person_update_new_no_cache(
 
 @pytest.mark.asyncio
 async def test_handle_person_update_existing_no_cache(
-    db,
+    readmodel_db,
     summary_guid,
     person_guid,
     start_char,
@@ -248,22 +249,23 @@ async def test_handle_person_update_existing_no_cache(
     person_name_2,
     was_called,
     monkeypatch,
+    engine,
 ):
     # UPDATE 6.14.21: cache is now always checked
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # seed the db with a summary and a person
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
         sess.add(Person(guid=person_guid, names=person_name_1))
 
-    db.handle_person_update(
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid=person_guid,
         person_name=person_name_2,
@@ -272,7 +274,7 @@ async def test_handle_person_update_existing_no_cache(
         is_new=False,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(
             select(Person).where(Person.guid == person_guid)
         ).scalar_one()
@@ -292,7 +294,7 @@ async def test_handle_person_update_existing_no_cache(
 
 @pytest.mark.asyncio
 async def test_handle_person_update_new_and_cache(
-    db,
+    readmodel_db,
     summary_guid,
     person_guid,
     start_char,
@@ -301,18 +303,19 @@ async def test_handle_person_update_new_and_cache(
     person_name_2,
     was_called,
     monkeypatch,
+    engine,
 ):
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    db.create_summary(summary_guid=summary_guid, text="not important")
-    assert len(db._Database__short_term_memory.keys()) == 1
-    db.handle_person_update(
+    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid=person_guid,
         person_name=person_name_1,
@@ -321,7 +324,7 @@ async def test_handle_person_update_new_and_cache(
         is_new=True,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(
             select(Person).where(Person.guid == person_guid)
         ).scalar_one()
@@ -341,7 +344,7 @@ async def test_handle_person_update_new_and_cache(
 
 @pytest.mark.asyncio
 async def test_handle_person_update_existing_and_cache(
-    db,
+    readmodel_db,
     summary_guid,
     person_guid,
     start_char,
@@ -350,20 +353,21 @@ async def test_handle_person_update_existing_and_cache(
     person_name_2,
     was_called,
     monkeypatch,
+    engine,
 ):
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    db.create_summary(summary_guid=summary_guid, text="not important")
-    assert len(db._Database__short_term_memory.keys()) == 1
-    with Session(db._engine, future=True) as sess, sess.begin():
+    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Person(guid=person_guid, names=person_name_1))
-    db.handle_person_update(
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid=person_guid,
         person_name=person_name_2,
@@ -372,7 +376,7 @@ async def test_handle_person_update_existing_and_cache(
         is_new=False,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(
             select(Person).where(Person.guid == person_guid)
         ).scalar_one()
@@ -395,7 +399,7 @@ async def test_handle_person_update_existing_and_cache(
 
 @pytest.mark.asyncio
 async def test_handle_place_update_new_no_cache(
-    db,
+    readmodel_db,
     summary_guid,
     was_called,
     place_guid,
@@ -405,21 +409,22 @@ async def test_handle_place_update_new_no_cache(
     coords,
     geoshape,
     monkeypatch,
+    engine,
 ):
     # UPDATE 6.14.21: cache is now always checked
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # seed the db with a summary
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
     lat, long = coords
 
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid,
         place_guid=place_guid,
         place_name=place_name_1,
@@ -431,7 +436,7 @@ async def test_handle_place_update_new_no_cache(
         is_new=True,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
         # check our place details
         assert res.names == place_name_1
@@ -452,7 +457,7 @@ async def test_handle_place_update_new_no_cache(
 
 @pytest.mark.asyncio
 async def test_handle_place_update_existing_no_cache(
-    db,
+    readmodel_db,
     summary_guid,
     place_guid,
     start_char,
@@ -463,17 +468,18 @@ async def test_handle_place_update_existing_no_cache(
     monkeypatch,
     coords,
     geoshape,
+    engine,
 ):
     # UPDATE 6.14.21: cache is now always checked
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
     lat, long = coords
     # seed the db with a citation and a place
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
         sess.add(
@@ -486,7 +492,7 @@ async def test_handle_place_update_existing_no_cache(
             )
         )
 
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid,
         place_guid=place_guid,
         place_name=place_name_2,
@@ -495,7 +501,7 @@ async def test_handle_place_update_existing_no_cache(
         is_new=False,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
         # check our place details
         assert res.names == place_name_1 + "|" + place_name_2
@@ -516,7 +522,7 @@ async def test_handle_place_update_existing_no_cache(
 
 @pytest.mark.asyncio
 async def test_handle_place_update_new_and_cache(
-    db,
+    readmodel_db,
     summary_guid,
     place_guid,
     start_char,
@@ -526,19 +532,20 @@ async def test_handle_place_update_new_and_cache(
     monkeypatch,
     coords,
     geoshape,
+    engine,
 ):
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    db.create_summary(summary_guid=summary_guid, text="not important")
-    assert len(db._Database__short_term_memory.keys()) == 1
+    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     lat, long = coords
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid,
         place_guid=place_guid,
         place_name=place_name_1,
@@ -550,7 +557,7 @@ async def test_handle_place_update_new_and_cache(
         is_new=True,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
         # check our place details
         assert res.names == place_name_1
@@ -568,7 +575,7 @@ async def test_handle_place_update_new_and_cache(
 
 @pytest.mark.asyncio
 async def test_handle_place_update_existing_and_cache(
-    db,
+    readmodel_db,
     summary_guid,
     place_guid,
     start_char,
@@ -579,19 +586,20 @@ async def test_handle_place_update_existing_and_cache(
     monkeypatch,
     coords,
     geoshape,
+    engine,
 ):
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     lat, long = coords
     # this time use create summary to cache summary_guid
-    db.create_summary(summary_guid=summary_guid, text="not important")
-    assert len(db._Database__short_term_memory.keys()) == 1
-    with Session(db._engine, future=True) as sess, sess.begin():
+    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(
             Place(
                 guid=place_guid,
@@ -601,7 +609,7 @@ async def test_handle_place_update_existing_and_cache(
                 geoshape=geoshape,
             )
         )
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid,
         place_guid=place_guid,
         place_name=place_name_2,
@@ -610,7 +618,7 @@ async def test_handle_place_update_existing_and_cache(
         is_new=False,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
         # check our place details
         assert res.names == place_name_1 + "|" + place_name_2
@@ -631,7 +639,7 @@ async def test_handle_place_update_existing_and_cache(
 
 @pytest.mark.asyncio
 async def test_handle_time_update_new_no_cache(
-    db,
+    readmodel_db,
     summary_guid,
     was_called,
     time_guid,
@@ -639,20 +647,21 @@ async def test_handle_time_update_new_no_cache(
     stop_char,
     time_name,
     monkeypatch,
+    engine,
 ):
     # UPDATE 6.14.21: cache is now always checked
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # seed the db with a summary
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
-    db.handle_time_update(
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid,
         time_guid=time_guid,
         time_name=time_name,
@@ -661,7 +670,7 @@ async def test_handle_time_update_new_no_cache(
         is_new=True,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
         # check our time details
         assert res.name == time_name
@@ -679,7 +688,7 @@ async def test_handle_time_update_new_no_cache(
 
 @pytest.mark.asyncio
 async def test_handle_time_update_existing_no_cache(
-    db,
+    readmodel_db,
     summary_guid,
     time_guid,
     start_char,
@@ -687,22 +696,23 @@ async def test_handle_time_update_existing_no_cache(
     time_name,
     was_called,
     monkeypatch,
+    engine,
 ):
     # UPDATE 6.14.21: cache is now always checked
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # seed the db with a summary and a time
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Summary(guid=summary_guid, text="not important"))
 
         sess.add(Time(guid=time_guid, name=time_name))
 
-    db.handle_time_update(
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid,
         time_guid=time_guid,
         time_name=time_name,
@@ -711,7 +721,7 @@ async def test_handle_time_update_existing_no_cache(
         is_new=False,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
         # check our time details
         assert res.name == time_name
@@ -729,7 +739,7 @@ async def test_handle_time_update_existing_no_cache(
 
 @pytest.mark.asyncio
 async def test_handle_time_update_new_and_cache(
-    db,
+    readmodel_db,
     summary_guid,
     time_guid,
     start_char,
@@ -737,18 +747,19 @@ async def test_handle_time_update_new_and_cache(
     time_name,
     was_called,
     monkeypatch,
+    engine,
 ):
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    db.create_summary(summary_guid=summary_guid, text="not important")
-    assert len(db._Database__short_term_memory.keys()) == 1
-    db.handle_time_update(
+    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid,
         time_guid=time_guid,
         time_name=time_name,
@@ -757,7 +768,7 @@ async def test_handle_time_update_new_and_cache(
         is_new=True,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
         # check our time details
         assert res.name == time_name
@@ -775,7 +786,7 @@ async def test_handle_time_update_new_and_cache(
 
 @pytest.mark.asyncio
 async def test_handle_time_update_existing_and_cache(
-    db,
+    readmodel_db,
     summary_guid,
     time_guid,
     start_char,
@@ -783,20 +794,21 @@ async def test_handle_time_update_existing_and_cache(
     time_name,
     was_called,
     monkeypatch,
+    engine,
 ):
 
     # set up cache hit checker
     called, wrapper = was_called
-    wrapped_func = wrapper(db.add_to_stm)
-    monkeypatch.setattr(db, "add_to_stm", wrapped_func)
+    wrapped_func = wrapper(readmodel_db.add_to_stm)
+    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    db.create_summary(summary_guid=summary_guid, text="not important")
-    assert len(db._Database__short_term_memory.keys()) == 1
-    with Session(db._engine, future=True) as sess, sess.begin():
+    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
+    with Session(engine, future=True) as sess, sess.begin():
         sess.add(Time(guid=time_guid, name=time_name))
-    db.handle_time_update(
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid,
         time_guid=time_guid,
         time_name=time_name,
@@ -805,7 +817,7 @@ async def test_handle_time_update_existing_and_cache(
         is_new=False,
     )
 
-    with Session(db._engine, future=True) as sess, sess.begin():
+    with Session(engine, future=True) as sess, sess.begin():
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
         # check our time details
         assert res.name == time_name
@@ -823,17 +835,17 @@ async def test_handle_time_update_existing_and_cache(
 
 @pytest.mark.asyncio
 async def test_add_meta_to_citation_no_extra_args(
-    db, citation_data_1, summary_guid, meta_data_min
+    readmodel_db, citation_data_1, summary_guid, meta_data_min, engine
 ):
     citation_guid, text = citation_data_1
-    db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
-    db.create_citation(
+    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+    readmodel_db.create_citation(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.create_source(citation_id=citation_guid, **meta_data_min)
+    readmodel_db.create_source(citation_id=citation_guid, **meta_data_min)
 
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
         citation = sess.execute(
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
@@ -844,17 +856,17 @@ async def test_add_meta_to_citation_no_extra_args(
 
 @pytest.mark.asyncio
 async def test_add_meta_to_citation_with_extra_args(
-    db, citation_data_1, summary_guid, meta_data_more
+    readmodel_db, citation_data_1, summary_guid, meta_data_more, engine
 ):
-    db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
-    db.create_citation(
+    readmodel_db.create_citation(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
 
-    db.create_source(citation_id=citation_guid, **meta_data_more)
+    readmodel_db.create_source(citation_id=citation_guid, **meta_data_more)
 
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
         citation = sess.execute(
             select(Citation).where(Citation.guid == citation_guid)
         ).scalar_one()
@@ -864,13 +876,15 @@ async def test_add_meta_to_citation_with_extra_args(
 
 
 @pytest.mark.asyncio
-async def test_handle_name_only_new(db, citation_data_1, summary_guid):
-    db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+async def test_handle_name_only_new(
+    readmodel_db, citation_data_1, summary_guid, engine
+):
+    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
-    db.create_citation(
+    readmodel_db.create_citation(
         summary_guid=summary_guid, citation_guid=citation_guid, text=text
     )
-    db.handle_person_update(
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid="test-guid-1",
         person_name="test-name-1",
@@ -878,7 +892,7 @@ async def test_handle_name_only_new(db, citation_data_1, summary_guid):
         stop_char=5,
         is_new=True,
     )
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid,
         place_guid="test-guid-2",
         place_name="test-name-2",
@@ -888,7 +902,7 @@ async def test_handle_name_only_new(db, citation_data_1, summary_guid):
         longitude=random.random(),
         is_new=True,
     )
-    db.handle_time_update(
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid,
         time_guid="test-guid-3",
         time_name="test-name-3",
@@ -896,7 +910,7 @@ async def test_handle_name_only_new(db, citation_data_1, summary_guid):
         stop_char=5,
         is_new=True,
     )
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         names = ["test-name-1", "test-name-2", "test-name-3"]
         guids = ["test-guid-1", "test-guid-2", "test-guid-3"]
         for name, guid in zip(names, guids):
@@ -906,12 +920,14 @@ async def test_handle_name_only_new(db, citation_data_1, summary_guid):
 
 
 @pytest.mark.asyncio
-async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
+async def test_handle_name_with_repeats(
+    readmodel_db, citation_data_1, citation_data_2, engine
+):
     summary_guid_1 = str(uuid4())
     summary_guid_2 = str(uuid4())
     _, text = citation_data_1
-    db.create_summary(summary_guid=summary_guid_1, text=text)
-    db.handle_person_update(
+    readmodel_db.create_summary(summary_guid=summary_guid_1, text=text)
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid_1,
         person_guid="test-guid-1",
         person_name="test-name-1",
@@ -919,7 +935,7 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
         stop_char=5,
         is_new=True,
     )
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid_1,
         place_guid="test-guid-2",
         place_name="test-name-2",
@@ -929,7 +945,7 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
         longitude=random.random(),
         is_new=True,
     )
-    db.handle_time_update(
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid_1,
         time_guid="test-guid-3",
         time_name="test-name-3",
@@ -940,8 +956,8 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
 
     # add a second citation
     _, text_2 = citation_data_2
-    db.create_summary(summary_guid=summary_guid_2, text=text_2)
-    db.handle_person_update(
+    readmodel_db.create_summary(summary_guid=summary_guid_2, text=text_2)
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid_2,
         person_guid="test-guid-4",
         person_name="test-name-1",
@@ -949,7 +965,7 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
         stop_char=5,
         is_new=True,
     )
-    db.handle_place_update(
+    readmodel_db.handle_place_update(
         summary_guid=summary_guid_2,
         place_guid="test-guid-5",
         place_name="test-name-2",
@@ -959,7 +975,7 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
         longitude=random.random(),
         is_new=True,
     )
-    db.handle_time_update(
+    readmodel_db.handle_time_update(
         summary_guid=summary_guid_2,
         time_guid="test-guid-6",
         time_name="test-name-3",
@@ -967,7 +983,7 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
         stop_char=5,
         is_new=True,
     )
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         names = ["test-name-1", "test-name-2", "test-name-3"]
         guids = [
             ("test-guid-1", "test-guid-4"),
@@ -988,10 +1004,12 @@ async def test_handle_name_with_repeats(db, citation_data_1, citation_data_2):
 
 
 @pytest.mark.asyncio
-async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, summary_guid):
+async def test_handle_name_doesnt_duplicate_guids(
+    readmodel_db, citation_data_1, summary_guid, engine
+):
     citation_guid, text = citation_data_1
-    db.create_summary(summary_guid=summary_guid, text=text)
-    db.handle_person_update(
+    readmodel_db.create_summary(summary_guid=summary_guid, text=text)
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid="test-guid-1",
         person_name="test-name-1",
@@ -1000,7 +1018,7 @@ async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, summary_g
         is_new=True,
     )
     # now add exactly the same name and GUID
-    db.handle_person_update(
+    readmodel_db.handle_person_update(
         summary_guid=summary_guid,
         person_guid="test-guid-1",
         person_name="test-name-1",
@@ -1008,7 +1026,7 @@ async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, summary_g
         stop_char=5,
         is_new=False,
     )
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         res = session.execute(select(Name)).scalars()
         res_list = [r for r in res]
         assert len(res_list) == 1
@@ -1016,7 +1034,7 @@ async def test_handle_name_doesnt_duplicate_guids(db, citation_data_1, summary_g
         assert len(name.guids) == 1
 
 
-def test_create_source_with_citation_relationship(db):
+def test_create_source_with_citation_relationship(readmodel_db, engine):
     source_id = "cd71d777-f8e6-4b82-bdca-96ef47dcaeb7"
     citation_id = "c4bd0c8e-801f-46d2-b876-c23c3fd9ce15"
     title = "new source"
@@ -1027,11 +1045,11 @@ def test_create_source_with_citation_relationship(db):
     citation = Citation(
         guid=citation_id,
     )
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add(citation)
         session.commit()
 
-    db.create_source(
+    readmodel_db.create_source(
         id=source_id,
         title=title,
         author=author,
@@ -1039,7 +1057,7 @@ def test_create_source_with_citation_relationship(db):
         pub_date=pub_date,
         citation_id=citation_id,
     )
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         source = session.query(Source).where(Source.id == source_id).one()
         assert source.id == source_id
         assert source.title == title
@@ -1050,7 +1068,7 @@ def test_create_source_with_citation_relationship(db):
         assert source.citations[0].guid == citation_id
 
 
-def test_tag_source(db):
+def test_tag_source(readmodel_db, engine):
     source_id = "08ea9177-66e6-4494-b2f3-c8f4f05456a7"
     citation_id = "29a34448-099e-44bc-9bf8-5e4222ccf509"
     title = "another source"
@@ -1068,12 +1086,12 @@ def test_tag_source(db):
         publisher=publisher,
         pub_date=pub_date,
     )
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add_all([citation, source])
         session.commit()
 
-    db.add_source_to_citation(source_id=source_id, citation_id=citation_id)
+    readmodel_db.add_source_to_citation(source_id=source_id, citation_id=citation_id)
 
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         citation = session.query(Citation).where(Citation.guid == citation_id).one()
         assert citation.source.id == source_id

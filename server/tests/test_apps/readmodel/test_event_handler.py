@@ -4,7 +4,7 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models import (
+from the_history_atlas.apps.domain.models import (
     SummaryAdded,
     SummaryAddedPayload,
     CitationAdded,
@@ -24,19 +24,19 @@ from abstract_domain_model.models import (
     MetaAdded,
     MetaAddedPayload,
 )
-from server.the_history_atlas import EventHandler
-from server.the_history_atlas import UnknownEventError
-from server.the_history_atlas import DuplicateEventError
-from server.the_history_atlas import Citation
-from server.the_history_atlas import TagInstance
-from server.the_history_atlas import Time
-from server.the_history_atlas import Person
-from server.the_history_atlas import Place
+from the_history_atlas.apps.readmodel.event_handler import EventHandler
+from the_history_atlas.apps.readmodel.errors import UnknownEventError
+from the_history_atlas.apps.readmodel.errors import DuplicateEventError
+from the_history_atlas.apps.readmodel.schema import Citation
+from the_history_atlas.apps.readmodel.schema import TagInstance
+from the_history_atlas.apps.readmodel.schema import Time
+from the_history_atlas.apps.readmodel.schema import Person
+from the_history_atlas.apps.readmodel.schema import Place
 
 
 @pytest.fixture
-def handler(db):
-    return EventHandler(database_instance=db)
+def handler(readmodel_db):
+    return EventHandler(database_instance=readmodel_db)
 
 
 @pytest.fixture
@@ -396,11 +396,13 @@ def test_unknown_event_raises_error(handle_event):
 
 
 @pytest.mark.asyncio
-async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
+async def test_citation_added(
+    readmodel_db, handle_event, CITATION_ADDED, SUMMARY_ADDED, engine
+):
     handle_event(SUMMARY_ADDED)
     handle_event(CITATION_ADDED)
     payload = CITATION_ADDED.payload
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
         citation_guid = payload.id
         text = payload.text
         res = sess.execute(
@@ -411,13 +413,15 @@ async def test_citation_added(db, handle_event, CITATION_ADDED, SUMMARY_ADDED):
 
 
 @pytest.mark.asyncio
-async def test_person_added(db, handle_event, SUMMARY_ADDED, PERSON_ADDED):
+async def test_person_added(
+    readmodel_db, handle_event, SUMMARY_ADDED, PERSON_ADDED, engine
+):
     handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
     payload = PERSON_ADDED.payload
     names = payload.name
     person_guid = payload.id
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
 
         res = sess.execute(
             select(Person).where(Person.guid == person_guid)
@@ -428,7 +432,7 @@ async def test_person_added(db, handle_event, SUMMARY_ADDED, PERSON_ADDED):
 
 @pytest.mark.asyncio
 async def test_person_tagged(
-    db, handle_event, SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED
+    readmodel_db, handle_event, SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED, engine
 ):
     handle_event(SUMMARY_ADDED)
     handle_event(PERSON_ADDED)
@@ -436,7 +440,7 @@ async def test_person_tagged(
     payload = PERSON_ADDED.payload
     names = payload.name
     person_guid = payload.id
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
 
         res = sess.execute(
             select(Person).where(Person.guid == person_guid)
@@ -456,13 +460,15 @@ async def test_person_tagged(
 
 
 @pytest.mark.asyncio
-async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
+async def test_place_added(
+    readmodel_db, handle_event, SUMMARY_ADDED, PLACE_ADDED, engine
+):
     handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     payload = PLACE_ADDED.payload
     names = payload.name
     place_guid = payload.id
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
         assert res.guid == place_guid
@@ -470,7 +476,9 @@ async def test_place_added(db, handle_event, SUMMARY_ADDED, PLACE_ADDED):
 
 
 @pytest.mark.asyncio
-async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED):
+async def test_place_tagged(
+    readmodel_db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED, engine
+):
     handle_event(SUMMARY_ADDED)
     handle_event(PLACE_ADDED)
     handle_event(PLACE_TAGGED)
@@ -480,7 +488,7 @@ async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_
     longitude = payload.longitude
     geoshape = payload.geo_shape
     place_guid = payload.id
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
         assert res.guid == place_guid
@@ -501,13 +509,15 @@ async def test_place_tagged(db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_
 
 
 @pytest.mark.asyncio
-async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
+async def test_time_added(
+    readmodel_db, handle_event, SUMMARY_ADDED, TIME_ADDED, engine
+):
     handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     payload = TIME_ADDED.payload
     name = payload.name
     time_guid = payload.id
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
         assert res.guid == time_guid
@@ -515,14 +525,16 @@ async def test_time_added(db, handle_event, SUMMARY_ADDED, TIME_ADDED):
 
 
 @pytest.mark.asyncio
-async def test_time_tagged(db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED):
+async def test_time_tagged(
+    readmodel_db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED, engine
+):
     handle_event(SUMMARY_ADDED)
     handle_event(TIME_ADDED)
     handle_event(TIME_TAGGED)
     payload = TIME_ADDED.payload
     name = payload.name
     time_guid = payload.id
-    with Session(db._engine, future=True) as sess:
+    with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
         assert res.guid == time_guid
@@ -541,7 +553,7 @@ async def test_time_tagged(db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAG
 
 @pytest.mark.asyncio
 async def test_reject_event_with_duplicate_id(
-    db, handle_event, SUMMARY_ADDED, CITATION_ADDED
+    readmodel_db, handle_event, SUMMARY_ADDED, CITATION_ADDED
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
     summary_dict = replace(SUMMARY_ADDED, index=1)

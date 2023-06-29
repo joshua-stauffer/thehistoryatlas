@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from abstract_domain_model.models.readmodel import DefaultEntity, Source
+from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from server.the_history_atlas import GQLApi
 
 

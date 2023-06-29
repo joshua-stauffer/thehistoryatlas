@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 class ReadModelApp:
     def __init__(self, config_app: Config, database_client: DatabaseClient):
         self.config = config_app
-        self._database = Database(engine=database_client)
+        self._database = Database(database_client=database_client)
         self._query_handler = QueryHandler(database_instance=self._database)
         self._event_handler = EventHandler(database_instance=self._database)
 
