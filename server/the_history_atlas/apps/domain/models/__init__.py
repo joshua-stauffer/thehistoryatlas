@@ -42,3 +42,10 @@ from the_history_atlas.apps.domain.models.commands.publish_citation import (
     PublishCitation,
     PublishCitationPayload,
 )
+from the_history_atlas.apps.domain.models.nlp.text_analysis import (
+    TextAnalysis,
+    GetTextAnalysis,
+)
+from the_history_atlas.apps.domain.models.readmodel.queries.coords_by_name import (
+    CoordsByName,
+)

@@ -6,6 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+
+from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.nlp.state.schema import AnnotatedCitation
 from the_history_atlas.apps.nlp.state.schema import Base
 from the_history_atlas.apps.nlp.state.schema import Entity
@@ -31,10 +33,9 @@ TaggedEntity = Union[
 
 
 class Database:
-    def __init__(self, config):
-        self._config = config
-        self._engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    def __init__(self, client: DatabaseClient):
         # initialize the db
+        self._engine = client
         Base.metadata.create_all(self._engine)
 
     def get_training_corpus(self):

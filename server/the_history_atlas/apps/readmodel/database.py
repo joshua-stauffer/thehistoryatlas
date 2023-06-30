@@ -130,7 +130,7 @@ class Database:
         ]
         return tag_result, timeline_result
 
-    def get_guids_by_name(self, name) -> list[str]:
+    def get_guids_by_name(self, name: str) -> list[str]:
         """Allows searching on known names. Returns list of GUIDs, if any."""
         with Session(self._engine, future=True) as session:
             res = session.execute(

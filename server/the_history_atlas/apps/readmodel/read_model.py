@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from the_history_atlas.apps.database import DatabaseClient
+from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetSummariesByIDs,
@@ -55,10 +56,7 @@ class ReadModelApp:
     ) -> EntitySummariesByName:
         return self._query_handler.get_entity_summaries_by_name(query)
 
-    def get_entity_summaries_by_names(
-        self, query: GetEntityIDsByNames
-    ) -> EntityIDsByNames:
-        # todo
+    def get_entity_ids_by_names(self, query: GetEntityIDsByNames) -> EntityIDsByNames:
         return self._query_handler.get_entity_ids_by_names(query)
 
     def get_fuzzy_search_by_name(
@@ -79,3 +77,6 @@ class ReadModelApp:
 
     def get_sources_by_search_term(self, search_term: str) -> List[Source]:
         return self._database.get_sources_by_search_term(search_term=search_term)
+
+    def get_coords_by_names(self, names: list[str]) -> CoordsByName:
+        raise NotImplemented
