@@ -11,6 +11,7 @@ from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
     Source as ADMSource,
 )
+from the_history_atlas.apps.domain.models.readmodel.queries import FuzzySearchByName
 from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
@@ -82,21 +83,19 @@ class Database:
         log.debug(f"Returning {len(result)} summaries")
         return result
 
-    def get_manifest_by_person(self, person_guid: str) -> list[str]:
+    def get_manifest_by_person(self, person_guid: str) -> tuple[list, list]:
         """Returns a list of given person's citations"""
         return self._get_manifest_util(entity_base=Person, guid=person_guid)
 
-    def get_manifest_by_place(self, place_guid: str) -> list[str]:
+    def get_manifest_by_place(self, place_guid: str) -> tuple[list, list]:
         """Returns a list of given place's citations"""
         return self._get_manifest_util(entity_base=Place, guid=place_guid)
 
-    def get_manifest_by_time(self, time_guid: str) -> list[str]:
+    def get_manifest_by_time(self, time_guid: str) -> tuple[list, list]:
         """Returns a list of given place's citations"""
         return self._get_manifest_util(entity_base=Time, guid=time_guid)
 
-    def _get_manifest_util(
-        self, entity_base, guid
-    ) -> tuple[list[str], dict[int, dict[str, Union[str, int]]]]:
+    def _get_manifest_util(self, entity_base, guid) -> tuple[list, list]:
         """Utility to query db for manifest -- also calculates timeline summary."""
         log.debug(f"Looking up manifest for GUID {guid}")
         with Session(self._engine, future=True) as session:
@@ -105,7 +104,7 @@ class Database:
             ).scalar_one_or_none()
             if not entity:
                 log.debug(f"Manifest lookup found nothing for GUID {guid}")
-                return list()
+                return [], []
 
             tag_instances = entity.tag_instances
 
@@ -218,12 +217,12 @@ class Database:
                 )
         return res
 
-    def get_name_by_fuzzy_search(self, name: str) -> List[Dict]:
+    def get_name_by_fuzzy_search(self, name: str) -> List[FuzzySearchByName]:
         """Search for possible completions to a given string from known entity names."""
         if name == "":
             return []
         return [
-            asdict(trie_result)
+            FuzzySearchByName(name=trie_result.name, ids=trie_result.guids)
             for trie_result in self._entity_trie.find(name, res_count=10)
         ]
 

@@ -15,11 +15,6 @@ from the_history_atlas.apps.readmodel.schema import EmptyNameError
 
 
 @pytest.fixture
-def engine(readmodel_db):
-    return readmodel_db._engine
-
-
-@pytest.fixture
 def summary_data_1():
     guid = str(uuid4())
     text = "A summary of a person doing something somewhere at some time"
@@ -181,7 +176,7 @@ def test_name_on_del():
     assert len(n.guids) == 1
 
 
-def test_create_source(readmodel_db):
+def test_create_source(engine):
     source = Source(
         id="cd71d777-f8e6-4b82-bdca-96ef47dcaeb7",
         title="new source",
@@ -189,6 +184,6 @@ def test_create_source(readmodel_db):
         publisher="publisher name",
         pub_date="1/1/2023",
     )
-    with Session(readmodel_db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add(source)
         session.commit()

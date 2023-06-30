@@ -83,10 +83,10 @@ class QueryHandler:
         self, query: GetFuzzySearchByName
     ) -> List[FuzzySearchByName]:
         """Perform a fuzzy search on the given string and return possible completions."""
-        results = self._db.get_name_by_fuzzy_search(query.name)
-        return [FuzzySearchByName.parse_obj(res) for res in results]
+        fuzzy_search_by_name_collection = self._db.get_name_by_fuzzy_search(query.name)
+        return fuzzy_search_by_name_collection
 
-    def get_entity_summaries_by_id(
+    def get_entity_summaries_by_ids(
         self, query: GetEntitySummariesByIDs
     ) -> List[EntitySummary]:
         """Resolve a list of entity GUIDs into summaries"""

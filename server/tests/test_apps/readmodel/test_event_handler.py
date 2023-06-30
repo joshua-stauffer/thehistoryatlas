@@ -40,8 +40,8 @@ def handler(readmodel_db):
 
 
 @pytest.fixture
-def handle_event(accounts):
-    return accounts.handle_event
+def handle_event(query_handler):
+    return query_handler.handle_event
 
 
 @pytest.fixture
@@ -385,22 +385,22 @@ def META_ADDED_more(meta_id, citation_guid):
     )
 
 
-def test_unknown_event_raises_error(handle_event):
+def test_unknown_event_raises_error(readmodel_app):
     @dataclass
     class NotAnEvent:
         type: str
         index: int
 
     with pytest.raises(UnknownEventError):
-        handle_event(NotAnEvent(type="NotAnEvent", index=0))
+        readmodel_app.handle_event(NotAnEvent(type="NotAnEvent", index=0))
 
 
 @pytest.mark.asyncio
 async def test_citation_added(
-    readmodel_db, handle_event, CITATION_ADDED, SUMMARY_ADDED, engine
+    readmodel_db, readmodel_app, CITATION_ADDED, SUMMARY_ADDED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(CITATION_ADDED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(CITATION_ADDED)
     payload = CITATION_ADDED.payload
     with Session(engine, future=True) as sess:
         citation_guid = payload.id
@@ -414,10 +414,10 @@ async def test_citation_added(
 
 @pytest.mark.asyncio
 async def test_person_added(
-    readmodel_db, handle_event, SUMMARY_ADDED, PERSON_ADDED, engine
+    readmodel_db, readmodel_app, SUMMARY_ADDED, PERSON_ADDED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(PERSON_ADDED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(PERSON_ADDED)
     payload = PERSON_ADDED.payload
     names = payload.name
     person_guid = payload.id
@@ -432,11 +432,11 @@ async def test_person_added(
 
 @pytest.mark.asyncio
 async def test_person_tagged(
-    readmodel_db, handle_event, SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED, engine
+    readmodel_db, readmodel_app, SUMMARY_ADDED, PERSON_ADDED, PERSON_TAGGED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(PERSON_ADDED)
-    handle_event(PERSON_TAGGED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(PERSON_ADDED)
+    readmodel_app.handle_event(PERSON_TAGGED)
     payload = PERSON_ADDED.payload
     names = payload.name
     person_guid = payload.id
@@ -461,10 +461,10 @@ async def test_person_tagged(
 
 @pytest.mark.asyncio
 async def test_place_added(
-    readmodel_db, handle_event, SUMMARY_ADDED, PLACE_ADDED, engine
+    readmodel_db, readmodel_app, SUMMARY_ADDED, PLACE_ADDED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(PLACE_ADDED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(PLACE_ADDED)
     payload = PLACE_ADDED.payload
     names = payload.name
     place_guid = payload.id
@@ -477,11 +477,11 @@ async def test_place_added(
 
 @pytest.mark.asyncio
 async def test_place_tagged(
-    readmodel_db, handle_event, SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED, engine
+    readmodel_db, readmodel_app, SUMMARY_ADDED, PLACE_ADDED, PLACE_TAGGED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(PLACE_ADDED)
-    handle_event(PLACE_TAGGED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(PLACE_ADDED)
+    readmodel_app.handle_event(PLACE_TAGGED)
     payload = PLACE_ADDED.payload
     names = payload.name
     latitude = payload.latitude
@@ -510,10 +510,10 @@ async def test_place_tagged(
 
 @pytest.mark.asyncio
 async def test_time_added(
-    readmodel_db, handle_event, SUMMARY_ADDED, TIME_ADDED, engine
+    readmodel_db, readmodel_app, SUMMARY_ADDED, TIME_ADDED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(TIME_ADDED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(TIME_ADDED)
     payload = TIME_ADDED.payload
     name = payload.name
     time_guid = payload.id
@@ -526,11 +526,11 @@ async def test_time_added(
 
 @pytest.mark.asyncio
 async def test_time_tagged(
-    readmodel_db, handle_event, SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED, engine
+    readmodel_db, readmodel_app, SUMMARY_ADDED, TIME_ADDED, TIME_TAGGED, engine
 ):
-    handle_event(SUMMARY_ADDED)
-    handle_event(TIME_ADDED)
-    handle_event(TIME_TAGGED)
+    readmodel_app.handle_event(SUMMARY_ADDED)
+    readmodel_app.handle_event(TIME_ADDED)
+    readmodel_app.handle_event(TIME_TAGGED)
     payload = TIME_ADDED.payload
     name = payload.name
     time_guid = payload.id
@@ -553,13 +553,13 @@ async def test_time_tagged(
 
 @pytest.mark.asyncio
 async def test_reject_event_with_duplicate_id(
-    readmodel_db, handle_event, SUMMARY_ADDED, CITATION_ADDED
+    readmodel_db, readmodel_app, SUMMARY_ADDED, CITATION_ADDED
 ):
     # ensure each event_id is unique to prevent duplicate_event errors
     summary_dict = replace(SUMMARY_ADDED, index=1)
     citation_dict_1 = replace(CITATION_ADDED, index=2)
     citation_dict_2 = replace(CITATION_ADDED, index=2)
-    handle_event(summary_dict)
-    handle_event(citation_dict_1)
+    readmodel_app.handle_event(summary_dict)
+    readmodel_app.handle_event(citation_dict_1)
     with pytest.raises(DuplicateEventError):
-        handle_event(citation_dict_2)
+        readmodel_app.handle_event(citation_dict_2)

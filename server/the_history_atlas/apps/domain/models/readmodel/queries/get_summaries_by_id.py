@@ -1,4 +1,4 @@
-from typing import List, Literal, Annotated
+from typing import List, Literal, Annotated, Union
 
 from pydantic import Field
 
@@ -36,7 +36,7 @@ class Time(ConfiguredBaseModel):
     name: str
 
 
-Tag = Annotated[Person, Place, Time, Field(discriminator="type")]
+Tag = Annotated[Union[Person | Place | Time], Field(discriminator="type")]
 
 
 class Summary(ConfiguredBaseModel):

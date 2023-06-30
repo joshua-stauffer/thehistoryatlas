@@ -69,7 +69,7 @@ class ReadModelApp:
     def get_entity_summaries_by_ids(
         self, query: GetEntitySummariesByIDs
     ) -> List[EntitySummary]:
-        return self._query_handler.get_entity_summaries_by_id(query)
+        return self._query_handler.get_entity_summaries_by_ids(query)
 
     def get_place_by_coords(self, query: GetPlaceByCoords) -> PlaceByCoords:
         return self._query_handler.get_place_by_coords(query)

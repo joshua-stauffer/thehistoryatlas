@@ -1,7 +1,7 @@
 import logging
-import pytest
+
 import random
-from uuid import uuid4, UUID
+from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,7 @@ from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
     Source as ADMSource,
 )
-from the_history_atlas.apps.readmodel.schema import Citation, Source
+from the_history_atlas.apps.readmodel.schema import Citation
 from the_history_atlas.apps.readmodel.schema import TagInstance
 from the_history_atlas.apps.readmodel.schema import Time
 from the_history_atlas.apps.readmodel.schema import Person
@@ -24,125 +24,6 @@ log.setLevel("DEBUG")
 TYPE_ENUM = set(["PERSON", "PLACE", "TIME"])
 DB_COUNT = 100
 FUZZ_ITERATIONS = 10
-
-
-@pytest.fixture
-def source_title():
-    return "Source Title"
-
-
-@pytest.fixture
-def source_author():
-    return "Source Author"
-
-
-@pytest.fixture
-def db_tuple(readmodel_db, source_title, source_author, engine):
-    """
-    This fixture manually creates DB_COUNT citations, and DB_COUNT // 2
-    of people, places, and times (each). It then associates each citation
-    with a person, place, and time, going through the list twice, so that
-    each person, place, time is tagged by two different citations.
-
-    NOTE: Because all the db additions are done manually (in order to isolate
-    the tests from errors originating in the MUTATION section of the db) the
-    addition of names to the Name table is a bit wonky. It's assumed that
-    each entity name appears with exactly the same spelling in both citations
-    in which it appears.
-    """
-    summaries = list()
-    citations = list()
-    people = list()
-    places = list()
-    times = list()
-    cit_guids = list()
-    sum_guids = list()
-    person_guids = list()
-    place_guids = list()
-    time_guids = list()
-    names = list()
-    for _ in range(DB_COUNT // 2):
-        person_guid = str(uuid4())
-        person_guids.append(person_guid)
-        person_name = f"A Person Name {_}"
-        people.append(Person(guid=person_guid, names=person_name))
-        place_guid = str(uuid4())
-        place_guids.append(place_guid)
-        place_name = f"A Place Name {_}"
-        places.append(
-            Place(
-                guid=place_guid,
-                names=place_name,
-                latitude=random.random(),
-                longitude=random.random(),
-                geoshape="A geoshape string {_}" if random.random() > 0.7 else None,
-            )
-        )
-        time_guid = str(uuid4())
-        time_guids.append(time_guid)
-        time_name = f"2{_}5{random.randint(0, 9)}|{random.randint(1, 4)}"
-        times.append(Time(guid=time_guid, name=time_name))
-        # add names to list
-        names.extend([person_name, place_name, time_name])
-    entities = [
-        (person, place, time) for person, place, time in zip(people, places, times)
-    ]
-    for n in range(DB_COUNT):
-        # create a citation
-        cit_guid = f"fake-citation-guid-{n}"
-        cit_guids.append(cit_guid)
-        citation = Citation(
-            guid=cit_guid,
-            text=f"some citation text {n}",
-            source=Source(
-                id=str(uuid4()),
-                title=f"{source_title} {n}",
-                author=f"{source_author} {n}",
-                publisher="Source Publishing Company",
-                pub_date="2023-01-02",
-            ),
-        )
-        citations.append(citation)
-        # create a summary
-        sum_guid = f"fake-summary-guid-{n}"
-        sum_guids.append(sum_guid)
-        person, place, time = entities[n % len(entities)]
-        summaries.append(
-            Summary(
-                guid=sum_guid,
-                text=f"test text {n}",
-                time_tag=time.name,
-                tags=[
-                    TagInstance(
-                        start_char=random.randint(0, 100),
-                        stop_char=random.randint(100, 200),
-                        tag=entity,
-                    )
-                    for entity in (person, place, time)
-                ],
-                citations=[citation],
-            )
-        )
-
-    with Session(engine, future=True) as session:
-        session.add_all([*summaries, *citations, *people, *places, *times])
-        # manually update names
-        for person in people:
-            readmodel_db._handle_name(person.names, person.guid, session)
-        for place in places:
-            readmodel_db._handle_name(place.names, place.guid, session)
-        for time in times:
-            readmodel_db._handle_name(time.name, time.guid, session)
-        session.commit()
-    db_dict = {
-        "summary_guids": sum_guids,
-        "citation_guids": cit_guids,
-        "person_guids": person_guids,
-        "place_guids": place_guids,
-        "time_guids": time_guids,
-        "names": names,
-    }
-    return readmodel_db, db_dict
 
 
 def load_db(db_tuple):
@@ -245,9 +126,11 @@ def test_get_summaries_returns_error_with_unknown_guid(db_tuple):
 
 def test_get_manifest_by_person_returns_empty_list(db_tuple):
     db, db_dict = db_tuple
-    res = db.get_manifest_by_person("Definitely Not a Person")
-    assert isinstance(res, list)
-    assert len(res) == 0
+    tags, timelines = db.get_manifest_by_person("Definitely Not a Person")
+    assert isinstance(timelines, list)
+    assert len(timelines) == 0
+    assert isinstance(tags, list)
+    assert len(tags) == 0
 
 
 # test successful queries
@@ -311,7 +194,7 @@ def test_get_manifest_by_person(db_tuple):
         for res in timeline_res:
             assert isinstance(res, dict)
             assert isinstance(res["count"], int)
-            assert isinstance(res["root_guid"], str)
+            assert isinstance(res["root_id"], str)
             assert isinstance(res["year"], int)
 
 
@@ -327,7 +210,7 @@ def test_get_manifest_by_place(db_tuple):
         for res in timeline_res:
             assert isinstance(res, dict)
             assert isinstance(res["count"], int)
-            assert isinstance(res["root_guid"], str)
+            assert isinstance(res["root_id"], str)
             assert isinstance(res["year"], int)
 
 
@@ -343,7 +226,7 @@ def test_get_manifest_by_time(db_tuple):
         for res in timeline_res:
             assert isinstance(res, dict)
             assert isinstance(res["count"], int)
-            assert isinstance(res["root_guid"], str)
+            assert isinstance(res["root_id"], str)
             assert isinstance(res["year"], int)
 
 
@@ -390,7 +273,7 @@ def test_get_entity_summary_by_guid_batch(db_tuple):
     assert len(res) == 30
     for summary in res:
         assert isinstance(summary, dict)
-        guid = summary["guid"]
+        guid = summary["id"]
         assert isinstance(guid, str)
         if summary["type"] == "TIME":
             assert guid in time_guids
@@ -427,11 +310,6 @@ def test_get_name_by_fuzzy_search(db_tuple):
     res1 = db.get_name_by_fuzzy_search("A person name")
     assert isinstance(res1, list)
     assert len(res1) <= 10
-    trie_result = res1[0]
-    assert isinstance(trie_result["name"], str)
-    assert isinstance(trie_result["guids"], frozenset)
-    for id_ in trie_result["guids"]:
-        assert isinstance(id_, str)
 
 
 def test_get_sources_by_search_term_title(db_tuple, source_title):

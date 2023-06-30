@@ -5,7 +5,7 @@ from the_history_atlas.apps.domain.types import EntityType
 
 
 class GetManifest(ConfiguredBaseModel):
-    entity_type = EntityType
+    entity_type: EntityType
     id: str
 
 
