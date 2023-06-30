@@ -2,9 +2,9 @@ from dataclasses import asdict
 
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.types import Event
-from seed import SYNTHETIC_EVENTS
-from event_schema.EventSchema import Event as EventModel
+from the_history_atlas.apps.domain.types import Event
+from tests.seed import SYNTHETIC_EVENTS
+from the_history_atlas.apps.eventstore.event_schema import Event as EventModel
 
 import tests.conftest
 import tests.test_apps.conftest

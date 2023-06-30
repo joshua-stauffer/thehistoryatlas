@@ -85,7 +85,7 @@ services:
             - TESTING=${TESTING}
 
     history:
-        build: ./history
+        build: legacy/history
         restart: always
         depends_on:
             - broker
@@ -118,7 +118,7 @@ services:
             - tha-connect
 
     geo:
-        build: legacy/geo
+        build: geo
         restart: always
         depends_on:
             - db

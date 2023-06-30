@@ -3,8 +3,8 @@ from unittest.mock import MagicMock
 
 from sqlalchemy.orm import Session
 
-from event_schema.EventSchema import Base
-from server.the_history_atlas import Database
+from the_history_atlas.apps.eventstore.event_schema import Base
+from the_history_atlas.apps.eventstore.database import Database
 import pytest
 
 
@@ -14,7 +14,7 @@ def mock_db():
 
 
 @pytest.fixture
-def db():
+def db(engine):
     TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
 
     if not TEST_DB_URI:
@@ -29,14 +29,13 @@ def db():
             self.DB_URI = TEST_DB_URI
             self.DEBUG = False
 
-    config = Config()
-    db = Database(config)
+    db = Database(engine=engine)
 
     # if we're using db, ensure its fresh
-    Base.metadata.drop_all(db._engine)
-    Base.metadata.create_all(db._engine)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
 
-    with Session(db._engine, future=True) as session:
+    with Session(engine, future=True) as session:
         session.add_all([])
         session.commit()
 

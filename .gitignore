@@ -14,7 +14,7 @@ server/the_history_atlas/apps/nlp/models
 .DS_Store
 *.DS_Store
 test_build_constraints.txt
-legacy/geo/data/
+geo/data/
 
 # react gitignore
 # dependencies
@@ -40,13 +40,13 @@ yarn-debug.log*
 yarn-error.log*
 
 # builder
-/builder/data/fake
+/legacy/builder/data/fake
 server/the_history_atlas/apps/nlp_service/models/
 
 # IDE configs
 .vscode/
 .idea/
-legacy/geo/app/data/
+geo/app/data/
 secrets.yaml
 
 # vim

@@ -11,10 +11,10 @@ from sqlalchemy import select
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from server.the_history_atlas import CityRow
-from server.the_history_atlas.apps.geo.state.schema import Base
-from server.the_history_atlas.apps.geo.state.schema import UpdateTracker
-from server.the_history_atlas.apps.geo.state.schema import Name
-from server.the_history_atlas.apps.geo.state.schema import Place
+from geo.geo.state.schema import Base
+from geo.geo.state.schema import UpdateTracker
+from geo.geo.state.schema import Name
+from geo.geo.state.schema import Place
 
 log = logging.getLogger(__name__)
 

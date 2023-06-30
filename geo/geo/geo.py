@@ -1,8 +1,8 @@
 import logging
-from the_history_atlas.apps.geo.config import Config
-from the_history_atlas.apps.geo.state.database import Database
-from the_history_atlas.apps.geo.geonames import GeoNames
-from the_history_atlas.apps.geo.state.query_handler import QueryHandler
+from geo.geo.config import Config
+from geo.geo.state.database import Database
+from geo.geo.geonames import GeoNames
+from geo.geo.state.query_handler import QueryHandler
 
 
 logging.basicConfig(level="DEBUG")
