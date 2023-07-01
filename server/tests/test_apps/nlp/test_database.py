@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from abstract_domain_model.models import (
+from the_history_atlas.apps.domain.models import (
     PersonAdded,
     PersonAddedPayload,
     CitationAddedPayload,
@@ -21,8 +21,8 @@ from abstract_domain_model.models import (
     PlaceTaggedPayload,
     PlaceTagged,
 )
-from server.the_history_atlas import AnnotatedCitation
-from server.the_history_atlas import Entity
+from the_history_atlas.apps.nlp.state.schema import AnnotatedCitation
+from the_history_atlas.apps.nlp.state.schema import Entity
 
 log = getLogger(__name__)
 

@@ -1,7 +1,7 @@
 from random import random
 from uuid import uuid4
 import pytest
-from server.the_history_atlas import Resolver
+from the_history_atlas.apps.nlp.resolver import Resolver
 
 
 @pytest.fixture

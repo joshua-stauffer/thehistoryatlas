@@ -7,6 +7,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.database import DatabaseClient
+from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
     Source as ADMSource,
@@ -278,6 +279,13 @@ class Database:
                 )
 
             return DefaultEntity(id=tag.guid, name=tag.names, type="PLACE")
+
+    def get_coords_by_names(self, names: list[str]) -> CoordsByName:
+        with Session(self._engine, future=True) as session:
+            sql = """
+                select (names, latitude, longitude) from places
+                
+            """
 
     # MUTATIONS
 

@@ -1,7 +1,7 @@
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.sql.schema import ForeignKey, Table
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
 from the_history_atlas.apps.readmodel.errors import EmptyNameError
 
@@ -81,6 +81,14 @@ class TagInstance(Base):
         return f"{self.tag.type}"
 
 
+tag_name_assoc = Table(
+    "tag_name_assoc",
+    Base.metadata,
+    Column("tag_id", INTEGER, ForeignKey("tags.id")),
+    Column("name_id", INTEGER, ForeignKey("names.id")),
+)
+
+
 class Tag(Base):
     """Base class for time, person, and place tags"""
 
@@ -89,6 +97,7 @@ class Tag(Base):
     guid = Column(VARCHAR)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
+    names = relationship("Name", secondary=tag_name_assoc, back_populates="tags")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
 
@@ -97,7 +106,7 @@ class Time(Tag):
 
     __tablename__ = "time"
     id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    name = Column(VARCHAR)
+    name = Column(VARCHAR)  # todo: remove
 
     __mapper_args__ = {"polymorphic_identity": "TIME"}
 
@@ -109,7 +118,7 @@ class Person(Tag):
 
     __tablename__ = "person"
     id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    names = Column(VARCHAR)
+    names = Column(VARCHAR)  # todo: remove
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
 
@@ -122,15 +131,16 @@ class Place(Tag):
     __tablename__ = "place"
 
     id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    names = Column(VARCHAR)
+    names = Column(VARCHAR)  # todo: remove
     latitude = Column(FLOAT)
     longitude = Column(FLOAT)
     geoshape = Column(VARCHAR)
+    geoname_id = Column(INTEGER)
 
     __mapper_args__ = {"polymorphic_identity": "PLACE"}
 
     def __repr__(self):
-        return f"PlaceTag(id: {self.id}, names: {self.names})"
+        return f"Place(latitude: {self.latitude}, longitude: {self.longitude})"
 
 
 class Name(Base):
@@ -139,6 +149,10 @@ class Name(Base):
 
     id = Column(INTEGER, primary_key=True)
     name = Column(VARCHAR)
+    lang = Column(VARCHAR)
+    tags = relationship("Tag", secondary=tag_name_assoc, back_populates="names")
+
+    # todo: remove
     _guids = Column(VARCHAR)  # save as | separated values and parse on exit
 
     @property

@@ -1,7 +1,10 @@
-from typing import Any
-
 from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
+class Coords(ConfiguredBaseModel):
+    latitude: float
+    longitude: float
+
+
 class CoordsByName(ConfiguredBaseModel):
-    coords: Any
+    coords: dict[str, list[Coords]]

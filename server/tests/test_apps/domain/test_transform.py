@@ -1,7 +1,7 @@
 import pytest
 
-from abstract_domain_model.errors import UnknownMessageError, MissingFieldsError
-from abstract_domain_model.models import (
+from the_history_atlas.apps.domain.errors import UnknownMessageError, MissingFieldsError
+from the_history_atlas.apps.domain.models import (
     SummaryAdded,
     SummaryTagged,
     TimeAdded,
@@ -23,21 +23,25 @@ from abstract_domain_model.models import (
     CitationAddedPayload,
     MetaAddedPayload,
 )
-from abstract_domain_model.models.accounts import GetUser, GetUserPayload, UserDetails
-from abstract_domain_model.models.accounts.get_user import (
+from the_history_atlas.apps.domain.models.accounts import (
+    GetUser,
+    GetUserPayload,
+    UserDetails,
+)
+from the_history_atlas.apps.domain.models.accounts.get_user import (
     GetUserResponse,
     GetUserResponsePayload,
 )
-from abstract_domain_model.models.commands import (
+from the_history_atlas.apps.domain.models.commands import (
     CommandFailed,
     CommandFailedPayload,
     CommandSuccess,
 )
-from abstract_domain_model.models.events.meta_tagged import (
+from the_history_atlas.apps.domain.models.events.meta_tagged import (
     MetaTagged,
     MetaTaggedPayload,
 )
-from abstract_domain_model.transform import from_dict
+from the_history_atlas.apps.domain.transform import from_dict
 
 import tests.conftest
 import tests.test_apps.conftest

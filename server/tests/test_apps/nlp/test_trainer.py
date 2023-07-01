@@ -1,6 +1,6 @@
 import os
 import pytest
-from server.the_history_atlas import Trainer
+from the_history_atlas.apps.nlp.trainer import Trainer
 
 
 @pytest.fixture

@@ -7,8 +7,8 @@ import pytest
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from the_history_atlas.apps.nlp.database import Database
-from server.the_history_atlas import Base, AnnotatedCitation, Entity
+from the_history_atlas.apps.nlp.state.database import Database
+from the_history_atlas.apps.nlp.state.schema import Base, AnnotatedCitation, Entity
 
 
 @pytest.fixture
