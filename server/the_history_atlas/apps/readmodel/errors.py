@@ -44,3 +44,7 @@ class DatabaseError(Exception):
 class EmptyNameError(DatabaseError):
     def __init__(self, msg):
         self.msg = msg
+
+
+class MissingResourceError(Exception):
+    ...

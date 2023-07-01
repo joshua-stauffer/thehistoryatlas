@@ -1,3 +1,4 @@
+import the_history_atlas.apps.domain.models
 import os
 from copy import deepcopy
 from datetime import timedelta, datetime
@@ -6,18 +7,23 @@ from typing import List, Dict
 import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.accounts.database import Database as AccountsDB
 from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, fernet
-from the_history_atlas.apps.accounts.schema import Base, User
+from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
+from the_history_atlas.apps.eventstore.event_schema import Base as EventsAppBase
+from the_history_atlas.apps.nlp.state.schema import Base as NLPAppBase
+from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
 from the_history_atlas.apps.writemodel.state_manager.database import (
     Database as WriteModelDB,
 )
-from the_history_atlas.apps.writemodel.state_manager.schema import Base, GUID
+from the_history_atlas.apps.writemodel.state_manager.schema import (
+    Base as WriteModelBase,
+    GUID,
+)
 
 
 @pytest.fixture
@@ -35,6 +41,11 @@ def config():
 @pytest.fixture
 def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    AccountsBase.metadata.create_all(engine)
+    WriteModelBase.metadata.create_all(engine)
+    EventsAppBase.metadata.create_all(engine)
+    ReadModelBase.metadata.create_all(engine)
+    NLPAppBase.metadata.create_all(engine)
 
     stmt = """
         truncate users cascade;
@@ -59,7 +70,6 @@ def engine(config):
         session.commit()
 
     return engine
-
 
 
 @pytest.fixture

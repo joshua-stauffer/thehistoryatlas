@@ -2,8 +2,9 @@ import asyncio
 import logging
 from dataclasses import asdict
 from typing import Tuple, Union, Optional, List, Dict
+from uuid import uuid4, UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -13,6 +14,7 @@ from the_history_atlas.apps.domain.models.readmodel import (
     Source as ADMSource,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries import FuzzySearchByName
+from the_history_atlas.apps.readmodel.errors import MissingResourceError
 from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
@@ -530,6 +532,41 @@ class Database:
             for word in author_words:
                 self._source_trie.insert(word, guid=id)
 
+    def add_name_to_tag(self, tag_id: UUID, name: str, lang: str | None = None):  # todo
+        """Ensure name exists, and associate it with the tag."""
+        # todo: handle lang
+        with Session(self._engine, future=True) as session:
+            get_tag = "select id from tags where tags.id = :tag_id"
+            tag_id = session.execute(
+                text(get_tag), {"tag_id": tag_id}
+            ).scalar_one_or_none()
+            if tag_id is None:
+                raise MissingResourceError("Tag was not found.")
+            get_name = """
+                select id from names where names.name = :name;
+            """
+            name_id = session.execute(
+                text(get_name), {"name": name}
+            ).scalar_one_or_none()
+            if name_id is None:
+                name_id = uuid4()
+                insert_name = """
+                    insert into names (id, name)
+                        values (:name_id, :name);
+                """
+            else:
+                insert_name = ""
+            insert_assoc = """
+                insert into tag_name_assoc (tag_id, name_id)
+                    values (:tag_id, :name_id);
+            """
+            stmt = insert_name + insert_assoc
+            session.execute(
+                text(stmt),
+                {"name_id": name_id, "name": name, "lang": lang, "tag_id": tag_id},
+            )
+            session.commit()
+
     def _handle_name(self, name, guid, session):
         """Accepts a name and GUID and links the two in the Name table and
         updates the name search trie."""
@@ -537,7 +574,23 @@ class Database:
             select(Name).where(Name.name == name)
         ).scalar_one_or_none()
         if not res:
-            res = Name(name=name, guids=guid)
+            name_id = uuid4()
+            stmt = """
+                insert into names (id, name, lang)
+                    values (:name_id, :name, :lang);
+                insert into name_tag_assoc (tag_id, name_id)
+                    values (:tag_id, :name_id);
+            """
+            session.execute(
+                text(stmt),
+                {
+                    "name_id": name_id,
+                    "name": name,
+                    "lang": None,  # todo
+                    "tag_id": guid,
+                },
+            )
+            res = Name(name=name)
             self.update_entity_trie(new_string=name, new_string_guid=guid)
         else:
             # check if guid is already represented

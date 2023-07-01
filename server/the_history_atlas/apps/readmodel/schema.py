@@ -76,7 +76,7 @@ class TagInstance(Base):
     summary_id = Column(INTEGER, ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="tags")
     # parent tag
-    tag_id = Column(INTEGER, ForeignKey("tags.id"))
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"))
     tag = relationship("Tag", back_populates="tag_instances")
 
     def __repr__(self):
@@ -86,8 +86,8 @@ class TagInstance(Base):
 tag_name_assoc = Table(
     "tag_name_assoc",
     Base.metadata,
-    Column("tag_id", INTEGER, ForeignKey("tags.id")),
-    Column("name_id", INTEGER, ForeignKey("names.id")),
+    Column("tag_id", UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False),
+    Column("name_id", UUID(as_uuid=True), ForeignKey("names.id"), nullable=False),
 )
 
 
@@ -95,8 +95,7 @@ class Tag(Base):
     """Base class for time, person, and place tags"""
 
     __tablename__ = "tags"
-    id = Column(INTEGER, primary_key=True)
-    guid = Column(VARCHAR)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
     names = relationship("Name", secondary=tag_name_assoc, back_populates="tags")
@@ -107,7 +106,7 @@ class Tag(Base):
 class Time(Tag):
 
     __tablename__ = "time"
-    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
+    id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
     time = Column(TIMESTAMP)
     calendar_model = Column(String(64))
     #  6 - millennium, 7 - century, 8 - decade, 9 - year, 10 - month, 11 - day
@@ -122,7 +121,7 @@ class Time(Tag):
 class Person(Tag):
 
     __tablename__ = "person"
-    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
+    id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
 
@@ -134,7 +133,7 @@ class Place(Tag):
 
     __tablename__ = "place"
 
-    id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
+    id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
     latitude = Column(FLOAT)
     longitude = Column(FLOAT)
     geoshape = Column(VARCHAR)
@@ -146,44 +145,50 @@ class Place(Tag):
         return f"Place(latitude: {self.latitude}, longitude: {self.longitude})"
 
 
-class Name(Base):
+class Language(Base):
+    __tablename__ = "languages"
 
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    code = Column(VARCHAR, nullable=False)
+
+
+class Name(Base):
     __tablename__ = "names"
 
-    id = Column(INTEGER, primary_key=True)
-    name = Column(VARCHAR)
-    lang = Column(VARCHAR)
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    name = Column(VARCHAR, unique=True, nullable=False)
+    # lang_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
     tags = relationship("Tag", secondary=tag_name_assoc, back_populates="names")
 
-    # todo: remove
-    _guids = Column(VARCHAR)  # save as | separated values and parse on exit
-
-    @property
-    def guids(self):
-        return self._guids.split("|")
-
-    @guids.setter
-    def guids(self, guid):
-        if self._guids:
-            raise Exception("GUIDs is already set -- do you mean to erase it?")
-        self._guids = guid
-
-    def add_guid(self, guid):
-        if self._guids:
-            self._guids += "|" + guid
-        else:
-            self._guids = "|" + guid
-
-    def del_guid(self, guid):
-        if guid not in self.guids:
-            raise ValueError("That GUID isn't associated with this name")
-        if len(self.guids) == 1:
-            raise EmptyNameError(
-                "This is the last GUID associated with this name."
-                + " Please delete entire Name instead of just the GUID."
-            )
-        tmp = [val for val in self.guids if val != guid]
-        self._guids = "|".join(tmp)
+    # # todo: remove
+    # _guids = Column(VARCHAR)  # save as | separated values and parse on exit
+    #
+    # @property
+    # def guids(self):
+    #     return self._guids.split("|")
+    #
+    # @guids.setter
+    # def guids(self, guid):
+    #     if self._guids:
+    #         raise Exception("GUIDs is already set -- do you mean to erase it?")
+    #     self._guids = guid
+    #
+    # def add_guid(self, guid):
+    #     if self._guids:
+    #         self._guids += "|" + guid
+    #     else:
+    #         self._guids = "|" + guid
+    #
+    # def del_guid(self, guid):
+    #     if guid not in self.guids:
+    #         raise ValueError("That GUID isn't associated with this name")
+    #     if len(self.guids) == 1:
+    #         raise EmptyNameError(
+    #             "This is the last GUID associated with this name."
+    #             + " Please delete entire Name instead of just the GUID."
+    #         )
+    #     tmp = [val for val in self.guids if val != guid]
+    #     self._guids = "|".join(tmp)
 
     def __repr__(self):
         return f"Name(id: {self.id}, name: {self.name}, guids: {self._guids})"
