@@ -1,16 +1,10 @@
 import pytest
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, text
 from the_history_atlas.apps.accounts.schema import User
 from the_history_atlas.apps.accounts.database import PROTECTED_FIELDS
 from the_history_atlas.apps.accounts.errors import UnauthorizedUserError
 from the_history_atlas.apps.accounts.encryption import fernet
-
-
-def test_loaded_db_has_three_users(engine):
-    with Session(engine, future=True) as session:
-        res = session.execute(select(User)).scalars()
-        assert len([r for r in res]) == 3, "Three users to start."
 
 
 def test_admin_can_add_user(

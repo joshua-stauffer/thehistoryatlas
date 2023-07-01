@@ -5,7 +5,8 @@ from typing import List, Dict
 
 import pytest
 from cryptography.fernet import Fernet
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.accounts.database import Database as AccountsDB
@@ -33,17 +34,38 @@ def config():
 
 @pytest.fixture
 def engine(config):
-    return create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+
+    stmt = """
+        truncate users cascade;
+        truncate citation_hashes cascade;
+        truncate citations cascade;
+        truncate events cascade;
+        truncate guids cascade;
+        truncate history cascade;
+        truncate names cascade;
+        truncate person cascade;
+        truncate place cascade;
+        truncate sources cascade;
+        truncate summaries cascade;
+        truncate tag_name_assoc cascade;
+        truncate taginstances cascade;
+        truncate tags cascade;
+        truncate time cascade;
+    """
+
+    with Session(engine, future=True) as session:
+        session.execute(text(stmt))
+        session.commit()
+
+    return engine
+
 
 
 @pytest.fixture
 def accounts_bare_db(engine):
 
     db = AccountsDB(engine=engine)
-
-    # if we're using db, ensure its fresh
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
 
     return db
 
@@ -59,6 +81,7 @@ def accounts_db(accounts_bare_db, admin_user_details, engine):
     with Session(engine, future=True) as session:
         session.add(User(**encrypted_admin_details))
         session.commit()
+
     return accounts_bare_db
 
 
@@ -237,10 +260,6 @@ def writemodel_db(
 ):
     db = WriteModelDB(database_client=engine, stm_timeout=0)
 
-    # if we're using db, ensure its fresh
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-
     with Session(engine, future=True) as session:
         session.add_all(
             [
@@ -253,7 +272,4 @@ def writemodel_db(
         )
         session.commit()
 
-    yield db
-
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    return db
