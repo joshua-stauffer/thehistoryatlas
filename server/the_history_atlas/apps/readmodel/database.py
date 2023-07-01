@@ -283,7 +283,7 @@ class Database:
     def get_coords_by_names(self, names: list[str]) -> CoordsByName:
         with Session(self._engine, future=True) as session:
             sql = """
-                select (names, latitude, longitude) from places
+                select from places names, latitude, longitude
                 
             """
 

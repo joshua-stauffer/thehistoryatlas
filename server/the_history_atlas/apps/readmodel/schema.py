@@ -1,4 +1,6 @@
-from sqlalchemy import Column
+from enum import Enum
+
+from sqlalchemy import Column, String, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table
@@ -106,7 +108,10 @@ class Time(Tag):
 
     __tablename__ = "time"
     id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    name = Column(VARCHAR)  # todo: remove
+    time = Column(TIMESTAMP)
+    calendar_model = Column(String(64))
+    #  6 - millennium, 7 - century, 8 - decade, 9 - year, 10 - month, 11 - day
+    precision = Column(INTEGER)
 
     __mapper_args__ = {"polymorphic_identity": "TIME"}
 
@@ -118,7 +123,6 @@ class Person(Tag):
 
     __tablename__ = "person"
     id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    names = Column(VARCHAR)  # todo: remove
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
 
@@ -131,7 +135,6 @@ class Place(Tag):
     __tablename__ = "place"
 
     id = Column(INTEGER, ForeignKey("tags.id"), primary_key=True)
-    names = Column(VARCHAR)  # todo: remove
     latitude = Column(FLOAT)
     longitude = Column(FLOAT)
     geoshape = Column(VARCHAR)
@@ -145,7 +148,7 @@ class Place(Tag):
 
 class Name(Base):
 
-    __tablename__ = "name"
+    __tablename__ = "names"
 
     id = Column(INTEGER, primary_key=True)
     name = Column(VARCHAR)
