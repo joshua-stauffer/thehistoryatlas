@@ -1,9 +1,10 @@
+from uuid import UUID
+
 from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
 class SummaryModel(ConfiguredBaseModel):
 
-    id: int
-    guid: str
+    id: UUID
     text: str
-    time_tag: str
+    time_tag: str  # todo: delete

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.orm import Session
 
-from tests.conftest import DBHelper
+from tests.db_builder import DBBuilder
 from tests.seed.readmodel import CITATIONS, SUMMARIES, SOURCES
 from the_history_atlas.apps.readmodel import ReadModelApp
 from the_history_atlas.apps.readmodel.database import Database

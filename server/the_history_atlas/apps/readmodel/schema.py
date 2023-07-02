@@ -14,8 +14,7 @@ class Summary(Base):
     """Model representing a user-created event summary"""
 
     __tablename__ = "summaries"
-    id = Column(INTEGER, primary_key=True)
-    guid = Column(VARCHAR)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     text = Column(VARCHAR)
 
     # specific instances of tags anchored in the summary text
@@ -34,13 +33,12 @@ class Citation(Base):
     their tags"""
 
     __tablename__ = "citations"
-    id = Column(INTEGER, primary_key=True)
-    guid = Column(VARCHAR(36))
+    id = Column(UUID(as_uuid=True), primary_key=True)
     text = Column(VARCHAR)
     # todo: as_uuid=True
-    source_id = Column(UUID(as_uuid=False), ForeignKey("sources.id"))
+    source_id = Column(UUID(as_uuid=True), ForeignKey("sources.id"))
     source = relationship("Source", back_populates="citations")
-    summary_id = Column(INTEGER, ForeignKey("summaries.id"))
+    summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="citations")
     page_num = Column(INTEGER)
     access_date = Column(VARCHAR)
@@ -56,7 +54,7 @@ class Source(Base):
 
     __tablename__ = "sources"
 
-    id = Column(UUID(as_uuid=False), primary_key=True, unique=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, unique=True)
     citations = relationship("Citation", back_populates="source")
     title = Column(VARCHAR, nullable=False)
     author = Column(VARCHAR, nullable=False)
@@ -70,11 +68,11 @@ class TagInstance(Base):
     a tag."""
 
     __tablename__ = "taginstances"
-    id = Column(INTEGER, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     start_char = Column(INTEGER)
     stop_char = Column(INTEGER)
     # parent summary
-    summary_id = Column(INTEGER, ForeignKey("summaries.id"))
+    summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="tags")
     # parent tag
     tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"))
@@ -108,7 +106,7 @@ class Time(Tag):
 
     __tablename__ = "time"
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
-    time = Column(TIMESTAMP)
+    time = Column(TIMESTAMP(timezone=True))
     calendar_model = Column(String(64))
     #  6 - millennium, 7 - century, 8 - decade, 9 - year, 10 - month, 11 - day
     precision = Column(INTEGER)

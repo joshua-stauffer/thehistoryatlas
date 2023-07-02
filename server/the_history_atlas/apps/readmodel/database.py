@@ -292,20 +292,20 @@ class Database:
 
     # MUTATIONS
 
-    def create_summary(self, summary_guid: str, text: str) -> None:
+    def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary, and caches its database level id for any
         following operations to use"""
         log.info(f"Creating a new summary: {text[:50]}...")
-        summary = Summary(guid=summary_guid, text=text)
+        summary = Summary(id=id, text=text)
         with Session(self._engine, future=True) as session:
             session.add(summary)
             session.commit()
-            self.add_to_stm(key=summary_guid, value=summary.id)
+            self.add_to_stm(key=str(id), value=summary.id)
 
     def create_citation(
         self,
-        citation_guid: str,
-        summary_guid: str,
+        id: UUID,
+        summary_id: UUID,
         text: str,
         page_num: Optional[int] = None,
         access_date: Optional[str] = None,
@@ -313,9 +313,8 @@ class Database:
         """Initializes a new citation in the database."""
 
         log.info(f"Creating a new citation: {text[:50]}...")
-        summary_id = self.get_summary_id(summary_guid=summary_guid)
         c = Citation(
-            guid=citation_guid,
+            id=id,
             text=text,
             summary_id=summary_id,
             page_num=page_num,
@@ -327,8 +326,8 @@ class Database:
 
     def handle_person_update(
         self,
-        person_guid: str,
-        summary_guid: str,
+        person_id: UUID,
+        summary_id: UUID,
         person_name: str,
         start_char: int,
         stop_char: int,
@@ -341,17 +340,17 @@ class Database:
             # resolve person
             if is_new:
                 log.debug(f"Creating a new person: {person_name}")
-                person = Person(id=person_guid)
+                person = Person(id=person_id)
             else:
                 log.debug(f"Tagging an existing person: {person_name}")
                 person = session.execute(
-                    select(Person).where(Person.id == person_guid)
+                    select(Person).where(Person.id == person_id)
                 ).scalar_one()
 
-            self._handle_name(name=person_name, guid=person_guid)
+            self._handle_name(name=person_name, id=person_id)
             self._create_tag_instance(
                 tag=person,
-                summary_guid=summary_guid,
+                summary_id=summary_id,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session,
@@ -359,8 +358,8 @@ class Database:
 
     def handle_place_update(
         self,
-        place_guid: str,
-        summary_guid: str,
+        place_id: UUID,
+        summary_id: UUID,
         place_name: str,
         start_char: int,
         stop_char: int,
@@ -376,19 +375,19 @@ class Database:
             # resolve place
             if is_new:
                 place = Place(
-                    id=place_guid,
+                    id=place_id,
                     latitude=latitude,
                     longitude=longitude,
                     geoshape=geoshape,
                 )
             else:
                 place = session.execute(
-                    select(Place).where(Place.id == place_guid)
+                    select(Place).where(Place.id == place_id)
                 ).scalar_one()
-            self._handle_name(name=place_name, guid=place_guid)
+            self._handle_name(name=place_name, id=place_id)
             self._create_tag_instance(
                 tag=place,
-                summary_guid=summary_guid,
+                summary_id=summary_id,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session,
@@ -396,8 +395,8 @@ class Database:
 
     def handle_time_update(
         self,
-        time_guid: str,
-        summary_guid: str,
+        time_id: UUID,
+        summary_id: UUID,
         time_name: str,
         start_char: int,
         stop_char: int,
@@ -409,22 +408,22 @@ class Database:
         with Session(self._engine, future=True) as session:
             # resolve time
             if is_new:
-                time = Time(id=time_guid)
+                time = Time(id=time_id)
             else:
                 time = session.execute(
-                    select(Time).where(Time.id == time_guid)
+                    select(Time).where(Time.id == time_id)
                 ).scalar_one()
             # cache timetag name on summary
             # NOTE: this currently results in a 'last write wins' scenario
             summary = session.execute(
-                select(Summary).where(Summary.guid == summary_guid)
+                select(Summary).where(Summary.guid == summary_id)
             ).scalar_one()
             summary.time_tag = time_name
             session.add(summary)
-            self._handle_name(name=time_name, guid=time_guid)
+            self._handle_name(name=time_name, id=time_id)
             self._create_tag_instance(
                 tag=time,
-                summary_guid=summary_guid,
+                summary_id=summary_id,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session,
@@ -433,7 +432,7 @@ class Database:
     def _create_tag_instance(
         self,
         tag: Tag,
-        summary_guid: str,
+        summary_id: UUID,
         start_char: int,
         stop_char: int,
         session: Session,
@@ -442,7 +441,6 @@ class Database:
         associates it with citation and tag"""
         # resolve citation
         log.debug("Creating a TagInstance")
-        summary_id = self.get_summary_id(summary_guid=summary_guid, session=session)
 
         # create Tag Instance
         tag_instance = TagInstance(
@@ -459,25 +457,25 @@ class Database:
             + f"TagInstance Tag ID is {tag_instance.tag_id}"
         )
 
-    def add_source_to_citation(self, source_id: str, citation_id: str) -> None:
+    def add_source_to_citation(self, source_id: UUID, citation_id: UUID) -> None:
         """
         Associate an existing Source with a Citation.
         """
         with Session(self._engine, future=True) as session:
             citation = session.execute(
-                select(Citation).where(Citation.guid == citation_id)
+                select(Citation).where(Citation.id == citation_id)
             ).scalar_one()
             citation.source_id = source_id
             session.commit()
 
     def create_source(
         self,
-        id: str,
+        id: UUID,
         title: str,
         author: str,
         publisher: str,
         pub_date: str,
-        citation_id: Optional[str] = None,
+        citation_id: Optional[UUID] = None,
         **kwargs,
     ):
         """
@@ -496,7 +494,7 @@ class Database:
 
             if citation_id is not None:
                 citation = session.execute(
-                    select(Citation).where(Citation.guid == citation_id)
+                    select(Citation).where(Citation.id == citation_id)
                 ).scalar_one()
                 citation.source_id = id
                 session.add(citation)
@@ -559,33 +557,11 @@ class Database:
             )
             session.commit()
 
-    def _handle_name(self, name, guid):
+    def _handle_name(self, name: str, id: UUID):
         """Accepts a name and GUID and links the two in the Name table and
         updates the name search trie."""
-        self.add_name_to_tag(name=name, tag_id=guid)
-        self.update_entity_trie(new_string=name, new_string_guid=guid)
-
-    # CACHE LAYER FOR INCOMING CITATIONS
-
-    def get_summary_id(self, summary_guid: str, session=None) -> int:
-        """fetches a summary id, utilizing caching if possible."""
-        if id := self.__short_term_memory.get(summary_guid):
-            return id
-        if not session:
-            with Session(self._engine, future=True) as session:
-                res = session.execute(
-                    select(Summary).where(Summary.guid == summary_guid)
-                ).scalar_one()
-                # cache result
-                self.add_to_stm(key=summary_guid, value=res.id)
-                return res.id
-        else:
-            res = session.execute(
-                select(Summary).where(Summary.guid == summary_guid)
-            ).scalar_one()
-            # cache result
-            self.add_to_stm(key=summary_guid, value=res.id)
-            return res.id
+        self.add_name_to_tag(name=name, tag_id=id)
+        self.update_entity_trie(new_string=name, new_string_guid=str(id))
 
     # HISTORY MANAGEMENT
 

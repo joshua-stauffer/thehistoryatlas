@@ -65,7 +65,7 @@ class EventHandler:
     def _handle_summary_added(self, event: SummaryAdded):
         summary_guid = event.payload.id
         text = event.payload.text
-        self._db.create_summary(summary_guid=summary_guid, text=text)
+        self._db.create_summary(id=summary_guid, text=text)
 
     def _handle_summary_tagged(self, event: SummaryTagged):
         # summary will automatically be tagged when the
@@ -77,11 +77,11 @@ class EventHandler:
         summary_guid = event.payload.summary_id
         text = event.payload.text
         self._db.create_citation(
-            citation_guid=citation_guid,
-            summary_guid=summary_guid,
+            id=citation_guid,
+            summary_id=summary_guid,
             text=text,
-            access_date=event.payload.access_date,
             page_num=event.payload.page_num,
+            access_date=event.payload.access_date,
         )
 
     def _handle_person_added(self, event: PersonAdded):
@@ -93,8 +93,8 @@ class EventHandler:
     def __handle_person_util(self, event: Union[PersonTagged, PersonAdded], is_new):
         """Merges person added and person tagged functionality"""
         self._db.handle_person_update(
-            person_guid=event.payload.id,
-            summary_guid=event.payload.summary_id,
+            person_id=event.payload.id,
+            summary_id=event.payload.summary_id,
             person_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
@@ -123,8 +123,8 @@ class EventHandler:
         # latitude, longitude, and geoshape are passed through as keyword
         # arguments since they are only needed by place added
         self._db.handle_place_update(
-            place_guid=event.payload.id,
-            summary_guid=event.payload.summary_id,
+            place_id=event.payload.id,
+            summary_id=event.payload.summary_id,
             place_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
@@ -141,8 +141,8 @@ class EventHandler:
     def __handle_time_util(self, event: Union[TimeAdded, TimeTagged], is_new):
         """Merges time added and time tagged functionality"""
         self._db.handle_time_update(
-            time_guid=event.payload.id,
-            summary_guid=event.payload.summary_id,
+            time_id=event.payload.id,
+            summary_id=event.payload.summary_id,
             time_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,

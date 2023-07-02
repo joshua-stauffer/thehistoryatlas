@@ -1,7 +1,7 @@
 import asyncio
 import pytest
 import random
-from uuid import uuid4
+from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -164,20 +164,18 @@ async def test_create_summary(readmodel_db, summary_data_1):
 async def test_create_citation(readmodel_db, citation_data_1, summary_guid):
     assert len(readmodel_db._Database__short_term_memory.keys()) == 0
     # seed database with a root summary
-    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+    readmodel_db.create_summary(id=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
-    readmodel_db.create_citation(
-        summary_guid=summary_guid, citation_guid=citation_guid, text=text
-    )
+    readmodel_db.create_citation(id=citation_guid, summary_id=summary_guid, text=text)
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
 
     # double check that citation has made it into the database
     with Session(readmodel_db._engine, future=True) as sess:
         res = sess.execute(
-            select(Citation).where(Citation.guid == citation_guid)
+            select(Citation).where(Citation.id == citation_guid)
         ).scalar_one()
         assert res.text == text
-        assert res.guid == citation_guid
+        assert res.id == UUID(citation_guid)
 
     # check that short term memory is cleared
     await asyncio.sleep(0.000001)
@@ -212,8 +210,8 @@ async def test_handle_person_update_new_no_cache(
         sess.add(Summary(guid=summary_guid, text="not important"))
 
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
+        person_id=person_guid,
+        summary_id=summary_guid,
         person_name=person_name_1,
         start_char=start_char,
         stop_char=stop_char,
@@ -266,8 +264,8 @@ async def test_handle_person_update_existing_no_cache(
         sess.add(Person(guid=person_guid, names=person_name_1))
 
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
+        person_id=person_guid,
+        summary_id=summary_guid,
         person_name=person_name_2,
         start_char=start_char,
         stop_char=stop_char,
@@ -313,11 +311,11 @@ async def test_handle_person_update_new_and_cache(
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    readmodel_db.create_summary(id=summary_guid, text="not important")
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
+        person_id=person_guid,
+        summary_id=summary_guid,
         person_name=person_name_1,
         start_char=start_char,
         stop_char=stop_char,
@@ -363,13 +361,13 @@ async def test_handle_person_update_existing_and_cache(
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    readmodel_db.create_summary(id=summary_guid, text="not important")
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     with Session(engine, future=True) as sess, sess.begin():
         sess.add(Person(guid=person_guid, names=person_name_1))
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid=person_guid,
+        person_id=person_guid,
+        summary_id=summary_guid,
         person_name=person_name_2,
         start_char=start_char,
         stop_char=stop_char,
@@ -425,15 +423,15 @@ async def test_handle_place_update_new_no_cache(
     lat, long = coords
 
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
+        place_id=place_guid,
+        summary_id=summary_guid,
         place_name=place_name_1,
         start_char=start_char,
         stop_char=stop_char,
+        is_new=True,
         latitude=lat,
         longitude=long,
         geoshape=geoshape,
-        is_new=True,
     )
 
     with Session(engine, future=True) as sess, sess.begin():
@@ -493,8 +491,8 @@ async def test_handle_place_update_existing_no_cache(
         )
 
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
+        place_id=place_guid,
+        summary_id=summary_guid,
         place_name=place_name_2,
         start_char=start_char,
         stop_char=stop_char,
@@ -542,19 +540,19 @@ async def test_handle_place_update_new_and_cache(
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    readmodel_db.create_summary(id=summary_guid, text="not important")
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     lat, long = coords
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
+        place_id=place_guid,
+        summary_id=summary_guid,
         place_name=place_name_1,
         start_char=start_char,
         stop_char=stop_char,
+        is_new=True,
         latitude=lat,
         longitude=long,
         geoshape=geoshape,
-        is_new=True,
     )
 
     with Session(engine, future=True) as sess, sess.begin():
@@ -597,7 +595,7 @@ async def test_handle_place_update_existing_and_cache(
 
     lat, long = coords
     # this time use create summary to cache summary_guid
-    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    readmodel_db.create_summary(id=summary_guid, text="not important")
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     with Session(engine, future=True) as sess, sess.begin():
         sess.add(
@@ -610,8 +608,8 @@ async def test_handle_place_update_existing_and_cache(
             )
         )
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid=place_guid,
+        place_id=place_guid,
+        summary_id=summary_guid,
         place_name=place_name_2,
         start_char=start_char,
         stop_char=stop_char,
@@ -662,8 +660,8 @@ async def test_handle_time_update_new_no_cache(
         sess.add(Summary(guid=summary_guid, text="not important"))
 
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
+        time_id=time_guid,
+        summary_id=summary_guid,
         time_name=time_name,
         start_char=start_char,
         stop_char=stop_char,
@@ -713,8 +711,8 @@ async def test_handle_time_update_existing_no_cache(
         sess.add(Time(guid=time_guid, name=time_name))
 
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
+        time_id=time_guid,
+        summary_id=summary_guid,
         time_name=time_name,
         start_char=start_char,
         stop_char=stop_char,
@@ -757,11 +755,11 @@ async def test_handle_time_update_new_and_cache(
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    readmodel_db.create_summary(id=summary_guid, text="not important")
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
+        time_id=time_guid,
+        summary_id=summary_guid,
         time_name=time_name,
         start_char=start_char,
         stop_char=stop_char,
@@ -804,13 +802,13 @@ async def test_handle_time_update_existing_and_cache(
     assert called[0] == False
 
     # this time use create summary to cache summary_guid
-    readmodel_db.create_summary(summary_guid=summary_guid, text="not important")
+    readmodel_db.create_summary(id=summary_guid, text="not important")
     assert len(readmodel_db._Database__short_term_memory.keys()) == 1
     with Session(engine, future=True) as sess, sess.begin():
         sess.add(Time(guid=time_guid, name=time_name))
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid=time_guid,
+        time_id=time_guid,
+        summary_id=summary_guid,
         time_name=time_name,
         start_char=start_char,
         stop_char=stop_char,
@@ -838,10 +836,8 @@ async def test_add_meta_to_citation_no_extra_args(
     readmodel_db, citation_data_1, summary_guid, meta_data_min, engine
 ):
     citation_guid, text = citation_data_1
-    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
-    readmodel_db.create_citation(
-        summary_guid=summary_guid, citation_guid=citation_guid, text=text
-    )
+    readmodel_db.create_summary(id=summary_guid, text="this is irrelevant")
+    readmodel_db.create_citation(id=citation_guid, summary_id=summary_guid, text=text)
 
     readmodel_db.create_source(citation_id=citation_guid, **meta_data_min)
 
@@ -858,11 +854,9 @@ async def test_add_meta_to_citation_no_extra_args(
 async def test_add_meta_to_citation_with_extra_args(
     readmodel_db, citation_data_1, summary_guid, meta_data_more, engine
 ):
-    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+    readmodel_db.create_summary(id=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
-    readmodel_db.create_citation(
-        summary_guid=summary_guid, citation_guid=citation_guid, text=text
-    )
+    readmodel_db.create_citation(id=citation_guid, summary_id=summary_guid, text=text)
 
     readmodel_db.create_source(citation_id=citation_guid, **meta_data_more)
 
@@ -879,32 +873,30 @@ async def test_add_meta_to_citation_with_extra_args(
 async def test_handle_name_only_new(
     readmodel_db, citation_data_1, summary_guid, engine
 ):
-    readmodel_db.create_summary(summary_guid=summary_guid, text="this is irrelevant")
+    readmodel_db.create_summary(id=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
-    readmodel_db.create_citation(
-        summary_guid=summary_guid, citation_guid=citation_guid, text=text
-    )
+    readmodel_db.create_citation(id=citation_guid, summary_id=summary_guid, text=text)
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid="test-guid-1",
+        person_id="test-guid-1",
+        summary_id=summary_guid,
         person_name="test-name-1",
         start_char=1,
         stop_char=5,
         is_new=True,
     )
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid,
-        place_guid="test-guid-2",
+        place_id="test-guid-2",
+        summary_id=summary_guid,
         place_name="test-name-2",
         start_char=1,
         stop_char=5,
+        is_new=True,
         latitude=random.random(),
         longitude=random.random(),
-        is_new=True,
     )
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid,
-        time_guid="test-guid-3",
+        time_id="test-guid-3",
+        summary_id=summary_guid,
         time_name="test-name-3",
         start_char=1,
         stop_char=5,
@@ -926,28 +918,28 @@ async def test_handle_name_with_repeats(
     summary_guid_1 = str(uuid4())
     summary_guid_2 = str(uuid4())
     _, text = citation_data_1
-    readmodel_db.create_summary(summary_guid=summary_guid_1, text=text)
+    readmodel_db.create_summary(id=summary_guid_1, text=text)
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid_1,
-        person_guid="test-guid-1",
+        person_id="test-guid-1",
+        summary_id=summary_guid_1,
         person_name="test-name-1",
         start_char=1,
         stop_char=5,
         is_new=True,
     )
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid_1,
-        place_guid="test-guid-2",
+        place_id="test-guid-2",
+        summary_id=summary_guid_1,
         place_name="test-name-2",
         start_char=1,
         stop_char=5,
+        is_new=True,
         latitude=random.random(),
         longitude=random.random(),
-        is_new=True,
     )
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid_1,
-        time_guid="test-guid-3",
+        time_id="test-guid-3",
+        summary_id=summary_guid_1,
         time_name="test-name-3",
         start_char=1,
         stop_char=5,
@@ -956,28 +948,28 @@ async def test_handle_name_with_repeats(
 
     # add a second citation
     _, text_2 = citation_data_2
-    readmodel_db.create_summary(summary_guid=summary_guid_2, text=text_2)
+    readmodel_db.create_summary(id=summary_guid_2, text=text_2)
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid_2,
-        person_guid="test-guid-4",
+        person_id="test-guid-4",
+        summary_id=summary_guid_2,
         person_name="test-name-1",
         start_char=1,
         stop_char=5,
         is_new=True,
     )
     readmodel_db.handle_place_update(
-        summary_guid=summary_guid_2,
-        place_guid="test-guid-5",
+        place_id="test-guid-5",
+        summary_id=summary_guid_2,
         place_name="test-name-2",
         start_char=1,
         stop_char=5,
+        is_new=True,
         latitude=random.random(),
         longitude=random.random(),
-        is_new=True,
     )
     readmodel_db.handle_time_update(
-        summary_guid=summary_guid_2,
-        time_guid="test-guid-6",
+        time_id="test-guid-6",
+        summary_id=summary_guid_2,
         time_name="test-name-3",
         start_char=1,
         stop_char=5,
@@ -1008,10 +1000,10 @@ async def test_handle_name_doesnt_duplicate_guids(
     readmodel_db, citation_data_1, summary_guid, engine
 ):
     citation_guid, text = citation_data_1
-    readmodel_db.create_summary(summary_guid=summary_guid, text=text)
+    readmodel_db.create_summary(id=summary_guid, text=text)
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid="test-guid-1",
+        person_id="test-guid-1",
+        summary_id=summary_guid,
         person_name="test-name-1",
         start_char=1,
         stop_char=5,
@@ -1019,8 +1011,8 @@ async def test_handle_name_doesnt_duplicate_guids(
     )
     # now add exactly the same name and GUID
     readmodel_db.handle_person_update(
-        summary_guid=summary_guid,
-        person_guid="test-guid-1",
+        person_id="test-guid-1",
+        summary_id=summary_guid,
         person_name="test-name-1",
         start_char=1,
         stop_char=5,
