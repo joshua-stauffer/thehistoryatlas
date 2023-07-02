@@ -37,6 +37,7 @@ class Citation(Base):
     id = Column(INTEGER, primary_key=True)
     guid = Column(VARCHAR(36))
     text = Column(VARCHAR)
+    # todo: as_uuid=True
     source_id = Column(UUID(as_uuid=False), ForeignKey("sources.id"))
     source = relationship("Source", back_populates="citations")
     summary_id = Column(INTEGER, ForeignKey("summaries.id"))
@@ -137,7 +138,7 @@ class Place(Tag):
     latitude = Column(FLOAT)
     longitude = Column(FLOAT)
     geoshape = Column(VARCHAR)
-    geoname_id = Column(INTEGER)
+    geonames_id = Column(INTEGER)
 
     __mapper_args__ = {"polymorphic_identity": "PLACE"}
 

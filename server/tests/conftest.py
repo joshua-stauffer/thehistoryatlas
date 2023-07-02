@@ -9,11 +9,31 @@ from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
+from tests.seed.readmodel import (
+    CITATIONS,
+    SUMMARIES,
+    SOURCES,
+    PEOPLE,
+    PLACES,
+    TIMES,
+    NAMES,
+)
+from tests.seed.readmodel.tag_name_assocs import TAG_NAME_ASSOCS
 from the_history_atlas.apps.accounts.database import Database as AccountsDB
 from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, fernet
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
+from the_history_atlas.apps.domain.models.readmodel.tables import (
+    CitationModel,
+    SummaryModel,
+    PersonModel,
+    SourceModel,
+    PlaceModel,
+    TimeModel,
+    NameModel,
+    TagNameAssocModel,
+)
 from the_history_atlas.apps.eventstore.event_schema import Base as EventsAppBase
 from the_history_atlas.apps.nlp.state.schema import Base as NLPAppBase
 from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
@@ -47,7 +67,7 @@ def engine(config):
     ReadModelBase.metadata.create_all(engine)
     NLPAppBase.metadata.create_all(engine)
 
-    stmt = """
+    truncate_stmt = """
         truncate users cascade;
         truncate citation_hashes cascade;
         truncate citations cascade;
@@ -66,7 +86,18 @@ def engine(config):
     """
 
     with Session(engine, future=True) as session:
-        session.execute(text(stmt))
+        session.execute(text(truncate_stmt))
+        helper = DBHelper(session=session)
+        helper.build_readmodel(
+            sources=SOURCES,
+            citations=CITATIONS,
+            summaries=SUMMARIES,
+            people=PEOPLE,
+            places=PLACES,
+            times=TIMES,
+            names=NAMES,
+            tag_name_assocs=TAG_NAME_ASSOCS,
+        )
         session.commit()
 
     return engine
@@ -283,3 +314,96 @@ def writemodel_db(
         session.commit()
 
     return db
+
+
+class DBHelper:
+    def __init__(self, session):
+        self._session = session
+
+    def build_readmodel(
+        self,
+        citations: List[CitationModel],
+        sources: List[SourceModel],
+        summaries: List[SummaryModel],
+        people: List[PersonModel],
+        places: List[PlaceModel],
+        times: List[TimeModel],
+        names: List[NameModel],
+        tag_name_assocs: List[TagNameAssocModel],
+    ):
+        self.insert_sources(sources)
+        self.insert_summaries(summaries)
+        self.insert_citations(citations)
+        self.insert_people(people)
+        self.insert_places(places)
+        self.insert_times(times)
+        self.insert_names(names)
+        self.insert_tag_name_assocs(tag_name_assocs)
+
+    def insert_citations(self, citations: list[CitationModel]):
+        stmt = """
+            insert into citations (id, guid, text,  page_num, access_date, summary_id, source_id)
+            values (:id, :guid, :text,  :page_num, :access_date, :summary_id, :source_id);
+        """
+        self._session.execute(text(stmt), [citation.dict() for citation in citations])
+
+    def insert_summaries(self, summaries: list[SummaryModel]):
+        stmt = """
+            insert into summaries 
+            (id, guid, text, time_tag)
+            values 
+            (:id, :guid, :text, :time_tag);
+        """
+        self._session.execute(text(stmt), [summary.dict() for summary in summaries])
+
+    def insert_people(self, people: list[PersonModel]):
+        stmt = """
+            insert into tags (id, type)
+            values (:id, :type);
+            insert into person (id)
+            values (:id);
+        """
+        self._session.execute(text(stmt), [person.dict() for person in people])
+
+    def insert_places(self, places: list[PlaceModel]):
+        stmt = """
+            insert into tags (id, type)
+            values (:id, :type);
+            insert into place (id, latitude, longitude, geoshape, geonames_id)
+            values (:id, :latitude, :longitude, :geoshape, :geonames_id);
+        """
+        self._session.execute(text(stmt), [place.dict() for place in places])
+
+    def insert_times(self, times: list[TimeModel]):
+        stmt = """
+            insert into tags (id, type)
+            values (:id, :type);
+            insert into time (id, time, calendar_model, precision)
+            values (:id, :time, :calendar_model, :precision)
+        """
+        self._session.execute(text(stmt), [time.dict() for time in times])
+
+    def insert_sources(self, sources: list[SourceModel]):
+        stmt = """
+            insert into sources 
+            (id, title, author, publisher, pub_date, kwargs)
+            values 
+            (:id, :title, :author, :publisher, :pub_date, :kwargs);
+        """
+        self._session.execute(text(stmt), [source.dict() for source in sources])
+
+    def insert_names(self, names: list[NameModel]):
+        stmt = """
+            insert into names (id, name)
+            values (:id, :name);
+        """
+        self._session.execute(text(stmt), [name.dict() for name in names])
+
+    def insert_tag_name_assocs(self, tag_name_assocs: list[TagNameAssocModel]):
+        stmt = """
+            insert into tag_name_assoc (tag_id, name_id)
+            values (:tag_id, :name_id)
+        """
+        self._session.execute(
+            text(stmt), [tag_name_assoc.dict() for tag_name_assoc in tag_name_assocs]
+        )

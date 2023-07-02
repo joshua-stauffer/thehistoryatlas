@@ -192,17 +192,18 @@ class Database:
 
             people = session.execute(select(Person)).scalars()
             for person in people:
-                for name in person.names.split("|"):
-                    res.append((name, person.guid))
+                for name in person.names:
+                    res.append((name.name, person.id))
 
             places = session.execute(select(Place)).scalars()
             for place in places:
-                for name in place.names.split("|"):
-                    res.append((name, place.guid))
+                for name in place.names:
+                    res.append((name.name, place.id))
 
             times = session.execute(select(Time)).scalars()
             for time in times:
-                res.append((time.name, time.guid))
+                for name in time.names:
+                    res.append((name.name, time.id))
 
         return res
 
@@ -340,19 +341,14 @@ class Database:
             # resolve person
             if is_new:
                 log.debug(f"Creating a new person: {person_name}")
-                person = Person(guid=person_guid, names=person_name)
+                person = Person(id=person_guid)
             else:
                 log.debug(f"Tagging an existing person: {person_name}")
                 person = session.execute(
-                    select(Person).where(Person.guid == person_guid)
+                    select(Person).where(Person.id == person_guid)
                 ).scalar_one()
-                cur_names = self.split_names(person.names)
-                if person_name not in cur_names:
-                    log.debug(f"found new person name {person_name}")
-                    person.names += f"|{person_name}"
-                    log.debug(f"person.names is now {person.names}")
-            # add name to Name registry
-            self._handle_name(person_name, person_guid, session)
+
+            self._handle_name(name=person_name, guid=person_guid)
             self._create_tag_instance(
                 tag=person,
                 summary_guid=summary_guid,
@@ -380,20 +376,16 @@ class Database:
             # resolve place
             if is_new:
                 place = Place(
-                    guid=place_guid,
-                    names=place_name,
+                    id=place_guid,
                     latitude=latitude,
                     longitude=longitude,
                     geoshape=geoshape,
                 )
             else:
                 place = session.execute(
-                    select(Place).where(Place.guid == place_guid)
+                    select(Place).where(Place.id == place_guid)
                 ).scalar_one()
-                cur_names = self.split_names(place.names)
-                if place_name not in cur_names:
-                    place.names += f"|{place_name}"
-            self._handle_name(place_name, place_guid, session)
+            self._handle_name(name=place_name, guid=place_guid)
             self._create_tag_instance(
                 tag=place,
                 summary_guid=summary_guid,
@@ -417,10 +409,10 @@ class Database:
         with Session(self._engine, future=True) as session:
             # resolve time
             if is_new:
-                time = Time(guid=time_guid, name=time_name)
+                time = Time(id=time_guid)
             else:
                 time = session.execute(
-                    select(Time).where(Time.guid == time_guid)
+                    select(Time).where(Time.id == time_guid)
                 ).scalar_one()
             # cache timetag name on summary
             # NOTE: this currently results in a 'last write wins' scenario
@@ -429,7 +421,7 @@ class Database:
             ).scalar_one()
             summary.time_tag = time_name
             session.add(summary)
-            self._handle_name(time_name, time_guid, session)
+            self._handle_name(name=time_name, guid=time_guid)
             self._create_tag_instance(
                 tag=time,
                 summary_guid=summary_guid,
@@ -567,38 +559,11 @@ class Database:
             )
             session.commit()
 
-    def _handle_name(self, name, guid, session):
+    def _handle_name(self, name, guid):
         """Accepts a name and GUID and links the two in the Name table and
         updates the name search trie."""
-        res = session.execute(
-            select(Name).where(Name.name == name)
-        ).scalar_one_or_none()
-        if not res:
-            name_id = uuid4()
-            stmt = """
-                insert into names (id, name, lang)
-                    values (:name_id, :name, :lang);
-                insert into name_tag_assoc (tag_id, name_id)
-                    values (:tag_id, :name_id);
-            """
-            session.execute(
-                text(stmt),
-                {
-                    "name_id": name_id,
-                    "name": name,
-                    "lang": None,  # todo
-                    "tag_id": guid,
-                },
-            )
-            res = Name(name=name)
-            self.update_entity_trie(new_string=name, new_string_guid=guid)
-        else:
-            # check if guid is already represented
-            if guid in res.guids:
-                return  # this name/guid pair isn't new
-            res.add_guid(guid)
-            self.update_entity_trie(new_string=name, new_string_guid=guid)
-        session.add(res)
+        self.add_name_to_tag(name=name, tag_id=guid)
+        self.update_entity_trie(new_string=name, new_string_guid=guid)
 
     # CACHE LAYER FOR INCOMING CITATIONS
 
