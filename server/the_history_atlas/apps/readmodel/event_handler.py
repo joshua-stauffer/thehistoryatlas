@@ -54,25 +54,25 @@ class EventHandler:
     def _map_event_handlers(self):
         """A dict of known event types and the methods which process them"""
         return {
-            "SUMMARY_ADDED": self._handle_summary_added,
-            "SUMMARY_TAGGED": self._handle_summary_tagged,
-            "CITATION_ADDED": self._handle_citation_added,
-            "PERSON_ADDED": self._handle_person_added,
-            "PLACE_ADDED": self._handle_place_added,
-            "TIME_ADDED": self._handle_time_added,
-            "PERSON_TAGGED": self._handle_person_tagged,
-            "PLACE_TAGGED": self._handle_place_tagged,
-            "TIME_TAGGED": self._handle_time_tagged,
-            "META_ADDED": self._handle_meta_added,
-            "META_TAGGED": self._handle_meta_tagged,
+            "SUMMARY_ADDED": self.summary_added,
+            "SUMMARY_TAGGED": self.summary_tagged,
+            "CITATION_ADDED": self.citation_added,
+            "PERSON_ADDED": self.person_added,
+            "PLACE_ADDED": self.place_added,
+            "TIME_ADDED": self.time_added,
+            "PERSON_TAGGED": self.person_tagged,
+            "PLACE_TAGGED": self.place_tagged,
+            "TIME_TAGGED": self.time_tagged,
+            "META_ADDED": self.meta_added,
+            "META_TAGGED": self.meta_tagged,
         }
 
-    def _handle_summary_added(self, event: SummaryAdded):
+    def summary_added(self, event: SummaryAdded):
         id = UUID(event.payload.id)
         text = event.payload.text
         self._db.create_summary(id=id, text=text)
 
-    def _handle_summary_tagged(self, event: SummaryTagged):
+    def summary_tagged(self, event: SummaryTagged):
         session = self._db.session()
         self._db.create_citation_summary_fkey(
             session=session,
@@ -84,7 +84,7 @@ class EventHandler:
         except IntegrityError:
             pass
 
-    def _handle_citation_added(self, event: CitationAdded):
+    def citation_added(self, event: CitationAdded):
         id = UUID(event.payload.id)
         summary_id = UUID(event.payload.summary_id)
         text = event.payload.text
@@ -105,69 +105,178 @@ class EventHandler:
             except IntegrityError:
                 pass
 
-    def _handle_person_added(self, event: PersonAdded):
-        self._db.handle_person_update(
-            person_id=UUID(event.payload.id),
-            summary_id=UUID(event.payload.summary_id),
-            person_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-        )
+    def person_added(self, event: PersonAdded):
+        person_id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
+        person_name = event.payload.name
+        start_char = event.payload.citation_start
+        stop_char = event.payload.citation_end
 
-    def _handle_person_tagged(self, event: PersonTagged):
-        self._db.handle_person_update(
-            person_id=UUID(event.payload.id),
-            summary_id=UUID(event.payload.summary_id),
-            person_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-        )
+        with self._db.Session() as session:
+            person = self._db.create_person(id=person_id, session=session)
+            self._db.add_name_to_tag(
+                name=person_name, tag_id=person.id, session=session
+            )
+            self._db.update_entity_trie(
+                new_string=person_name, new_string_guid=str(person.id)
+            )
+            self._db.create_tag_instance(
+                tag_id=person.id,
+                summary_id=summary_id,
+                start_char=start_char,
+                stop_char=stop_char,
+                session=session,
+            )
+            session.commit()
 
-    def _handle_place_added(self, event: PlaceAdded):
-        self._db.handle_place_update(
-            place_id=UUID(event.payload.id),
-            summary_id=UUID(event.payload.summary_id),
-            place_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-            latitude=event.payload.latitude,
-            longitude=event.payload.longitude,
-            geoshape=event.payload.geo_shape,
-            geonames_id=None,  # todo
-        )
+    def person_tagged(self, event: PersonTagged):
+        person_id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
+        person_name = event.payload.name
+        start_char = event.payload.citation_start
+        stop_char = event.payload.citation_end
 
-    def _handle_place_tagged(self, event: PlaceTagged):
-        self._db.handle_place_update(
-            place_id=UUID(event.payload.id),
-            summary_id=UUID(event.payload.summary_id),
-            place_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-            geonames_id=None,  # todo
-        )
+        with self._db.Session() as session:
+            person = self._db.get_person_by_id(id=person_id, session=session)
+            if person is None:
+                raise Exception("Tagged person does not exist.")
+            self._db.add_name_to_tag(
+                name=person_name, tag_id=person.id, session=session
+            )
+            self._db.update_entity_trie(
+                new_string=person_name, new_string_guid=str(person.id)
+            )
+            self._db.create_tag_instance(
+                tag_id=person.id,
+                summary_id=summary_id,
+                start_char=start_char,
+                stop_char=stop_char,
+                session=session,
+            )
+            session.commit()
 
-    def _handle_time_added(self, event: TimeAdded):
-        self._db.handle_time_update(
-            time_id=UUID(event.payload.id),
-            summary_id=UUID(event.payload.summary_id),
-            time_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-            time=datetime(year=1685, month=1, day=1, tzinfo=timezone.utc),  # todo
-            calendar_model="http://www.wikidata.org/entity/Q1985727",
-            precision=9,
-        )
+    def place_added(self, event: PlaceAdded):
+        place_id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
+        place_name = event.payload.name
+        start_char = event.payload.citation_start
+        stop_char = event.payload.citation_end
+        latitude = event.payload.latitude
+        longitude = event.payload.longitude
+        geoshape = event.payload.geo_shape
+        geonames_id = None  # todo
 
-    def _handle_time_tagged(self, event: TimeTagged):
-        self._db.handle_time_update(
-            time_id=UUID(event.payload.id),
-            summary_id=UUID(event.payload.summary_id),
-            time_name=event.payload.name,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-        )
+        with self._db.Session() as session:
+            place = self._db.create_place(
+                session=session,
+                id=place_id,
+                latitude=latitude,
+                longitude=longitude,
+                geoshape=geoshape,
+                geonames_id=geonames_id,
+            )
+            self._db.add_name_to_tag(name=place_name, tag_id=place.id, session=session)
+            self._db.update_entity_trie(
+                new_string=place_name, new_string_guid=str(place.id)
+            )
+            self._db.create_tag_instance(
+                tag_id=place.id,
+                summary_id=summary_id,
+                start_char=start_char,
+                stop_char=stop_char,
+                session=session,
+            )
+            session.commit()
 
-    def _handle_meta_added(self, event: MetaAdded):
+    def place_tagged(self, event: PlaceTagged):
+        place_id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
+        place_name = event.payload.name
+        start_char = event.payload.citation_start
+        stop_char = event.payload.citation_end
+
+        with self._db.Session() as session:
+            place = self._db.get_place_by_id(id=place_id, session=session)
+
+            if place is None:
+                raise Exception("Tagged place does not exist.")
+
+            self._db.add_name_to_tag(name=place_name, tag_id=place.id, session=session)
+            self._db.update_entity_trie(
+                new_string=place_name, new_string_guid=str(place.id)
+            )
+            self._db.create_tag_instance(
+                tag_id=place.id,
+                summary_id=summary_id,
+                start_char=start_char,
+                stop_char=stop_char,
+                session=session,
+            )
+            session.commit()
+
+    def time_added(self, event: TimeAdded):
+        time_id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
+        time_name = event.payload.name
+        start_char = event.payload.citation_start
+        stop_char = event.payload.citation_end
+
+        # todo: add to event object
+        time = datetime(year=1685, month=1, day=1, tzinfo=timezone.utc)
+        calendar_model = "http://www.wikidata.org/entity/Q1985727"
+        precision = 9
+
+        with self._db.Session() as session:
+            time_model = self._db.create_time(
+                id=time_id,
+                time=time,
+                calendar_model=calendar_model,
+                precision=precision,
+                session=session,
+            )
+            self._db.add_name_to_tag(
+                name=time_name, tag_id=time_model.id, session=session
+            )
+            self._db.update_entity_trie(
+                new_string=time_name, new_string_guid=str(time_model.id)
+            )
+            self._db.create_tag_instance(
+                tag_id=time_model.id,
+                summary_id=summary_id,
+                start_char=start_char,
+                stop_char=stop_char,
+                session=session,
+            )
+            session.commit()
+
+    def time_tagged(self, event: TimeTagged):
+        time_id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
+        time_name = event.payload.name
+        start_char = event.payload.citation_start
+        stop_char = event.payload.citation_end
+
+        with self._db.Session() as session:
+            time_model = self._db.get_time_by_id(id=time_id, session=session)
+            if time_model is None:
+                raise Exception("Tagged time does not exist.")
+
+            self._db.add_name_to_tag(
+                name=time_name, tag_id=time_model.id, session=session
+            )
+            self._db.update_entity_trie(
+                new_string=time_name, new_string_guid=str(time_model.id)
+            )
+            self._db.create_tag_instance(
+                tag_id=time_model.id,
+                summary_id=summary_id,
+                start_char=start_char,
+                stop_char=stop_char,
+                session=session,
+            )
+            session.commit()
+
+    def meta_added(self, event: MetaAdded):
         source = event.payload
         self._db.create_source(
             id=source.id,
@@ -178,7 +287,7 @@ class EventHandler:
             citation_id=source.citation_id,
         )
 
-    def _handle_meta_tagged(self, event: MetaTagged):
+    def meta_tagged(self, event: MetaTagged):
         self._db.add_source_to_citation(
             source_id=event.payload.id, citation_id=event.payload.citation_id
         )

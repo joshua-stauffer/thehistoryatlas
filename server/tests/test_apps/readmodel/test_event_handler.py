@@ -272,7 +272,7 @@ def PLACE_ADDED(summary_guid, citation_guid, place_guid):
             summary_id=summary_guid,
             citation_id=citation_guid,
             id=place_guid,
-            name="Charlemagne",
+            name="Constantinople",
             citation_start=4,
             citation_end=10,
             longitude=1.9235,
@@ -420,7 +420,7 @@ async def test_person_added(
     readmodel_app.handle_event(PERSON_ADDED)
     payload = PERSON_ADDED.payload
     name = payload.name
-    person_id = payload.id
+    person_id = UUID(payload.id)
     with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Person).where(Person.id == person_id)).scalar_one()
@@ -437,7 +437,7 @@ async def test_person_tagged(
     readmodel_app.handle_event(PERSON_TAGGED)
     payload = PERSON_ADDED.payload
     name = payload.name
-    person_id = payload.id
+    person_id = UUID(payload.id)
     with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Person).where(Person.id == person_id)).scalar_one()
@@ -462,13 +462,14 @@ async def test_place_added(
     readmodel_app.handle_event(SUMMARY_ADDED)
     readmodel_app.handle_event(PLACE_ADDED)
     payload = PLACE_ADDED.payload
-    names = payload.name
-    place_id = payload.id
+    name = payload.name
+    place_id = UUID(payload.id)
+
     with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Place).where(Place.id == place_id)).scalar_one()
-        assert res.guid == place_id
-        assert res.names == names
+        assert res.id == place_id
+        assert res.names[0].name == name
 
 
 @pytest.mark.asyncio
@@ -483,11 +484,12 @@ async def test_place_tagged(
     latitude = payload.latitude
     longitude = payload.longitude
     geoshape = payload.geo_shape
-    place_id = payload.id
+    place_id = UUID(payload.id)
+
     with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Place).where(Place.id == place_id)).scalar_one()
-        assert res.guid == place_id
+        assert res.id == place_id
         assert res.names[0].name == name
         assert res.latitude == latitude
         assert res.longitude == longitude
@@ -512,7 +514,7 @@ async def test_time_added(
     readmodel_app.handle_event(TIME_ADDED)
     payload = TIME_ADDED.payload
     name = payload.name
-    time_id = payload.id
+    time_id = UUID(payload.id)
     with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Time).where(Time.id == time_id)).scalar_one()
@@ -529,12 +531,12 @@ async def test_time_tagged(
     readmodel_app.handle_event(TIME_TAGGED)
     payload = TIME_ADDED.payload
     name = payload.name
-    time_id = payload.id
+    time_id = UUID(payload.id)
     with Session(engine, future=True) as sess:
 
         res = sess.execute(select(Time).where(Time.id == time_id)).scalar_one()
         assert res.id == time_id
-        assert res.name == name
+        assert res.names[0].name == name
         time_id = res.id
 
         # confirm that we've created two Tag Instances

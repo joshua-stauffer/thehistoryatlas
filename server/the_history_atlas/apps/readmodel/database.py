@@ -528,134 +528,22 @@ class Database:
         tag_id = session.execute(text(get_tag), {"tag_id": tag_id}).scalar_one_or_none()
         return tag_id is not None
 
-    def add_name_to_tag(self, tag_id: UUID, name: str, lang: str | None = None):  # todo
+    def add_name_to_tag(
+        self, session: Session, tag_id: UUID, name: str, lang: str | None = None
+    ):
         """Ensure name exists, and associate it with the tag."""
         # todo: handle lang
-        with Session(self._engine, future=True) as session:
-            if not self.exists_tag(tag_id=tag_id, session=session):
-                raise MissingResourceError("Tag was not found.")
+        name_model = self.get_name(name=name, session=session)
+        if name_model is None:
+            name_model = self.create_name(name=name, session=session)
 
-            name_model = self.get_name(name=name, session=session)
-            if name_model is None:
-                name_model = self.create_name(name=name, session=session)
+        tag_name_assoc = TagNameAssocModel(name_id=name_model.id, tag_id=tag_id)
 
-            tag_name_assoc = TagNameAssocModel(name_id=name_model.id, tag_id=tag_id)
-
-            stmt = """
-                insert into tag_name_assoc (tag_id, name_id)
-                    values (:tag_id, :name_id);
-            """
-            session.execute(text(stmt), tag_name_assoc.dict())
-            session.commit()
-
-    def handle_person_update(
-        self,
-        person_id: UUID,
-        summary_id: UUID,
-        person_name: str,
-        start_char: int,
-        stop_char: int,
-    ) -> None:
-        """Accepts the data from a person event and persists it to the database."""
-        with Session(self._engine, future=True) as session:
-            # get or create person
-            person = self.get_person_by_id(id=person_id, session=session)
-            if person is None:
-                person = self.create_person(id=person_id, session=session)
-            self.add_name_to_tag(name=person_name, tag_id=person.id)
-            self.update_entity_trie(
-                new_string=person_name, new_string_guid=str(person.id)
-            )
-            self.create_tag_instance(
-                tag_id=person.id,
-                summary_id=summary_id,
-                start_char=start_char,
-                stop_char=stop_char,
-                session=session,
-            )
-            session.commit()
-
-    def handle_place_update(
-        self,
-        place_id: UUID,
-        summary_id: UUID,
-        place_name: str,
-        start_char: int,
-        stop_char: int,
-        latitude: float = None,
-        longitude: float = None,
-        geoshape: str = None,
-        geonames_id: int | None = None,
-    ) -> None:
-        """Accepts the data from a place event and persists it to the database."""
-        with Session(self._engine, future=True) as session:
-            place = self.get_place_by_id(id=place_id, session=session)
-
-            if place is None:
-                if not (latitude and longitude) or geoshape:
-                    raise Exception(
-                        "Place must have either latitude and longitude or geoshape."
-                    )
-                place = self.create_place(
-                    session=session,
-                    id=place_id,
-                    latitude=latitude,
-                    longitude=longitude,
-                    geoshape=geoshape,
-                    geonames_id=geonames_id,
-                )
-
-            self.add_name_to_tag(name=place_name, tag_id=place.id)
-            self.update_entity_trie(
-                new_string=place_name, new_string_guid=str(place.id)
-            )
-            self.create_tag_instance(
-                tag_id=place.id,
-                summary_id=summary_id,
-                start_char=start_char,
-                stop_char=stop_char,
-                session=session,
-            )
-            session.commit()
-
-    def handle_time_update(
-        self,
-        time_id: UUID,
-        summary_id: UUID,
-        time_name: str,
-        start_char: int,
-        stop_char: int,
-        time: datetime | None = None,
-        calendar_model: str | None = None,
-        precision: int | None = None,
-    ) -> None:
-        """Accepts the data from a time event and persists it to the database"""
-        with Session(self._engine, future=True) as session:
-            time_model = self.get_time_by_id(id=time_id, session=session)
-            if time_model is None:
-                if not all((time, calendar_model, precision)):
-                    raise Exception(
-                        "Time must have time, calendar_model, and precision."
-                    )
-                time_model = self.create_time(
-                    session,
-                    id=time_id,
-                    time=time,
-                    calendar_model=calendar_model,
-                    precision=precision,
-                )
-            self.add_name_to_tag(name=time_name, tag_id=time_model.id)
-            self.update_entity_trie(
-                new_string=time_name, new_string_guid=str(time_model.id)
-            )
-            self.create_tag_instance(
-                tag_id=time_model.id,
-                summary_id=summary_id,
-                start_char=start_char,
-                stop_char=stop_char,
-                session=session,
-            )
-            session.commit()
+        stmt = """
+            insert into tag_name_assoc (tag_id, name_id)
+                values (:tag_id, :name_id);
+        """
+        session.execute(text(stmt), tag_name_assoc.dict())
 
     def add_source_to_citation(self, source_id: UUID, citation_id: UUID) -> None:
         """
@@ -693,11 +581,9 @@ class Database:
             session.add(source)
 
             if citation_id is not None:
-                citation = session.execute(
-                    select(Citation).where(Citation.id == citation_id)
-                ).scalar_one()
-                citation.source_id = id
-                session.add(citation)
+                self.create_citation_source_fkey(
+                    source_id=id, citation_id=citation_id, session=session
+                )
             session.commit()
             self._add_to_source_trie(source)
 

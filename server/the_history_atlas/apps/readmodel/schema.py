@@ -158,38 +158,8 @@ class Name(Base):
     # lang_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
     tags = relationship("Tag", secondary=tag_name_assoc, back_populates="names")
 
-    # # todo: remove
-    # _guids = Column(VARCHAR)  # save as | separated values and parse on exit
-    #
-    # @property
-    # def guids(self):
-    #     return self._guids.split("|")
-    #
-    # @guids.setter
-    # def guids(self, guid):
-    #     if self._guids:
-    #         raise Exception("GUIDs is already set -- do you mean to erase it?")
-    #     self._guids = guid
-    #
-    # def add_guid(self, guid):
-    #     if self._guids:
-    #         self._guids += "|" + guid
-    #     else:
-    #         self._guids = "|" + guid
-    #
-    # def del_guid(self, guid):
-    #     if guid not in self.guids:
-    #         raise ValueError("That GUID isn't associated with this name")
-    #     if len(self.guids) == 1:
-    #         raise EmptyNameError(
-    #             "This is the last GUID associated with this name."
-    #             + " Please delete entire Name instead of just the GUID."
-    #         )
-    #     tmp = [val for val in self.guids if val != guid]
-    #     self._guids = "|".join(tmp)
-
     def __repr__(self):
-        return f"Name(id: {self.id}, name: {self.name}, guids: {self._guids})"
+        return f"Name(id: {self.id}, name: {self.name})"
 
 
 class History(Base):
