@@ -18,7 +18,6 @@ from the_history_atlas.apps.domain.models import (
     MetaAdded,
 )
 from the_history_atlas.apps.domain.models.events.meta_tagged import MetaTagged
-from the_history_atlas.apps.domain.models.readmodel.tables import PersonModel
 from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.errors import (
     UnknownEventError,
@@ -48,7 +47,6 @@ class EventHandler:
             raise UnknownEventError(event.type)
         handler(event)
         # update our record of the latest handled event
-        self._db.update_last_event_id(event.index)
         self._event_id_set.add(event.index)
 
     def _map_event_handlers(self):
@@ -289,7 +287,7 @@ class EventHandler:
 
     def meta_tagged(self, event: MetaTagged):
         with self._db.Session() as session:
-            self._db.add_source_to_citation(
+            self._db.create_citation_source_fkey(
                 source_id=event.payload.id,
                 citation_id=event.payload.citation_id,
                 session=session,

@@ -1,6 +1,4 @@
-import asyncio
 import logging
-from dataclasses import asdict
 from datetime import datetime
 from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
@@ -27,7 +25,6 @@ from the_history_atlas.apps.domain.models.readmodel.tables.time import (
     TimePrecision,
     TimeModel,
 )
-from the_history_atlas.apps.readmodel.errors import MissingResourceError
 from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
@@ -37,7 +34,6 @@ from the_history_atlas.apps.readmodel.schema import (
     Place,
     Summary,
     Tag,
-    TagInstance,
     Time,
     Source,
 )
@@ -182,18 +178,13 @@ class Database:
         with Session(self._engine, future=True) as session:
             for guid in guids:
                 entity = session.execute(
-                    select(Tag).where(Tag.guid == guid)
+                    select(Tag).where(Tag.id == guid)
                 ).scalar_one_or_none()
                 if not entity:
                     log.debug(f"Could not find entity {guid}")
                     continue
-                # find names / account for TIME only having a single name
-                if entity.type == "TIME":
-                    # TODO: when time is updated to allow for a range of two,
-                    #       they ought to be treated the same as below
-                    name_list = [entity.name]
-                else:
-                    name_list = self.split_names(entity.names)
+                names = [name.name for name in entity.names]
+
                 # get min/max of date range
                 min_time = entity.tag_instances[0].summary.time_tag
                 max_time = entity.tag_instances[0].summary.time_tag
@@ -209,7 +200,7 @@ class Database:
                         "type": entity.type,
                         "id": guid,
                         "citation_count": len(entity.tag_instances),
-                        "names": name_list,
+                        "names": names,
                         "first_citation_date": min_time,
                         "last_citation_date": max_time,
                     }
@@ -545,20 +536,6 @@ class Database:
         """
         session.execute(text(stmt), tag_name_assoc.dict())
 
-    def add_source_to_citation(
-        self, source_id: UUID, citation_id: UUID, session: Session
-    ) -> None:
-        """
-        Associate an existing Source with a Citation.
-        """
-        stmt = """
-            update citations set source_id = :source_id
-            where citations.id = :citation_id;
-        """
-        session.execute(
-            text(stmt), {"source_id": source_id, "citation_id": citation_id}
-        )
-
     def create_source(
         self,
         id: UUID,
@@ -610,30 +587,6 @@ class Database:
         if len(author_words) > 1:
             for word in author_words:
                 self._source_trie.insert(word, guid=id)
-
-    # HISTORY MANAGEMENT
-
-    def check_database_init(self) -> int:
-        """Checks database for the most recent event id. Returns None if
-        database isn't initialized yet, otherwise most recent id."""
-        with Session(self._engine, future=True) as session:
-            res = session.execute(select(History)).scalar_one_or_none()
-            if not res:
-                # initialize with default row
-                session.add(History())
-                session.commit()
-                return 0
-            return res.latest_event_id
-
-    def update_last_event_id(self, event_id: int) -> int:
-        with Session(self._engine, future=True) as session:
-            res = session.execute(select(History)).scalar_one_or_none()
-            if not res:
-                res = History(latest_event_id=event_id)
-            # for now, not checking if id is out of order
-            res.latest_event_id = event_id
-            session.add(res)
-            session.commit()
 
     # TRIE MANAGEMENT
 

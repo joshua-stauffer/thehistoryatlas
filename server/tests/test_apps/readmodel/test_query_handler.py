@@ -1,5 +1,6 @@
 import random
 
+from tests.seed.readmodel import CITATIONS, PEOPLE, PLACES, TIMES, NAMES
 from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetCitationByID,
     GetManifest,
@@ -25,9 +26,8 @@ DB_COUNT = 100
 FUZZ_ITERATIONS = 10
 
 
-def test_get_citation_by_guid(query_handler, db_tuple):
-    _, db_dict = db_tuple
-    citation_id = db_dict["citation_guids"][1]
+def test_get_citation_by_guid(query_handler):
+    citation_id = str(CITATIONS[0].id)
     citation = query_handler.get_citation_by_id(
         query=GetCitationByID(citation_id=citation_id)
     )
@@ -35,36 +35,32 @@ def test_get_citation_by_guid(query_handler, db_tuple):
     assert isinstance(citation, Citation)
 
 
-def test_get_manifest_person(query_handler, db_tuple):
-    _, db_dict = db_tuple
-    guid = db_dict["person_guids"][0]
+def test_get_manifest_person(query_handler):
+    guid = str(PEOPLE[0].id)
     manifest = query_handler.get_manifest(
         query=GetManifest(entity_type="PERSON", id=guid)
     )
     assert isinstance(manifest, Manifest)
 
 
-def test_get_manifest_place(query_handler, db_tuple):
-    _, db_dict = db_tuple
-    guid = db_dict["place_guids"][0]
+def test_get_manifest_place(query_handler):
+    guid = str(PLACES[0].id)
     manifest = query_handler.get_manifest(
         query=GetManifest(entity_type="PERSON", id=guid)
     )
     assert isinstance(manifest, Manifest)
 
 
-def test_get_manifest_time(query_handler, db_tuple):
-    _, db_dict = db_tuple
-    guid = db_dict["time_guids"][0]
+def test_get_manifest_time(query_handler):
+    guid = str(TIMES[0].id)
     manifest = query_handler.get_manifest(
         query=GetManifest(entity_type="PERSON", id=guid)
     )
     assert isinstance(manifest, Manifest)
 
 
-def test_get_guids_by_name(query_handler, db_tuple):
-    _, db_dict = db_tuple
-    name = db_dict["names"][0]
+def test_get_guids_by_name(query_handler):
+    name = NAMES[0].name
     entity_summaries_by_name = query_handler.get_entity_summaries_by_name(
         query=GetEntitySummariesByName(name=name)
     )
@@ -100,12 +96,11 @@ def test_get_entity_summaries_by_guid_with_invalid_guids(query_handler):
     assert entity_summaries_by_id == []
 
 
-def test_get_entity_summaries(query_handler, db_tuple):
-    _, db_dict = db_tuple
-
-    ids = db_dict["place_guids"][20:25]
-    ids.extend(db_dict["time_guids"][20:25])
-    ids.extend(db_dict["person_guids"][20:25])
+def test_get_entity_summaries(query_handler):
+    people_ids = [str(person.id) for person in PEOPLE]
+    place_ids = [str(place.id) for place in PLACES]
+    time_ids = [str(time.id) for time in TIMES]
+    ids = [*place_ids, *people_ids, *time_ids]
 
     entity_summaries_by_id = query_handler.get_entity_summaries_by_ids(
         query=GetEntitySummariesByIDs(ids=ids)
@@ -114,26 +109,20 @@ def test_get_entity_summaries(query_handler, db_tuple):
     assert len(entity_summaries_by_id) == 15
 
 
-def test_get_place_by_coords_success(query_handler, db_tuple):
-    db, db_dict = db_tuple
-    # find a set of coordinates to query
-    place_id = db_dict["place_guids"][0]
-    with Session(db._engine, future=True) as session:
-        res = session.execute(select(Place).where(Place.guid == place_id)).scalar_one()
-        latitude = res.latitude
-        longitude = res.longitude
+def test_get_place_by_coords_success(query_handler, DBSession):
+    place = PLACES[0]
 
     place_by_coords = query_handler.get_place_by_coords(
-        query=GetPlaceByCoords(latitude=latitude, longitude=longitude)
+        query=GetPlaceByCoords(latitude=place.latitude, longitude=place.longitude)
     )
 
     assert isinstance(place_by_coords, PlaceByCoords)
-    assert place_by_coords.longitude == longitude
-    assert place_by_coords.latitude == latitude
-    assert place_by_coords.id == place_id
+    assert place_by_coords.longitude == place.longitude
+    assert place_by_coords.latitude == place.latitude
+    assert place_by_coords.id == place.id
 
 
-def test_get_place_by_coords_failure(query_handler, db_tuple):
+def test_get_place_by_coords_failure(query_handler):
     latitude = 1 + random.random()
     longitude = 1 - random.random()
 

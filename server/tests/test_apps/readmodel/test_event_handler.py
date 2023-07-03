@@ -395,6 +395,14 @@ def test_unknown_event_raises_error(readmodel_app):
         readmodel_app.handle_event(NotAnEvent(type="NotAnEvent", index=0))
 
 
+def test_summary_added(engine, DBSession):
+    assert False
+
+
+def test_summary_tagged(engine, DBSession):
+    assert False
+
+
 @pytest.mark.asyncio
 async def test_citation_added(
     readmodel_db, readmodel_app, CITATION_ADDED, SUMMARY_ADDED, engine
@@ -561,3 +569,11 @@ async def test_reject_event_with_duplicate_id(
     readmodel_app.handle_event(citation_dict_1)
     with pytest.raises(DuplicateEventError):
         readmodel_app.handle_event(citation_dict_2)
+
+
+def test_meta_added(engine, DBSession):
+    assert False
+
+
+def test_meta_tagged(engine, DBSession):
+    assert False

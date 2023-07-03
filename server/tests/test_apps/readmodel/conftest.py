@@ -24,7 +24,6 @@ def readmodel_app(engine, config):
 def readmodel_db(engine):
 
     db = Database(database_client=engine)
-
     return db
 
 
@@ -39,6 +38,5 @@ def source_author():
 
 
 @pytest.fixture
-def query_handler(db_tuple):
-    db, _ = db_tuple
-    return QueryHandler(database_instance=db)
+def query_handler(readmodel_db):
+    return QueryHandler(database_instance=readmodel_db)
