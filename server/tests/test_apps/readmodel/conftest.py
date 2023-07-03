@@ -23,7 +23,7 @@ def readmodel_app(engine, config):
 @pytest.fixture
 def readmodel_db(engine):
 
-    db = Database(database_client=engine, stm_timeout=0)
+    db = Database(database_client=engine)
 
     return db
 

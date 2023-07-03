@@ -35,7 +35,6 @@ class Citation(Base):
     __tablename__ = "citations"
     id = Column(UUID(as_uuid=True), primary_key=True)
     text = Column(VARCHAR)
-    # todo: as_uuid=True
     source_id = Column(UUID(as_uuid=True), ForeignKey("sources.id"))
     source = relationship("Source", back_populates="citations")
     summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"))

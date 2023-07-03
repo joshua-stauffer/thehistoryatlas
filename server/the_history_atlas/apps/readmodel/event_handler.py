@@ -1,5 +1,9 @@
 import logging
+from datetime import datetime, timezone
 from typing import Union
+from uuid import UUID
+
+from sqlalchemy.exc import IntegrityError
 
 from the_history_atlas.apps.domain.models import (
     SummaryAdded,
@@ -14,6 +18,7 @@ from the_history_atlas.apps.domain.models import (
     MetaAdded,
 )
 from the_history_atlas.apps.domain.models.events.meta_tagged import MetaTagged
+from the_history_atlas.apps.domain.models.readmodel.tables import PersonModel
 from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.errors import (
     UnknownEventError,
@@ -63,90 +68,103 @@ class EventHandler:
         }
 
     def _handle_summary_added(self, event: SummaryAdded):
-        summary_guid = event.payload.id
+        id = UUID(event.payload.id)
         text = event.payload.text
-        self._db.create_summary(id=summary_guid, text=text)
+        self._db.create_summary(id=id, text=text)
 
     def _handle_summary_tagged(self, event: SummaryTagged):
-        # summary will automatically be tagged when the
-        # new citation is added.
-        pass
+        session = self._db.session()
+        self._db.create_citation_summary_fkey(
+            session=session,
+            citation_id=event.payload.citation_id,
+            summary_id=event.payload.id,
+        )
+        try:
+            session.commit()
+        except IntegrityError:
+            pass
 
     def _handle_citation_added(self, event: CitationAdded):
-        citation_guid = event.payload.id
-        summary_guid = event.payload.summary_id
+        id = UUID(event.payload.id)
+        summary_id = UUID(event.payload.summary_id)
         text = event.payload.text
-        self._db.create_citation(
-            id=citation_guid,
-            summary_id=summary_guid,
-            text=text,
-            page_num=event.payload.page_num,
-            access_date=event.payload.access_date,
-        )
+        with self._db.Session() as session:
+            self._db.create_citation(
+                session=session,
+                id=id,
+                citation_text=text,
+                page_num=event.payload.page_num,
+                access_date=event.payload.access_date,
+            )
+            session.commit()
+            self._db.create_citation_summary_fkey(
+                session=session, citation_id=id, summary_id=summary_id
+            )
+            try:
+                session.commit()
+            except IntegrityError:
+                pass
 
     def _handle_person_added(self, event: PersonAdded):
-        self.__handle_person_util(event=event, is_new=True)
-
-    def _handle_person_tagged(self, event: PersonTagged):
-        self.__handle_person_util(event=event, is_new=False)
-
-    def __handle_person_util(self, event: Union[PersonTagged, PersonAdded], is_new):
-        """Merges person added and person tagged functionality"""
         self._db.handle_person_update(
-            person_id=event.payload.id,
-            summary_id=event.payload.summary_id,
+            person_id=UUID(event.payload.id),
+            summary_id=UUID(event.payload.summary_id),
             person_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
-            is_new=is_new,
+        )
+
+    def _handle_person_tagged(self, event: PersonTagged):
+        self._db.handle_person_update(
+            person_id=UUID(event.payload.id),
+            summary_id=UUID(event.payload.summary_id),
+            person_name=event.payload.name,
+            start_char=event.payload.citation_start,
+            stop_char=event.payload.citation_end,
         )
 
     def _handle_place_added(self, event: PlaceAdded):
-        latitude = event.payload.latitude
-        longitude = event.payload.longitude
-        geo_shape = event.payload.geo_shape
-        self.__handle_place_util(
-            event=event,
-            is_new=True,
-            latitude=latitude,
-            longitude=longitude,
-            geoshape=geo_shape,
-        )
-
-    def _handle_place_tagged(self, event: PlaceTagged):
-        self.__handle_place_util(event=event, is_new=False)
-
-    def __handle_place_util(
-        self, event: Union[PlaceAdded, PlaceTagged], is_new, **kwargs
-    ):
-        """Merges place added and place tagged functionality"""
-        # latitude, longitude, and geoshape are passed through as keyword
-        # arguments since they are only needed by place added
         self._db.handle_place_update(
-            place_id=event.payload.id,
-            summary_id=event.payload.summary_id,
+            place_id=UUID(event.payload.id),
+            summary_id=UUID(event.payload.summary_id),
             place_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
-            is_new=is_new,
-            **kwargs,
+            latitude=event.payload.latitude,
+            longitude=event.payload.longitude,
+            geoshape=event.payload.geo_shape,
+            geonames_id=None,  # todo
+        )
+
+    def _handle_place_tagged(self, event: PlaceTagged):
+        self._db.handle_place_update(
+            place_id=UUID(event.payload.id),
+            summary_id=UUID(event.payload.summary_id),
+            place_name=event.payload.name,
+            start_char=event.payload.citation_start,
+            stop_char=event.payload.citation_end,
+            geonames_id=None,  # todo
         )
 
     def _handle_time_added(self, event: TimeAdded):
-        self.__handle_time_util(event=event, is_new=True)
-
-    def _handle_time_tagged(self, event: TimeTagged):
-        self.__handle_time_util(event=event, is_new=False)
-
-    def __handle_time_util(self, event: Union[TimeAdded, TimeTagged], is_new):
-        """Merges time added and time tagged functionality"""
         self._db.handle_time_update(
-            time_id=event.payload.id,
-            summary_id=event.payload.summary_id,
+            time_id=UUID(event.payload.id),
+            summary_id=UUID(event.payload.summary_id),
             time_name=event.payload.name,
             start_char=event.payload.citation_start,
             stop_char=event.payload.citation_end,
-            is_new=is_new,
+            time=datetime(year=1685, month=1, day=1, tzinfo=timezone.utc),  # todo
+            calendar_model="http://www.wikidata.org/entity/Q1985727",
+            precision=9,
+        )
+
+    def _handle_time_tagged(self, event: TimeTagged):
+        self._db.handle_time_update(
+            time_id=UUID(event.payload.id),
+            summary_id=UUID(event.payload.summary_id),
+            time_name=event.payload.name,
+            start_char=event.payload.citation_start,
+            stop_char=event.payload.citation_end,
         )
 
     def _handle_meta_added(self, event: MetaAdded):

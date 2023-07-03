@@ -1,6 +1,6 @@
 from dataclasses import replace, dataclass
 import pytest
-from uuid import uuid4
+from uuid import uuid4, UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -403,12 +403,12 @@ async def test_citation_added(
     readmodel_app.handle_event(CITATION_ADDED)
     payload = CITATION_ADDED.payload
     with Session(engine, future=True) as sess:
-        citation_guid = payload.id
+        citation_id = UUID(payload.id)
         text = payload.text
         res = sess.execute(
-            select(Citation).where(Citation.guid == citation_guid)
+            select(Citation).where(Citation.id == citation_id)
         ).scalar_one()
-        assert res.guid == citation_guid
+        assert res.id == citation_id
         assert res.text == text
 
 
@@ -419,15 +419,13 @@ async def test_person_added(
     readmodel_app.handle_event(SUMMARY_ADDED)
     readmodel_app.handle_event(PERSON_ADDED)
     payload = PERSON_ADDED.payload
-    names = payload.name
-    person_guid = payload.id
+    name = payload.name
+    person_id = payload.id
     with Session(engine, future=True) as sess:
 
-        res = sess.execute(
-            select(Person).where(Person.guid == person_guid)
-        ).scalar_one()
-        assert res.guid == person_guid
-        assert res.names == names
+        res = sess.execute(select(Person).where(Person.id == person_id)).scalar_one()
+        assert res.id == person_id
+        assert res.names[0].name == name
 
 
 @pytest.mark.asyncio
@@ -438,15 +436,13 @@ async def test_person_tagged(
     readmodel_app.handle_event(PERSON_ADDED)
     readmodel_app.handle_event(PERSON_TAGGED)
     payload = PERSON_ADDED.payload
-    names = payload.name
-    person_guid = payload.id
+    name = payload.name
+    person_id = payload.id
     with Session(engine, future=True) as sess:
 
-        res = sess.execute(
-            select(Person).where(Person.guid == person_guid)
-        ).scalar_one()
-        assert res.guid == person_guid
-        assert res.names == names
+        res = sess.execute(select(Person).where(Person.id == person_id)).scalar_one()
+        assert res.id == person_id
+        assert res.names[0].name == name
         person_id = res.id
 
         # confirm that we've created two Tag Instances
@@ -454,7 +450,7 @@ async def test_person_tagged(
             select(TagInstance).where(TagInstance.tag_id == person_id)
         ).scalars()
         c = 0
-        for tag in tags:
+        for _ in tags:
             c += 1
         assert c == 2
 
@@ -467,11 +463,11 @@ async def test_place_added(
     readmodel_app.handle_event(PLACE_ADDED)
     payload = PLACE_ADDED.payload
     names = payload.name
-    place_guid = payload.id
+    place_id = payload.id
     with Session(engine, future=True) as sess:
 
-        res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
-        assert res.guid == place_guid
+        res = sess.execute(select(Place).where(Place.id == place_id)).scalar_one()
+        assert res.guid == place_id
         assert res.names == names
 
 
@@ -483,16 +479,16 @@ async def test_place_tagged(
     readmodel_app.handle_event(PLACE_ADDED)
     readmodel_app.handle_event(PLACE_TAGGED)
     payload = PLACE_ADDED.payload
-    names = payload.name
+    name = payload.name
     latitude = payload.latitude
     longitude = payload.longitude
     geoshape = payload.geo_shape
-    place_guid = payload.id
+    place_id = payload.id
     with Session(engine, future=True) as sess:
 
-        res = sess.execute(select(Place).where(Place.guid == place_guid)).scalar_one()
-        assert res.guid == place_guid
-        assert res.names == names
+        res = sess.execute(select(Place).where(Place.id == place_id)).scalar_one()
+        assert res.guid == place_id
+        assert res.names[0].name == name
         assert res.latitude == latitude
         assert res.longitude == longitude
         assert res.geoshape == geoshape
@@ -503,7 +499,7 @@ async def test_place_tagged(
             select(TagInstance).where(TagInstance.tag_id == place_id)
         ).scalars()
         c = 0
-        for tag in tags:
+        for _ in tags:
             c += 1
         assert c == 2
 
@@ -516,12 +512,12 @@ async def test_time_added(
     readmodel_app.handle_event(TIME_ADDED)
     payload = TIME_ADDED.payload
     name = payload.name
-    time_guid = payload.id
+    time_id = payload.id
     with Session(engine, future=True) as sess:
 
-        res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
-        assert res.guid == time_guid
-        assert res.name == name
+        res = sess.execute(select(Time).where(Time.id == time_id)).scalar_one()
+        assert res.id == time_id
+        assert res.names[0].name == name
 
 
 @pytest.mark.asyncio
@@ -533,11 +529,11 @@ async def test_time_tagged(
     readmodel_app.handle_event(TIME_TAGGED)
     payload = TIME_ADDED.payload
     name = payload.name
-    time_guid = payload.id
+    time_id = payload.id
     with Session(engine, future=True) as sess:
 
-        res = sess.execute(select(Time).where(Time.guid == time_guid)).scalar_one()
-        assert res.guid == time_guid
+        res = sess.execute(select(Time).where(Time.id == time_id)).scalar_one()
+        assert res.id == time_id
         assert res.name == name
         time_id = res.id
 
@@ -546,7 +542,7 @@ async def test_time_tagged(
             select(TagInstance).where(TagInstance.tag_id == time_id)
         ).scalars()
         c = 0
-        for tag in tags:
+        for _ in tags:
             c += 1
         assert c == 2
 

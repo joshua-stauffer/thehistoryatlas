@@ -1,11 +1,12 @@
 import asyncio
 import logging
 from dataclasses import asdict
+from datetime import datetime
 from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from sqlalchemy import select, func, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.domain.models import CoordsByName
@@ -14,6 +15,18 @@ from the_history_atlas.apps.domain.models.readmodel import (
     Source as ADMSource,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries import FuzzySearchByName
+from the_history_atlas.apps.domain.models.readmodel.tables import (
+    PersonModel,
+    TagInstanceModel,
+    NameModel,
+    PlaceModel,
+    TagNameAssocModel,
+    CitationModel,
+)
+from the_history_atlas.apps.domain.models.readmodel.tables.time import (
+    TimePrecision,
+    TimeModel,
+)
 from the_history_atlas.apps.readmodel.errors import MissingResourceError
 from the_history_atlas.apps.readmodel.schema import (
     Base,
@@ -34,24 +47,24 @@ log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self, database_client: DatabaseClient, stm_timeout: int = 5):
+
+    Session: sessionmaker
+
+    def __init__(self, database_client: DatabaseClient):
         self._engine = database_client
+        self.Session = sessionmaker(bind=database_client)
         # initialize the db
         Base.metadata.create_all(self._engine)
-        self.__short_term_memory = dict()
-        self.__stm_timeout = stm_timeout
         # intialize the search trie
         self._entity_trie = Trie(self.get_all_entity_names())
         self._source_trie = Trie(self.get_all_source_titles_and_authors())
-
-    # QUERIES
 
     def get_citation(self, citation_guid: str) -> dict:
         """Resolves citation GUID to its value in the database"""
         log.debug(f"Looking up citation for citation GUID {citation_guid}")
         with Session(self._engine, future=True) as session:
             res = session.execute(
-                select(Citation).where(Citation.guid == citation_guid)
+                select(Citation).where(Citation.id == citation_guid)
             ).scalar_one_or_none()
             if res:
                 return {
@@ -64,6 +77,24 @@ class Database:
                 log.debug(f"Found no citation for citation GUID {citation_guid}")
                 return {}
 
+    def get_citation_by_id(self, id: UUID, session: Session) -> CitationModel | None:
+        stmt = """
+            select id, text, source_id, summary_id, page_num, access_date
+            from citations where citations.id = :id
+        """
+        output = session.execute(text(stmt), {"id": id}).one_or_none()
+        if output is None:
+            return output
+        (id, citation_text, source_id, summary_id, page_num, access_date) = output
+        return CitationModel(
+            id=id,
+            text=citation_text,
+            source_id=source_id,
+            summary_id=summary_id,
+            page_num=page_num,
+            access_date=access_date,
+        )
+
     def get_summaries(self, summary_guids: list[str]) -> list[dict]:
         """Expects a list of summary guids and returns their data in a dict
         keyed by guid"""
@@ -72,7 +103,7 @@ class Database:
         with Session(self._engine, future=True) as session:
             for guid in summary_guids:
                 res = session.execute(
-                    select(Summary).where(Summary.guid == guid)
+                    select(Summary).where(Summary.id == guid)
                 ).scalar_one_or_none()
                 if res:
                     result.append(
@@ -80,7 +111,7 @@ class Database:
                             "guid": guid,
                             "text": res.text,
                             "tags": [self.get_tag_instance_data(t) for t in res.tags],
-                            "citation_guids": [r.guid for r in res.citations],
+                            "citation_ids": [r.guid for r in res.citations],
                         }
                     )
         log.debug(f"Returning {len(result)} summaries")
@@ -103,7 +134,7 @@ class Database:
         log.debug(f"Looking up manifest for GUID {guid}")
         with Session(self._engine, future=True) as session:
             entity = session.execute(
-                select(entity_base).where(entity_base.guid == guid)
+                select(entity_base).where(entity_base.id == guid)
             ).scalar_one_or_none()
             if not entity:
                 log.debug(f"Manifest lookup found nothing for GUID {guid}")
@@ -133,7 +164,7 @@ class Database:
         ]
         return tag_result, timeline_result
 
-    def get_guids_by_name(self, name: str) -> list[str]:
+    def get_guids_by_name(self, name: str) -> list[UUID]:
         """Allows searching on known names. Returns list of GUIDs, if any."""
         with Session(self._engine, future=True) as session:
             res = session.execute(
@@ -141,7 +172,7 @@ class Database:
             ).scalar_one_or_none()
             if not res:
                 return list()
-            return res.guids
+            return [tag.id for tag in res.tags]
 
     def get_entity_summary_by_guid_batch(self, guids: list[str]) -> list[dict]:
         """Given a list of guids, find their type, name/alt names,
@@ -293,35 +324,228 @@ class Database:
     # MUTATIONS
 
     def create_summary(self, id: UUID, text: str) -> None:
-        """Creates a new summary, and caches its database level id for any
-        following operations to use"""
+        """Creates a new summary"""
         log.info(f"Creating a new summary: {text[:50]}...")
         summary = Summary(id=id, text=text)
         with Session(self._engine, future=True) as session:
             session.add(summary)
             session.commit()
-            self.add_to_stm(key=str(id), value=summary.id)
 
     def create_citation(
         self,
+        session: Session,
         id: UUID,
-        summary_id: UUID,
-        text: str,
+        citation_text: str,
         page_num: Optional[int] = None,
         access_date: Optional[str] = None,
     ) -> None:
         """Initializes a new citation in the database."""
-
-        log.info(f"Creating a new citation: {text[:50]}...")
-        c = Citation(
-            id=id,
-            text=text,
-            summary_id=summary_id,
-            page_num=page_num,
-            access_date=access_date,
+        # doesn't create fkeys
+        stmt = """
+            insert into citations (id, text, page_num, access_date)
+            values (:id, :text, :page_num, :access_date)
+        """
+        session.execute(
+            text(stmt),
+            {
+                "id": id,
+                "text": citation_text,
+                "page_num": page_num,
+                "access_date": access_date,
+            },
         )
+
+    def create_citation_source_fkey(
+        self,
+        session: Session,
+        citation_id: UUID,
+        source_id: UUID,
+    ):
+        stmt = f"""
+            update citations set source_id = :source_id 
+                where citations.id = :citation_id
+        """
+        session.execute(
+            text(stmt), {"source_id": source_id, "citation_id": citation_id}
+        )
+
+    def create_citation_summary_fkey(
+        self,
+        session: Session,
+        citation_id: UUID,
+        summary_id: UUID,
+    ):
+        stmt = f"""
+            update citations set summary_id = :summary_id 
+                where citations.id = :citation_id
+        """
+        session.execute(
+            text(stmt), {"summary_id": summary_id, "citation_id": citation_id}
+        )
+
+    def get_person_by_id(self, id: UUID, session: Session) -> PersonModel | None:
+        stmt = """
+            select (id)
+            from person where person.id = :id;
+        """
+        person_id = session.execute(text(stmt), {"id": id}).scalar_one_or_none()
+        if person_id is None:
+            return None
+        return PersonModel(id=person_id)
+
+    def create_person(self, id: UUID, session: Session) -> PersonModel:
+        stmt = """
+                insert into tags (id, type)
+                values (:id, :type);
+                insert into person (id)
+                values (:id);
+            """
+        session.execute(text(stmt), {"id": id, "type": "PERSON"})
+        return PersonModel(id=id)
+
+    def get_place_by_id(self, id: UUID, session: Session) -> PlaceModel | None:
+        stmt = """
+            select id, latitude, longitude, geoshape, geonames_id
+            from place where place.id = :id;
+        """
+        res = session.execute(text(stmt), {"id": id}).one_or_none()
+        if res is None:
+            return None
+        return PlaceModel(
+            id=res[0],
+            latitude=res[1],
+            longitude=res[2],
+            geoshape=res[3],
+            geonames_id=res[4],
+        )
+
+    def create_place(
+        self,
+        session: Session,
+        id: UUID,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        geoshape: str | None = None,
+        geonames_id: int | None = None,
+    ) -> PlaceModel:
+        place_model = PlaceModel(
+            id=id,
+            latitude=latitude,
+            longitude=longitude,
+            geoshape=geoshape,
+            geonames_id=geonames_id,
+        )
+        insert_place = """
+            insert into tags (id, type)
+                values (:id, :type);
+            insert into place (id, latitude, longitude, geoshape, geonames_id)
+                values (:id, :latitude, :longitude, :geoshape, :geonames_id)
+        """
+        session.execute(text(insert_place), place_model.dict())
+        return place_model
+
+    def get_time_by_id(self, id: UUID, session: Session) -> TimeModel | None:
+        stmt = """
+            select id, time, calendar_model, precision
+            from time where time.id = :id;
+        """
+        res = session.execute(text(stmt), {"id": id}).one_or_none()
+        if res is None:
+            return None
+        return TimeModel(
+            id=res[0],
+            time=res[1],
+            calendar_model=res[2],
+            precision=res[3],
+        )
+
+    def create_time(
+        self,
+        session: Session,
+        id: UUID,
+        time: datetime,
+        calendar_model: str,
+        precision: TimePrecision,
+    ):
+        time_model = TimeModel(
+            id=id, time=time, calendar_model=calendar_model, precision=precision
+        )
+        insert_time = """
+            insert into tags (id, type)
+                values (:id, :type);
+            insert into time (id, time, calendar_model, precision)
+                values (:id, :time, :calendar_model, :precision);
+        """
+        session.execute(text(insert_time), time_model.dict())
+        return time_model
+
+    def create_name(self, name: str, session: Session) -> NameModel:
+        id = uuid4()
+        insert_name = """
+            insert into names (id, name)
+                values (:id, :name);
+        """
+        session.execute(text(insert_name), {"id": id, "name": name})
+        return NameModel(id=id, name=name)
+
+    def get_name(self, name: str, session: Session) -> NameModel | None:
+        get_name = """
+            select id from names where names.name = :name;
+        """
+        name_id = session.execute(text(get_name), {"name": name}).scalar_one_or_none()
+        if name_id is not None:
+            return NameModel(id=name_id, name=name)
+        else:
+            return None
+
+    def create_tag_instance(
+        self,
+        start_char: int,
+        stop_char: int,
+        summary_id: UUID,
+        tag_id: UUID,
+        session: Session,
+    ) -> TagInstanceModel:
+        id = uuid4()
+        tag_instance = TagInstanceModel(
+            id=id,
+            start_char=start_char,
+            stop_char=stop_char,
+            summary_id=summary_id,
+            tag_id=tag_id,
+        )
+        stmt = """
+            insert into taginstances
+                (id, start_char, stop_char, summary_id, tag_id)
+            values
+                (:id, :start_char, :stop_char, :summary_id, :tag_id)        
+        """
+        session.execute(text(stmt), tag_instance.dict())
+        return tag_instance
+
+    def exists_tag(self, tag_id: UUID, session: Session) -> bool:
+        get_tag = "select id from tags where tags.id = :tag_id"
+        tag_id = session.execute(text(get_tag), {"tag_id": tag_id}).scalar_one_or_none()
+        return tag_id is not None
+
+    def add_name_to_tag(self, tag_id: UUID, name: str, lang: str | None = None):  # todo
+        """Ensure name exists, and associate it with the tag."""
+        # todo: handle lang
         with Session(self._engine, future=True) as session:
-            session.add(c)
+            if not self.exists_tag(tag_id=tag_id, session=session):
+                raise MissingResourceError("Tag was not found.")
+
+            name_model = self.get_name(name=name, session=session)
+            if name_model is None:
+                name_model = self.create_name(name=name, session=session)
+
+            tag_name_assoc = TagNameAssocModel(name_id=name_model.id, tag_id=tag_id)
+
+            stmt = """
+                insert into tag_name_assoc (tag_id, name_id)
+                    values (:tag_id, :name_id);
+            """
+            session.execute(text(stmt), tag_name_assoc.dict())
             session.commit()
 
     def handle_person_update(
@@ -331,30 +555,25 @@ class Database:
         person_name: str,
         start_char: int,
         stop_char: int,
-        is_new: bool,
     ) -> None:
         """Accepts the data from a person event and persists it to the database."""
-        # since this is a primary entry point to the database,
-        # get a session for the duration of this transaction
         with Session(self._engine, future=True) as session:
-            # resolve person
-            if is_new:
-                log.debug(f"Creating a new person: {person_name}")
-                person = Person(id=person_id)
-            else:
-                log.debug(f"Tagging an existing person: {person_name}")
-                person = session.execute(
-                    select(Person).where(Person.id == person_id)
-                ).scalar_one()
-
-            self._handle_name(name=person_name, id=person_id)
-            self._create_tag_instance(
-                tag=person,
+            # get or create person
+            person = self.get_person_by_id(id=person_id, session=session)
+            if person is None:
+                person = self.create_person(id=person_id, session=session)
+            self.add_name_to_tag(name=person_name, tag_id=person.id)
+            self.update_entity_trie(
+                new_string=person_name, new_string_guid=str(person.id)
+            )
+            self.create_tag_instance(
+                tag_id=person.id,
                 summary_id=summary_id,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session,
             )
+            session.commit()
 
     def handle_place_update(
         self,
@@ -363,35 +582,41 @@ class Database:
         place_name: str,
         start_char: int,
         stop_char: int,
-        is_new: bool,
         latitude: float = None,
         longitude: float = None,
         geoshape: str = None,
+        geonames_id: int | None = None,
     ) -> None:
         """Accepts the data from a place event and persists it to the database."""
-        # since this is a primary entry point to the database,
-        # get a session for the duration of this transaction
         with Session(self._engine, future=True) as session:
-            # resolve place
-            if is_new:
-                place = Place(
+            place = self.get_place_by_id(id=place_id, session=session)
+
+            if place is None:
+                if not (latitude and longitude) or geoshape:
+                    raise Exception(
+                        "Place must have either latitude and longitude or geoshape."
+                    )
+                place = self.create_place(
+                    session=session,
                     id=place_id,
                     latitude=latitude,
                     longitude=longitude,
                     geoshape=geoshape,
+                    geonames_id=geonames_id,
                 )
-            else:
-                place = session.execute(
-                    select(Place).where(Place.id == place_id)
-                ).scalar_one()
-            self._handle_name(name=place_name, id=place_id)
-            self._create_tag_instance(
-                tag=place,
+
+            self.add_name_to_tag(name=place_name, tag_id=place.id)
+            self.update_entity_trie(
+                new_string=place_name, new_string_guid=str(place.id)
+            )
+            self.create_tag_instance(
+                tag_id=place.id,
                 summary_id=summary_id,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session,
             )
+            session.commit()
 
     def handle_time_update(
         self,
@@ -400,62 +625,37 @@ class Database:
         time_name: str,
         start_char: int,
         stop_char: int,
-        is_new: bool,
+        time: datetime | None = None,
+        calendar_model: str | None = None,
+        precision: int | None = None,
     ) -> None:
         """Accepts the data from a time event and persists it to the database"""
-        # since this is a primary entry point to the database,
-        # get a session for the duration of this transaction
         with Session(self._engine, future=True) as session:
-            # resolve time
-            if is_new:
-                time = Time(id=time_id)
-            else:
-                time = session.execute(
-                    select(Time).where(Time.id == time_id)
-                ).scalar_one()
-            # cache timetag name on summary
-            # NOTE: this currently results in a 'last write wins' scenario
-            summary = session.execute(
-                select(Summary).where(Summary.guid == summary_id)
-            ).scalar_one()
-            summary.time_tag = time_name
-            session.add(summary)
-            self._handle_name(name=time_name, id=time_id)
-            self._create_tag_instance(
-                tag=time,
+            time_model = self.get_time_by_id(id=time_id, session=session)
+            if time_model is None:
+                if not all((time, calendar_model, precision)):
+                    raise Exception(
+                        "Time must have time, calendar_model, and precision."
+                    )
+                time_model = self.create_time(
+                    session,
+                    id=time_id,
+                    time=time,
+                    calendar_model=calendar_model,
+                    precision=precision,
+                )
+            self.add_name_to_tag(name=time_name, tag_id=time_model.id)
+            self.update_entity_trie(
+                new_string=time_name, new_string_guid=str(time_model.id)
+            )
+            self.create_tag_instance(
+                tag_id=time_model.id,
                 summary_id=summary_id,
                 start_char=start_char,
                 stop_char=stop_char,
                 session=session,
             )
-
-    def _create_tag_instance(
-        self,
-        tag: Tag,
-        summary_id: UUID,
-        start_char: int,
-        stop_char: int,
-        session: Session,
-    ):
-        """Second: step of handle updates: creates a tag instance, and
-        associates it with citation and tag"""
-        # resolve citation
-        log.debug("Creating a TagInstance")
-
-        # create Tag Instance
-        tag_instance = TagInstance(
-            summary_id=summary_id, tag=tag, start_char=start_char, stop_char=stop_char
-        )
-
-        session.add_all([tag, tag_instance])
-        session.commit()
-        print("just committed the session: ", tag)
-        log.debug(
-            "☀️ ☀️ ☀️ Created tag instance and tag. "
-            + f"TagInstance id is {tag_instance.id}, "
-            + f"TagInstance Summary ID is {tag_instance.summary_id}, "
-            + f"TagInstance Tag ID is {tag_instance.tag_id}"
-        )
+            session.commit()
 
     def add_source_to_citation(self, source_id: UUID, citation_id: UUID) -> None:
         """
@@ -522,47 +722,6 @@ class Database:
             for word in author_words:
                 self._source_trie.insert(word, guid=id)
 
-    def add_name_to_tag(self, tag_id: UUID, name: str, lang: str | None = None):  # todo
-        """Ensure name exists, and associate it with the tag."""
-        # todo: handle lang
-        with Session(self._engine, future=True) as session:
-            get_tag = "select id from tags where tags.id = :tag_id"
-            tag_id = session.execute(
-                text(get_tag), {"tag_id": tag_id}
-            ).scalar_one_or_none()
-            if tag_id is None:
-                raise MissingResourceError("Tag was not found.")
-            get_name = """
-                select id from names where names.name = :name;
-            """
-            name_id = session.execute(
-                text(get_name), {"name": name}
-            ).scalar_one_or_none()
-            if name_id is None:
-                name_id = uuid4()
-                insert_name = """
-                    insert into names (id, name)
-                        values (:name_id, :name);
-                """
-            else:
-                insert_name = ""
-            insert_assoc = """
-                insert into tag_name_assoc (tag_id, name_id)
-                    values (:tag_id, :name_id);
-            """
-            stmt = insert_name + insert_assoc
-            session.execute(
-                text(stmt),
-                {"name_id": name_id, "name": name, "lang": lang, "tag_id": tag_id},
-            )
-            session.commit()
-
-    def _handle_name(self, name: str, id: UUID):
-        """Accepts a name and GUID and links the two in the Name table and
-        updates the name search trie."""
-        self.add_name_to_tag(name=name, tag_id=id)
-        self.update_entity_trie(new_string=name, new_string_guid=str(id))
-
     # HISTORY MANAGEMENT
 
     def check_database_init(self) -> int:
@@ -613,23 +772,6 @@ class Database:
                     f"Update_trie was provided with old_string {old_string} but not a new_string_guid."
                 )
             self._entity_trie.delete(string=old_string, guid=old_string_guid)
-
-    # UTILITY
-
-    def add_to_stm(self, key, value):
-        """Adds a value from an emitted event to the short term memory"""
-        self.__short_term_memory[key] = value
-        asyncio.create_task(self.__rm_from_stm(key))
-        return
-
-    async def __rm_from_stm(self, key):
-        """internal method to clean up stale values from the stm"""
-        await asyncio.sleep(self.__stm_timeout)
-        del self.__short_term_memory[key]
-
-    @staticmethod
-    def split_names(names):
-        return names.split("|")
 
     def get_tag_instance_data(self, tag_instance):
         """Accepts a TagInstance object and returns a dict representation"""

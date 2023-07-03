@@ -151,23 +151,12 @@ def was_called():
     return hit, outer
 
 
-def test_database_exists(readmodel_db):
-    assert readmodel_db != None
-
-
-@pytest.mark.asyncio
-async def test_create_summary(readmodel_db, summary_data_1):
-    ...
-
-
 @pytest.mark.asyncio
 async def test_create_citation(readmodel_db, citation_data_1, summary_guid):
-    assert len(readmodel_db._Database__short_term_memory.keys()) == 0
     # seed database with a root summary
     readmodel_db.create_summary(id=summary_guid, text="this is irrelevant")
     citation_guid, text = citation_data_1
     readmodel_db.create_citation(id=citation_guid, summary_id=summary_guid, text=text)
-    assert len(readmodel_db._Database__short_term_memory.keys()) == 1
 
     # double check that citation has made it into the database
     with Session(readmodel_db._engine, future=True) as sess:
@@ -197,17 +186,10 @@ async def test_handle_person_update_new_no_cache(
     monkeypatch,
     engine,
 ):
-    # UPDATE 6.14.21: cache is now always checked
-
-    # set up cache hit checker
-    called, wrapper = was_called
-    wrapped_func = wrapper(readmodel_db.add_to_stm)
-    monkeypatch.setattr(readmodel_db, "add_to_stm", wrapped_func)
-    assert called[0] == False
 
     # seed the db with a summary
     with Session(engine, future=True) as sess, sess.begin():
-        sess.add(Summary(guid=summary_guid, text="not important"))
+        sess.add(Summary(id=summary_guid, text="not important"))
 
     readmodel_db.handle_person_update(
         person_id=person_guid,
@@ -219,21 +201,16 @@ async def test_handle_person_update_new_no_cache(
     )
 
     with Session(engine, future=True) as sess, sess.begin():
-        res = sess.execute(
-            select(Person).where(Person.guid == person_guid)
-        ).scalar_one()
+        res = sess.execute(select(Person).where(Person.id == person_guid)).scalar_one()
         # check our person details
-        assert res.names == person_name_1
-        assert res.guid == person_guid
+        assert res.names[0].name == person_name_1
+        assert res.id == person_guid
         # check our tag instance details
         assert len(res.tag_instances) == 1
         assert res.tag_instances[0].start_char == 1
         assert res.tag_instances[0].stop_char == 5
         # check that the tag links to the summary created earlier
-        assert res.tag_instances[0].summary.guid == summary_guid
-
-    # check if cache was hit
-    assert called[0] == True
+        assert res.tag_instances[0].summary.id == summary_guid
 
 
 @pytest.mark.asyncio
