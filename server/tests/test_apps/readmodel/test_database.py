@@ -4,6 +4,7 @@ from uuid import uuid4, UUID
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from tests.seed.readmodel import PEOPLE, SUMMARIES, PLACES, NAMES, TIMES, CITATIONS
@@ -308,24 +309,26 @@ def test_get_name_failure(engine):
     assert name_model is None
 
 
-def test_add_name_to_tag_with_nonexistent_name(engine):
+def test_add_name_to_tag_with_nonexistent_name(engine, DBSession):
     db = Database(database_client=engine)
     tag_id = create_tag(engine, type="PERSON")
     name = "Charlie Parker"
 
-    db.add_name_to_tag(tag_id=tag_id, name=name)
+    with DBSession() as session:
+        db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
+        session.commit()
 
-    stmt = """
-        select names.name
-        from tag_name_assoc join names on tag_name_assoc.name_id = names.id
-        where tag_name_assoc.tag_id = :tag_id;
-    """
-    with Session(engine, future=True) as session:
-        name_res = session.execute(text(stmt), {"tag_id": tag_id}).scalar_one()
+    with DBSession() as session:
+        stmt = text(
+            """
+            select names.name
+            from tag_name_assoc join names on tag_name_assoc.name_id = names.id
+            where tag_name_assoc.tag_id = :tag_id;
+        """
+        )
+        name_res = session.execute(stmt, {"tag_id": tag_id}).scalar_one()
         assert name_res == name
 
-    # cleanup
-    with Session(engine, future=True) as session:
         stmt = """
             delete from tag_name_assoc where tag_name_assoc.tag_id = :tag_id;
             delete from tags where tags.id = :tag_id;
@@ -335,25 +338,26 @@ def test_add_name_to_tag_with_nonexistent_name(engine):
         session.commit()
 
 
-def test_add_name_to_tag_with_existing_name(engine):
+def test_add_name_to_tag_with_existing_name(engine, DBSession):
     db = Database(database_client=engine)
     tag_id = create_tag(engine, type="PERSON")
     name = "Charlie Parker"
     name_id = create_name(engine, name=name)
 
-    db.add_name_to_tag(tag_id=tag_id, name=name)
+    with DBSession() as session:
+        db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
 
-    stmt = """
-        select names.id
-        from tag_name_assoc join names on tag_name_assoc.name_id = names.id
-        where tag_name_assoc.tag_id = :tag_id;
-    """
-    with Session(engine, future=True) as session:
-        name_res = session.execute(text(stmt), {"tag_id": tag_id}).scalar_one()
+        stmt = text(
+            """
+            select names.id
+            from tag_name_assoc join names on tag_name_assoc.name_id = names.id
+            where tag_name_assoc.tag_id = :tag_id;
+        """
+        )
+        name_res = session.execute(stmt, {"tag_id": tag_id}).scalar_one()
         assert name_res == name_id
 
-    # cleanup
-    with Session(engine, future=True) as session:
+        # cleanup
         stmt = """
             delete from tag_name_assoc where tag_name_assoc.tag_id = :tag_id;
             delete from tags where tags.id = :tag_id;
@@ -363,13 +367,14 @@ def test_add_name_to_tag_with_existing_name(engine):
         session.commit()
 
 
-def test_add_name_to_tag_errors_if_tag_is_missing(engine):
+def test_add_name_to_tag_errors_if_tag_is_missing(engine, DBSession):
     db = Database(database_client=engine)
     tag_id = uuid4()
     name = "Charlie Parker"
 
-    with pytest.raises(MissingResourceError):
-        db.add_name_to_tag(tag_id=tag_id, name=name)
+    with DBSession() as session:
+        with pytest.raises(IntegrityError):
+            db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
 
 
 def test_create_citation(engine):
@@ -529,3 +534,52 @@ def test_get_citation_by_id_failure(engine):
         citation = db.get_citation_by_id(id=nonexistent_id, session=session)
 
     assert citation is None
+
+
+def test_add_source_to_citation(engine, DBSession):
+    # setup resources
+    stmt = """
+        insert into sources 
+            (id, title, author, publisher, pub_date, kwargs)
+        values (:source_id, :title, :author, :publisher, :pub_date, :kwargs);
+        insert into citations
+            (id, text, page_num, access_date)
+        values (:citation_id, :text, :page_num, :access_date);
+    """
+    source_id = uuid4()
+    citation_id = uuid4()
+    vars = {
+        "source_id": source_id,
+        "citation_id": citation_id,
+        "title": "title",
+        "author": "author",
+        "publisher": "publisher",
+        "pub_date": "2022-01-01",
+        "kwargs": "{}",
+        "text": "text",
+        "page_num": 47,
+        "access_date": "2022-01-01",
+    }
+    with DBSession() as session:
+        session.execute(text(stmt), vars)
+        session.commit()
+    db = Database(database_client=engine)
+
+    with DBSession() as session:
+        db.add_source_to_citation(
+            source_id=source_id, citation_id=citation_id, session=session
+        )
+        session.commit()
+
+    with DBSession() as session:
+        stmt = text("select source_id from citations where citations.id = :id")
+        ret_source_id = session.execute(stmt, {"id": citation_id}).scalar_one()
+        assert ret_source_id == source_id
+
+        stmt = text(
+            """
+            delete from citations where citations.id = :citation_id;
+            delete from sources where sources.id = :source_id;
+        """
+        )
+        session.execute(stmt, {"source_id": source_id, "citation_id": citation_id})

@@ -6,7 +6,7 @@ from typing import Dict
 import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from tests.db_builder import DBBuilder
 from tests.seed.readmodel import (
@@ -91,6 +91,11 @@ def engine(config):
         session.commit()
 
     return engine
+
+
+@pytest.fixture
+def DBSession(engine):
+    return sessionmaker(bind=engine)
 
 
 @pytest.fixture

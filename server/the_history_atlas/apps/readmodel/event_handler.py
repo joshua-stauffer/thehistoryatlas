@@ -288,6 +288,10 @@ class EventHandler:
         )
 
     def meta_tagged(self, event: MetaTagged):
-        self._db.add_source_to_citation(
-            source_id=event.payload.id, citation_id=event.payload.citation_id
-        )
+        with self._db.Session() as session:
+            self._db.add_source_to_citation(
+                source_id=event.payload.id,
+                citation_id=event.payload.citation_id,
+                session=session,
+            )
+            session.commit()

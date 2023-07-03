@@ -545,16 +545,19 @@ class Database:
         """
         session.execute(text(stmt), tag_name_assoc.dict())
 
-    def add_source_to_citation(self, source_id: UUID, citation_id: UUID) -> None:
+    def add_source_to_citation(
+        self, source_id: UUID, citation_id: UUID, session: Session
+    ) -> None:
         """
         Associate an existing Source with a Citation.
         """
-        with Session(self._engine, future=True) as session:
-            citation = session.execute(
-                select(Citation).where(Citation.id == citation_id)
-            ).scalar_one()
-            citation.source_id = source_id
-            session.commit()
+        stmt = """
+            update citations set source_id = :source_id
+            where citations.id = :citation_id;
+        """
+        session.execute(
+            text(stmt), {"source_id": source_id, "citation_id": citation_id}
+        )
 
     def create_source(
         self,
