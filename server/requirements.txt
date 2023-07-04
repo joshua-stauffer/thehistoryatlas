@@ -9,3 +9,4 @@ psycopg2-binary
 pydantic
 fastapi
 spacy
+ariadne
