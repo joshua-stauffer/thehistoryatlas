@@ -1,33 +1,26 @@
-name: Eventstore Docker Image CI
+name: TheHistoryAtlas Docker Image CI
 
 on:
   push:
     branches: [ dev ]
-#  pull_request:
+#  pull_request: # test action configuration
 #    branches: [ dev ]
 
 jobs:
 
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     -
       name: Checkout
       uses: actions/checkout@v2
 
-    -
-      name: Set up QEMU
+    - name: Set up QEMU
       id: qemu
       uses: docker/setup-qemu-action@v1
       with:
         image: tonistiigi/binfmt:latest
         platforms: all
-
-    -
-      name: Available platforms
-      run: echo ${{ steps.qemu.outputs.platforms }}
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
@@ -46,14 +39,11 @@ jobs:
       id: docker_build
       uses: docker/build-push-action@v2
       with:
-        context: ./eventstore
-        build-contexts: |
-          pylib=./pylib
-          testlib=./testlib
-        platforms: linux/amd64,linux/arm64
-        file: ./eventstore/Dockerfile
+        context: ./server
+        platforms: linux/amd64, linux/arm64
+        file: ./server/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:eventstore-${{ github.sha }}
+        tags: ilriccio/thehistoryatlas:server-${{ github.sha }}
 
     -
       name: Image digest
