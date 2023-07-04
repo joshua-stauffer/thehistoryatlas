@@ -16,9 +16,6 @@ class AnnotatedCitation(Base):
     text = Column(VARCHAR, nullable=False)
     entities = relationship("Entity", back_populates="annotated_citation")
 
-    def __repr__(self):
-        return f"AnnotatedCitation(id: {self.id}, text: {self.text})"
-
 
 class Entity(Base):
     """Model representing an entity tagged in an annotation."""
@@ -33,9 +30,3 @@ class Entity(Base):
         UUID(as_uuid=True), ForeignKey("annotated_citations.id"), nullable=False
     )
     annotated_citation = relationship("AnnotatedCitation", back_populates="entities")
-
-    def __repr__(self):
-        return (
-            f"Entity(id: {self.id}, type: {self.type}, start_char: {self.start_char}, "
-            + f"stop_char: {self.stop_char})"
-        )

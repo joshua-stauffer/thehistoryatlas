@@ -18,7 +18,7 @@ def mock_db():
 
 
 @pytest.fixture
-def db(config, engine):
+def nlp_db(config, engine):
     TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
 
     if not TEST_DB_URI:

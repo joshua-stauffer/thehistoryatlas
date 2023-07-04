@@ -2,44 +2,12 @@ from random import random
 from uuid import uuid4
 import pytest
 from the_history_atlas.apps.nlp.resolver import Resolver
+from the_history_atlas.apps.readmodel import ReadModelApp
 
 
 @pytest.fixture
-def query_geo():
-    async def query(query, corr_id):
-        assert isinstance(query, dict)
-        assert query["type"] == "GET_COORDS_FROM_NAME_BATCH"
-        assert isinstance(query["payload"], dict)
-        assert isinstance(query["payload"]["names"], list)
-        assert isinstance(corr_id, str)
-
-    return query
-
-
-@pytest.fixture
-def query_readmodel():
-    async def query(query, corr_id):
-        assert isinstance(query, dict)
-        assert query["type"] == "GET_GUIDS_BY_NAME_BATCH"
-        assert isinstance(query["payload"], dict)
-        assert isinstance(query["payload"]["names"], list)
-        assert isinstance(corr_id, str)
-
-    return query
-
-
-@pytest.fixture
-def pub_func():
-    async def pub(result):
-        assert isinstance(result, dict)
-
-    return pub
-
-
-@pytest.fixture
-def resolver(
-    query_readmodel, query_geo, entity_dict, pub_func, boundaries, readmodel_app
-):
+def resolver(entity_dict, boundaries, engine, config):
+    readmodel_app = ReadModelApp(database_client=engine, config_app=config)
     r = Resolver(
         text="not needed",
         text_map=entity_dict,
@@ -135,13 +103,3 @@ def test_add_coords(resolver, coord_dict):
         assert isinstance(tag["coords"], dict)
         for e in tag["coords"].values():
             assert isinstance(e, str)
-
-
-def test_has_resolved(resolver):
-    assert resolver.has_resolved is False
-    resolver._geo_complete = True
-    assert resolver.has_resolved is False
-    resolver._rm_complete = True
-    assert resolver.has_resolved is True
-    resolver._geo_complete = False
-    assert resolver.has_resolved is False

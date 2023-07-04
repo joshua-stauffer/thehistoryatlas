@@ -1,10 +1,11 @@
 from collections import namedtuple
 import logging
 from typing import Union, get_args, Literal
+from uuid import UUID
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import IntegrityError
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -37,12 +38,13 @@ class Database:
         # initialize the db
         self._engine = client
         Base.metadata.create_all(self._engine)
+        self.Session = sessionmaker(bind=self._engine)
 
     def get_training_corpus(self):
         """"""
         # might make sense to make this into a generator at some point
         res = list()
-        with Session(self._engine, future=True) as session:
+        with self.Session() as session:
             citations = session.execute(select(AnnotatedCitation)).scalars()
             for citation in citations:
                 text = citation.text
@@ -64,9 +66,15 @@ class Database:
 
     def _handle_citation_added(self, event: CitationAdded) -> None:
         """Persist citation text"""
-        citation = AnnotatedCitation(id=event.payload.id, text=event.payload.text)
-        with Session(self._engine, future=True) as session:
-            session.add(citation)
+        citation_id = UUID(event.payload.id)
+        with self.Session() as session:
+            stmt = text(
+                """
+                insert into annotated_citations (id, text)
+                values (:id, :text)
+            """
+            )
+            session.execute(stmt, {"id": citation_id, "text": event.payload.text})
             session.commit()
 
     def _handle_entity_tagged(self, event: TaggedEntity) -> None:
@@ -80,19 +88,28 @@ class Database:
             type_ = "TIME"
         else:
             raise Exception(f"Cannot handle unknown event type: {type(event)}")
-        entity = Entity(
-            id=event.payload.id,
-            type=type_,
-            start_char=event.payload.citation_start,
-            stop_char=event.payload.citation_end,
-            annotated_citation_id=event.payload.citation_id,
-        )
-        with Session(self._engine, future=True) as session:
+        entity_id = UUID(event.payload.id)
+
+        with self.Session() as session:
+            entity = {
+                "id": entity_id,
+                "type": type_,
+                "start_char": event.payload.citation_start,
+                "stop_char": event.payload.citation_end,
+                "annotated_citation_id": UUID(event.payload.citation_id),
+            }
+            stmt = text(
+                """
+                insert into entities (id, type, start_char, stop_char, annotated_citation_id)
+                    values (:id, :type, :start_char, :stop_char, :annotated_citation_id)
+            """
+            )
+
             # NOTE: if events have been received out of order, it's possible
             #       that the citation doesn't yet exist, and this will error.
             #       Not mission critical to have all the data, so allowing.
             try:
-                session.add(entity)
+                session.execute(stmt, entity)
                 session.commit()
             except IntegrityError as e:
                 log.error(f"Encountered error while persisting Entity: {e}")
