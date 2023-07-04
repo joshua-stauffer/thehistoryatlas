@@ -27,6 +27,7 @@ from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.database import Database
 from the_history_atlas.apps.readmodel.event_handler import EventHandler
 from the_history_atlas.apps.readmodel.query_handler import QueryHandler
+from the_history_atlas.apps.readmodel.trie import Trie
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
@@ -35,9 +36,22 @@ log = logging.getLogger(__name__)
 class ReadModelApp:
     def __init__(self, config_app: Config, database_client: DatabaseClient):
         self.config = config_app
-        self._database = Database(database_client=database_client)
-        self._query_handler = QueryHandler(database_instance=self._database)
-        self._event_handler = EventHandler(database_instance=self._database)
+        source_trie = Trie()
+        entity_trie = Trie()
+
+        database = Database(
+            database_client=database_client,
+            source_trie=source_trie,
+            entity_trie=entity_trie,
+        )
+        source_trie.build(entity_tuples=database.get_all_source_titles_and_authors())
+        entity_trie.build(entity_tuples=database.get_all_entity_names())
+        self._query_handler = QueryHandler(
+            database_instance=database, source_trie=source_trie, entity_trie=entity_trie
+        )
+        self._event_handler = EventHandler(
+            database_instance=database, source_trie=source_trie, entity_trie=entity_trie
+        )
 
     def handle_event(self, event: Event):
         self._event_handler.handle_event(event=event)
@@ -73,10 +87,10 @@ class ReadModelApp:
         return self._query_handler.get_place_by_coords(query)
 
     def get_default_entity(self) -> DefaultEntity:
-        return self._database.get_default_entity()
+        return self._query_handler.get_default_entity()
 
     def get_sources_by_search_term(self, search_term: str) -> List[Source]:
-        return self._database.get_sources_by_search_term(search_term=search_term)
+        return self._query_handler.get_sources_by_search_term(search_term=search_term)
 
     def get_coords_by_names(self, names: list[str]) -> CoordsByName:
-        raise NotImplemented
+        return self._query_handler.get_coords_by_names(names=names)

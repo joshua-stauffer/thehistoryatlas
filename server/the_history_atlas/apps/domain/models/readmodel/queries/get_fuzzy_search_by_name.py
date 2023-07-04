@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
 
@@ -7,4 +9,4 @@ class GetFuzzySearchByName(ConfiguredBaseModel):
 
 class FuzzySearchByName(ConfiguredBaseModel):
     name: str
-    ids: frozenset[str]
+    ids: list[UUID]

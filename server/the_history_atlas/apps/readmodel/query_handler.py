@@ -1,6 +1,8 @@
 import logging
 from typing import List
 
+from the_history_atlas.apps.domain.models import CoordsByName
+from the_history_atlas.apps.domain.models.readmodel import Source, DefaultEntity
 from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetCitationByID,
     Citation,
@@ -24,13 +26,18 @@ from the_history_atlas.apps.readmodel.errors import (
     UnknownManifestTypeError,
 )
 from the_history_atlas.apps.readmodel.database import Database
+from the_history_atlas.apps.readmodel.trie import Trie
 
 log = logging.getLogger(__name__)
 
 
 class QueryHandler:
-    def __init__(self, database_instance: Database):
+    def __init__(
+        self, database_instance: Database, source_trie: Trie, entity_trie: Trie
+    ):
         self._db = database_instance
+        self._source_trie = source_trie
+        self._entity_trie = entity_trie
 
     def get_summaries_by_id(self, query: GetSummariesByIDs) -> List[Summary]:
         """Fetch a series of summaries by a list of guids"""
@@ -102,3 +109,16 @@ class QueryHandler:
             latitude=query.latitude, longitude=query.longitude
         )
         return PlaceByCoords(latitude=query.latitude, longitude=query.longitude, id=id)
+
+    def get_sources_by_search_term(self, search_term: str) -> list[Source]:
+        if search_term == "":
+            return []
+        sources = self._source_trie.find(search_term, res_count=10)
+        return self._db.get_sources_by_search_term(sources=sources)
+
+    def get_default_entity(self) -> DefaultEntity:
+        return self._db.get_default_entity()
+
+    def get_coords_by_names(self, names: list[str]) -> CoordsByName:
+        with self._db.Session() as session:
+            return self._db.get_coords_by_names(names=names, session=session)

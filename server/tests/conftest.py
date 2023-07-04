@@ -17,6 +17,7 @@ from tests.seed.readmodel import (
     PLACES,
     TIMES,
     NAMES,
+    TAG_INSTANCES,
 )
 from tests.seed.readmodel.tag_name_assocs import TAG_NAME_ASSOCS
 from the_history_atlas.apps.accounts.database import Database as AccountsDB
@@ -87,6 +88,7 @@ def engine(config):
             times=TIMES,
             names=NAMES,
             tag_name_assocs=TAG_NAME_ASSOCS,
+            tag_instances=TAG_INSTANCES,
         )
         session.commit()
 

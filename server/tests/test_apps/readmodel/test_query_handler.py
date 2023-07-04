@@ -14,11 +14,6 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
     Citation,
 )
 
-from the_history_atlas.apps.readmodel.schema import (
-    Place,
-)
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 # constants
 TYPE_ENUM = set(["PERSON", "PLACE", "TIME"])
@@ -106,7 +101,7 @@ def test_get_entity_summaries(query_handler):
         query=GetEntitySummariesByIDs(ids=ids)
     )
 
-    assert len(entity_summaries_by_id) == 15
+    assert len(entity_summaries_by_id) == len(ids)
 
 
 def test_get_place_by_coords_success(query_handler, DBSession):

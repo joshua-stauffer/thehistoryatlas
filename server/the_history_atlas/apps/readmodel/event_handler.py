@@ -19,17 +19,23 @@ from the_history_atlas.apps.domain.models import (
 )
 from the_history_atlas.apps.domain.models.events.meta_tagged import MetaTagged
 from the_history_atlas.apps.domain.types import Event
+from the_history_atlas.apps.readmodel.database import Database
 from the_history_atlas.apps.readmodel.errors import (
     UnknownEventError,
     DuplicateEventError,
 )
+from the_history_atlas.apps.readmodel.trie import Trie
 
 log = logging.getLogger(__name__)
 
 
 class EventHandler:
-    def __init__(self, database_instance):
+    def __init__(
+        self, database_instance: Database, source_trie: Trie, entity_trie: Trie
+    ):
         self._db = database_instance
+        self._source_trie = source_trie
+        self._entity_trie = entity_trie
         self._event_handlers = self._map_event_handlers()
         self._event_id_set = set()
 

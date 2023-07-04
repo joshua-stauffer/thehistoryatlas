@@ -38,10 +38,9 @@ class Node:
 
 
 class Trie:
-    def __init__(self, entity_tuples):
+    def __init__(self):
 
         self.root = Node("")
-        self.build(entity_tuples)
 
     def build(self, entity_tuples):
         """Initializes the data structure"""

@@ -17,7 +17,9 @@ def entity_tuples():
 
 @pytest.fixture
 def trie(entity_tuples):
-    return Trie(entity_tuples)
+    trie = Trie()
+    trie.build(entity_tuples=entity_tuples)
+    return trie
 
 
 def test_build(trie):

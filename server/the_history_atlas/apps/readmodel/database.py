@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from datetime import datetime
 from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
@@ -13,6 +14,7 @@ from the_history_atlas.apps.domain.models.readmodel import (
     Source as ADMSource,
 )
 from the_history_atlas.apps.domain.models.readmodel.queries import FuzzySearchByName
+from the_history_atlas.apps.domain.models.readmodel.queries.coords_by_name import Coords
 from the_history_atlas.apps.domain.models.readmodel.tables import (
     PersonModel,
     TagInstanceModel,
@@ -37,7 +39,7 @@ from the_history_atlas.apps.readmodel.schema import (
     Time,
     Source,
 )
-from the_history_atlas.apps.readmodel.trie import Trie
+from the_history_atlas.apps.readmodel.trie import Trie, TrieResult
 
 log = logging.getLogger(__name__)
 
@@ -46,14 +48,15 @@ class Database:
 
     Session: sessionmaker
 
-    def __init__(self, database_client: DatabaseClient):
+    def __init__(
+        self, database_client: DatabaseClient, source_trie: Trie, entity_trie: Trie
+    ):
+        self._entity_trie = source_trie
+        self._source_trie = entity_trie
         self._engine = database_client
+
         self.Session = sessionmaker(bind=database_client)
-        # initialize the db
         Base.metadata.create_all(self._engine)
-        # intialize the search trie
-        self._entity_trie = Trie(self.get_all_entity_names())
-        self._source_trie = Trie(self.get_all_source_titles_and_authors())
 
     def get_citation(self, citation_guid: str) -> dict:
         """Resolves citation GUID to its value in the database"""
@@ -144,12 +147,12 @@ class Database:
             tag_result = list()
             timeline_dict = dict()
             for tag in tag_list:
-                tag_result.append(tag.summary.guid)
+                tag_result.append(tag.summary.id)
                 year = self.get_year_from_date(tag.summary.time_tag)
                 if time_res := timeline_dict.get(year):
                     time_res["count"] += 1
                 else:
-                    timeline_dict[year] = {"count": 1, "root_guid": tag.summary.guid}
+                    timeline_dict[year] = {"count": 1, "root_guid": tag.summary.id}
         timeline_result = [
             {
                 "year": year,
@@ -180,7 +183,7 @@ class Database:
                 entity = session.execute(
                     select(Tag).where(Tag.id == guid)
                 ).scalar_one_or_none()
-                if not entity:
+                if entity is None or not entity.tag_instances:
                     log.debug(f"Could not find entity {guid}")
                     continue
                 names = [name.name for name in entity.names]
@@ -248,17 +251,16 @@ class Database:
         if name == "":
             return []
         return [
-            FuzzySearchByName(name=trie_result.name, ids=trie_result.guids)
+            FuzzySearchByName(
+                name=trie_result.name, ids=[UUID(id) for id in trie_result.guids]
+            )
             for trie_result in self._entity_trie.find(name, res_count=10)
         ]
 
-    def get_sources_by_search_term(self, search_term: str) -> list[ADMSource]:
+    def get_sources_by_search_term(self, sources: list[TrieResult]) -> list[ADMSource]:
         """Match a list of Sources by title and author against a search term."""
-        if search_term == "":
-            return []
         res: List[ADMSource] = []
-        source_results = self._source_trie.find(search_term, res_count=10)
-        source_ids = set([id for source in source_results for id in source.guids])
+        source_ids = set([id for source in sources for id in source.ids])
         with Session(self._engine, future=True) as session:
             for source_id in source_ids:
                 source = session.query(Source).filter(Source.id == source_id).one()
@@ -286,7 +288,7 @@ class Database:
             ).scalar_one_or_none()
 
             if res:
-                return res.guid
+                return res.id
             return None
 
     def get_default_entity(self) -> DefaultEntity:
@@ -303,16 +305,24 @@ class Database:
                     "Database must have at least one entity -- add a new citation, and try again."
                 )
 
-            return DefaultEntity(id=tag.guid, name=tag.names, type="PLACE")
+            return DefaultEntity(id=tag.id, name=tag.names, type="PLACE")
 
-    def get_coords_by_names(self, names: list[str]) -> CoordsByName:
-        with Session(self._engine, future=True) as session:
-            sql = """
-                select from places names, latitude, longitude
-                
+    def get_coords_by_names(self, names: list[str], session: Session) -> CoordsByName:
+        sql = text(
             """
-
-    # MUTATIONS
+            select names.name, place.latitude, place.longitude 
+            from names 
+                join tag_name_assoc on names.id = tag_name_assoc.name_id
+                join tags on tag_name_assoc.tag_id = tags.id
+                join place on tags.id = place.id
+            where names.name in :name_list;
+        """
+        )
+        rows = session.execute(sql, {"name_list": tuple(names)}).all()
+        coords_by_name = defaultdict(list)
+        for name, latitude, longitude in rows:
+            coords_by_name[name].append(Coords(latitude=latitude, longitude=longitude))
+        return CoordsByName(coords=coords_by_name)
 
     def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary"""
