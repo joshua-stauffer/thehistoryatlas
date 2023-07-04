@@ -2,6 +2,8 @@ from functools import partial
 import logging
 import os
 from shutil import copytree
+
+from the_history_atlas import ROOT_DIR
 from the_history_atlas.apps.config import Config
 from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.domain.models import TextAnalysis, GetTextAnalysis
@@ -11,15 +13,14 @@ from the_history_atlas.apps.nlp.state.database import Database
 from the_history_atlas.apps.nlp.processor import Processor
 from the_history_atlas.apps.nlp.resolver import Resolver
 from the_history_atlas.apps.nlp.trainer import Trainer
-from the_history_atlas.apps.domain.transform import from_dict
 from the_history_atlas.apps.readmodel import ReadModelApp
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
-BASE_MODEL_DIR = "/app/base-models"
-MODEL_DIR = "/app/models"
-TRAIN_DIR = "/app/train"
+BASE_MODEL_DIR = f"{ROOT_DIR}/apps/nlp/base-models"
+MODEL_DIR = f"{ROOT_DIR}/apps/nlp/models"
+TRAIN_DIR = f"{ROOT_DIR}/apps/nlp/train"
 
 
 class NaturalLanguageProcessingApp:

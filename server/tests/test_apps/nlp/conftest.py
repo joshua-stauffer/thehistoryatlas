@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
+from tests import TEST_ROOT_DIR
 from the_history_atlas.apps.nlp.state.database import Database
 from the_history_atlas.apps.nlp.state.schema import Base, AnnotatedCitation, Entity
 
@@ -17,41 +18,21 @@ def mock_db():
 
 
 @pytest.fixture
-def db():
+def db(config, engine):
     TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
 
     if not TEST_DB_URI:
         raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
 
-    root = os.getcwd()
-    if root.endswith("nlp") or root.endswith("app"):
-        # running in container
-        TRAIN_DIR = root + "/tests/test_train_dir"
-    elif root.endswith("tests"):
-        # running tests directly
-        TRAIN_DIR = root + "/test_train_dir"
-    else:
-        raise Exception(
-            f"Working in unexpected path `{root}`, unable to find `test_train_dir`."
-        )
-    debug = True
+    TRAIN_DIR = f"{TEST_ROOT_DIR}/test_apps/nlp/test_train_dir"
 
-    class Config:
-        """minimal configuration for connecting to test database."""
-
-        def __init__(self):
-            self.DB_URI = TEST_DB_URI
-            self.DEBUG = debug
-            self.TRAIN_DIR = TRAIN_DIR
-
-    config = Config()
-    db = Database(config)
+    db = Database(client=engine)
 
     # if we're using db, ensure its fresh
-    Base.metadata.drop_all(db._engine)
-    Base.metadata.create_all(db._engine)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
 
-    fill_db(db._engine, config.TRAIN_DIR)
+    fill_db(engine, TRAIN_DIR)
 
     return db
 

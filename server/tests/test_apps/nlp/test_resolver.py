@@ -37,15 +37,14 @@ def pub_func():
 
 
 @pytest.fixture
-def resolver(query_readmodel, query_geo, entity_dict, pub_func, boundaries):
+def resolver(
+    query_readmodel, query_geo, entity_dict, pub_func, boundaries, readmodel_app
+):
     r = Resolver(
-        corr_id=str(uuid4()),
         text="not needed",
         text_map=entity_dict,
-        pub_func=pub_func,
-        query_geo=query_geo,
-        query_readmodel=query_readmodel,
         boundaries=boundaries,
+        readmodel_app=readmodel_app,
     )
     return r
 

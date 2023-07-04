@@ -30,7 +30,7 @@ class Entity(Base):
     start_char = Column(INTEGER, nullable=False)
     stop_char = Column(INTEGER, nullable=False)
     annotated_citation_id = Column(
-        UUID, ForeignKey("annotated_citations.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("annotated_citations.id"), nullable=False
     )
     annotated_citation = relationship("AnnotatedCitation", back_populates="entities")
 

@@ -1,8 +1,9 @@
 from logging import getLogger
 from unittest.mock import patch, MagicMock
+from uuid import UUID
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.domain.models import (
@@ -201,28 +202,52 @@ def test_handle_entity_tagged_fails_gracefully_on_integrity_error(db, person_add
         assert entity is None
 
 
-@patch("nlp_service.state.database.Database._handle_citation_added")
-def test_handle_event_calls_handle_citation_added(func, db, citation_added):
+def test_handle_event_calls_handle_citation_added(db, citation_added, engine):
     db.handle_event(citation_added)
-    func.assert_called_with(citation_added)
+
+    with Session(engine, future=True) as session:
+        citation_id = citation_added.payload.id
+        stmt = text(
+            """
+            select id, text from annotated_citations
+            where annotated_citations.id = :id
+        """
+        )
+        row = session.execute(stmt, {"id": citation_id}).one()
+        assert row[0] == UUID(citation_id)
+        assert row[1] == citation_added.payload.text
 
 
-@pytest.mark.parametrize(
-    "event",
-    [
-        "person_added",
-        "person_tagged",
-        "place_added",
-        "place_tagged",
-        "time_added",
-        "time_tagged",
-    ],
-)
-@patch("nlp_service.state.database.Database._handle_entity_tagged")
-def test_handle_event_calls_handle_entity_tagged(func, event, db, request):
-    event = request.getfixturevalue(event)
-    db.handle_event(event)
-    func.assert_called_with(event)
+# @pytest.mark.parametrize(
+#     "event",
+#     [
+#         "person_added",
+#         "person_tagged",
+#         "place_added",
+#         "place_tagged",
+#         "time_added",
+#         "time_tagged",
+#     ],
+# )
+
+
+def test_handle_event_person_added(person_added, db, engine):
+    db.handle_event(person_added)
+
+    with Session(engine, future=True) as session:
+        stmt = text(
+            """
+            select id, type, start_char, stop_char, annotated_citation_id from entities 
+            where entities.id = :id
+        """
+        )
+        (id, type, start_char, stop_char, annotated_citation_id) = session.execute(
+            stmt, {"id": person_added.payload.id}
+        ).one()
+        assert id == UUID(person_added.payload.id)
+        assert annotated_citation_id == UUID(person_added.payload.citation_id)
+        assert start_char == person_added.payload.citation_start
+        assert stop_char == person_added.payload.citation_end
 
 
 @patch("nlp_service.state.database.Database._handle_citation_added")

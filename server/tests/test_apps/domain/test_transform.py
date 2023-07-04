@@ -391,4 +391,4 @@ def test_transform_get_user_response():
     )
     assert isinstance(get_user_response, GetUserResponse)
     assert isinstance(get_user_response.payload, GetUserResponsePayload)
-    assert isinstance(tests.conftest.user_details, UserDetails)
+    assert isinstance(get_user_response.payload.user_details, UserDetails)
