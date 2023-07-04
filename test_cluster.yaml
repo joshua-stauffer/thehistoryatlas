@@ -8,7 +8,7 @@ services:
         environment:
             - POSTGRES_PASSWORD=${POSTGRES_PASS}
         networks:
-            - tha-connect
+            - tha-test
         ports:
             - 5432:5432
 
@@ -20,9 +20,20 @@ services:
             - db
         restart: "no"
         networks:
-            - tha-connect
+            - tha-test
         environment:
             - THA_DB_URI=${THA_DB_URI}
             - THA_TEST_PASSWORD=${THA_TEST_PASSWORD}
+
+    server:
+        image: ilriccio/thehistoryatlas:test_server
+        command: [ "python3", "-m", "pytest", "-vvv" ]
+        networks:
+            - tha-test
+        environment:
+            - TEST_DB_URI=${TEST_DB_URI}
+            - TTL=${TTL}
+            - REFRESH_BY=${REFRESH_BY}
+            - SEC_KEY=${SEC_KEY}
 networks:
-    tha-connect:
+    tha-test:

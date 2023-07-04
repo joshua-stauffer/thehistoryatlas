@@ -6,3 +6,6 @@ pytest-asyncio
 pytest-mock
 black
 psycopg2-binary
+pydantic
+fastapi
+spacy
