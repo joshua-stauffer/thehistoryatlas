@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from server.the_history_atlas.apps.accounts.errors import known_exceptions
+from the_history_atlas.apps.accounts.errors import known_exceptions
 
 log = logging.getLogger(__name__)
 
