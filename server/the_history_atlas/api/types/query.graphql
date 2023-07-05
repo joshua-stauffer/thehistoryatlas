@@ -1,4 +1,7 @@
 type Query {
+
+    events(params: EventFeedInput!): [Event!]!
+
     GetSummariesByGUID(summary_guids: [String!]!): [Summary]
 
     GetEntitySummariesByGUID(guids: [String!]!): [EntitySummary]!

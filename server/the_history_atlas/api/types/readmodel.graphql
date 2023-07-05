@@ -1,3 +1,90 @@
+
+scalar UUID
+
+
+input EventFeedInput {
+    eventID: UUID
+    entityFilters: [UUID!]
+    lookAheadCount: Int
+    lookBehindCount: Int
+}
+
+type Event {
+    id: UUID!
+    text: String!
+    lang: String!
+    sources: [Source!]!
+    tags: [Tag!]
+    map: Map!
+}
+
+union Entity = Person | Place | Time
+
+interface EntityTag {
+    id: UUID!
+    startChar: Int!
+    stopChar: Int!
+    name: String!
+}
+
+type Person implements EntityTag {
+    id: UUID!
+    startChar: Int!
+    stopChar: Int!
+    name: String!
+}
+
+type Place implements EntityTag {
+    id: UUID!
+    startChar: Int!
+    stopChar: Int!
+    name: String!
+    location: Location!
+}
+
+type Time implements EntityTag {
+    id: UUID!
+    startChar: Int!
+    stopChar: Int!
+    name: String!
+    time: String!
+    calendar: String!
+    precision: Int!
+}
+
+type Map {
+    locations: [Location!]!
+    center: Coordinates!
+}
+
+union Location = Coordinates | GeoShape
+
+type Coordinates {
+    latitude: Float!
+    longitude: Float!
+}
+
+type GeoShape {
+    value: String!
+}
+
+union MapValue = MapPoint | MapShape
+
+type MapPoint {
+    id: UUID!
+    longitude: Float!
+    latitude: Float!
+    name: String!
+}
+
+type MapShape {
+    id: UUID!
+    name: String!
+    geoShape: String!
+}
+
+###
+
 type Summary {
     guid: String!
     text: String!
