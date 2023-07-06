@@ -10,3 +10,4 @@ pydantic
 fastapi
 spacy
 ariadne
+boto3

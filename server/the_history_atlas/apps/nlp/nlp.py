@@ -1,4 +1,3 @@
-from functools import partial
 import logging
 import os
 from shutil import copytree
@@ -12,6 +11,7 @@ from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.nlp.state.database import Database
 from the_history_atlas.apps.nlp.processor import Processor
 from the_history_atlas.apps.nlp.resolver import Resolver
+from the_history_atlas.apps.nlp.storage import Storage
 from the_history_atlas.apps.nlp.trainer import Trainer
 from the_history_atlas.apps.readmodel import ReadModelApp
 
@@ -75,6 +75,16 @@ class NaturalLanguageProcessingApp:
             #
         else:
             log.info("Found existing model -- using model-best")
+
+    def load_model(self):
+        root_dir = "./nlp-model"
+        storage = Storage()
+        paths = storage.list_objects()
+        for path in paths:
+            if path.endswith("/"):
+                os.makedirs(root_dir + path, exist_ok=True)
+            else:
+                s.get_objects(source=path, dest=root_dir + path)
 
     def train(self):
         """Builds a new training file based on the latest data, and then

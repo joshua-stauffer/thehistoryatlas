@@ -10,7 +10,7 @@ from the_history_atlas.apps.accounts.encryption import encrypt
 def test_login(schema, context_value):
     query = """
     mutation {
-        Login(username: "admin1", password: "super_secure_password") {
+        Login(username: "admin", password: "super_secure_password") {
             token
             success
         }
@@ -27,8 +27,6 @@ def test_login(schema, context_value):
     assert success is True
     assert data["data"]["Login"]["success"] is True
     assert isinstance(data["data"]["Login"]["token"], str)
-
-    # this test updates the login timestamp, but isn't worth overwriting right now
 
 
 def test_add_user(schema, context_value, active_admin_token, cleanup_test_add_user):
