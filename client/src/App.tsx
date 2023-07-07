@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import { useQuery, useReactiveVar } from "@apollo/client";
 import { addToHistory, currentEntity } from "./hooks/history";
-import { ResourceNotFoundError } from "./pages/errorPages";
+import {GenericError, ResourceNotFoundError} from "./pages/errorPages";
 import { AddCitationPage } from "./pages/addCitation";
 import { LoginPage } from "./pages/login";
 import { FeedPage } from "./pages/feed";
@@ -52,7 +52,7 @@ function App() {
           </Route>
           <Route path="/">
             {entity === null ? (
-              <h1>Loading Feed</h1>
+              <GenericError />
             ) : (
               <FeedPage tokenManager={tokenManager} />
             )}
