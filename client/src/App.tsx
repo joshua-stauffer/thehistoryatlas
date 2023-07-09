@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import { useQuery, useReactiveVar } from "@apollo/client";
 import { addToHistory, currentEntity } from "./hooks/history";
-import {GenericError, ResourceNotFoundError} from "./pages/errorPages";
+import { GenericError, ResourceNotFoundError } from "./pages/errorPages";
 import { AddCitationPage } from "./pages/addCitation";
 import { LoginPage } from "./pages/login";
 import { FeedPage } from "./pages/feed";
@@ -16,29 +16,11 @@ import {
   DefaultEntityVars,
   DEFAULT_ENTITY,
 } from "./graphql/defaultEntity";
+import { NewFeed } from "./pages/newFeed/newFeed";
+import { events } from "./data";
 
 function App() {
-  const entity = useReactiveVar(currentEntity);
   const tokenManager = useTokenManager();
-
-  const {
-    loading: defaultEntityLoading,
-    error: defaultEntityError,
-    data: defaultEntityData,
-  } = useQuery<DefaultEntityResult, DefaultEntityVars>(DEFAULT_ENTITY);
-
-  useEffect(() => {
-    if (!!defaultEntityData) {
-      addToHistory({
-        entity: {
-          guid: defaultEntityData.defaultEntity.id,
-          type: defaultEntityData.defaultEntity.type,
-          name: defaultEntityData.defaultEntity.name,
-        },
-        lastSummaryGUID: undefined,
-      });
-    }
-  }, [defaultEntityData]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -51,11 +33,7 @@ function App() {
             <AddCitationPage tokenManager={tokenManager} />
           </Route>
           <Route path="/">
-            {entity === null ? (
-              <GenericError />
-            ) : (
-              <FeedPage tokenManager={tokenManager} />
-            )}
+            <NewFeed event={events[0]} next={() => null} prev={() => null} />
           </Route>
           <Route path="*">
             <ResourceNotFoundError tokenManager={tokenManager} />

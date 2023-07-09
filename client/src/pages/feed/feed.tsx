@@ -23,6 +23,8 @@ interface FeedProps {
   tokenManager: TokenManager;
 }
 
+const seedData = {};
+
 export const FeedPage = (props: FeedProps) => {
   const {
     feedRef,

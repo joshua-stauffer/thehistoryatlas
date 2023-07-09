@@ -4,9 +4,9 @@ scalar UUID
 
 input EventFeedInput {
     eventID: UUID
-    entityFilters: [UUID!]
-    lookAheadCount: Int
-    lookBehindCount: Int
+    entityFilters: [UUID!]!
+    lookAhead: Boolean!
+    lookBehind: Boolean!
 }
 
 type Event {
@@ -16,6 +16,7 @@ type Event {
     sources: [Source!]!
     tags: [Tag!]
     map: Map!
+    entityFilters: [UUID!]!
 }
 
 union Entity = Person | Place | Time
@@ -54,30 +55,18 @@ type Time implements EntityTag {
 
 type Map {
     locations: [Location!]!
-    center: Coordinates!
 }
 
-union Location = Coordinates | GeoShape
+union Location = Point | Shape
 
-type Coordinates {
-    latitude: Float!
-    longitude: Float!
-}
-
-type GeoShape {
-    value: String!
-}
-
-union MapValue = MapPoint | MapShape
-
-type MapPoint {
+type Point {
     id: UUID!
     longitude: Float!
     latitude: Float!
     name: String!
 }
 
-type MapShape {
+type Shape {
     id: UUID!
     name: String!
     geoShape: String!
@@ -176,6 +165,7 @@ type DefaultEntity {
 
 type Source {
     id: String!
+    text: String!
     title: String!
     author: String!
     publisher: String!
