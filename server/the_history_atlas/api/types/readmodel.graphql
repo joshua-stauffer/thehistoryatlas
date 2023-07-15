@@ -19,6 +19,12 @@ type Event {
     entityFilters: [UUID!]!
 }
 
+type Date {
+    time: String!
+    calendar: String!
+    precision: Int!
+}
+
 union Entity = Person | Place | Time
 
 interface EntityTag {

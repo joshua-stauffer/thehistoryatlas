@@ -6,10 +6,18 @@ import {
   Typography,
   Collapse,
   IconButton,
+  CardHeader,
+  TextField,
 } from "@mui/material";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
-import ShareIcon from "@material-ui/icons/Share";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { EventItem } from "../../graphql/events";
+import { Box } from "@material-ui/core";
+import { renderDateTime } from "../../components/renderDateTime/time";
+import { FilterTags } from "./filterTags";
+import Autocomplete from "@mui/material/Autocomplete";
+import { peopleAndPlaceOptions } from "../../data";
 
 interface NewFeedCardProps {
   event: EventItem;
@@ -20,34 +28,56 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
   const toggleIsOpen = () => setIsOpen((current) => !current);
 
   return (
-    <Card
-      variant={"outlined"}
-      sx={{
-        minHeight: 150,
-      }}
-    >
+    <Card sx={{ margin: "30px" }}>
+      <CardActions disableSpacing>
+        <IconButton sx={{ marginLeft: "auto", marginRight: "25px" }}>
+          <ArrowBackIcon />
+        </IconButton>
+        <IconButton sx={{ marginLeft: "25px", marginRight: "auto" }}>
+          <ArrowForwardIcon />
+        </IconButton>
+      </CardActions>
+      <CardHeader
+        sx={{ textAlign: "center" }}
+        title={renderDateTime(props.event.date)}
+      ></CardHeader>
+
       <CardContent>
-        <Typography variant="h6" gutterBottom textAlign="center">
+        <Typography
+          paragraph
+          gutterBottom
+          textAlign="center"
+          sx={{
+            marginTop: 8,
+            marginBottom: 8,
+          }}
+        >
           {props.event.text}
         </Typography>
       </CardContent>
-      <CardActions>
-        <IconButton>
-          <ShareIcon />
-        </IconButton>
-        <IconButton onClick={toggleIsOpen}>
-          <Typography variant="button">Sources</Typography>
-          <ExpandMoreIcon />
-        </IconButton>
-      </CardActions>
-      <Collapse in={isOpen} timeout="auto">
-        {props.event.sources.map((source) => (
-          <>
-            <Typography variant={"h2"}>source.title</Typography>
-            <Typography>source.text</Typography>
-          </>
-        ))}
-      </Collapse>
+      <CardContent sx={{ marginLeft: "40px" }}>
+        <Typography paragraph>"{props.event.source.text}"</Typography>
+        <Typography paragraph>
+          -- {props.event.source.title} ({props.event.source.author})
+        </Typography>
+      </CardContent>
+      <CardContent>
+        <Autocomplete
+          multiple
+          id="tags-outlined"
+          options={peopleAndPlaceOptions}
+          getOptionLabel={(option) => option.name}
+          defaultValue={props.event.filters}
+          filterSelectedOptions
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Filter Events by Person or Place"
+              placeholder="Add a Filter"
+            />
+          )}
+        />
+      </CardContent>
     </Card>
   );
 };

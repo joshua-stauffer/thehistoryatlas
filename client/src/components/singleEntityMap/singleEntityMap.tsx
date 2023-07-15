@@ -13,9 +13,9 @@ const mapDimensions = {
     margin: "10px",
   },
   MD: {
-    height: "80vh",
-    width: "100%",
-    margin: "20px",
+    height: "100%",
+    width: "90%",
+    margin: "30px",
   },
   LG: {
     height: "90vh",

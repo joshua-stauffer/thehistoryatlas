@@ -12,7 +12,9 @@ import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
 import { EventItem } from "../../graphql/events";
 import { NewFeedCard } from "./newFeedCard";
-import { NewTagBox } from "./newTagBox";
+import { FilterTags } from "./filterTags";
+import { Typography } from "@mui/material";
+import { renderDateTime } from "../../components/renderDateTime/time";
 
 interface NewFeedProps {
   event: EventItem;
@@ -28,63 +30,43 @@ export const NewFeed = (props: NewFeedProps) => {
     };
   });
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box>
       <NavBar children={[<AddCitationButton />, <SettingsButton />]} />
       <Box sx={{ height: 70 }}></Box>
-      <Grid container spacing={10} direction={"row"} justifyItems={"center"}>
+      <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}
-        <Grid
-          item
-          sm={12}
-          md={6}
-          sx={{
-            maxHeight: "100vh",
-            overflow: "scroll",
-          }}
-        >
-          <Paper sx={{ marginTop: "55px" }}>
-            <Grid item id={`event-card-x`} xs={12} md={12}>
-              <Paper>
-                <NewFeedCard event={props.event} />
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={12} id={`event-tags-x`}>
-              <NewTagBox tags={props.event.tags} />
-            </Grid>
+
+        <Grid item sm={12} md={6}>
+          {/* left box desktop, top box mobile */}
+
+          <Box sx={{}}>
+            <NewFeedCard event={props.event} />
+
             <Hidden mdUp>
               {/* Inline map for mobile */}
-              <Grid item sm={12}>
-                <SingleEntityMap
-                  coords={coords}
-                  mapTyle={"natGeoWorld"}
-                  size={"SM"}
-                  title={props.event.map.locations[0].name}
-                  zoom={6}
-                />
-              </Grid>
+              <SingleEntityMap
+                coords={coords}
+                mapTyle={"natGeoWorld"}
+                size={"SM"}
+                title={props.event.map.locations[0].name}
+                zoom={6}
+              />
             </Hidden>
-          </Paper>
-          <Grid
-            item
-            sx={{
-              height: "70vh",
-            }}
-          >
-            {/* Spacer for the end of the feed */}
-          </Grid>
+          </Box>
         </Grid>
-        <Hidden smDown>
-          {/* Standalone map for desktop */}
-          <Grid item md={6}>
+        <Grid item md={6}>
+          {/* right box desktop, bottom box mobile */}
+          <Hidden smDown>
+            {/* Standalone map for desktop */}
             <SingleEntityMap
               coords={coords}
               mapTyle={"natGeoWorld"}
               size={"MD"}
               title={props.event.map.locations[0].name}
-              zoom={6}
+              zoom={7}
             />
-          </Grid>
-        </Hidden>
+          </Hidden>
+        </Grid>
       </Grid>
     </Box>
   );

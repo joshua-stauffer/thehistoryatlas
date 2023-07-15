@@ -8,6 +8,7 @@ import { useMutation } from "@apollo/client";
 import { LOGIN, LoginResult, LoginVars } from "../../graphql/login";
 import { TokenManager } from "../../hooks/token";
 import { useHistory } from "react-router-dom";
+import { GenericError } from "../errorPages";
 
 interface LoginPageProps {
   tokenManager: TokenManager;
@@ -27,12 +28,18 @@ export const LoginPage = (props: LoginPageProps) => {
   );
 
   useEffect(() => {
-    if (!!data) {
+    if (!!data?.Login.token) {
       // login mutation has returned
       updateToken(data.Login.token);
       history.push("/");
     }
   }, [data]);
+
+  if (error) {
+    return <GenericError />;
+  }
+  // todo: fix
+  const loginFailed = !!data && !data.Login.success;
 
   return (
     <Grid>
@@ -79,10 +86,13 @@ export const LoginPage = (props: LoginPageProps) => {
             onClick={() =>
               login({ variables: { password: password, username: username } })
             }
-            color="secondary"
+            color="primary"
           >
             Login
           </Button>
+        </Grid>
+        <Grid hidden={loginFailed}>
+          <Typography>Incorrect credentials</Typography>
         </Grid>
       </Grid>
       <Grid></Grid>

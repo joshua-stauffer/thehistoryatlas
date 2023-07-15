@@ -2,10 +2,17 @@ export interface EventItem {
   id: string;
   text: string;
   lang: string;
-  sources: Source[];
+  date: CalendarDate;
+  source: Source; // todo: make list
   tags: Tag[];
   map: Map;
   filters: Filter[];
+}
+
+export interface CalendarDate {
+  time: string;
+  calendar: string;
+  precision: number;
 }
 
 export interface Source {
@@ -71,3 +78,9 @@ export interface Filter {
 }
 
 type FilterType = "PERSON" | "PLACE";
+
+export interface PeopleAndPlaceOption {
+  name: string;
+  id: string;
+  type: "PERSON" | "PLACE";
+}
