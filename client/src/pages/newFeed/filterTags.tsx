@@ -2,10 +2,10 @@ import { Grid, Chip } from "@mui/material";
 import { Person, Place, Timer } from "@mui/icons-material";
 
 import { addToHistoryProps } from "../../hooks/history";
-import { Filter, Tag } from "../../graphql/events";
+import { Focus, Tag } from "../../graphql/events";
 
 interface FilterTagProps {
-  filters: Filter[];
+  filters: Focus[];
 }
 
 export const FilterTags = (props: FilterTagProps) => {
@@ -27,7 +27,7 @@ export const FilterTags = (props: FilterTagProps) => {
 };
 
 type colorOptions = "primary" | "secondary" | "success";
-const getChipColor = (tag: Filter): colorOptions => {
+const getChipColor = (tag: Focus): colorOptions => {
   if (tag.type === "PERSON") return "primary";
   if (tag.type === "PLACE") return "secondary";
   return "success";

@@ -6,7 +6,7 @@ export interface EventItem {
   source: Source; // todo: make list
   tags: Tag[];
   map: Map;
-  filters: Filter[];
+  focus: Focus | null;
 }
 
 export interface CalendarDate {
@@ -71,13 +71,13 @@ export interface Shape {
   geoShape: string;
 }
 
-export interface Filter {
+export interface Focus {
   id: string;
-  type: FilterType;
+  type: FocusType;
   name: string;
 }
 
-type FilterType = "PERSON" | "PLACE";
+type FocusType = "PERSON" | "PLACE";
 
 export interface PeopleAndPlaceOption {
   name: string;

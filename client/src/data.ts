@@ -14,16 +14,16 @@ export const events: EventItem[] = [
       {
         id: "d815d481-c8bc-4be6-a687-d9aec46a7a64",
         type: "PERSON",
-        name: "Johann Sebastian Bach",
-        startChar: 30,
-        stopChar: 34,
+        name: "J. S. Bach",
+        startChar: 0,
+        stopChar: 9,
       },
       {
         id: "1318e533-80e0-4f2b-bd08-ae7150ffee86",
         type: "PLACE",
         name: "Eisenach",
-        startChar: 230,
-        stopChar: 238,
+        startChar: 22,
+        stopChar: 30,
         location: {
           id: "1318e533-80e0-4f2b-bd08-ae7150ffee86",
           name: "Eisenach",
@@ -34,9 +34,9 @@ export const events: EventItem[] = [
       {
         id: "7c4fa5a6-152d-403d-b3d1-5a586578dba4",
         type: "TIME",
-        startChar: 251,
-        stopChar: 267,
-        name: "the year 1685 on March 21",
+        startChar: 34,
+        stopChar: 50,
+        name: "March 21st, 1685",
         time: "1685-03-21 00:00:00",
         calendar: "http://www.wikidata.org/entity/Q1985727",
         precision: 9,
@@ -60,13 +60,11 @@ export const events: EventItem[] = [
         },
       ],
     },
-    filters: [
-      {
-        id: "d815d481-c8bc-4be6-a687-d9aec46a7a64",
-        name: "Johann Sebastian Bach",
-        type: "PERSON",
-      },
-    ],
+    focus: {
+      id: "d815d481-c8bc-4be6-a687-d9aec46a7a64",
+      name: "Johann Sebastian Bach",
+      type: "PERSON",
+    },
   },
 ];
 
