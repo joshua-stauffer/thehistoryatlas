@@ -27,7 +27,6 @@ interface NewFeedCardProps {
 export const NewFeedCard = (props: NewFeedCardProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggleIsOpen = () => setIsOpen((current) => !current);
-  console.log(buildTaggedText(props.event));
   return (
     <Card sx={{ margin: "30px" }}>
       <CardHeader
@@ -50,8 +49,8 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
           gutterBottom
           textAlign="center"
           sx={{
-            marginTop: 5,
-            marginBottom: 5,
+            marginTop: 8,
+            marginBottom: 8,
           }}
         >
           {buildTaggedText(props.event)}
@@ -69,11 +68,11 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
 
 const buildCurrentFocus = (focus: Focus | null) => {
   if (!focus) {
-    return "Events in the history of the world";
+    return "The history of the world";
   } else if (focus.type === "PERSON") {
-    return `Events in the life of ${focus.name}`;
+    return `The life of ${focus.name}`;
   } else {
-    return `Events in the history of ${focus.name}`;
+    return `The history of ${focus.name}`;
   }
 };
 
@@ -87,34 +86,25 @@ const buildTaggedText = (event: EventItem): (string | JSX.Element | null)[] => {
     tagIndices = [...tagIndices, ...indices];
   }
   const tagIndicesSet = new Set(tagIndices);
-  console.log(tagIndicesSet);
   const startCharMap: Map<number, Tag> = new Map(
     event.tags.map((tag) => [tag.startChar, tag])
   );
-  const text = Array.from(event.text).map((char, index) => {
+  return Array.from(event.text).map((char, index) => {
     const tag = startCharMap.get(index);
     if (!!tag) {
-      return (
-        <Chip
-          label={tag.name}
-          icon={
-            tag.type === "PERSON" ? (
-              <GoPerson />
-            ) : tag.type === "PLACE" ? (
-              <VscLocation />
-            ) : (
-              <BiTimeFive />
-            )
-          }
-          variant={"outlined"}
-        />
-      );
+      const icon =
+        tag.type === "PERSON" ? (
+          <GoPerson />
+        ) : tag.type === "PLACE" ? (
+          <VscLocation />
+        ) : (
+          <BiTimeFive />
+        );
+      return <Chip label={tag.name} icon={icon} variant={"outlined"} />;
     } else if (tagIndicesSet.has(index)) {
       return null;
     } else {
       return char;
     }
   });
-  console.log(text);
-  return text;
 };
