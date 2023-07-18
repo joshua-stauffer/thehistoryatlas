@@ -20,7 +20,7 @@ import { renderDateTime } from "../../components/renderDateTime/time";
 import { GoPerson } from "react-icons/go";
 import { VscLocation } from "react-icons/vsc";
 import { BiTimeFive } from "react-icons/bi";
-
+import SearchIcon from "@mui/icons-material/Search";
 interface NewFeedCardProps {
   event: EventItem;
 }
@@ -29,7 +29,7 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggleIsOpen = () => setIsOpen((current) => !current);
   return (
-    <Card>
+    <Card sx={{ height: "100%" }}>
       <CardHeader
         sx={{ textAlign: "center" }}
         title={buildCurrentFocus(props.event.focus)}
@@ -39,6 +39,10 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
         <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
           <ArrowBackIcon />
         </IconButton>
+        <Button>
+          <SearchIcon />
+          Time Travel
+        </Button>
         <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
           <ArrowForwardIcon />
         </IconButton>

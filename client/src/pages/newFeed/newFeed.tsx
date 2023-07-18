@@ -46,20 +46,18 @@ export const NewFeed = (props: NewFeedProps) => {
         <Grid item sm={12} md={6}>
           {/* left box desktop, top box mobile */}
 
-          <Box sx={{}}>
-            <NewFeedCard event={props.event} />
+          <NewFeedCard event={props.event} />
 
-            <Hidden mdUp>
-              {/* Inline map for mobile */}
-              <SingleEntityMap
-                coords={coords}
-                mapTyle={"natGeoWorld"}
-                size={"SM"}
-                title={props.event.map.locations[0].name}
-                zoom={6}
-              />
-            </Hidden>
-          </Box>
+          <Hidden mdUp>
+            {/* Inline map for mobile */}
+            <SingleEntityMap
+              coords={coords}
+              mapTyle={"natGeoWorld"}
+              size={"SM"}
+              title={props.event.map.locations[0].name}
+              zoom={6}
+            />
+          </Hidden>
         </Grid>
         <Grid item md={6}>
           {/* right box desktop, bottom box mobile */}
