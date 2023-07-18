@@ -7,6 +7,8 @@ export interface EventItem {
   tags: Tag[];
   map: Map;
   focus: Focus | null;
+  story: Story;
+  relatedStories: Story[];
 }
 
 export interface CalendarDate {
@@ -83,4 +85,9 @@ export interface PeopleAndPlaceOption {
   name: string;
   id: string;
   type: "PERSON" | "PLACE";
+}
+
+export interface Story {
+  id: string;
+  name: string;
 }

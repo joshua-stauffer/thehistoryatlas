@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +9,7 @@ import {
   CardHeader,
   TextField,
   Chip,
+  Button,
 } from "@mui/material";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -28,7 +29,7 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggleIsOpen = () => setIsOpen((current) => !current);
   return (
-    <Card sx={{ margin: "30px" }}>
+    <Card>
       <CardHeader
         sx={{ textAlign: "center" }}
         title={buildCurrentFocus(props.event.focus)}
@@ -100,7 +101,11 @@ const buildTaggedText = (event: EventItem): (string | JSX.Element | null)[] => {
         ) : (
           <BiTimeFive />
         );
-      return <Chip label={tag.name} icon={icon} variant={"outlined"} />;
+      return (
+        <Button>
+          {tag.name} {icon}
+        </Button>
+      );
     } else if (tagIndicesSet.has(index)) {
       return null;
     } else {

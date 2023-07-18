@@ -13,7 +13,14 @@ import { SingleEntityMap } from "../../components/singleEntityMap";
 import { EventItem } from "../../graphql/events";
 import { NewFeedCard } from "./newFeedCard";
 import { FilterTags } from "./filterTags";
-import { Typography } from "@mui/material";
+import {
+  Button,
+  Card,
+  CardActions,
+  CardHeader,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { renderDateTime } from "../../components/renderDateTime/time";
 
 interface NewFeedProps {
@@ -66,6 +73,25 @@ export const NewFeed = (props: NewFeedProps) => {
               zoom={7}
             />
           </Hidden>
+          <Card>
+            <CardHeader
+              title={"Stories"}
+              subheader={"Stories in which this event appears"}
+              sx={{ textAlign: "center" }}
+            />
+            <CardActions>
+              <Button disabled>{props.event.story.name} (current Story)</Button>
+              <br />
+              {props.event.relatedStories.map((story) => (
+                <>
+                  <Button>{story.name}</Button>
+                  <br />
+                </>
+              ))}
+
+              <Button>The History of Everything</Button>
+            </CardActions>
+          </Card>
         </Grid>
       </Grid>
     </Box>

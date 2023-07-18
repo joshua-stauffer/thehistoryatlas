@@ -65,6 +65,20 @@ export const events: EventItem[] = [
       name: "Johann Sebastian Bach",
       type: "PERSON",
     },
+    story: {
+      id: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+      name: "The Life of Johann Sebastian Bach",
+    },
+    relatedStories: [
+      {
+        id: "0a89653d-e6b3-448e-83e8-f9734b6d6b41",
+        name: "The History of Eisenach",
+      },
+      {
+        id: "2931182b-d58c-4fbc-b31b-618a69197d7f",
+        name: "The History of March 21st, 1685",
+      },
+    ],
   },
 ];
 
