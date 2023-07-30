@@ -17,11 +17,17 @@ import {
   Button,
   Card,
   CardActions,
+  CardContent,
   CardHeader,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 import { renderDateTime } from "../../components/renderDateTime/time";
+import { useState } from "react";
+import { TimeTravelModal } from "./timeTravelModal";
+import { StoryCard } from "./storyCard";
+import Autocomplete from "@mui/material/Autocomplete";
 
 interface NewFeedProps {
   event: EventItem;
@@ -30,6 +36,10 @@ interface NewFeedProps {
 }
 
 export const NewFeed = (props: NewFeedProps) => {
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const handleOpen = () => setIsOpen(true);
+  const handleClose = () => setIsOpen(false);
+
   const coords = props.event.map.locations.map((location) => {
     return {
       latitude: location.latitude,
@@ -38,15 +48,15 @@ export const NewFeed = (props: NewFeedProps) => {
   });
   return (
     <Box>
-      <NavBar children={[<AddCitationButton />, <SettingsButton />]} />
-      <Box sx={{ height: 70 }}></Box>
+      <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}
 
         <Grid item sm={12} md={6}>
           {/* left box desktop, top box mobile */}
 
-          <NewFeedCard event={props.event} />
+          <NewFeedCard event={props.event} openTimeTravelModal={handleOpen} />
+          <StoryCard event={props.event} />
 
           <Hidden mdUp>
             {/* Inline map for mobile */}
@@ -59,8 +69,27 @@ export const NewFeed = (props: NewFeedProps) => {
             />
           </Hidden>
         </Grid>
+
         <Grid item md={6}>
           {/* right box desktop, bottom box mobile */}
+          <Card sx={{ height: "100px" }}>
+            <CardContent>
+              <Typography
+                variant={"h1"}
+                sx={{ textAlign: "center", fontSize: "20px" }}
+              >
+                The History Atlas
+              </Typography>
+              <Autocomplete
+                id="story-search"
+                freeSolo
+                options={props.event.tags.map((tag) => tag.name)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Search for a story" />
+                )}
+              />
+            </CardContent>
+          </Card>
           <Hidden smDown>
             {/* Standalone map for desktop */}
             <SingleEntityMap
@@ -71,25 +100,6 @@ export const NewFeed = (props: NewFeedProps) => {
               zoom={7}
             />
           </Hidden>
-          <Card>
-            <CardHeader
-              title={"Stories"}
-              subheader={"Stories in which this event appears"}
-              sx={{ textAlign: "center" }}
-            />
-            <CardActions>
-              <Button disabled>{props.event.story.name} (current Story)</Button>
-              <br />
-              {props.event.relatedStories.map((story) => (
-                <>
-                  <Button>{story.name}</Button>
-                  <br />
-                </>
-              ))}
-
-              <Button>The History of Everything</Button>
-            </CardActions>
-          </Card>
         </Grid>
       </Grid>
     </Box>

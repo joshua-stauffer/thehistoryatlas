@@ -23,13 +23,12 @@ import { BiTimeFive } from "react-icons/bi";
 import SearchIcon from "@mui/icons-material/Search";
 interface NewFeedCardProps {
   event: EventItem;
+  openTimeTravelModal: () => void;
 }
 
 export const NewFeedCard = (props: NewFeedCardProps) => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const toggleIsOpen = () => setIsOpen((current) => !current);
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card sx={{ height: "80%" }}>
       <CardHeader
         sx={{ textAlign: "center" }}
         title={buildCurrentFocus(props.event.focus)}
@@ -39,9 +38,9 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
         <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
           <ArrowBackIcon />
         </IconButton>
-        <Button>
+        <Button onClick={props.openTimeTravelModal}>
           <SearchIcon />
-          Time Travel
+          Jump To Time
         </Button>
         <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
           <ArrowForwardIcon />
@@ -61,7 +60,7 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
           {buildTaggedText(props.event)}
         </Typography>
       </CardContent>
-      <CardContent sx={{ marginLeft: "40px" }}>
+      <CardContent sx={{ marginLeft: "40px", marginRight: "40px" }}>
         <Typography paragraph>"{props.event.source.text}"</Typography>
         <Typography paragraph>
           -- {props.event.source.title} ({props.event.source.author})
