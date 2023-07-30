@@ -1,12 +1,20 @@
-import { Button, Card, CardActions, CardHeader } from "@mui/material";
+import {
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  TextField,
+} from "@mui/material";
 import { EventItem } from "../../graphql/events";
+import Autocomplete from "@mui/material/Autocomplete";
 
 interface StoryCardProps {
   event: EventItem;
 }
 export const StoryCard = (props: StoryCardProps) => {
   return (
-    <Card sx={{ height: "25%", marginTop: 3 }}>
+    <Card sx={{ marginTop: 3 }}>
       <CardHeader
         title={"Stories"}
         subheader={"Stories in which this event appears"}
@@ -22,6 +30,16 @@ export const StoryCard = (props: StoryCardProps) => {
           </>
         ))}
       </CardActions>
+      <CardContent>
+        <Autocomplete
+          id="story-search"
+          freeSolo
+          options={props.event.tags.map((tag) => tag.name)}
+          renderInput={(params) => (
+            <TextField {...params} label="Search for a story" />
+          )}
+        />
+      </CardContent>
     </Card>
   );
 };

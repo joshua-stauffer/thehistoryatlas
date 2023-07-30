@@ -28,7 +28,7 @@ interface NewFeedCardProps {
 
 export const NewFeedCard = (props: NewFeedCardProps) => {
   return (
-    <Card sx={{ height: "80%" }}>
+    <Card sx={{}}>
       <CardHeader
         sx={{ textAlign: "center" }}
         title={buildCurrentFocus(props.event.focus)}

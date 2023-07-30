@@ -72,24 +72,6 @@ export const NewFeed = (props: NewFeedProps) => {
 
         <Grid item md={6}>
           {/* right box desktop, bottom box mobile */}
-          <Card sx={{ height: "100px" }}>
-            <CardContent>
-              <Typography
-                variant={"h1"}
-                sx={{ textAlign: "center", fontSize: "20px" }}
-              >
-                The History Atlas
-              </Typography>
-              <Autocomplete
-                id="story-search"
-                freeSolo
-                options={props.event.tags.map((tag) => tag.name)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Search for a story" />
-                )}
-              />
-            </CardContent>
-          </Card>
           <Hidden smDown>
             {/* Standalone map for desktop */}
             <SingleEntityMap
