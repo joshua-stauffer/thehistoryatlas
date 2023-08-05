@@ -11,11 +11,6 @@ import { FeedPage } from "./pages/feed";
 import { useTokenManager } from "./hooks/token";
 
 import { theme } from "./baseStyle";
-import {
-  DefaultEntityResult,
-  DefaultEntityVars,
-  DEFAULT_ENTITY,
-} from "./graphql/defaultEntity";
 import { NewFeed } from "./pages/newFeed/newFeed";
 import { events } from "./data";
 

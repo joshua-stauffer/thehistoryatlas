@@ -1,14 +1,37 @@
 import { createTheme } from "@mui/material/styles";
 
+export const serifFont = "Lora";
+// const bookFont = "Bacasime Antique"
+export const sansSerifFont = "Roboto";
+
 export const theme = createTheme({
+  typography: {
+    fontFamily: sansSerifFont,
+    h1: {
+      fontSize: "40px",
+      fontFamily: serifFont,
+    },
+    subtitle1: {
+      fontSize: "25px",
+    },
+    body1: {
+      fontSize: "18px",
+      fontFamily: serifFont,
+    },
+    body2: {
+      fontSize: "14px",
+    },
+  },
   palette: {
     mode: "light",
+
     primary: {
-      main: "#3d4281",
+      main: "#00695c",
+      light: "#2196f3",
+      dark: "#757575",
     },
     secondary: {
-      main: "#fdd835",
-      light: "#fdd835",
+      main: "#757575",
     },
   },
   // palette: {

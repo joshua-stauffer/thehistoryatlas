@@ -13,6 +13,9 @@ interface StoryCardProps {
   event: EventItem;
 }
 export const StoryCard = (props: StoryCardProps) => {
+  const buttonSX = {
+    textTransform: "none",
+  };
   return (
     <Card sx={{ marginTop: 3 }}>
       <CardHeader
@@ -21,11 +24,13 @@ export const StoryCard = (props: StoryCardProps) => {
         sx={{ textAlign: "center" }}
       />
       <CardActions>
-        <Button disabled>{props.event.story.name} (current Story)</Button>
+        <Button disabled sx={buttonSX}>
+          {props.event.story.name} (current Story)
+        </Button>
         <br />
         {props.event.relatedStories.map((story) => (
           <>
-            <Button>{story.name}</Button>
+            <Button sx={buttonSX}>{story.name}</Button>
             <br />
           </>
         ))}

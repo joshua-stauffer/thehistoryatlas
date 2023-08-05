@@ -9,6 +9,7 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  Stack,
   TextField,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
@@ -23,11 +24,16 @@ import {
   renderCentury,
   renderDecade,
 } from "../../components/renderDateTime/time";
+import Divider from "@mui/material/Divider";
+import { sansSerifFont } from "../../baseStyle";
 
 interface TimeTravelModalProps {
   isOpen: boolean;
   handleClose: () => void;
 }
+
+const dividerMargin = "20px";
+const menuItemStyle = { fontFamily: sansSerifFont };
 
 export const TimeTravelModal = (props: TimeTravelModalProps) => {
   const [precision, setPrecision] = useState<7 | 8 | 9 | 10 | 11>(7);
@@ -59,33 +65,55 @@ export const TimeTravelModal = (props: TimeTravelModalProps) => {
   };
   return (
     <Dialog open={props.isOpen} onClose={props.handleClose}>
-      <DialogTitle>Time Travel</DialogTitle>
+      <DialogTitle sx={{ textAlign: "center" }}>Time Travel</DialogTitle>
       <DialogContent>
-        <DialogContentText>
+        <DialogContentText sx={{ fontFamily: sansSerifFont }}>
           Jump to the event in the current story closest to the chosen time.
         </DialogContentText>
+        <Divider sx={{ margin: dividerMargin }} />
         <FormControl variant={"standard"}>
-          <InputLabel id="select-time-precision-label">
-            Time Precision
-          </InputLabel>
-          <Select
-            labelId="select-time-precision-label"
-            id="select-time-precision"
-            value={String(precision)}
-            label={"Time Precision"}
-            onChange={handlePrecisionChange}
-            sx={{ margin: 2 }}
-          >
-            <MenuItem value={11}>Day</MenuItem>
-            <MenuItem value={10}>Month</MenuItem>
+          <Stack direction={"row"}>
+            <InputLabel
+              id="select-time-precision-label"
+              sx={{
+                position: "relative",
+                top: "26px",
+                fontFamily: sansSerifFont,
+              }}
+            >
+              Time Precision
+            </InputLabel>
+            <Select
+              labelId="select-time-precision-label"
+              id="select-time-precision"
+              value={String(precision)}
+              label={"Time Precision"}
+              onChange={handlePrecisionChange}
+              sx={{ margin: "10px", fontFamily: sansSerifFont }}
+            >
+              <MenuItem value={11} sx={menuItemStyle}>
+                Day
+              </MenuItem>
+              <MenuItem value={10} sx={menuItemStyle}>
+                Month
+              </MenuItem>
 
-            <MenuItem value={9}>Year</MenuItem>
-            <MenuItem value={8}>Decade</MenuItem>
+              <MenuItem value={9} sx={menuItemStyle}>
+                Year
+              </MenuItem>
+              <MenuItem value={8} sx={menuItemStyle}>
+                Decade
+              </MenuItem>
 
-            <MenuItem value={7}>Century</MenuItem>
-          </Select>
+              <MenuItem value={7} sx={menuItemStyle}>
+                Century
+              </MenuItem>
+            </Select>
+          </Stack>
         </FormControl>
       </DialogContent>
+      <Divider sx={{ margin: dividerMargin }} />
+
       <DialogContent>
         <FormControl>
           {precision === 7 ? (

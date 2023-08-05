@@ -1,45 +1,55 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Collapse,
-  IconButton,
-  CardHeader,
-  TextField,
-  Chip,
   Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  IconButton,
+  Typography,
 } from "@mui/material";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { EventItem, Focus, Tag } from "../../graphql/events";
-import { Box } from "@material-ui/core";
 import { renderDateTime } from "../../components/renderDateTime/time";
 import { GoPerson } from "react-icons/go";
 import { VscLocation } from "react-icons/vsc";
 import { BiTimeFive } from "react-icons/bi";
 import SearchIcon from "@mui/icons-material/Search";
+import { TextButton } from "./buttons";
+
 interface NewFeedCardProps {
   event: EventItem;
   openTimeTravelModal: () => void;
 }
 
+const spacer = "20px";
+
 export const NewFeedCard = (props: NewFeedCardProps) => {
   return (
-    <Card sx={{}}>
+    <Card sx={{ paddingTop: spacer }}>
       <CardHeader
         sx={{ textAlign: "center" }}
+        titleTypographyProps={{ variant: "h1" }}
         title={buildCurrentFocus(props.event.focus)}
         subheader={renderDateTime(props.event.date)}
       />
       <CardActions disableSpacing>
-        <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
+        <IconButton
+          sx={{
+            marginLeft: "auto",
+            marginRight: "auto",
+            marginTop: spacer,
+            marginBottom: spacer,
+          }}
+        >
           <ArrowBackIcon />
         </IconButton>
-        <Button onClick={props.openTimeTravelModal}>
-          <SearchIcon />
+        <Button
+          sx={{ textTransform: "none" }}
+          startIcon={<SearchIcon />}
+          onClick={props.openTimeTravelModal}
+        >
           Jump To Time
         </Button>
         <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
@@ -49,20 +59,26 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
 
       <CardContent>
         <Typography
-          paragraph
-          gutterBottom
+          variant={"body1"}
           textAlign="center"
           sx={{
-            marginTop: 8,
-            marginBottom: 8,
+            marginTop: spacer,
+            marginBottom: spacer,
           }}
         >
           {buildTaggedText(props.event)}
         </Typography>
       </CardContent>
-      <CardContent sx={{ marginLeft: "40px", marginRight: "40px" }}>
-        <Typography paragraph>"{props.event.source.text}"</Typography>
-        <Typography paragraph>
+      <CardContent
+        sx={{
+          marginLeft: "40px",
+          marginRight: "40px",
+          marginBottom: spacer,
+          marginTop: 0,
+        }}
+      >
+        <Typography variant={"body2"}>"{props.event.source.text}"</Typography>
+        <Typography variant={"body2"}>
           -- {props.event.source.title} ({props.event.source.author})
         </Typography>
       </CardContent>
@@ -104,11 +120,7 @@ const buildTaggedText = (event: EventItem): (string | JSX.Element | null)[] => {
         ) : (
           <BiTimeFive />
         );
-      return (
-        <Button>
-          {tag.name} {icon}
-        </Button>
-      );
+      return <TextButton text={tag.name} icon={icon} />;
     } else if (tagIndicesSet.has(index)) {
       return null;
     } else {

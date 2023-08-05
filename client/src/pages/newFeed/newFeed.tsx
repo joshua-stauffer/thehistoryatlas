@@ -12,22 +12,10 @@ import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
 import { EventItem } from "../../graphql/events";
 import { NewFeedCard } from "./newFeedCard";
-import { FilterTags } from "./filterTags";
-import {
-  Button,
-  Card,
-  CardActions,
-  CardContent,
-  CardHeader,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { renderDateTime } from "../../components/renderDateTime/time";
+
 import { useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { StoryCard } from "./storyCard";
-import Autocomplete from "@mui/material/Autocomplete";
 
 interface NewFeedProps {
   event: EventItem;
@@ -47,7 +35,7 @@ export const NewFeed = (props: NewFeedProps) => {
     };
   });
   return (
-    <Box>
+    <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
       <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}
