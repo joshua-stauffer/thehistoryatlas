@@ -1,13 +1,5 @@
 import Box from "@mui/material/Box";
-import {
-  AddCitationButton,
-  LoginButton,
-  NavBar,
-  SettingsButton,
-} from "../../components/navBar";
 import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import { TagBox } from "../feed/tagBox";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
 import { EventItem } from "../../graphql/events";
@@ -16,6 +8,7 @@ import { NewFeedCard } from "./newFeedCard";
 import { useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { StoryCard } from "./storyCard";
+import { LoginButton } from "../../components/login/loginButton";
 
 interface NewFeedProps {
   event: EventItem;
@@ -35,7 +28,7 @@ export const NewFeed = (props: NewFeedProps) => {
     };
   });
   return (
-    <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
+    <Box sx={{ height: "98vh", maxHeight: "1000px" }}>
       <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}

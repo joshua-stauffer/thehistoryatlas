@@ -23,11 +23,16 @@ interface NewFeedCardProps {
   openTimeTravelModal: () => void;
 }
 
-const spacer = "20px";
+const cardPadding = "1vh";
+const cardSpacingInternal = "5px";
+
+const citationSX = {
+  fontSize: "12px",
+};
 
 export const NewFeedCard = (props: NewFeedCardProps) => {
   return (
-    <Card sx={{ paddingTop: spacer }}>
+    <Card sx={{ paddingTop: cardPadding }}>
       <CardHeader
         sx={{ textAlign: "center" }}
         titleTypographyProps={{ variant: "h1" }}
@@ -39,8 +44,8 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
           sx={{
             marginLeft: "auto",
             marginRight: "auto",
-            marginTop: spacer,
-            marginBottom: spacer,
+            marginTop: cardSpacingInternal,
+            marginBottom: cardSpacingInternal,
           }}
         >
           <ArrowBackIcon />
@@ -62,8 +67,8 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
           variant={"body1"}
           textAlign="center"
           sx={{
-            marginTop: spacer,
-            marginBottom: spacer,
+            marginTop: cardSpacingInternal,
+            marginBottom: cardSpacingInternal,
           }}
         >
           {buildTaggedText(props.event)}
@@ -73,12 +78,14 @@ export const NewFeedCard = (props: NewFeedCardProps) => {
         sx={{
           marginLeft: "40px",
           marginRight: "40px",
-          marginBottom: spacer,
+          marginBottom: cardSpacingInternal,
           marginTop: 0,
         }}
       >
-        <Typography variant={"body2"}>"{props.event.source.text}"</Typography>
-        <Typography variant={"body2"}>
+        <Typography variant={"body1"} sx={citationSX}>
+          "{props.event.source.text}"
+        </Typography>
+        <Typography variant={"body1"} sx={citationSX}>
           -- {props.event.source.title} ({props.event.source.author})
         </Typography>
       </CardContent>

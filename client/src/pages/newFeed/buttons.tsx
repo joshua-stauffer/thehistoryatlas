@@ -11,8 +11,13 @@ export const TextButton = (props: ButtonProps) => {
   return (
     <Button
       variant={"text"}
-      sx={{ textTransform: "none", position: "relative", bottom: "2.5px" }}
-      endIcon={props.icon}
+      sx={{
+        textTransform: "none",
+        position: "relative",
+        bottom: "2.5px",
+        ...props.sx,
+      }}
+      startIcon={props.icon}
     >
       <Typography variant={"body1"}>{props.text}</Typography>
     </Button>

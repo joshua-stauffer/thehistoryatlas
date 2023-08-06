@@ -15,7 +15,7 @@ import { Summary, AddSummary } from "./addSummary";
 import { SaveSummary } from "./saveAnnotatedCitation";
 import { NavBar } from "../../components/navBar";
 import { TokenManager, useTokenManager } from "../../hooks/token";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FindSource } from "./findSource";
 
 export interface Source {
@@ -34,7 +34,7 @@ interface AddCitationPageProps {
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
 export const AddCitationPage = (props: AddCitationPageProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const {
     tokenManager: { token, isLoggedIn },
   } = props;
@@ -72,7 +72,7 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
   };
   if (!isLoggedIn()) {
     // mutation will fail without a valid token
-    history.push("/login");
+    navigate("/login");
     return <h1>Redirecting to Login</h1>;
   }
 

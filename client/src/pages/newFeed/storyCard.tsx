@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import { EventItem } from "../../graphql/events";
 import Autocomplete from "@mui/material/Autocomplete";
+import { sansSerifFont } from "../../baseStyle";
 
 interface StoryCardProps {
   event: EventItem;
@@ -20,14 +21,11 @@ export const StoryCard = (props: StoryCardProps) => {
     <Card sx={{ marginTop: 3 }}>
       <CardHeader
         title={"Stories"}
-        subheader={"Stories in which this event appears"}
-        sx={{ textAlign: "center" }}
+        subheaderTypographyProps={{ fontFamily: sansSerifFont }}
+        subheader={"Other stories in which include this event"}
+        sx={{ textAlign: "center", fontFamily: sansSerifFont }}
       />
       <CardActions>
-        <Button disabled sx={buttonSX}>
-          {props.event.story.name} (current Story)
-        </Button>
-        <br />
         {props.event.relatedStories.map((story) => (
           <>
             <Button sx={buttonSX}>{story.name}</Button>

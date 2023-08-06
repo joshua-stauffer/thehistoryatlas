@@ -19,7 +19,7 @@ export const ResourceNotFoundError = (props: ResourceNotFoundErrorProps) => {
         children={[
           <ExploreButton />,
           <AddCitationButton />,
-          <LoginButton tokenManager={props.tokenManager} />,
+          <LoginButton />,
           <SettingsButton />,
         ]}
       />
