@@ -1,5 +1,17 @@
 import { Typography, Box, Paper } from "@mui/material";
-export const GenericError = () => {
+
+interface GenericErrorProps {
+  header?: string | undefined;
+  text?: string | undefined;
+  details?: string | undefined;
+}
+
+export const GenericError = (props: GenericErrorProps) => {
+  const headerFallback = "Uh oh..";
+  const textFallback = "The History Atlas is temporarily unavailable.";
+  const detailsFallback =
+    "This might be because you're not connected to the internet, or because\n" +
+    "        we're making improvements. Please try again soon!";
   return (
     <Box
       sx={{
@@ -13,7 +25,7 @@ export const GenericError = () => {
           margin: "100px",
         }}
       >
-        Uh oh..
+        {props.header || headerFallback}
       </Typography>
       <Typography
         variant="h6"
@@ -22,7 +34,7 @@ export const GenericError = () => {
           margin: "50px",
         }}
       >
-        The History Atlas is temporarily unavailable.
+        {props.text || textFallback}
       </Typography>
       <Typography
         variant="body1"
@@ -30,8 +42,7 @@ export const GenericError = () => {
           textAlign: "center",
         }}
       >
-        This might be because you're not connected to the internet, or because
-        we're making improvements. Please try again soon!
+        {props.details || detailsFallback}
       </Typography>
     </Box>
   );

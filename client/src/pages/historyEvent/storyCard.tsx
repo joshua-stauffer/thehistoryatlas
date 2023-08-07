@@ -6,12 +6,12 @@ import {
   CardHeader,
   TextField,
 } from "@mui/material";
-import { EventItem } from "../../graphql/events";
+import { HistoryEvent } from "../../graphql/events";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
 
 interface StoryCardProps {
-  event: EventItem;
+  event: HistoryEvent;
 }
 export const StoryCard = (props: StoryCardProps) => {
   const buttonSX = {

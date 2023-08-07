@@ -1,4 +1,4 @@
-export interface EventItem {
+export interface HistoryEvent {
   id: string;
   text: string;
   lang: string;

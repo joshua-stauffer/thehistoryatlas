@@ -8,15 +8,14 @@ import { LoginPage } from "./pages/login";
 import { useTokenManager } from "./hooks/token";
 
 import { theme } from "./baseStyle";
-import { HistoryEvent } from "./pages/historyEvent/historyEvent";
-import { events } from "./data";
+import { HistoryEventView } from "./pages/historyEvent/historyEventView";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import {
   LandingPage,
   landingPageLoader,
 } from "./pages/historyEvent/landingPage";
-import { FeedData } from "./pages/historyEvent/feedData";
+import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
 
 function App() {
   const tokenManager = useTokenManager();
@@ -28,8 +27,15 @@ function App() {
     },
     {
       path: "/stories/:storyId/events/:eventId",
-      element: <FeedData />,
-      errorElement: <GenericError />,
+      element: <HistoryEventView />,
+      loader: historyEventLoader,
+      errorElement: (
+        <GenericError
+          header={"Uh oh..."}
+          text={"Something went wrong"}
+          details={"Check the URL and try again"}
+        />
+      ),
     },
     {
       path: "/add-event",

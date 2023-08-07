@@ -1,6 +1,6 @@
-import { EventItem, PeopleAndPlaceOption } from "./graphql/events";
+import { HistoryEvent, PeopleAndPlaceOption } from "./graphql/events";
 
-export const events: EventItem[] = [
+export const events: HistoryEvent[] = [
   {
     id: "f423a520-006c-40d3-837f-a802fe299742",
     text: "J.S. Bach was born in Eisenach on March 21st, 1685.",

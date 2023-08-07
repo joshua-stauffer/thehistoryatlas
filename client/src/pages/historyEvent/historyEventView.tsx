@@ -2,26 +2,24 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import { EventItem } from "../../graphql/events";
+import { HistoryEvent } from "../../graphql/events";
 import { HistoryEventCard } from "./historyEventCard";
 
 import { useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { StoryCard } from "./storyCard";
 import { LoginButton } from "../../components/login/loginButton";
+import { useLoaderData } from "react-router-dom";
+import { HistoryEventData } from "./historyEventLoader";
 
-interface NewFeedProps {
-  event: EventItem;
-  next: () => void;
-  prev: () => void;
-}
-
-export const HistoryEvent = (props: NewFeedProps) => {
+export const HistoryEventView = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const handleOpen = () => setIsOpen(true);
   const handleClose = () => setIsOpen(false);
 
-  const coords = props.event.map.locations.map((location) => {
+  const { event: historyEvent } = useLoaderData() as HistoryEventData;
+
+  const coords = historyEvent.map.locations.map((location) => {
     return {
       latitude: location.latitude,
       longitude: location.longitude,
@@ -37,10 +35,10 @@ export const HistoryEvent = (props: NewFeedProps) => {
           {/* left box desktop, top box mobile */}
 
           <HistoryEventCard
-            event={props.event}
+            event={historyEvent}
             openTimeTravelModal={handleOpen}
           />
-          <StoryCard event={props.event} />
+          <StoryCard event={historyEvent} />
 
           <Hidden mdUp>
             {/* Inline map for mobile */}
@@ -48,7 +46,7 @@ export const HistoryEvent = (props: NewFeedProps) => {
               coords={coords}
               mapTyle={"natGeoWorld"}
               size={"SM"}
-              title={props.event.map.locations[0].name}
+              title={historyEvent.map.locations[0].name}
               zoom={6}
             />
           </Hidden>
@@ -62,7 +60,7 @@ export const HistoryEvent = (props: NewFeedProps) => {
               coords={coords}
               mapTyle={"natGeoWorld"}
               size={"MD"}
-              title={props.event.map.locations[0].name}
+              title={historyEvent.map.locations[0].name}
               zoom={7}
             />
           </Hidden>

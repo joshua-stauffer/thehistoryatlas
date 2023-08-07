@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { EventItem, Focus, Tag } from "../../graphql/events";
+import { HistoryEvent, Focus, Tag } from "../../graphql/events";
 import { renderDateTime } from "../../components/renderDateTime/time";
 import { GoPerson } from "react-icons/go";
 import { VscLocation } from "react-icons/vsc";
@@ -19,7 +19,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { TextButton } from "./buttons";
 
 interface HistoryEventCardProps {
-  event: EventItem;
+  event: HistoryEvent;
   openTimeTravelModal: () => void;
 }
 
@@ -103,7 +103,9 @@ const buildCurrentFocus = (focus: Focus | null) => {
   }
 };
 
-const buildTaggedText = (event: EventItem): (string | JSX.Element | null)[] => {
+const buildTaggedText = (
+  event: HistoryEvent
+): (string | JSX.Element | null)[] => {
   let tagIndices: Array<number> = [];
   for (const tag of event.tags) {
     const indices = Array.from(
