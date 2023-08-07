@@ -8,12 +8,15 @@ import { LoginPage } from "./pages/login";
 import { useTokenManager } from "./hooks/token";
 
 import { theme } from "./baseStyle";
-import { NewFeed } from "./pages/newFeed/newFeed";
+import { HistoryEvent } from "./pages/historyEvent/historyEvent";
 import { events } from "./data";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { LandingPage, landingPageLoader } from "./pages/newFeed/landingPage";
-import { FeedData } from "./pages/newFeed/feedData";
+import {
+  LandingPage,
+  landingPageLoader,
+} from "./pages/historyEvent/landingPage";
+import { FeedData } from "./pages/historyEvent/feedData";
 
 function App() {
   const tokenManager = useTokenManager();

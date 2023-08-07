@@ -18,7 +18,7 @@ import { BiTimeFive } from "react-icons/bi";
 import SearchIcon from "@mui/icons-material/Search";
 import { TextButton } from "./buttons";
 
-interface NewFeedCardProps {
+interface HistoryEventCardProps {
   event: EventItem;
   openTimeTravelModal: () => void;
 }
@@ -30,7 +30,7 @@ const citationSX = {
   fontSize: "12px",
 };
 
-export const NewFeedCard = (props: NewFeedCardProps) => {
+export const HistoryEventCard = (props: HistoryEventCardProps) => {
   return (
     <Card sx={{ paddingTop: cardPadding }}>
       <CardHeader

@@ -3,7 +3,7 @@ import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
 import { EventItem } from "../../graphql/events";
-import { NewFeedCard } from "./newFeedCard";
+import { HistoryEventCard } from "./historyEventCard";
 
 import { useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
@@ -16,7 +16,7 @@ interface NewFeedProps {
   prev: () => void;
 }
 
-export const NewFeed = (props: NewFeedProps) => {
+export const HistoryEvent = (props: NewFeedProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const handleOpen = () => setIsOpen(true);
   const handleClose = () => setIsOpen(false);
@@ -36,7 +36,10 @@ export const NewFeed = (props: NewFeedProps) => {
         <Grid item sm={12} md={6}>
           {/* left box desktop, top box mobile */}
 
-          <NewFeedCard event={props.event} openTimeTravelModal={handleOpen} />
+          <HistoryEventCard
+            event={props.event}
+            openTimeTravelModal={handleOpen}
+          />
           <StoryCard event={props.event} />
 
           <Hidden mdUp>
