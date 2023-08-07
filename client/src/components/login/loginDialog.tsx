@@ -6,6 +6,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+import { Stack } from "@mui/material";
 
 interface LoginDialogProps {
   open: boolean;
@@ -20,22 +21,25 @@ export default function LoginDialog(props: LoginDialogProps) {
     <Dialog open={props.open} onClose={handleClose}>
       <DialogTitle>Subscribe</DialogTitle>
       <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="username"
-          label="Username"
-          type="text"
-          variant="standard"
-        />
-        <TextField
-          autoFocus
-          margin="dense"
-          id="password"
-          label="Password"
-          type="password"
-          variant="standard"
-        />
+        <Stack>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="username"
+            label="Username"
+            type="text"
+            variant="standard"
+          />
+          <TextField
+            autoFocus
+            margin="dense"
+            id="password"
+            label="Password"
+            type="password"
+            variant="standard"
+          />
+        </Stack>
+
         <DialogContentText>
           Add some text here about how you can eventually sign up, probably, but
           right now you can't.
