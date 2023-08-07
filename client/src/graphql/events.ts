@@ -9,6 +9,8 @@ export interface HistoryEvent {
   focus: Focus | null;
   story: Story;
   relatedStories: Story[];
+  nextEvent: EventPointer;
+  prevEvent: EventPointer;
 }
 
 export interface CalendarDate {
@@ -93,4 +95,9 @@ export interface PeopleAndPlaceOption {
 export interface Story {
   id: string;
   name: string;
+}
+
+export interface EventPointer {
+  id: string;
+  storyId: string;
 }

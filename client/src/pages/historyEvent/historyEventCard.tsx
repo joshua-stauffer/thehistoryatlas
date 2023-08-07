@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { HistoryEvent, Focus, Tag } from "../../graphql/events";
+import { HistoryEvent, Focus, Tag, EventPointer } from "../../graphql/events";
 import { renderDateTime } from "../../components/renderDateTime/time";
 import { GoPerson } from "react-icons/go";
 import { VscLocation } from "react-icons/vsc";
@@ -32,7 +32,6 @@ const citationSX = {
 };
 
 export const HistoryEventCard = (props: HistoryEventCardProps) => {
-  console.log({ props });
   return (
     <Card
       sx={{
@@ -50,16 +49,18 @@ export const HistoryEventCard = (props: HistoryEventCardProps) => {
         subheader={renderDateTime(props.event.date)}
       />
       <CardActions disableSpacing>
-        <IconButton
-          sx={{
-            marginLeft: "auto",
-            marginRight: "auto",
-            marginTop: cardSpacingInternal,
-            marginBottom: cardSpacingInternal,
-          }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
+        <Link to={buildUrlFor(props.event.prevEvent)}>
+          <IconButton
+            sx={{
+              marginLeft: "auto",
+              marginRight: "auto",
+              marginTop: cardSpacingInternal,
+              marginBottom: cardSpacingInternal,
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+        </Link>
         <Button
           sx={{ textTransform: "none" }}
           startIcon={<SearchIcon />}
@@ -67,9 +68,11 @@ export const HistoryEventCard = (props: HistoryEventCardProps) => {
         >
           Jump To Time
         </Button>
-        <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
-          <ArrowForwardIcon />
-        </IconButton>
+        <Link to={buildUrlFor(props.event.nextEvent)}>
+          <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
+            <ArrowForwardIcon />
+          </IconButton>
+        </Link>
       </CardActions>
 
       <CardContent>
@@ -103,14 +106,8 @@ export const HistoryEventCard = (props: HistoryEventCardProps) => {
   );
 };
 
-const buildCurrentFocus = (focus: Focus | null) => {
-  if (!focus) {
-    return "The history of the world";
-  } else if (focus.type === "PERSON") {
-    return `The life of ${focus.name}`;
-  } else {
-    return `The history of ${focus.name}`;
-  }
+const buildUrlFor = (pointer: EventPointer) => {
+  return `/stories/${pointer.storyId}/events/${pointer.id}`;
 };
 
 const buildTaggedText = (

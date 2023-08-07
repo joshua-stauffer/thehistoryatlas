@@ -82,6 +82,14 @@ export const events: HistoryEvent[] = [
         name: "The History of March 21st, 1685",
       },
     ],
+    prevEvent: {
+      id: "f423a520-006c-40d3-837f-a802fe299742",
+      storyId: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+    },
+    nextEvent: {
+      id: "f423a520-006c-40d3-837f-a802fe299742",
+      storyId: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+    },
   },
   {
     id: "f423a520-006c-40d3-837f-a802fe299742",
@@ -164,6 +172,14 @@ export const events: HistoryEvent[] = [
         name: "The Life of Johann Sebastian Bach",
       },
     ],
+    prevEvent: {
+      id: "f423a520-006c-40d3-837f-a802fe299742",
+      storyId: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+    },
+    nextEvent: {
+      id: "f423a520-006c-40d3-837f-a802fe299742",
+      storyId: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+    },
   },
   {
     id: "f423a520-006c-40d3-837f-a802fe299742",
@@ -246,6 +262,14 @@ export const events: HistoryEvent[] = [
         name: "The History of March 21st, 1685",
       },
     ],
+    prevEvent: {
+      id: "f423a520-006c-40d3-837f-a802fe299742",
+      storyId: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+    },
+    nextEvent: {
+      id: "f423a520-006c-40d3-837f-a802fe299742",
+      storyId: "9df8f0a3-cd99-4443-bb08-98d901dc363e",
+    },
   },
 ];
 
