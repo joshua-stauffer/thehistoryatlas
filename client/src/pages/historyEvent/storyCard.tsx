@@ -18,7 +18,7 @@ export const StoryCard = (props: StoryCardProps) => {
     textTransform: "none",
   };
   return (
-    <Card sx={{ marginTop: 3 }}>
+    <Card sx={{ marginTop: 3, minHeight: "30vh", maxHeight: "500px" }}>
       <CardHeader
         title={"Stories"}
         subheaderTypographyProps={{ fontFamily: sansSerifFont }}

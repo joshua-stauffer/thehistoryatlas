@@ -32,7 +32,9 @@ const citationSX = {
 
 export const HistoryEventCard = (props: HistoryEventCardProps) => {
   return (
-    <Card sx={{ paddingTop: cardPadding }}>
+    <Card
+      sx={{ paddingTop: cardPadding, minHeight: "65vh", maxHeight: "1200px" }}
+    >
       <CardHeader
         sx={{ textAlign: "center" }}
         titleTypographyProps={{ variant: "h1" }}

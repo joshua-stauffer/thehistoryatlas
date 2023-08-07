@@ -2,13 +2,11 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import { HistoryEvent } from "../../graphql/events";
 import { HistoryEventCard } from "./historyEventCard";
 
 import { useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { StoryCard } from "./storyCard";
-import { LoginButton } from "../../components/login/loginButton";
 import { useLoaderData } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
 
@@ -26,7 +24,7 @@ export const HistoryEventView = () => {
     };
   });
   return (
-    <Box sx={{ height: "98vh", maxHeight: "1000px" }}>
+    <Box sx={{ height: "96vh", maxHeight: "1000px" }}>
       <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}
