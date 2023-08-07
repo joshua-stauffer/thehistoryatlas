@@ -9,6 +9,7 @@ import {
 import { HistoryEvent } from "../../graphql/events";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
+import { Link } from "react-router-dom";
 
 interface StoryCardProps {
   event: HistoryEvent;
@@ -28,7 +29,9 @@ export const StoryCard = (props: StoryCardProps) => {
       <CardActions>
         {props.event.relatedStories.map((story) => (
           <>
-            <Button sx={buttonSX}>{story.name}</Button>
+            <Link to={`/stories/${story.id}/events/${props.event.id}`}>
+              <Button sx={buttonSX}>{story.name}</Button>
+            </Link>
             <br />
           </>
         ))}

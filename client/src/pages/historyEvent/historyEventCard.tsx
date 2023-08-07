@@ -17,7 +17,7 @@ import { VscLocation } from "react-icons/vsc";
 import { BiTimeFive } from "react-icons/bi";
 import SearchIcon from "@mui/icons-material/Search";
 import { TextButton } from "./buttons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface HistoryEventCardProps {
   event: HistoryEvent;
@@ -32,6 +32,7 @@ const citationSX = {
 };
 
 export const HistoryEventCard = (props: HistoryEventCardProps) => {
+  const navigate = useNavigate();
   return (
     <Card
       sx={{
@@ -49,18 +50,17 @@ export const HistoryEventCard = (props: HistoryEventCardProps) => {
         subheader={renderDateTime(props.event.date)}
       />
       <CardActions disableSpacing>
-        <Link to={buildUrlFor(props.event.prevEvent)}>
-          <IconButton
-            sx={{
-              marginLeft: "auto",
-              marginRight: "auto",
-              marginTop: cardSpacingInternal,
-              marginBottom: cardSpacingInternal,
-            }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
-        </Link>
+        <IconButton
+          sx={{
+            marginLeft: "auto",
+            marginRight: "auto",
+            marginTop: cardSpacingInternal,
+            marginBottom: cardSpacingInternal,
+          }}
+          onClick={() => navigate(buildUrlFor(props.event.prevEvent))}
+        >
+          <ArrowBackIcon />
+        </IconButton>
         <Button
           sx={{ textTransform: "none" }}
           startIcon={<SearchIcon />}
@@ -68,11 +68,12 @@ export const HistoryEventCard = (props: HistoryEventCardProps) => {
         >
           Jump To Time
         </Button>
-        <Link to={buildUrlFor(props.event.nextEvent)}>
-          <IconButton sx={{ marginLeft: "auto", marginRight: "auto" }}>
-            <ArrowForwardIcon />
-          </IconButton>
-        </Link>
+        <IconButton
+          sx={{ marginLeft: "auto", marginRight: "auto" }}
+          onClick={() => navigate(buildUrlFor(props.event.nextEvent))}
+        >
+          <ArrowForwardIcon />
+        </IconButton>
       </CardActions>
 
       <CardContent>
