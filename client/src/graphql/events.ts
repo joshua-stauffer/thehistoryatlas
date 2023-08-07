@@ -34,6 +34,7 @@ export interface Person {
   startChar: number;
   stopChar: number;
   name: string;
+  defaultStoryId: string;
 }
 export interface Place {
   id: string;
@@ -42,6 +43,7 @@ export interface Place {
   stopChar: number;
   name: string;
   location: Location;
+  defaultStoryId: string;
 }
 export interface Time {
   id: string;
@@ -52,6 +54,7 @@ export interface Time {
   time: string;
   calendar: string;
   precision: number;
+  defaultStoryId: string;
 }
 
 export interface Map {

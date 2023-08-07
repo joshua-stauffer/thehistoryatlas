@@ -17,6 +17,7 @@ import { VscLocation } from "react-icons/vsc";
 import { BiTimeFive } from "react-icons/bi";
 import SearchIcon from "@mui/icons-material/Search";
 import { TextButton } from "./buttons";
+import { Link } from "react-router-dom";
 
 interface HistoryEventCardProps {
   event: HistoryEvent;
@@ -31,14 +32,21 @@ const citationSX = {
 };
 
 export const HistoryEventCard = (props: HistoryEventCardProps) => {
+  console.log({ props });
   return (
     <Card
-      sx={{ paddingTop: cardPadding, minHeight: "65vh", maxHeight: "1200px" }}
+      sx={{
+        marginTop: "auto",
+        marginBottom: "auto",
+        paddingTop: cardPadding,
+        minHeight: "65vh",
+        maxHeight: "1200px",
+      }}
     >
       <CardHeader
         sx={{ textAlign: "center" }}
         titleTypographyProps={{ variant: "h1" }}
-        title={buildCurrentFocus(props.event.focus)}
+        title={props.event.story.name}
         subheader={renderDateTime(props.event.date)}
       />
       <CardActions disableSpacing>
@@ -131,7 +139,12 @@ const buildTaggedText = (
         ) : (
           <BiTimeFive />
         );
-      return <TextButton text={tag.name} icon={icon} />;
+      const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
+      return (
+        <Link to={storyUrl}>
+          <TextButton text={tag.name} icon={icon} />
+        </Link>
+      );
     } else if (tagIndicesSet.has(index)) {
       return null;
     } else {
