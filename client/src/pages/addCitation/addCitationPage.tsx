@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
@@ -70,11 +70,12 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
     }
     setStep(index as CurrentStep);
   };
-  if (!isLoggedIn()) {
-    // mutation will fail without a valid token
-    navigate("/login");
-    return <h1>Redirecting to Login</h1>;
-  }
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      // mutation will fail without a valid token
+      navigate("/login");
+    }
+  });
 
   console.log({ source });
 
@@ -88,7 +89,7 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
   let child;
   switch (step) {
     case 0:
-      if (exhaustedSourceSearch === false) {
+      if (!exhaustedSourceSearch) {
         child = (
           <FindSource
             addSource={addSource}

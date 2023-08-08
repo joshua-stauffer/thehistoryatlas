@@ -8,7 +8,7 @@ import {
 } from "@mui/material";
 import { HistoryEvent } from "../../graphql/events";
 import Autocomplete from "@mui/material/Autocomplete";
-import { sansSerifFont } from "../../baseStyle";
+import { sansSerifFont, serifFont } from "../../baseStyle";
 import { Link } from "react-router-dom";
 
 interface StoryCardProps {
@@ -30,7 +30,9 @@ export const StoryCard = (props: StoryCardProps) => {
         {props.event.relatedStories.map((story) => (
           <>
             <Link to={`/stories/${story.id}/events/${props.event.id}`}>
-              <Button sx={buttonSX}>{story.name}</Button>
+              <Button sx={{ ...buttonSX, fontFamily: serifFont }}>
+                {story.name}
+              </Button>
             </Link>
             <br />
           </>
@@ -38,6 +40,7 @@ export const StoryCard = (props: StoryCardProps) => {
       </CardActions>
       <CardContent>
         <Autocomplete
+          sx={{ fontFamily: sansSerifFont }}
           id="story-search"
           freeSolo
           options={props.event.tags.map((tag) => tag.name)}
