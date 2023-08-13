@@ -7,13 +7,15 @@ import { HistoryEventCard } from "./historyEventCard";
 import { useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { StoryCard } from "./storyCard";
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
+import { SpeedDial, SpeedDialIcon } from "@mui/material";
 
 export const HistoryEventView = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const handleOpen = () => setIsOpen(true);
   const handleClose = () => setIsOpen(false);
+  const navigate = useNavigate();
 
   const { event: historyEvent } = useLoaderData() as HistoryEventData;
 
@@ -64,6 +66,12 @@ export const HistoryEventView = () => {
           </Hidden>
         </Grid>
       </Grid>
+      <SpeedDial
+        ariaLabel="Add new Event"
+        sx={{ position: "absolute", bottom: 16, right: 16 }}
+        icon={<SpeedDialIcon />}
+        onClick={() => navigate("/add-event")}
+      ></SpeedDial>
     </Box>
   );
 };

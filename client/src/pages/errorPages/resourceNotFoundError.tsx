@@ -4,7 +4,6 @@ import {
   ExploreButton,
   SettingsButton,
   AddCitationButton,
-  LoginButton,
 } from "../../components/navBar";
 import { TokenManager } from "../../hooks/token";
 
@@ -19,7 +18,6 @@ export const ResourceNotFoundError = (props: ResourceNotFoundErrorProps) => {
         children={[
           <ExploreButton />,
           <AddCitationButton />,
-          <LoginButton />,
           <SettingsButton />,
         ]}
       />

@@ -1,4 +1,4 @@
-import { HistoryEvent, PeopleAndPlaceOption } from "./graphql/events";
+import { HistoryEvent } from "./graphql/events";
 
 export const events: HistoryEvent[] = [
   // first event

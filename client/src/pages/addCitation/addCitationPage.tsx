@@ -14,9 +14,10 @@ import { Tag, TagEntities } from "./tagEntities";
 import { Summary, AddSummary } from "./addSummary";
 import { SaveSummary } from "./saveAnnotatedCitation";
 import { NavBar } from "../../components/navBar";
-import { TokenManager, useTokenManager } from "../../hooks/token";
+import { TokenManager } from "../../hooks/token";
 import { useNavigate } from "react-router-dom";
 import { FindSource } from "./findSource";
+import LoginDialog from "../../components/login/loginDialog";
 
 export interface Source {
   title: string;
@@ -36,7 +37,7 @@ type CurrentStep = 0 | 1 | 2 | 3 | 4;
 export const AddCitationPage = (props: AddCitationPageProps) => {
   const navigate = useNavigate();
   const {
-    tokenManager: { token, isLoggedIn },
+    tokenManager: { token, isLoggedIn, updateToken },
   } = props;
   const [citationGUID] = useState<string>(v4()); // allows api to reject duplicate requests
   const [summaryGUID] = useState<string | undefined>(undefined); // for now, can't tag an existing summary
@@ -47,6 +48,7 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
   const [tags, setTags] = useState<Tag[]>();
   const [summary, setSummary] = useState<Summary>();
   const [step, setStep] = useState<CurrentStep>(0);
+  const [loginDialogOpen, setLoginDialogOpen] = useState<boolean>(false);
   const addSource = (source: Source) => {
     setSource(source);
     setStep(1);
@@ -73,11 +75,11 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
   useEffect(() => {
     if (!isLoggedIn()) {
       // mutation will fail without a valid token
-      navigate("/login");
+      setLoginDialogOpen(true);
+    } else {
+      setLoginDialogOpen(false);
     }
   });
-
-  console.log({ source });
 
   const steps = [
     "Add Source",
@@ -165,6 +167,11 @@ export const AddCitationPage = (props: AddCitationPageProps) => {
   }
   return (
     <Box sx={{ margin: 10 }}>
+      <LoginDialog
+        open={loginDialogOpen}
+        handleClose={() => navigate(-1)}
+        updateToken={updateToken}
+      />
       <NavBar children={[<ExploreButton />, <SettingsButton />]} />
       <Stepper activeStep={step}>
         {steps.map((label, index) => (
