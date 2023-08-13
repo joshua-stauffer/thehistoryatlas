@@ -10,6 +10,7 @@ import { StoryCard } from "./storyCard";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
 import { SpeedDial, SpeedDialIcon } from "@mui/material";
+import { EventView } from "./eventView";
 
 export const HistoryEventView = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -34,11 +35,7 @@ export const HistoryEventView = () => {
         <Grid item sm={12} md={6}>
           {/* left box desktop, top box mobile */}
 
-          <HistoryEventCard
-            event={historyEvent}
-            openTimeTravelModal={handleOpen}
-          />
-          <StoryCard event={historyEvent} />
+          <EventView event={historyEvent} openTimeTravelModal={handleOpen} />
 
           <Hidden mdUp>
             {/* Inline map for mobile */}
@@ -68,7 +65,7 @@ export const HistoryEventView = () => {
       </Grid>
       <SpeedDial
         ariaLabel="Add new Event"
-        sx={{ position: "absolute", bottom: 16, right: 16 }}
+        sx={{ position: "absolute", top: 16, right: 16 }}
         icon={<SpeedDialIcon />}
         onClick={() => navigate("/add-event")}
       ></SpeedDial>

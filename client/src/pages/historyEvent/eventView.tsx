@@ -2,6 +2,7 @@ import React from "react";
 import {
   Box,
   Button,
+  ButtonGroup,
   Card,
   CardActions,
   CardContent,
@@ -21,10 +22,11 @@ import { BiTimeFive } from "react-icons/bi";
 import SearchIcon from "@mui/icons-material/Search";
 import { TextButton } from "./buttons";
 import { Link, useNavigate } from "react-router-dom";
-import { sansSerifFont } from "../../baseStyle";
+import { sansSerifFont, serifFont } from "../../baseStyle";
 import Autocomplete from "@mui/material/Autocomplete";
+import Divider from "@mui/material/Divider";
 
-interface HistoryEventCardProps {
+interface EventViewProps {
   event: HistoryEvent;
   openTimeTravelModal: () => void;
 }
@@ -36,16 +38,17 @@ const citationSX = {
   fontSize: "12px",
 };
 
-export const HistoryEventCard = (props: HistoryEventCardProps) => {
+export const EventView = (props: EventViewProps) => {
   const navigate = useNavigate();
   return (
-    <Card
+    <Box
       sx={{
         marginTop: "auto",
         marginBottom: "auto",
         paddingTop: cardPadding,
-        minHeight: "65vh",
+        minHeight: "98vh",
         maxHeight: "1200px",
+        padding: "20px",
       }}
     >
       <Autocomplete
@@ -68,67 +71,80 @@ export const HistoryEventCard = (props: HistoryEventCardProps) => {
           />
         )}
       />
-      <CardHeader
-        sx={{ textAlign: "center" }}
-        titleTypographyProps={{ variant: "h1" }}
-        title={props.event.story.name}
-        subheader={renderDateTime(props.event.date)}
-      />
-      <CardActions disableSpacing>
-        <IconButton
+      <Typography
+        variant={"h1"}
+        sx={{ textAlign: "center", marginTop: "5vh", marginBottom: "2vh" }}
+      >
+        {props.event.story.name}
+      </Typography>
+      <ButtonGroup variant={"outlined"} sx={{ width: "100%" }}>
+        <Button
           sx={{
             marginLeft: "auto",
-            marginRight: "auto",
-            marginTop: cardSpacingInternal,
-            marginBottom: cardSpacingInternal,
           }}
+          startIcon={<ArrowBackIcon />}
           onClick={() => navigate(buildUrlFor(props.event.prevEvent))}
+          variant={"text"}
         >
-          <ArrowBackIcon />
-        </IconButton>
-        <Button
-          sx={{ textTransform: "none" }}
-          startIcon={<SearchIcon />}
-          onClick={props.openTimeTravelModal}
-        >
+          Previous Event
+        </Button>
+        <Button onClick={props.openTimeTravelModal} variant={"text"}>
           Jump To Time
         </Button>
-        <IconButton
-          sx={{ marginLeft: "auto", marginRight: "auto" }}
+        <Button
+          sx={{ marginRight: "auto" }}
+          endIcon={<ArrowForwardIcon />}
           onClick={() => navigate(buildUrlFor(props.event.nextEvent))}
+          variant={"text"}
         >
-          <ArrowForwardIcon />
-        </IconButton>
-      </CardActions>
-
-      <CardContent>
-        <Typography
-          variant={"body1"}
-          textAlign="center"
-          sx={{
-            marginTop: cardSpacingInternal,
-            marginBottom: cardSpacingInternal,
-          }}
-        >
-          {buildTaggedText(props.event)}
-        </Typography>
-      </CardContent>
-      <CardContent
+          Next Event
+        </Button>
+      </ButtonGroup>
+      <Divider
         sx={{
-          marginLeft: "40px",
-          marginRight: "40px",
+          marginTop: "10px",
+          marginBottom: "10px",
+        }}
+      />
+      <Typography textAlign={"center"}>
+        {renderDateTime(props.event.date)}
+      </Typography>
+      <Typography
+        variant={"body1"}
+        textAlign="left"
+        mt={"20px"}
+        sx={{
+          marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
-          marginTop: 0,
         }}
       >
-        <Typography variant={"body1"} sx={citationSX}>
-          "{props.event.source.text}"
-        </Typography>
-        <Typography variant={"body1"} sx={citationSX}>
-          -- {props.event.source.title} ({props.event.source.author})
-        </Typography>
-      </CardContent>
-    </Card>
+        {buildTaggedText(props.event)}
+      </Typography>
+
+      <Typography variant={"body1"} mt={"20px"} sx={citationSX}>
+        "{props.event.source.text}"
+      </Typography>
+      <Typography variant={"body1"} sx={citationSX}>
+        -- {props.event.source.title} ({props.event.source.author})
+      </Typography>
+      <Divider
+        sx={{
+          marginTop: "20px",
+          marginBottom: "20px",
+        }}
+      />
+      <Typography variant={"body2"} fontSize={"18px"}>
+        Other stories with this event
+      </Typography>
+      {props.event.relatedStories.map((story) => (
+        <>
+          <Link to={`/stories/${story.id}/events/${props.event.id}`}>
+            <Button sx={{ textTransform: "none" }}>{story.name}</Button>
+          </Link>
+          <br />
+        </>
+      ))}
+    </Box>
   );
 };
 

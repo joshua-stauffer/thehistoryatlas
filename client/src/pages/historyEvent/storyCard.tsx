@@ -38,17 +38,7 @@ export const StoryCard = (props: StoryCardProps) => {
           </>
         ))}
       </CardActions>
-      <CardContent>
-        <Autocomplete
-          sx={{ fontFamily: sansSerifFont }}
-          id="story-search"
-          freeSolo
-          options={props.event.tags.map((tag) => tag.name)}
-          renderInput={(params) => (
-            <TextField {...params} label="Search for a story" />
-          )}
-        />
-      </CardContent>
+      <CardContent></CardContent>
     </Card>
   );
 };
