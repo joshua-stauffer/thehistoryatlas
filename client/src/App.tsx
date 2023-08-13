@@ -2,7 +2,7 @@ import React from "react";
 import { ThemeProvider } from "@mui/material/styles";
 
 import { GenericError, ResourceNotFoundError } from "./pages/errorPages";
-import { AddCitationPage } from "./pages/addCitation";
+import { AddEventPage } from "./pages/addEvent";
 
 import { useTokenManager } from "./hooks/token";
 
@@ -38,7 +38,7 @@ function App() {
     },
     {
       path: "/add-event",
-      element: <AddCitationPage tokenManager={tokenManager} />,
+      element: <AddEventPage tokenManager={tokenManager} />,
     },
   ]);
   return (

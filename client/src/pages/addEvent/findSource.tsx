@@ -13,7 +13,7 @@ import {
   SearchSourcesVars,
   SEARCH_SOURCES,
 } from "../../graphql/searchSource";
-import { Source } from "./addCitationPage";
+import { Source } from "./addEventPage";
 
 interface FindSourceProps {
   finishedSearch: () => void;

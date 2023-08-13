@@ -9,7 +9,7 @@ import {
   TextField,
 } from "@material-ui/core";
 
-import { Source } from "./addCitationPage";
+import { Source } from "./addEventPage";
 import { Quote } from "./addQuote";
 import { Tag } from "./tagEntities";
 

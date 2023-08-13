@@ -5,7 +5,7 @@ import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { theme } from "../../baseStyle";
-import { Source } from "./addCitationPage";
+import { Source } from "./addEventPage";
 
 interface AddSourceProps {
   addSource: (source: Source) => void;

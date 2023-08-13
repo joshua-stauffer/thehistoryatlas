@@ -28,13 +28,13 @@ export interface Source {
   id?: string;
 }
 
-interface AddCitationPageProps {
+interface AddEventPageProps {
   tokenManager: TokenManager;
 }
 
 type CurrentStep = 0 | 1 | 2 | 3 | 4;
 
-export const AddCitationPage = (props: AddCitationPageProps) => {
+export const AddEventPage = (props: AddEventPageProps) => {
   const navigate = useNavigate();
   const {
     tokenManager: { token, isLoggedIn, updateToken },
