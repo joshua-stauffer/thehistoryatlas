@@ -25,6 +25,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { sansSerifFont, serifFont } from "../../baseStyle";
 import Autocomplete from "@mui/material/Autocomplete";
 import Divider from "@mui/material/Divider";
+import Hidden from "@mui/material/Hidden";
+import { SingleEntityMap } from "../../components/singleEntityMap";
 
 interface EventViewProps {
   event: HistoryEvent;
@@ -40,6 +42,12 @@ const citationSX = {
 
 export const EventView = (props: EventViewProps) => {
   const navigate = useNavigate();
+  const coords = props.event.map.locations.map((location) => {
+    return {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    };
+  });
   return (
     <Box
       sx={{
@@ -133,6 +141,16 @@ export const EventView = (props: EventViewProps) => {
           marginBottom: "20px",
         }}
       />
+      <Hidden mdUp>
+        {/* Inline map for mobile */}
+        <SingleEntityMap
+          coords={coords}
+          mapTyle={"natGeoWorld"}
+          size={"SM"}
+          title={props.event.map.locations[0].name}
+          zoom={6}
+        />
+      </Hidden>
       <Typography variant={"body2"} fontSize={"18px"}>
         Other stories with this event
       </Typography>

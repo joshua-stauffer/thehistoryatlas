@@ -19,7 +19,6 @@ export const HistoryEventView = () => {
   const navigate = useNavigate();
 
   const { event: historyEvent } = useLoaderData() as HistoryEventData;
-
   const coords = historyEvent.map.locations.map((location) => {
     return {
       latitude: location.latitude,
@@ -36,17 +35,6 @@ export const HistoryEventView = () => {
           {/* left box desktop, top box mobile */}
 
           <EventView event={historyEvent} openTimeTravelModal={handleOpen} />
-
-          <Hidden mdUp>
-            {/* Inline map for mobile */}
-            <SingleEntityMap
-              coords={coords}
-              mapTyle={"natGeoWorld"}
-              size={"SM"}
-              title={historyEvent.map.locations[0].name}
-              zoom={6}
-            />
-          </Hidden>
         </Grid>
 
         <Grid item md={6}>
