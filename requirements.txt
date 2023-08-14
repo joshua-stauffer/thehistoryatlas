@@ -1,8 +1,0 @@
-cryptography
-requests
-sqlalchemy
-pytest
-pytest-asyncio
-pytest-mock
-black
-psycopg2-binary

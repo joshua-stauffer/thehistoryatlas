@@ -4,9 +4,9 @@ the correct database resource.
 Sunday, May 23rd 2021
 """
 import logging
-from geo.errors import MessageMissingTypeError
-from geo.errors import MessageMissingPayloadError
-from geo.errors import UnknownQueryError
+from server.the_history_atlas import MessageMissingTypeError
+from server.the_history_atlas import MessageMissingPayloadError
+from server.the_history_atlas import UnknownQueryError
 
 log = logging.getLogger(__name__)
 

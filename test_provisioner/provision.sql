@@ -1,0 +1,12 @@
+GRANT CONNECT ON DATABASE tha_test_db TO readwrite_tha_test;
+GRANT USAGE, CREATE ON SCHEMA public TO readwrite_tha_test;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO readwrite_tha_test;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO readwrite_tha_test;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO readwrite_tha_test;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO readwrite_tha_test;
+ALTER DATABASE tha_test_db SET timezone TO 'UTC';
+GRANT readwrite_tha_test TO tha_test_user;
+
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON DATABASE tha_test_db FROM PUBLIC;
+

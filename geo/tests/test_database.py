@@ -3,11 +3,11 @@ from random import random
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from geo.geonames import CityRow
-from geo.state.database import Database
-from geo.state.schema import Name
-from geo.state.schema import Place
-from geo.state.schema import UpdateTracker
+from server.the_history_atlas import CityRow
+from server.the_history_atlas import Database
+from server.the_history_atlas import Name
+from server.the_history_atlas import Place
+from server.the_history_atlas import UpdateTracker
 
 
 @pytest.fixture

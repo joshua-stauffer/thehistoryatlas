@@ -1,0 +1,44 @@
+
+type AccountsGenericResponse {
+token: String!
+user_details: UserDetails!
+}
+
+type UserDetails {
+f_name: String!
+l_name: String!
+username: String!
+email: String!
+last_login: String!
+}
+
+input CredentialsInput {
+username: String!
+password: String!
+}
+
+input NewUserDetailsInput {
+f_name: String!
+l_name: String!
+username: String!
+password: String!
+email: String!
+}
+
+input UpdateUserDetailsInput {
+f_name: String
+l_name: String
+username: String
+password: String
+email: String
+}
+
+type IsUsernameUniqueResponse {
+username: String!
+is_unique: Boolean!
+}
+
+type LoginResponse {
+success: Boolean!
+token: String
+}

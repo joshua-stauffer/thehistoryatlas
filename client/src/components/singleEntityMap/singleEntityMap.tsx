@@ -13,9 +13,9 @@ const mapDimensions = {
     margin: "10px",
   },
   MD: {
-    height: "80vh",
+    height: "100%",
     width: "100%",
-    margin: "20px",
+    margin: "0",
   },
   LG: {
     height: "90vh",
@@ -67,6 +67,7 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
         height: mapDimensions[size].height,
         width: mapDimensions[size].width,
         margin: mapDimensions[size].margin,
+        padding: 0,
       }}
     >
       <TileLayer

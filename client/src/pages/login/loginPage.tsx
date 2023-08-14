@@ -7,7 +7,8 @@ import { theme } from "../../baseStyle";
 import { useMutation } from "@apollo/client";
 import { LOGIN, LoginResult, LoginVars } from "../../graphql/login";
 import { TokenManager } from "../../hooks/token";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { GenericError } from "../errorPages";
 
 interface LoginPageProps {
   tokenManager: TokenManager;
@@ -20,19 +21,25 @@ export const LoginPage = (props: LoginPageProps) => {
   const {
     tokenManager: { updateToken },
   } = props;
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [login, { data, loading, error }] = useMutation<LoginResult, LoginVars>(
     LOGIN
   );
 
   useEffect(() => {
-    if (!!data) {
+    if (!!data?.Login.token) {
       // login mutation has returned
       updateToken(data.Login.token);
-      history.push("/");
+      navigate("/");
     }
   }, [data]);
+
+  if (error) {
+    return <GenericError />;
+  }
+  // todo: fix
+  const loginFailed = !!data && !data.Login.success;
 
   return (
     <Grid>
@@ -42,10 +49,10 @@ export const LoginPage = (props: LoginPageProps) => {
       <Grid
         container
         sx={{
-          margin: 80,
-          padding: 10,
-          width: 350,
-          border: 2,
+          margin: "20px",
+          padding: "10px",
+          width: "350px",
+          border: "2px",
           borderColor: theme.palette.primary.main,
           justifyContent: "center",
           rowGap: 3,
@@ -60,7 +67,7 @@ export const LoginPage = (props: LoginPageProps) => {
             label="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            sx={{ color: "primary", padding: 0.2 }}
+            sx={{ color: "primary", padding: "5px" }}
           />
         </Grid>
         <Grid item xs={12}>
@@ -70,7 +77,7 @@ export const LoginPage = (props: LoginPageProps) => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            sx={{ color: "primary", padding: 0.1 }}
+            sx={{ color: "primary", padding: "5px" }}
           />
         </Grid>
         <Grid item>
@@ -79,10 +86,13 @@ export const LoginPage = (props: LoginPageProps) => {
             onClick={() =>
               login({ variables: { password: password, username: username } })
             }
-            color="secondary"
+            color="primary"
           >
             Login
           </Button>
+        </Grid>
+        <Grid hidden={loginFailed}>
+          <Typography>Incorrect credentials</Typography>
         </Grid>
       </Grid>
       <Grid></Grid>

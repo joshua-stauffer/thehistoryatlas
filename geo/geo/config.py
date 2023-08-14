@@ -1,5 +1,5 @@
 import os
-from tha_config import Config as ConfigBase
+from server.the_history_atlas.apps.config import Config as ConfigBase
 
 
 class Config(ConfigBase):

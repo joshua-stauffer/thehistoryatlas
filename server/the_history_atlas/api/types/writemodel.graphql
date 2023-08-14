@@ -1,0 +1,43 @@
+
+input AnnotateCitationInput {
+  citation: String!
+  citationId: String!
+  summary: String!
+  meta: MetaDataInput!
+  summaryTags: [TagInput!]!
+  token: String!
+  summaryId: String = null
+}
+
+input MetaDataInput {
+  author: String!
+  pubDate: String!
+  publisher: String!
+  title: String!
+  pageNum: Int = null
+  accessDate: String = null
+  id: String = null
+}
+
+input TagInput {
+  name: String!
+  startChar: Int!
+  stopChar: Int!
+  type: EntityType!
+  geoshape: String = null
+  latitude: Float = null
+  longitude: Float = null
+  id: String = null
+}
+
+interface MutationResponse {
+  success: Boolean!
+  message: String
+  token: String!
+}
+
+type PublishCitationResponse implements MutationResponse {
+  success: Boolean!
+  message: String
+  token: String!
+}

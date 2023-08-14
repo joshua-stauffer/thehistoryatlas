@@ -1,113 +1,16 @@
 version: "3"
 services:
-    broker:
-        image: "rabbitmq:3-management"
-        restart: always
-        networks:
-            - tha-connect
-        ports:
-            - ${BROKER_PORT}
-            - ${BROKER_ADMIN_PORT}
 
-    router:
-        image: ilriccio/thehistoryatlas:router-${VERSION}
-        build: ./router
-        restart: always
-        ports:
-            - "4400:4400"
-        environment:
-            - APOLLO_ROUTER_SUPERGRAPH_PATH=/dist/schema/local.graphql
-        networks:
-            - tha-connect
 
-    api:
-        image: ilriccio/thehistoryatlas:api-${VERSION}
-        restart: always
-        depends_on:
-            - broker
-            - writemodel
-            - readmodel
-            - eventstore
-        build: ./api
-        ports:
-            - "4000:4000"
-        networks:
-            - tha-connect
-
-    readmodel:
-        image: ilriccio/thehistoryatlas:readmodel-${VERSION}
-        restart: always
-        depends_on:
-            - db
-            - broker
-            - history
-        environment:
-            - PROD_DB_URI=${READMODEL_CONN_STR}
-            - DEV_DB_URI=${READMODEL_CONN_STR_DEV}
-            - TESTING=${TESTING}
-            - CONFIG=${CONFIG}
-            - SERVER_PORT=8801
-        ports:
-            - "8801:8801"
-        networks:
-            - tha-connect
-
-    writemodel:
-        image: ilriccio/thehistoryatlas:writemodel-${VERSION}
-        restart: always
-        depends_on:
-            - db
-            - broker
-            - history
-            - eventstore
-        networks:
-            - tha-connect
-        environment:
-            - PROD_DB_URI=${WRITEMODEL_CONN_STR}
-            - DEV_DB_URI=${WRITEMODEL_CONN_STR_DEV}
-            - CONFIG=${CONFIG}
-            - TESTING=${TESTING}
-            - SERVER_PORT=8800
-        ports:
-            - "8800:8800"
-
-    eventstore:
-        image: ilriccio/thehistoryatlas:eventstore-${VERSION}
-        restart: always
-        depends_on:
-            - broker
-            - db
-        networks:
-            - tha-connect
-        environment:
-            - PROD_DB_URI=${EVENTSTORE_CONN_STR}
-            - DEV_DB_URI=${EVENTSTORE_CONN_STR_DEV}
-            - CONFIG=${CONFIG}
-            - TESTING=${TESTING}
-
-    history:
-        image: ilriccio/thehistoryatlas:history-${VERSION}
-        restart: always
-        depends_on: 
-            - broker
-            - db
-        networks:
-            - tha-connect
-        environment:
-            - PROD_DB_URI=${EVENTSTORE_CONN_STR}
-            - DEV_DB_URI=${EVENTSTORE_CONN_STR_DEV}
-            - CONFIG=${CONFIG}
-            - TESTING=${TESTING}
-
-    nlp:
-        image: ilriccio/thehistoryatlas:nlp-${VERSION}
+    server:
+        image:
         restart: always
         depends_on: 
             - broker
             - db
         environment:
-            - PROD_DB_URI=${NLP_CONN_STR}
-            - DEV_DB_URI=${NLP_CONN_STR_DEV}
+            - PROD_DB_URI=${CONN_STR}
+            - DEV_DB_URI=${CONN_STR_DEV}
             - CONFIG=${CONFIG}
             - TESTING=${TESTING}
         volumes:
@@ -119,7 +22,7 @@ services:
             - tha-connect
 
     geo:
-        image: ilriccio/thehistoryatlas:geo-${VERSION}
+        image:
         restart: always
         depends_on: 
             - db
@@ -135,26 +38,6 @@ services:
             - CONFIG=${CONFIG}
 
         networks: 
-            - tha-connect
-
-    accounts:
-        image: ilriccio/thehistoryatlas:accounts-${VERSION}
-        restart: always
-        depends_on:
-            - broker
-            - db
-        environment:
-            - PROD_DB_URI=${ACCOUNTS_CONN_STR}
-            - DEV_DB_URI=${ACCOUNTS_CONN_STR_DEV}
-            - SEC_KEY=${ACCOUNTS_SEC_KEY}
-            - TTL=${ACCOUNTS_TTL}
-            - TESTING=${TESTING}
-            - REFRESH_BY=${ACCOUNTS_REFRESH_BY}
-            - CONFIG=${CONFIG}
-            - ADMIN_USERNAME=${ADMIN_USERNAME}
-            - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-
-        networks:
             - tha-connect
 
     db:
@@ -174,7 +57,7 @@ services:
     provisioner:
         build:
             context:
-                ./provisioner
+                provisioner
         depends_on:
             - db
         restart: "no"

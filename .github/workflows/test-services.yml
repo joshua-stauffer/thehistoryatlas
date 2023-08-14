@@ -7,199 +7,30 @@ on:
 
 jobs:
 
-  Test-WriteModel:
+  Test-Server:
     timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      -
-        name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: ./writemodel
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./writemodel/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-writemodel
-          load: true
-      -
-        name: Setup Test Environment
-        env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f service_tests.yaml up db -d
-      -
-        name: Test WriteModel
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up writemodel --exit-code-from writemodel
-
-  Test-EventStore:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      -
-        name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: ./eventstore
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./eventstore/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-eventstore
-          load: true
-
-      - name: Setup Test Environment
-        env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f service_tests.yaml up db -d
-
-      - name: Test EventStore
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up eventstore --exit-code-from eventstore
-        
-
-  Test-History:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: ./history
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./history/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-history
-          load: true
-
-      - name: Setup Test Environment
-        env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f service_tests.yaml up db -d
-
-      - name: Test History
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up history --exit-code-from history
-
-  Test-ReadModel:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: ./readmodel
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./readmodel/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-readmodel
-          load: true
-
-      - name: Setup Test Environment
-        env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f service_tests.yaml up db -d
-
-      - name: Test ReadModel
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up readmodel --exit-code-from readmodel
-
-  Test-Accounts-Service:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: ./accounts
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./accounts/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-accounts
-          load: true
-
-      - name: Setup Test Environment
-        env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f service_tests.yaml up db -d
-
-      - name: Test Accounts
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-          TTL: ${{ secrets.ACCOUNTS_TTL }}
-          REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
-          SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
-        run: |
-          docker compose -f service_tests.yaml up accounts --exit-code-from accounts
-
-  Test-NLP:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      -
-        name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: ./nlp
-          build-contexts: |
-            pylib=./pylib
-            testlib=./testlib
-          file: ./nlp/Dockerfile
-          tags: ilriccio/thehistoryatlas:test-nlp
-          load: true
-      -
-        name: Setup Test Environment
-        env:
-          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-        run: docker compose -f service_tests.yaml up db -d
-      -
-        name: Test NLP
-        env:
-          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-        run: |
-          docker compose -f service_tests.yaml up nlp --exit-code-from nlp
-
-#      - name: Test Geo
-#        env:
-#          TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
-#        run: |
-#          docker compose -f service_tests.yaml up --build geo --exit-code-from geo
+      -   uses: actions/checkout@v3
+      -   name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v1
+      -   name: Build and export
+          uses: docker/build-push-action@v2
+          with:
+            context: ./server
+            file: ./server/Dockerfile
+            tags: ilriccio/thehistoryatlas:test_server
+            load: true
+      -   name: Setup Test Environment
+          env:
+            POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+          run: docker compose -f test_cluster.yaml up db provisioner -d
+      -   name: Test Server
+          env:
+            TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
+            TTL: ${{ secrets.ACCOUNTS_TTL }}
+            REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
+            SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
+          run: |
+            docker compose -f test_cluster.yaml up server --exit-code-from server

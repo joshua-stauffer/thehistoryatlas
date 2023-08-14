@@ -1,11 +1,6 @@
-from sqlalchemy import select
 from sqlalchemy.orm import Session
-from geo.config import Config
-from geo.state.database import Database
-from geo.state.schema import Place
-from geo.state.schema import Name
-from geo.state.schema import UpdateTracker
-
+from server.the_history_atlas import Config
+from server.the_history_atlas import Database
 
 if __name__ == "__main__":
     config = Config()

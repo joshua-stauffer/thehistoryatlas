@@ -1,6 +1,6 @@
 import pytest
-from geo.geonames import GeoNames
-from geo.geonames import CityRow
+from server.the_history_atlas import GeoNames
+from server.the_history_atlas import CityRow
 from requests.exceptions import ConnectionError
 
 
