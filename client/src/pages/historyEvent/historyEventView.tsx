@@ -26,7 +26,7 @@ export const HistoryEventView = () => {
     };
   });
   return (
-    <Box sx={{ height: "96vh", maxHeight: "1000px" }}>
+    <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
       <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}

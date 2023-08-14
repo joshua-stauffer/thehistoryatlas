@@ -54,7 +54,7 @@ export const EventView = (props: EventViewProps) => {
         marginTop: "auto",
         marginBottom: "auto",
         paddingTop: cardPadding,
-        minHeight: "98vh",
+        minHeight: "92vh",
         maxHeight: "1200px",
         padding: "20px",
       }}
