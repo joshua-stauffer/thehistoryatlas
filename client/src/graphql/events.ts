@@ -7,10 +7,7 @@ export interface HistoryEvent {
   tags: Tag[];
   map: Map;
   focus: Focus | null;
-  story: Story;
-  relatedStories: Story[];
-  nextEvent: EventPointer;
-  prevEvent: EventPointer;
+  stories: Story[];
 }
 
 export interface CalendarDate {
@@ -95,6 +92,7 @@ export interface PeopleAndPlaceOption {
 export interface Story {
   id: string;
   name: string;
+  events: HistoryEvent[];
 }
 
 export interface EventPointer {

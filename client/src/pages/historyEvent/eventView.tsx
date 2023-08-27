@@ -14,7 +14,13 @@ import {
 } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { HistoryEvent, Focus, Tag, EventPointer } from "../../graphql/events";
+import {
+  HistoryEvent,
+  Focus,
+  Tag,
+  EventPointer,
+  Story,
+} from "../../graphql/events";
 import { renderDateTime } from "../../components/renderDateTime/time";
 import { GoPerson } from "react-icons/go";
 import { VscLocation } from "react-icons/vsc";
@@ -30,93 +36,18 @@ import { SingleEntityMap } from "../../components/singleEntityMap";
 
 interface EventViewProps {
   event: HistoryEvent;
-  openTimeTravelModal: () => void;
 }
 
-const cardPadding = "1vh";
 const cardSpacingInternal = "5px";
 
 const citationSX = {
   fontSize: "12px",
 };
 
-export const EventView = (props: EventViewProps) => {
-  const navigate = useNavigate();
-  const coords = props.event.map.locations.map((location) => {
-    return {
-      latitude: location.latitude,
-      longitude: location.longitude,
-    };
-  });
+export const EventView = ({ event }: EventViewProps) => {
   return (
-    <Box
-      sx={{
-        marginTop: "auto",
-        marginBottom: "auto",
-        paddingTop: cardPadding,
-        minHeight: "92vh",
-        maxHeight: "1200px",
-        padding: "20px",
-      }}
-    >
-      <Autocomplete
-        sx={{ fontFamily: sansSerifFont }}
-        id="story-search"
-        freeSolo
-        options={props.event.tags.map((tag) => tag.name)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Search for a story"
-            variant={"outlined"}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-          />
-        )}
-      />
-      <Typography
-        variant={"h1"}
-        sx={{ textAlign: "center", marginTop: "5vh", marginBottom: "2vh" }}
-      >
-        {props.event.story.name}
-      </Typography>
-      <ButtonGroup variant={"outlined"} sx={{ width: "100%" }}>
-        <Button
-          sx={{
-            marginLeft: "auto",
-          }}
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(buildUrlFor(props.event.prevEvent))}
-          variant={"text"}
-        >
-          Previous Event
-        </Button>
-        <Button onClick={props.openTimeTravelModal} variant={"text"}>
-          Jump To Time
-        </Button>
-        <Button
-          sx={{ marginRight: "auto" }}
-          endIcon={<ArrowForwardIcon />}
-          onClick={() => navigate(buildUrlFor(props.event.nextEvent))}
-          variant={"text"}
-        >
-          Next Event
-        </Button>
-      </ButtonGroup>
-      <Divider
-        sx={{
-          marginTop: "10px",
-          marginBottom: "10px",
-        }}
-      />
-      <Typography textAlign={"center"}>
-        {renderDateTime(props.event.date)}
-      </Typography>
+    <>
+      <Typography textAlign={"center"}>{renderDateTime(event.date)}</Typography>
       <Typography
         variant={"body1"}
         textAlign="left"
@@ -126,14 +57,14 @@ export const EventView = (props: EventViewProps) => {
           marginBottom: cardSpacingInternal,
         }}
       >
-        {buildTaggedText(props.event)}
+        {buildTaggedText(event)}
       </Typography>
 
       <Typography variant={"body1"} mt={"20px"} sx={citationSX}>
-        "{props.event.source.text}"
+        "{event.source.text}"
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
-        -- {props.event.source.title} ({props.event.source.author})
+        -- {event.source.title} ({event.source.author})
       </Typography>
       <Divider
         sx={{
@@ -141,33 +72,19 @@ export const EventView = (props: EventViewProps) => {
           marginBottom: "20px",
         }}
       />
-      <Hidden mdUp>
-        {/* Inline map for mobile */}
-        <SingleEntityMap
-          coords={coords}
-          mapTyle={"natGeoWorld"}
-          size={"SM"}
-          title={props.event.map.locations[0].name}
-          zoom={6}
-        />
-      </Hidden>
       <Typography variant={"body2"} fontSize={"18px"}>
         Other stories with this event
       </Typography>
-      {props.event.relatedStories.map((story) => (
+      {event.stories.map((story) => (
         <>
-          <Link to={`/stories/${story.id}/events/${props.event.id}`}>
+          <Link to={`/stories/${story.id}/events/${event.id}`}>
             <Button sx={{ textTransform: "none" }}>{story.name}</Button>
           </Link>
           <br />
         </>
       ))}
-    </Box>
+    </>
   );
-};
-
-const buildUrlFor = (pointer: EventPointer) => {
-  return `/stories/${pointer.storyId}/events/${pointer.id}`;
 };
 
 const buildTaggedText = (
