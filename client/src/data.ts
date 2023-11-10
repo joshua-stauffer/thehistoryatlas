@@ -126,7 +126,7 @@ export const bachArrivesInLuneburg: HistoryEvent = {
   date: {
     time: "1700-03-01 00:00:00",
     calendar: "http://www.wikidata.org/entity/Q1985727",
-    precision: 9,
+    precision: 10,
   },
   tags: [
     {
