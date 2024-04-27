@@ -26,6 +26,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Divider from "@mui/material/Divider";
 import { EventPointer } from "../../graphql/events";
+import EmblaCarousel from "./carousel";
 
 const BindKeyboardSwipeableViews = bindKeyboard(SwipeableViews);
 
@@ -45,6 +46,10 @@ export const HistoryEventView = () => {
   });
   const data = useLoaderData();
   console.log({ data });
+
+  const SLIDE_COUNT = 5;
+  const SLIDES = Array.from(Array(SLIDE_COUNT).keys());
+
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
       <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
@@ -136,11 +141,13 @@ export const HistoryEventView = () => {
                 marginBottom: "10px",
               }}
             />
-            <BindKeyboardSwipeableViews>
-              {events.map((historyEvent, index) => (
-                <EventView event={historyEvent} />
-              ))}
-            </BindKeyboardSwipeableViews>
+            <EmblaCarousel slides={SLIDES} />
+
+            {/*<BindKeyboardSwipeableViews>*/}
+            {/*  {events.map((historyEvent, index) => (*/}
+            {/*    <EventView event={historyEvent} />*/}
+            {/*  ))}*/}
+            {/*</BindKeyboardSwipeableViews>*/}
 
             <Hidden mdUp>
               {/* Inline map for mobile */}
