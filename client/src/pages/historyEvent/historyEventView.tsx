@@ -47,8 +47,9 @@ export const HistoryEventView = () => {
   const data = useLoaderData();
   console.log({ data });
 
-  const SLIDE_COUNT = 5;
-  const SLIDES = Array.from(Array(SLIDE_COUNT).keys());
+  const SLIDES = events.map((historyEvent, index) => (
+    <EventView event={historyEvent} />
+  ));
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
