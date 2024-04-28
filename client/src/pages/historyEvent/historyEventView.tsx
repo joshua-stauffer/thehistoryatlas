@@ -99,43 +99,6 @@ export const HistoryEventView = () => {
             >
               {story.name}
             </Typography>
-            <ButtonGroup variant={"outlined"} sx={{ width: "100%" }}>
-              <Button
-                sx={{
-                  marginLeft: "auto",
-                }}
-                startIcon={<ArrowBackIcon />}
-                onClick={() =>
-                  prevEvent
-                    ? navigate(
-                        buildUrlFor({ id: prevEvent.id, storyId: story.id })
-                      )
-                    : null
-                }
-                disabled={!prevEvent}
-                variant={"text"}
-              >
-                Previous Event
-              </Button>
-              <Button onClick={handleOpen} variant={"text"}>
-                Jump To Time
-              </Button>
-              <Button
-                sx={{ marginRight: "auto" }}
-                endIcon={<ArrowForwardIcon />}
-                onClick={() =>
-                  nextEvent
-                    ? navigate(
-                        buildUrlFor({ id: nextEvent.id, storyId: story.id })
-                      )
-                    : null
-                }
-                disabled={!nextEvent}
-                variant={"text"}
-              >
-                Next Event
-              </Button>
-            </ButtonGroup>
             <Divider
               sx={{
                 marginTop: "10px",
@@ -143,12 +106,6 @@ export const HistoryEventView = () => {
               }}
             />
             <EmblaCarousel slides={SLIDES} />
-
-            {/*<BindKeyboardSwipeableViews>*/}
-            {/*  {events.map((historyEvent, index) => (*/}
-            {/*    <EventView event={historyEvent} />*/}
-            {/*  ))}*/}
-            {/*</BindKeyboardSwipeableViews>*/}
 
             <Hidden mdUp>
               {/* Inline map for mobile */}

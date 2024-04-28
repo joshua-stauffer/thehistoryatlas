@@ -9,7 +9,9 @@ import { EngineType } from "embla-carousel/components/Engine";
 import { EmblaCarouselType, EmblaOptionsType } from "embla-carousel";
 import useEmblaCarousel from "embla-carousel-react";
 import { EventView } from "./eventView";
-import { CircularProgress } from "@mui/material";
+import { Button, ButtonGroup, CircularProgress } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 type UsePrevNextButtonsType = {
   prevBtnDisabled: boolean;
@@ -65,94 +67,6 @@ type PropType = PropsWithChildren<
   >
 >;
 
-const PrevButton: React.FC<PropType> = (props) => {
-  const { children, ...restProps } = props;
-
-  return (
-    <button
-      className="embla__button embla__button--prev"
-      type="button"
-      {...restProps}
-      style={{
-        WebkitTapHighlightColor: "rgba(blue, 0.5)",
-        WebkitAppearance: "none",
-        appearance: "none",
-        backgroundColor: "transparent",
-        touchAction: "manipulation",
-        display: "inline-flex",
-        textDecoration: "none",
-        cursor: "pointer",
-        border: 0,
-        padding: 0,
-        margin: 0,
-        boxShadow: "inset 0 0 0 0.2rem grey",
-        width: "3.6rem",
-        height: "3.6rem",
-        zIndex: 1,
-        borderRadius: "50%",
-        color: "grey",
-        // display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <svg className="embla__button__svg" viewBox="0 0 532 532">
-        <path
-          fill="currentColor"
-          d="M355.66 11.354c13.793-13.805 36.208-13.805 50.001 0 13.785 13.804 13.785 36.238 0 50.034L201.22 266l204.442 204.61c13.785 13.805 13.785 36.239 0 50.044-13.793 13.796-36.208 13.796-50.002 0a5994246.277 5994246.277 0 0 0-229.332-229.454 35.065 35.065 0 0 1-10.326-25.126c0-9.2 3.393-18.26 10.326-25.2C172.192 194.973 332.731 34.31 355.66 11.354Z"
-        />
-      </svg>
-      {children}
-    </button>
-  );
-};
-
-const NextButton: React.FC<PropType> = (props) => {
-  const { children, ...restProps } = props;
-
-  return (
-    <button
-      className="embla__button embla__button--next"
-      type="button"
-      {...restProps}
-      style={{
-        WebkitTapHighlightColor: "rgba(blue, 0.5)",
-        WebkitAppearance: "none",
-        appearance: "none",
-        backgroundColor: "transparent",
-        touchAction: "manipulation",
-        display: "inline-flex",
-        textDecoration: "none",
-        cursor: "pointer",
-        border: 0,
-        padding: 0,
-        margin: 0,
-        boxShadow: "inset 0 0 0 0.2rem grey",
-        width: "3.6rem",
-        height: "3.6rem",
-        zIndex: 1,
-        borderRadius: "50%",
-        color: "grey",
-        // display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <svg
-        className="embla__button__svg"
-        viewBox="0 0 532 532"
-        style={{ width: "35%", height: "35%" }}
-      >
-        <path
-          fill="currentColor"
-          d="M176.34 520.646c-13.793 13.805-36.208 13.805-50.001 0-13.785-13.804-13.785-36.238 0-50.034L330.78 266 126.34 61.391c-13.785-13.805-13.785-36.239 0-50.044 13.793-13.796 36.208-13.796 50.002 0 22.928 22.947 206.395 206.507 229.332 229.454a35.065 35.065 0 0 1 10.326 25.126c0 9.2-3.393 18.26-10.326 25.2-45.865 45.901-206.404 206.564-229.332 229.52Z"
-        />
-      </svg>
-      {children}
-    </button>
-  );
-};
-
 const mockApiCall = (
   minWait: number,
   maxWait: number,
@@ -169,14 +83,48 @@ type CarouselPropType = {
   options?: EmblaOptionsType;
 };
 
+type EventNavBarProps = {
+  navigateLeft: () => void;
+  navigateRight: () => void;
+};
+
+const EventNavBar = (props: EventNavBarProps) => {
+  return (
+    <ButtonGroup variant={"outlined"} sx={{ width: "100%" }}>
+      <Button
+        sx={{
+          marginLeft: "auto",
+        }}
+        startIcon={<ArrowBackIcon />}
+        onClick={props.navigateLeft}
+        variant={"text"}
+      >
+        Previous Event
+      </Button>
+      <Button
+        sx={{ marginRight: "auto" }}
+        endIcon={<ArrowForwardIcon />}
+        onClick={props.navigateRight}
+        variant={"text"}
+      >
+        Next Event
+      </Button>
+    </ButtonGroup>
+  );
+};
+
 const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
   const { slides: propSlides } = props;
   const scrollListenerRef = useRef<() => void>(() => undefined);
   const listenForScrollRef = useRef(true);
-  const hasMoreToLoadRef = useRef(true);
   const [slides, setSlides] = useState(propSlides);
-  const [hasMoreToLoad, setHasMoreToLoad] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+
+  const hasMoreToLoadRightRef = useRef(true);
+  const [hasMoreToLoadRight, setHasMoreToLoadRight] = useState(true);
+  const [loadingMoreRight, setLoadingMoreRight] = useState(false);
+  const hasMoreToLoadLeftRef = useRef(true);
+  const [hasMoreToLoadLeft, setHasMoreToLoadLeft] = useState(true);
+  const [loadingMoreLeft, setLoadingMoreLeft] = useState(false);
 
   const options: EmblaOptionsType = {
     dragFree: false,
@@ -207,7 +155,8 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
         newEngine.index.set(index);
         newEngine.animation.start();
 
-        setLoadingMore(false);
+        setLoadingMoreRight(false);
+        setLoadingMoreLeft(false);
         listenForScrollRef.current = true;
       };
 
@@ -218,7 +167,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
 
       const engine = emblaApi.internalEngine();
 
-      if (hasMoreToLoadRef.current && engine.dragHandler.pointerDown()) {
+      if (hasMoreToLoadRightRef.current && engine.dragHandler.pointerDown()) {
         const boundsActive = engine.limit.reachedMax(engine.target.get());
         engine.scrollBounds.toggleActive(boundsActive);
         emblaApi.on("pointerUp", reloadAfterPointerUp);
@@ -238,7 +187,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
   const onScroll = useCallback((emblaApi: EmblaCarouselType) => {
     if (!listenForScrollRef.current) return;
 
-    setLoadingMore((loadingMore) => {
+    setLoadingMoreRight((loadingMore) => {
       const lastSlide = emblaApi.slideNodes().length - 1;
       const lastSlideInView = emblaApi.slidesInView().includes(lastSlide);
       const loadMore = !loadingMore && lastSlideInView;
@@ -248,17 +197,39 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
 
         mockApiCall(1000, 2000, () => {
           setSlides((currentSlides) => {
-            if (currentSlides.length === 20) {
-              setHasMoreToLoad(false);
-              emblaApi.off("scroll", scrollListenerRef.current);
-              return currentSlides;
-            }
+            // if (currentSlides.length === 20) {
+            //   setHasMoreToLoad(false);
+            //   emblaApi.off("scroll", scrollListenerRef.current);
+            //   return currentSlides;
+            // }
             return [...currentSlides, ...currentSlides];
           });
         });
       }
 
       return loadingMore || lastSlideInView;
+    });
+
+    setLoadingMoreLeft((loadingMore) => {
+      const firstSlideInView = emblaApi.slidesInView().includes(0);
+      const loadMore = !loadingMore && firstSlideInView;
+
+      if (loadMore) {
+        listenForScrollRef.current = false;
+
+        mockApiCall(1000, 2000, () => {
+          setSlides((currentSlides) => {
+            // if (currentSlides.length === 20) {
+            //   setHasMoreToLoad(false);
+            //   emblaApi.off("scroll", scrollListenerRef.current);
+            //   return currentSlides;
+            // }
+            return [...currentSlides, ...currentSlides];
+          });
+        });
+      }
+
+      return loadingMore || firstSlideInView;
     });
   }, []);
 
@@ -282,8 +253,12 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
   }, [emblaApi, addScrollListener]);
 
   useEffect(() => {
-    hasMoreToLoadRef.current = hasMoreToLoad;
-  }, [hasMoreToLoad]);
+    hasMoreToLoadRightRef.current = hasMoreToLoadRight;
+  }, [hasMoreToLoadRight]);
+
+  useEffect(() => {
+    hasMoreToLoadLeftRef.current = hasMoreToLoadLeft;
+  }, [hasMoreToLoadLeft]);
 
   const slideHeight = "19rem";
   const slideSpacing = "1rem";
@@ -296,6 +271,11 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
         margin: "auto",
       }}
     >
+      <EventNavBar
+        navigateLeft={onPrevButtonClick}
+        navigateRight={onNextButtonClick}
+      />
+
       <div
         className="embla__viewport"
         style={{ overflow: "hidden" }}
@@ -310,6 +290,22 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
             marginLeft: `calc(${slideSpacing} * -1)`,
           }}
         >
+          {hasMoreToLoadLeft && (
+            <div
+              className={"embla-infinite-scroll"}
+              style={{
+                position: "relative",
+                flex: "0 0 15rem",
+                minWidth: 0,
+                height: slideHeight,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {loadingMoreLeft && <CircularProgress />}
+            </div>
+          )}
           {slides.map((event, index) => (
             <div
               className="embla__slide"
@@ -323,7 +319,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
               <div className="embla__slide__number">{event}</div>
             </div>
           ))}
-          {hasMoreToLoad && (
+          {hasMoreToLoadRight && (
             <div
               className={"embla-infinite-scroll"}
               style={{
@@ -336,33 +332,9 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
                 justifyContent: "center",
               }}
             >
-              {loadingMore && <CircularProgress />}
+              {loadingMoreRight && <CircularProgress />}
             </div>
           )}
-        </div>
-      </div>
-
-      <div
-        className="embla__controls"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "auto 1fr",
-          justifyContent: "space-between",
-          gap: "1.2rem",
-          marginTop: "1.8rem",
-        }}
-      >
-        <div
-          className="embla__buttons"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "0.6rem",
-            alignItems: "center",
-          }}
-        >
-          <PrevButton onClick={onPrevButtonClick} disabled={prevBtnDisabled} />
-          <NextButton onClick={onNextButtonClick} disabled={nextBtnDisabled} />
         </div>
       </div>
     </div>
