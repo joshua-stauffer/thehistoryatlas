@@ -131,6 +131,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
     containScroll: "keepSnaps",
     watchSlides: false,
     watchResize: false,
+    startIndex: 1,
   };
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -202,6 +203,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
             //   emblaApi.off("scroll", scrollListenerRef.current);
             //   return currentSlides;
             // }
+
             return [...currentSlides, ...currentSlides];
           });
         });
@@ -224,8 +226,9 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
             //   emblaApi.off("scroll", scrollListenerRef.current);
             //   return currentSlides;
             // }
-            return [...currentSlides, ...currentSlides];
+            return [currentSlides[currentSlides.length - 1], ...currentSlides];
           });
+          emblaApi.scrollTo(1);
         });
       }
 

@@ -47,7 +47,7 @@ export const HistoryEventView = () => {
   const data = useLoaderData();
   console.log({ data });
 
-  const SLIDES = events.map((historyEvent, index) => (
+  const slides = events.map((historyEvent, index) => (
     <EventView event={historyEvent} />
   ));
 
@@ -105,7 +105,7 @@ export const HistoryEventView = () => {
                 marginBottom: "10px",
               }}
             />
-            <EmblaCarousel slides={SLIDES} />
+            <EmblaCarousel slides={slides} />
 
             <Hidden mdUp>
               {/* Inline map for mobile */}
