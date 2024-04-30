@@ -10,10 +10,17 @@ export interface HistoryEventData {
   events: HistoryEvent[];
   story: Story;
   index: number;
-  prevEvent: HistoryEvent | null;
   currentEvent: HistoryEvent;
-  nextEvent: HistoryEvent | null;
 }
+
+type EventsAndStories = {
+  events: HistoryEvent[];
+  stories: Story[];
+};
+
+const buildFakeData: EventsAndStories = () => {
+  faker.seed(123);
+};
 
 const eventMap = new Map<string, HistoryEvent>([]);
 events.map((historyEvent) => {
@@ -59,5 +66,5 @@ export const historyEventLoader = ({
       events.push(event);
     }
   }
-  return { events, story, index, prevEvent, currentEvent, nextEvent };
+  return { events, story, index, currentEvent };
 };

@@ -81,6 +81,7 @@ const mockApiCall = (
 type CarouselPropType = {
   slides: JSX.Element[];
   options?: EmblaOptionsType;
+  setFocusedIndex: (index: number) => void;
 };
 
 type EventNavBarProps = {
@@ -114,7 +115,7 @@ const EventNavBar = (props: EventNavBarProps) => {
 };
 
 const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
-  const { slides: propSlides } = props;
+  const { slides: propSlides, setFocusedIndex } = props;
   const scrollListenerRef = useRef<() => void>(() => undefined);
   const listenForScrollRef = useRef(true);
   const [slides, setSlides] = useState(propSlides);
@@ -262,6 +263,11 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
   useEffect(() => {
     hasMoreToLoadLeftRef.current = hasMoreToLoadLeft;
   }, [hasMoreToLoadLeft]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    setFocusedIndex(emblaApi.scrollProgress());
+  });
 
   const slideHeight = "19rem";
   const slideSpacing = "1rem";

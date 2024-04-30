@@ -25,27 +25,43 @@ import SearchIcon from "@mui/icons-material/Search";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Divider from "@mui/material/Divider";
-import { EventPointer } from "../../graphql/events";
+import { EventPointer, HistoryEvent } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
+import { bachIsBorn } from "../../data";
 
 const BindKeyboardSwipeableViews = bindKeyboard(SwipeableViews);
 
 export const HistoryEventView = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const handleOpen = () => setIsOpen(true);
-  const handleClose = () => setIsOpen(false);
+  const { events, story } = useLoaderData() as HistoryEventData;
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+  const setFocusedIndex = (index: number) => {
+    setProgressPercent(index);
+  };
+
   const navigate = useNavigate();
 
-  const { events, story, index, currentEvent, prevEvent, nextEvent } =
-    useLoaderData() as HistoryEventData;
+  const data = useLoaderData();
+  console.log({ data });
+
+  const calculateIndexFromPercent = (
+    percent: number,
+    length: number
+  ): number => {
+    return Math.floor(length * percent);
+  };
+
+  const currentEvent: HistoryEvent =
+    events.length > 0
+      ? events[calculateIndexFromPercent(progressPercent, events.length)]
+      : bachIsBorn;
+
   const coords = currentEvent.map.locations.map((location) => {
     return {
       latitude: location.latitude,
       longitude: location.longitude,
     };
   });
-  const data = useLoaderData();
-  console.log({ data });
+  console.log({ coords });
 
   const slides = events.map((historyEvent, index) => (
     <EventView event={historyEvent} />
@@ -53,7 +69,6 @@ export const HistoryEventView = () => {
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
-      <TimeTravelModal isOpen={isOpen} handleClose={handleClose} />
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
         {/* Event Feed */}
 
@@ -105,7 +120,7 @@ export const HistoryEventView = () => {
                 marginBottom: "10px",
               }}
             />
-            <EmblaCarousel slides={slides} />
+            <EmblaCarousel slides={slides} setFocusedIndex={setFocusedIndex} />
 
             <Hidden mdUp>
               {/* Inline map for mobile */}
