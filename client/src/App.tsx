@@ -14,7 +14,10 @@ import {
   LandingPage,
   landingPageLoader,
 } from "./pages/historyEvent/landingPage";
-import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
+import {
+  historyEventLoader,
+  fakeHistoryEventLoader,
+} from "./pages/historyEvent/historyEventLoader";
 
 function App() {
   const tokenManager = useTokenManager();
@@ -27,7 +30,7 @@ function App() {
     {
       path: "/stories/:storyId/events/:eventId",
       element: <HistoryEventView />,
-      loader: historyEventLoader,
+      loader: fakeHistoryEventLoader,
       errorElement: (
         <GenericError
           header={"Uh oh..."}
