@@ -14,7 +14,10 @@ import { events, stories } from "../../data";
 import { LoaderFunctionArgs } from "react-router-dom";
 import { faker } from "@faker-js/faker";
 import { PersonTag, PlaceTag, TimeTag } from "../../types";
-import { renderDay } from "../../components/renderDateTime/time";
+import {
+  renderDateTime,
+  renderDay,
+} from "../../components/renderDateTime/time";
 interface HistoryEventParams {
   storyId: string | undefined;
   eventId: string | undefined;
@@ -146,9 +149,15 @@ const buildEvents = (): BuiltEvents => {
 };
 
 const buildStory = (events: HistoryEvent[]): Story => {
+  const timeName = renderDateTime({
+    calendar: "fake",
+    time: String(faker.date.past()),
+    precision: 11,
+  });
+
   const storyTemplates = [
     () => `The life of ${faker.person.fullName()}.`,
-    () => `The history of ${faker.date.past()}.`,
+    () => `The history of ${timeName}.`,
     () => `The history of ${faker.location.city()}.`,
   ];
   const randomStoryTitle =

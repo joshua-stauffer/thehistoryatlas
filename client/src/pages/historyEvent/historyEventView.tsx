@@ -41,7 +41,6 @@ export const HistoryEventView = () => {
   const navigate = useNavigate();
 
   const data = useLoaderData();
-  console.log({ data });
 
   const calculateIndexFromPercent = (
     percent: number,
@@ -50,10 +49,9 @@ export const HistoryEventView = () => {
     return Math.floor(length * percent);
   };
 
+  if (events.length <= 0) throw new Error("No data");
   const currentEvent: HistoryEvent =
-    events.length > 0
-      ? events[calculateIndexFromPercent(progressPercent, events.length)]
-      : bachIsBorn;
+    events[calculateIndexFromPercent(progressPercent, events.length)];
 
   const coords = currentEvent.map.locations.map((location) => {
     return {
@@ -61,7 +59,6 @@ export const HistoryEventView = () => {
       longitude: location.longitude,
     };
   });
-  console.log({ coords });
 
   const slides = events.map((historyEvent, index) => (
     <EventView event={historyEvent} />
