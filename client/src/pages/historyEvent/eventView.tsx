@@ -1,38 +1,15 @@
 import React from "react";
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Card,
-  CardActions,
-  CardContent,
-  CardHeader,
-  IconButton,
-  InputAdornment,
-  TextField,
-  Typography,
-} from "@mui/material";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import {
-  HistoryEvent,
-  Focus,
-  Tag,
-  EventPointer,
-  Story,
-} from "../../graphql/events";
+import { Button, Typography } from "@mui/material";
+
+import { HistoryEvent, Tag } from "../../graphql/events";
 import { renderDateTime } from "../../components/renderDateTime/time";
 import { GoPerson } from "react-icons/go";
 import { VscLocation } from "react-icons/vsc";
 import { BiTimeFive } from "react-icons/bi";
-import SearchIcon from "@mui/icons-material/Search";
 import { TextButton } from "./buttons";
-import { Link, useNavigate } from "react-router-dom";
-import { sansSerifFont, serifFont } from "../../baseStyle";
-import Autocomplete from "@mui/material/Autocomplete";
+import { Link } from "react-router-dom";
+
 import Divider from "@mui/material/Divider";
-import Hidden from "@mui/material/Hidden";
-import { SingleEntityMap } from "../../components/singleEntityMap";
 
 interface EventViewProps {
   event: HistoryEvent;
