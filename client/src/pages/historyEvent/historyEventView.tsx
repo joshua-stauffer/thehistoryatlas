@@ -3,7 +3,7 @@ import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
@@ -32,15 +32,13 @@ import { bachIsBorn } from "../../data";
 const BindKeyboardSwipeableViews = bindKeyboard(SwipeableViews);
 
 export const HistoryEventView = () => {
-  const { events, story } = useLoaderData() as HistoryEventData;
+  const { events, story, index } = useLoaderData() as HistoryEventData;
   const [progressPercent, setProgressPercent] = useState<number>(0);
   const setFocusedIndex = (index: number) => {
     setProgressPercent(index);
   };
 
   const navigate = useNavigate();
-
-  const data = useLoaderData();
 
   const calculateIndexFromPercent = (
     percent: number,
@@ -63,6 +61,8 @@ export const HistoryEventView = () => {
   const slides = events.map((historyEvent, index) => (
     <EventView event={historyEvent} />
   ));
+
+  useEffect(() => console.log({ progressPercent }));
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
@@ -117,7 +117,11 @@ export const HistoryEventView = () => {
                 marginBottom: "10px",
               }}
             />
-            <EmblaCarousel slides={slides} setFocusedIndex={setFocusedIndex} />
+            <EmblaCarousel
+              slides={slides}
+              setFocusedIndex={setFocusedIndex}
+              startIndex={index}
+            />
 
             <Hidden mdUp>
               {/* Inline map for mobile */}

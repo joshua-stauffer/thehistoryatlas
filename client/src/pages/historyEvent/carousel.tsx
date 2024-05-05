@@ -82,6 +82,7 @@ type CarouselPropType = {
   slides: JSX.Element[];
   options?: EmblaOptionsType;
   setFocusedIndex: (index: number) => void;
+  startIndex: number;
 };
 
 type EventNavBarProps = {
@@ -115,7 +116,7 @@ const EventNavBar = (props: EventNavBarProps) => {
 };
 
 const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
-  const { slides: propSlides, setFocusedIndex } = props;
+  const { slides: propSlides, setFocusedIndex, startIndex } = props;
   const scrollListenerRef = useRef<() => void>(() => undefined);
   const listenForScrollRef = useRef(true);
   const [slides, setSlides] = useState(propSlides);
@@ -132,7 +133,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
     containScroll: "keepSnaps",
     watchSlides: false,
     watchResize: false,
-    startIndex: 1,
+    startIndex: startIndex,
   };
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
