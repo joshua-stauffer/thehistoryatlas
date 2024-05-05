@@ -207,6 +207,7 @@ const buildMap = (options: MapOptions): Point[] => {
 const createPoint = (options: MapOptions): Point => {
   const [latitude, longitude] = faker.location.nearbyGPSCoordinate({
     origin: [options.latitude, options.longitude],
+    radius: 250,
   });
   return {
     latitude: latitude,

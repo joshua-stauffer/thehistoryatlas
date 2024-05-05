@@ -134,6 +134,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
     watchSlides: false,
     watchResize: false,
     startIndex: startIndex,
+    inViewThreshold: 0, // default
   };
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -265,10 +266,17 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
     hasMoreToLoadLeftRef.current = hasMoreToLoadLeft;
   }, [hasMoreToLoadLeft]);
 
+  const logScrollProgress = useCallback(
+    (emblaApi) => {
+      const slidesInView: number[] = emblaApi.slidesInView();
+      setFocusedIndex(slidesInView[0]);
+    },
+    [emblaApi, setFocusedIndex]
+  );
+
   useEffect(() => {
-    if (!emblaApi) return;
-    setFocusedIndex(emblaApi.scrollProgress());
-  });
+    if (emblaApi) emblaApi.on("slidesInView", logScrollProgress);
+  }, [emblaApi, logScrollProgress]);
 
   const slideHeight = "19rem";
   const slideSpacing = "1rem";

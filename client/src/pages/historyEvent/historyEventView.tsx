@@ -33,9 +33,9 @@ const BindKeyboardSwipeableViews = bindKeyboard(SwipeableViews);
 
 export const HistoryEventView = () => {
   const { events, story, index } = useLoaderData() as HistoryEventData;
-  const [progressPercent, setProgressPercent] = useState<number>(0);
+  const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
   const setFocusedIndex = (index: number) => {
-    setProgressPercent(index);
+    setCurrentEventIndex(index);
   };
 
   const navigate = useNavigate();
@@ -48,8 +48,7 @@ export const HistoryEventView = () => {
   };
 
   if (events.length <= 0) throw new Error("No data");
-  const currentEvent: HistoryEvent =
-    events[calculateIndexFromPercent(progressPercent, events.length)];
+  const currentEvent: HistoryEvent = events[currentEventIndex];
 
   const coords = currentEvent.map.locations.map((location) => {
     return {
@@ -61,8 +60,6 @@ export const HistoryEventView = () => {
   const slides = events.map((historyEvent, index) => (
     <EventView event={historyEvent} />
   ));
-
-  useEffect(() => console.log({ progressPercent }));
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
