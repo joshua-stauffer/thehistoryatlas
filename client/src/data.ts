@@ -116,6 +116,7 @@ export const bachIsBorn: HistoryEvent = {
     name: "Johann Sebastian Bach",
     type: "PERSON",
   },
+  storyTitle: storyOfBach.name,
   stories: [storyOfEisenach, storyOfBach, storyOfMarch1685],
 };
 
@@ -186,6 +187,7 @@ export const bachArrivesInLuneburg: HistoryEvent = {
     name: "Johann Sebastian Bach",
     type: "PERSON",
   },
+  storyTitle: storyOfBach.name,
   stories: [storyOfBach, storyOfMarch1700, storyOfLuneburg],
 };
 
@@ -256,6 +258,7 @@ export const bachDedicatesMass: HistoryEvent = {
     name: "Johann Sebastian Bach",
     type: "PERSON",
   },
+  storyTitle: storyOfBach.name,
   stories: [storyOfBach, storyOfJuly1733, storyOfDresden],
 };
 

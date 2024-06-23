@@ -12,6 +12,7 @@ import { EventView } from "./eventView";
 import { Button, ButtonGroup, CircularProgress } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { HistoryEvent } from "../../graphql/events";
 
 type UsePrevNextButtonsType = {
   prevBtnDisabled: boolean;
@@ -67,22 +68,13 @@ type PropType = PropsWithChildren<
   >
 >;
 
-const mockApiCall = (
-  minWait: number,
-  maxWait: number,
-  callback: () => void
-): void => {
-  const min = Math.ceil(minWait);
-  const max = Math.floor(maxWait);
-  const wait = Math.floor(Math.random() * (max - min + 1)) + min;
-  setTimeout(callback, wait);
-};
-
 type CarouselPropType = {
   slides: JSX.Element[];
   options?: EmblaOptionsType;
   setFocusedIndex: (index: number) => void;
   startIndex: number;
+  loadNext: () => void;
+  loadPrev: () => void;
 };
 
 type EventNavBarProps = {
@@ -116,10 +108,9 @@ const EventNavBar = (props: EventNavBarProps) => {
 };
 
 const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
-  const { slides: propSlides, setFocusedIndex, startIndex } = props;
+  const { slides, setFocusedIndex, startIndex, loadNext, loadPrev } = props;
   const scrollListenerRef = useRef<() => void>(() => undefined);
   const listenForScrollRef = useRef(true);
-  const [slides, setSlides] = useState(propSlides);
 
   const hasMoreToLoadRightRef = useRef(true);
   const [hasMoreToLoadRight, setHasMoreToLoadRight] = useState(true);
@@ -188,56 +179,37 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
     onNextButtonClick,
   } = usePrevNextButtons(emblaApi);
 
-  const onScroll = useCallback((emblaApi: EmblaCarouselType) => {
-    if (!listenForScrollRef.current) return;
+  const onScroll = useCallback(
+    (emblaApi: EmblaCarouselType) => {
+      if (!listenForScrollRef.current) return;
 
-    setLoadingMoreRight((loadingMore) => {
-      const lastSlide = emblaApi.slideNodes().length - 1;
-      const lastSlideInView = emblaApi.slidesInView().includes(lastSlide);
-      const loadMore = !loadingMore && lastSlideInView;
+      setLoadingMoreRight((loadingMore) => {
+        const lastSlide = emblaApi.slideNodes().length - 1;
+        const lastSlideInView = emblaApi.slidesInView().includes(lastSlide);
+        const loadMore = !loadingMore && lastSlideInView;
+        if (loadMore) {
+          listenForScrollRef.current = false;
+          loadNext();
+        }
 
-      if (loadMore) {
-        listenForScrollRef.current = false;
+        return loadingMore || lastSlideInView;
+      });
 
-        mockApiCall(1000, 2000, () => {
-          setSlides((currentSlides) => {
-            // if (currentSlides.length === 20) {
-            //   setHasMoreToLoad(false);
-            //   emblaApi.off("scroll", scrollListenerRef.current);
-            //   return currentSlides;
-            // }
+      setLoadingMoreLeft((loadingMore) => {
+        const firstSlideInView = emblaApi.slidesInView().includes(0);
+        const loadMore = !loadingMore && firstSlideInView;
 
-            return [...currentSlides, ...currentSlides];
-          });
-        });
-      }
+        if (loadMore) {
+          listenForScrollRef.current = false;
 
-      return loadingMore || lastSlideInView;
-    });
+          loadPrev();
+        }
 
-    setLoadingMoreLeft((loadingMore) => {
-      const firstSlideInView = emblaApi.slidesInView().includes(0);
-      const loadMore = !loadingMore && firstSlideInView;
-
-      if (loadMore) {
-        listenForScrollRef.current = false;
-
-        mockApiCall(1000, 2000, () => {
-          setSlides((currentSlides) => {
-            // if (currentSlides.length === 20) {
-            //   setHasMoreToLoad(false);
-            //   emblaApi.off("scroll", scrollListenerRef.current);
-            //   return currentSlides;
-            // }
-            return [currentSlides[currentSlides.length - 1], ...currentSlides];
-          });
-          emblaApi.scrollTo(1);
-        });
-      }
-
-      return loadingMore || firstSlideInView;
-    });
-  }, []);
+        return loadingMore || firstSlideInView;
+      });
+    },
+    [loadPrev, loadNext]
+  );
 
   const addScrollListener = useCallback(
     (emblaApi: EmblaCarouselType) => {

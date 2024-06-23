@@ -17,38 +17,45 @@ import {
   Typography,
 } from "@mui/material";
 import { EventView } from "./eventView";
-import SwipeableViews from "react-swipeable-views";
-import { bindKeyboard } from "react-swipeable-views-utils";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
 import SearchIcon from "@mui/icons-material/Search";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import Divider from "@mui/material/Divider";
 import { EventPointer, HistoryEvent } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
-import { bachIsBorn } from "../../data";
 
-const BindKeyboardSwipeableViews = bindKeyboard(SwipeableViews);
+const buildSlides = (events: HistoryEvent[]): JSX.Element[] => {
+  return events.map((historyEvent, index) => (
+    <EventView event={historyEvent} key={index} />
+  ));
+};
 
 export const HistoryEventView = () => {
-  const { events, story, index } = useLoaderData() as HistoryEventData;
-  const [currentEventIndex, setCurrentEventIndex] = useState<number>(0);
+  const { events, index, loadNext, loadPrev } =
+    useLoaderData() as HistoryEventData;
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>(events);
+  const [slides, setSlides] = useState<JSX.Element[]>(
+    buildSlides(historyEvents)
+  );
+
+  const [currentEventIndex, setCurrentEventIndex] = useState<number>(index);
   const setFocusedIndex = (index: number) => {
     setCurrentEventIndex(index);
   };
 
   const navigate = useNavigate();
 
-  const calculateIndexFromPercent = (
-    percent: number,
-    length: number
-  ): number => {
-    return Math.floor(length * percent);
+  if (events.length <= 0) throw new Error("No data");
+  console.log({ currentEventIndex });
+
+  const getCurrentEvent = (): HistoryEvent => {
+    if (currentEventIndex >= events.length) {
+      return events[events.length - 1];
+    }
+    return events[currentEventIndex];
   };
 
-  if (events.length <= 0) throw new Error("No data");
-  const currentEvent: HistoryEvent = events[currentEventIndex];
+  const currentEvent = getCurrentEvent();
 
   const coords = currentEvent.map.locations.map((location) => {
     return {
@@ -57,9 +64,25 @@ export const HistoryEventView = () => {
     };
   });
 
-  const slides = events.map((historyEvent, index) => (
-    <EventView event={historyEvent} />
-  ));
+  const loadLeft = () => {
+    const newSlides = loadPrev();
+    setHistoryEvents((currentSlides) => {
+      return [...newSlides, ...currentSlides];
+    });
+    const newIndex = historyEvents.indexOf(currentEvent);
+    setCurrentEventIndex(newIndex);
+  };
+  const loadRight = () => {
+    const newSlides = loadNext();
+    setHistoryEvents((currentSlides) => {
+      return [...currentSlides, ...newSlides];
+    });
+    const newIndex = historyEvents.indexOf(currentEvent);
+    setCurrentEventIndex(newIndex);
+  };
+  useEffect(() => {
+    setSlides(buildSlides(historyEvents));
+  }, [historyEvents]);
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
@@ -106,7 +129,7 @@ export const HistoryEventView = () => {
                 marginBottom: "2vh",
               }}
             >
-              {story.name}
+              {currentEvent.storyTitle}
             </Typography>
             <Divider
               sx={{
@@ -118,6 +141,8 @@ export const HistoryEventView = () => {
               slides={slides}
               setFocusedIndex={setFocusedIndex}
               startIndex={index}
+              loadNext={loadRight}
+              loadPrev={loadLeft}
             />
 
             <Hidden mdUp>

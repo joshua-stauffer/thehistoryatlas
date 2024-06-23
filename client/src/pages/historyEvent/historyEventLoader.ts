@@ -28,6 +28,8 @@ export interface HistoryEventData {
   story: Story;
   index: number;
   currentEvent: HistoryEvent;
+  loadNext: () => HistoryEvent[];
+  loadPrev: () => HistoryEvent[];
 }
 
 const eventMap = new Map<string, HistoryEvent>([]);
@@ -74,11 +76,16 @@ export const historyEventLoader = ({
       events.push(event);
     }
   }
-  return { events, story, index, currentEvent };
+  const dummyLoader = () => [];
+  return {
+    events,
+    story,
+    index,
+    currentEvent,
+    loadPrev: dummyLoader,
+    loadNext: dummyLoader,
+  };
 };
-
-const fakeEventMap = new Map<string, HistoryEvent>([]);
-const fakeStoryMap = new Map<string, Story>([]);
 
 faker.seed(872);
 
@@ -86,11 +93,18 @@ export const fakeHistoryEventLoader = ({
   params: { eventId, storyId },
 }: LoaderFunctionArgs): HistoryEventData => {
   const { story, events, index } = buildStoryAndEvents();
+  const getAnotherEventList = () => {
+    console.log("History Event Loader is generating more fake data");
+    const { events } = buildStoryAndEvents();
+    return events;
+  };
   return {
     story: story,
     events: events,
     index: index,
     currentEvent: events[index],
+    loadNext: getAnotherEventList,
+    loadPrev: getAnotherEventList,
   };
 };
 
@@ -101,9 +115,10 @@ type StoryAndEvents = {
 };
 
 const buildStoryAndEvents = (): StoryAndEvents => {
-  const { events, index } = buildEvents();
+  const storyTitle = buildStoryTitle();
+  const { events, index } = buildEvents(storyTitle);
 
-  const story = buildStory(events);
+  const story = buildStory(storyTitle, events);
   return {
     events,
     story,
@@ -116,8 +131,8 @@ type BuiltEvents = {
   index: number;
 };
 
-const buildEvents = (): BuiltEvents => {
-  const eventCount = 20;
+const buildEvents = (storyTitle: string): BuiltEvents => {
+  const eventCount = 10;
   const mapOptions = {
     name: faker.location.city(),
     latitude: faker.location.latitude(),
@@ -131,7 +146,7 @@ const buildEvents = (): BuiltEvents => {
 
   let eventList: HistoryEvent[] = [];
   for (let i = 0; i < eventCount; i++) {
-    eventList.push(buildEvent(dateOptions, mapOptions));
+    eventList.push(buildEvent(dateOptions, mapOptions, storyTitle));
   }
   const exactDateOptions = {
     ...dateOptions,
@@ -139,7 +154,7 @@ const buildEvents = (): BuiltEvents => {
   };
 
   const index = Math.floor(eventCount / 2);
-  const focusedEvent = buildEvent(exactDateOptions, mapOptions);
+  const focusedEvent = buildEvent(exactDateOptions, mapOptions, storyTitle);
   eventList = [
     ...eventList.slice(0, index),
     focusedEvent,
@@ -148,7 +163,15 @@ const buildEvents = (): BuiltEvents => {
   return { events: eventList, index: index };
 };
 
-const buildStory = (events: HistoryEvent[]): Story => {
+const buildStory = (storyTitle: string, events: HistoryEvent[]): Story => {
+  return {
+    id: faker.string.uuid(),
+    name: storyTitle,
+    events: events,
+  };
+};
+
+const buildStoryTitle = () => {
   const timeName = renderDateTime({
     calendar: "fake",
     time: String(faker.date.past()),
@@ -162,11 +185,7 @@ const buildStory = (events: HistoryEvent[]): Story => {
   ];
   const randomStoryTitle =
     storyTemplates[Math.floor(Math.random() * storyTemplates.length)];
-  return {
-    id: faker.string.uuid(),
-    name: randomStoryTitle(),
-    events: events,
-  };
+  return randomStoryTitle();
 };
 
 type DateOptions = {
@@ -293,7 +312,8 @@ const buildTags = (
 
 function buildEvent(
   dateOptions: DateOptions,
-  mapOptions: MapOptions
+  mapOptions: MapOptions,
+  storyTitle: string
 ): HistoryEvent {
   const text = faker.lorem.sentence();
   const { tags, taggedText } = buildTags(text, dateOptions, mapOptions);
@@ -314,5 +334,6 @@ function buildEvent(
     },
     focus: null,
     stories: [],
+    storyTitle: storyTitle,
   };
 }

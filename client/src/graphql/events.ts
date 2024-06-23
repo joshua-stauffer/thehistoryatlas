@@ -7,7 +7,8 @@ export interface HistoryEvent {
   tags: Tag[];
   map: Map;
   focus: Focus | null;
-  stories: Story[];
+  storyTitle: string;
+  stories: Story[]; // todo: refactor to a new type StoryLink
 }
 
 export interface CalendarDate {
@@ -82,12 +83,6 @@ export interface Focus {
 }
 
 type FocusType = "PERSON" | "PLACE";
-
-export interface PeopleAndPlaceOption {
-  name: string;
-  id: string;
-  type: "PERSON" | "PLACE";
-}
 
 export interface Story {
   id: string;
