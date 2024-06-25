@@ -71,6 +71,7 @@ export const HistoryEventView = () => {
     });
     const newIndex = historyEvents.indexOf(currentEvent);
     setCurrentEventIndex(newIndex);
+    console.log({ newIndex });
   };
   const loadRight = () => {
     const newSlides = loadNext();

@@ -197,6 +197,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
 
       setLoadingMoreLeft((loadingMore) => {
         const firstSlideInView = emblaApi.slidesInView().includes(0);
+        console.log({ firstSlideInView });
         const loadMore = !loadingMore && firstSlideInView;
 
         if (loadMore) {
