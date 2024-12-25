@@ -2,8 +2,7 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { TimeTravelModal } from "./timeTravelModal";
 import { Link, useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
@@ -33,29 +32,25 @@ const buildSlides = (events: HistoryEvent[]): JSX.Element[] => {
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
     useLoaderData() as HistoryEventData;
-  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>(events);
-  const [slides, setSlides] = useState<JSX.Element[]>(
-    buildSlides(historyEvents)
-  );
 
-  const [currentEventIndex, setCurrentEventIndex] = useState<number>(index);
+  const [carouselState, setCarouselState] = useState({
+    historyEvents: events,
+    currentEventIndex: index,
+    slides: buildSlides(events),
+  });
+
   const setFocusedIndex = (index: number) => {
-    setCurrentEventIndex(index);
+    setCarouselState((prevState) => {
+      return { ...prevState, currentEventIndex: index };
+    });
   };
 
   const navigate = useNavigate();
 
-  if (events.length <= 0) throw new Error("No data");
-  console.log({ currentEventIndex });
+  if (carouselState.historyEvents.length <= 0) throw new Error("No data");
 
-  const getCurrentEvent = (): HistoryEvent => {
-    if (currentEventIndex >= events.length) {
-      return events[events.length - 1];
-    }
-    return events[currentEventIndex];
-  };
-
-  const currentEvent = getCurrentEvent();
+  const currentEvent =
+    carouselState.historyEvents[carouselState.currentEventIndex];
 
   const coords = currentEvent.map.locations.map((location) => {
     return {
@@ -63,27 +58,27 @@ export const HistoryEventView = () => {
       longitude: location.longitude,
     };
   });
-
   const loadLeft = () => {
-    const newSlides = loadPrev();
-    setHistoryEvents((currentSlides) => {
-      return [...newSlides, ...currentSlides];
+    setCarouselState((prevState) => {
+      const newSlides = loadPrev();
+      return {
+        historyEvents: [...newSlides, ...prevState.historyEvents],
+        currentEventIndex: prevState.currentEventIndex + newSlides.length,
+        slides: buildSlides([...newSlides, ...prevState.historyEvents]),
+      };
     });
-    const newIndex = historyEvents.indexOf(currentEvent);
-    setCurrentEventIndex(newIndex);
-    console.log({ newIndex });
   };
+
   const loadRight = () => {
-    const newSlides = loadNext();
-    setHistoryEvents((currentSlides) => {
-      return [...currentSlides, ...newSlides];
+    setCarouselState((prevState) => {
+      const newSlides = loadNext();
+      return {
+        historyEvents: [...prevState.historyEvents, ...newSlides],
+        currentEventIndex: prevState.currentEventIndex - newSlides.length,
+        slides: buildSlides([...prevState.historyEvents, ...newSlides]),
+      };
     });
-    const newIndex = historyEvents.indexOf(currentEvent);
-    setCurrentEventIndex(newIndex);
   };
-  useEffect(() => {
-    setSlides(buildSlides(historyEvents));
-  }, [historyEvents]);
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
@@ -139,7 +134,7 @@ export const HistoryEventView = () => {
               }}
             />
             <EmblaCarousel
-              slides={slides}
+              slides={carouselState.slides}
               setFocusedIndex={setFocusedIndex}
               startIndex={index}
               loadNext={loadRight}

@@ -197,7 +197,6 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
 
       setLoadingMoreLeft((loadingMore) => {
         const firstSlideInView = emblaApi.slidesInView().includes(0);
-        console.log({ firstSlideInView });
         const loadMore = !loadingMore && firstSlideInView;
 
         if (loadMore) {
@@ -305,7 +304,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
                 minWidth: 0,
                 paddingLeft: slideSpacing,
               }}
-              key={index}
+              key={index + 1}
             >
               <div className="embla__slide__number">{event}</div>
             </div>
