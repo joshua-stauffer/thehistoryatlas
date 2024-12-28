@@ -1,8 +1,8 @@
-import os
 
 import boto3
 from botocore.config import Config as Boto3Config
-from pydantic import BaseSettings, HttpUrl
+from pydantic import HttpUrl
+from pydantic_settings import BaseSettings
 
 
 class StorageSettings(BaseSettings):
