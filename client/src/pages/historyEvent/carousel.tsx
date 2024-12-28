@@ -155,8 +155,17 @@ const EmblaCarousel: React.FC<CarouselPropType> = ({
 
     emblaApi.on("scroll", handleScroll);
 
-    return () => emblaApi.off("scroll", handleScroll);
+    return () => {
+      emblaApi.off("scroll", handleScroll);
+    };
   }, [emblaApi, handleScroll]);
+
+  const scrollPrev = () => {
+    if (emblaApi) emblaApi.scrollPrev();
+  };
+  const scrollNext = () => {
+    if (emblaApi) emblaApi.scrollNext();
+  };
 
   const slideHeight = "19rem";
   const slideSpacing = "1rem";
@@ -169,10 +178,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = ({
         margin: "auto",
       }}
     >
-      {/*<EventNavBar*/}
-      {/*  navigateLeft={onPrevButtonClick}*/}
-      {/*  navigateRight={onNextButtonClick}*/}
-      {/*/>*/}
+      <EventNavBar navigateLeft={scrollPrev} navigateRight={scrollNext} />
 
       <div
         className="embla__viewport"
