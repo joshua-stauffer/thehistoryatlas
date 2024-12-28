@@ -12,4 +12,4 @@ class TimeModel(ConfiguredBaseModel):
     type: Literal["TIME"] = "TIME"
     time: datetime
     calendar_model: str
-    precision = TimePrecision
+    precision: Literal[6, 7, 8, 9, 10, 11] = TimePrecision
