@@ -22,6 +22,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import Divider from "@mui/material/Divider";
 import { EventPointer, HistoryEvent } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
+import { useCarouselState } from "./useCarouselState";
 
 const buildSlides = (events: HistoryEvent[]): JSX.Element[] => {
   return events.map((historyEvent, index) => (
@@ -33,52 +34,29 @@ export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
     useLoaderData() as HistoryEventData;
 
-  const [carouselState, setCarouselState] = useState({
-    historyEvents: events,
-    currentEventIndex: index,
-    slides: buildSlides(events),
-  });
-
-  const setFocusedIndex = (index: number) => {
-    setCarouselState((prevState) => {
-      return { ...prevState, currentEventIndex: index };
-    });
-  };
+  const {
+    historyEvents,
+    currentEventIndex,
+    setCurrentEventIndex,
+    loadMoreEvents,
+  } = useCarouselState(events, index);
 
   const navigate = useNavigate();
 
-  if (carouselState.historyEvents.length <= 0) throw new Error("No data");
+  const currentEvent = historyEvents[currentEventIndex];
 
-  const currentEvent =
-    carouselState.historyEvents[carouselState.currentEventIndex];
+  if (!currentEvent) {
+    // Show a fallback UI or spinner during state transitions
+    return <div>Loading...</div>;
+  }
 
-  const coords = currentEvent.map.locations.map((location) => {
-    return {
-      latitude: location.latitude,
-      longitude: location.longitude,
-    };
-  });
-  const loadLeft = () => {
-    setCarouselState((prevState) => {
-      const newSlides = loadPrev();
-      return {
-        historyEvents: [...newSlides, ...prevState.historyEvents],
-        currentEventIndex: prevState.currentEventIndex + newSlides.length,
-        slides: buildSlides([...newSlides, ...prevState.historyEvents]),
-      };
-    });
-  };
+  const handleLoadLeft = () => loadMoreEvents("left", loadPrev);
+  const handleLoadRight = () => loadMoreEvents("right", loadNext);
 
-  const loadRight = () => {
-    setCarouselState((prevState) => {
-      const newSlides = loadNext();
-      return {
-        historyEvents: [...prevState.historyEvents, ...newSlides],
-        currentEventIndex: prevState.currentEventIndex - newSlides.length,
-        slides: buildSlides([...prevState.historyEvents, ...newSlides]),
-      };
-    });
-  };
+  const coords = currentEvent.map.locations.map((location) => ({
+    latitude: location.latitude,
+    longitude: location.longitude,
+  }));
 
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
@@ -134,11 +112,13 @@ export const HistoryEventView = () => {
               }}
             />
             <EmblaCarousel
-              slides={carouselState.slides}
-              setFocusedIndex={setFocusedIndex}
-              startIndex={index}
-              loadNext={loadRight}
-              loadPrev={loadLeft}
+              slides={historyEvents.map((event) => (
+                <EventView event={event} />
+              ))}
+              setFocusedIndex={setCurrentEventIndex}
+              startIndex={currentEventIndex}
+              loadNext={handleLoadRight}
+              loadPrev={handleLoadLeft}
             />
 
             <Hidden mdUp>

@@ -73,8 +73,8 @@ type CarouselPropType = {
   options?: EmblaOptionsType;
   setFocusedIndex: (index: number) => void;
   startIndex: number;
-  loadNext: () => void;
-  loadPrev: () => void;
+  loadNext: () => Promise<void>;
+  loadPrev: () => Promise<void>;
 };
 
 type EventNavBarProps = {
@@ -107,7 +107,107 @@ const EventNavBar = (props: EventNavBarProps) => {
   );
 };
 
-const EmblaCarousel: React.FC<CarouselPropType> = (props) => {
+const EmblaCarousel: React.FC<CarouselPropType> = ({
+  slides,
+  setFocusedIndex,
+  startIndex,
+  loadNext,
+  loadPrev,
+}) => {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex });
+  const [loadingMoreLeft, setLoadingMoreLeft] = useState(false);
+  const [loadingMoreRight, setLoadingMoreRight] = useState(false);
+
+  const handleScroll = useCallback(() => {
+    if (!emblaApi) return;
+
+    const slidesInView = emblaApi.slidesInView();
+    setFocusedIndex(slidesInView[0]);
+
+    if (slidesInView.includes(0) && !loadingMoreLeft) {
+      setLoadingMoreLeft(true);
+      loadPrev()
+        .catch((error) => {
+          console.error("Error loading previous events:", error);
+        })
+        .finally(() => setLoadingMoreLeft(false));
+    }
+
+    if (slidesInView.includes(slides.length - 1) && !loadingMoreRight) {
+      setLoadingMoreRight(true);
+      loadNext()
+        .catch((error) => {
+          console.error("Error loading previous events:", error);
+        })
+        .finally(() => setLoadingMoreRight(false));
+    }
+  }, [
+    emblaApi,
+    setFocusedIndex,
+    loadNext,
+    loadPrev,
+    loadingMoreLeft,
+    loadingMoreRight,
+  ]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    emblaApi.on("scroll", handleScroll);
+
+    return () => emblaApi.off("scroll", handleScroll);
+  }, [emblaApi, handleScroll]);
+
+  const slideHeight = "19rem";
+  const slideSpacing = "1rem";
+  const slideSize = "100%";
+  return (
+    <div
+      className="embla"
+      style={{
+        maxWidth: "48rem",
+        margin: "auto",
+      }}
+    >
+      {/*<EventNavBar*/}
+      {/*  navigateLeft={onPrevButtonClick}*/}
+      {/*  navigateRight={onNextButtonClick}*/}
+      {/*/>*/}
+
+      <div
+        className="embla__viewport"
+        style={{ overflow: "hidden" }}
+        ref={emblaRef}
+      >
+        <div
+          className="embla__container"
+          style={{
+            backfaceVisibility: "hidden",
+            display: "flex",
+            touchAction: "pan-y",
+            marginLeft: `calc(${slideSpacing} * -1)`,
+          }}
+        >
+          {slides.map((event, index) => (
+            <div
+              className="embla__slide"
+              style={{
+                flex: `0 0 ${slideSize}`,
+                minWidth: 0,
+                paddingLeft: slideSpacing,
+              }}
+              key={index + 1}
+            >
+              <div className="embla__slide__number">{event}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const __EmblaCarousel: React.FC<CarouselPropType> = (props) => {
   const { slides, setFocusedIndex, startIndex, loadNext, loadPrev } = props;
   const scrollListenerRef = useRef<() => void>(() => undefined);
   const listenForScrollRef = useRef(true);

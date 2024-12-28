@@ -28,8 +28,8 @@ export interface HistoryEventData {
   story: Story;
   index: number;
   currentEvent: HistoryEvent;
-  loadNext: () => HistoryEvent[];
-  loadPrev: () => HistoryEvent[];
+  loadNext: () => Promise<HistoryEvent[]>;
+  loadPrev: () => Promise<HistoryEvent[]>;
 }
 
 const eventMap = new Map<string, HistoryEvent>([]);
@@ -96,7 +96,7 @@ export const fakeHistoryEventLoader = ({
   const getAnotherEventList = () => {
     console.log("History Event Loader is generating more fake data");
     const { events } = buildStoryAndEvents();
-    return events;
+    return Promise.resolve(events);
   };
   return {
     story: story,
