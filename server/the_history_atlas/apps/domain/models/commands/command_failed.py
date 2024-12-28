@@ -3,7 +3,6 @@ from typing import Literal
 
 from the_history_atlas.apps.domain.models.base_model import ConfiguredBaseModel
 
-TYPE = "COMMAND_FAILED"
 
 
 class CommandFailedPayload(ConfiguredBaseModel):
@@ -12,5 +11,5 @@ class CommandFailedPayload(ConfiguredBaseModel):
 
 class CommandFailed(ConfiguredBaseModel):
     payload: "CommandFailedPayload"
-    type: Literal[TYPE] = TYPE
+    type: Literal[ "COMMAND_FAILED"] =  "COMMAND_FAILED"
     token: str

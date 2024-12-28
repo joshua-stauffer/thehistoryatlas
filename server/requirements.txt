@@ -6,8 +6,8 @@ pytest-asyncio
 pytest-mock
 black
 psycopg2-binary
-pydantic
-fastapi
+pydantic==2.10.4
+fastapi==0.115.6
 spacy
 ariadne
 boto3
