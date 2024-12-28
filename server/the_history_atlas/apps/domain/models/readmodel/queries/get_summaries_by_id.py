@@ -30,7 +30,7 @@ class Place(ConfiguredBaseModel):
 
 class Time(ConfiguredBaseModel):
     id: str
-    type: Literal["PERSON"]
+    type: Literal["TIME"]
     start_char: int
     stop_char: int
     name: str
