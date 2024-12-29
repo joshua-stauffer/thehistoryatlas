@@ -56,6 +56,7 @@ def test_get_manifest_time(query_handler):
     )
     assert isinstance(manifest, Manifest)
 
+
 @pytest.mark.xfail(reason="pydantic type errors")
 def test_get_guids_by_name(query_handler):
     name = NAMES[0].name
@@ -63,6 +64,7 @@ def test_get_guids_by_name(query_handler):
         query=GetEntitySummariesByName(name=name)
     )
     assert isinstance(entity_summaries_by_name, EntitySummariesByName)
+
 
 @pytest.mark.xfail(reason="UUID in repr error")
 def test_get_fuzzy_search_by_name(query_handler):
@@ -105,6 +107,7 @@ def test_get_entity_summaries(query_handler):
     )
 
     assert len(entity_summaries_by_id) == len(ids)
+
 
 @pytest.mark.xfail(reason="pydantic type errors")
 def test_get_place_by_coords_success(query_handler, DBSession):

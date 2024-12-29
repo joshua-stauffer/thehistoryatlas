@@ -399,6 +399,7 @@ def test_unknown_event_raises_error(readmodel_app):
 def test_summary_added(engine, DBSession):
     assert False
 
+
 @pytest.mark.xfail(reason="test not implemented")
 def test_summary_tagged(engine, DBSession):
     assert False
@@ -571,9 +572,11 @@ async def test_reject_event_with_duplicate_id(
     with pytest.raises(DuplicateEventError):
         readmodel_app.handle_event(citation_dict_2)
 
+
 @pytest.mark.xfail(reason="test not implemented")
 def test_meta_added(engine, DBSession):
     assert False
+
 
 @pytest.mark.xfail(reason="test not implemented")
 def test_meta_tagged(engine, DBSession):

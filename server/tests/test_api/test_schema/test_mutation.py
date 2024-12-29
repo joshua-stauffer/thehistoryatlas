@@ -8,6 +8,7 @@ from the_history_atlas.apps.accounts.encryption import encrypt
 
 pytestmark = pytest.mark.xfail("login error")
 
+
 def test_login(schema, context_value):
     query = """
     mutation {

@@ -14,9 +14,7 @@ def mount_api(app: FastAPI, app_manager: AppManager) -> FastAPI:
     get_context_value = partial(get_context, _apps=app_manager)
     graphql = GraphQL(schema, debug=True, context_value=get_context_value)
     app.mount("/graphql/", graphql)
-    origins = [
-        "http://localhost:3000"
-    ]
+    origins = ["http://localhost:3000"]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,

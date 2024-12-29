@@ -524,6 +524,7 @@ def test_get_citation_by_id_failure(readmodel_db):
 def test_get_citation():
     assert False, "Remove method or add test"
 
+
 @pytest.mark.xfail(reason="test not implemented")
 def test_get_summaries():
     assert False, "Remove method or add test"
@@ -551,13 +552,16 @@ def test_get_coords_by_names(readmodel_db):
         }
     )
 
+
 @pytest.mark.xfail(reason="test not implemented")
 def test_create_summary():
     assert False, "Remove method or add test"
 
+
 @pytest.mark.xfail(reason="test not implemented")
 def test_create_name():
     assert False, "Remove method or add test"
+
 
 @pytest.mark.xfail(reason="test not implemented")
 def test_create_source():

@@ -24,7 +24,10 @@ from the_history_atlas.apps.domain.models.accounts import (
     ConfirmAccount,
 )
 from the_history_atlas.apps.domain.models.accounts.get_user import GetUserResponse
-from the_history_atlas.apps.domain.models.commands.publish_citation import Meta, MetaKwargs
+from the_history_atlas.apps.domain.models.commands.publish_citation import (
+    Meta,
+    MetaKwargs,
+)
 from the_history_atlas.apps.domain.models.events.meta_tagged import MetaTagged
 
 Event = Union[
