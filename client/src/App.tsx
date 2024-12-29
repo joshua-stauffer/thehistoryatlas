@@ -14,10 +14,7 @@ import {
   LandingPage,
   landingPageLoader,
 } from "./pages/historyEvent/landingPage";
-import {
-  historyEventLoader,
-  fakeHistoryEventLoader,
-} from "./pages/historyEvent/historyEventLoader";
+import { fakeHistoryEventLoader } from "./pages/historyEvent/historyEventLoader";
 
 function App() {
   const tokenManager = useTokenManager();
