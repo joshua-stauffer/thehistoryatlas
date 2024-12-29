@@ -36,7 +36,9 @@ def test_check_citation_for_uniqueness(writemodel_db, hash, guid):
     assert res2 == guid
 
 
-@pytest.mark.xfail("unexpected extra row in db")
+@pytest.mark.xfail(
+    raises=AssertionError, reason="unexpected extra row in db", strict=True
+)
 def test_add_citation_hash(writemodel_db, hash, guid):
     writemodel_db.add_citation_hash(hash, guid)
     # retrieve it manually
