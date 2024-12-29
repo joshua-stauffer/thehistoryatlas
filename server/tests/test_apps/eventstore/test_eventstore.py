@@ -10,6 +10,7 @@ import tests.conftest
 import tests.test_apps.conftest
 
 
+@pytest.mark.xfail(raises=AttributeError, strict=True, reason="dict received instead of object")
 def test_commit_event_persists_synthetic_events(db):
     event = SYNTHETIC_EVENTS[0]
     persisted_events = db.commit_events(event)

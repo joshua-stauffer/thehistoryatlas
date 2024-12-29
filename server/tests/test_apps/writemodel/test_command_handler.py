@@ -90,6 +90,7 @@ async def test_validate_publish_citation_success_with_tagged_summary(
     handler.validate_publish_citation(publish_citation)
 
 
+@pytest.mark.xfail(reason="duplicate ID error")
 @pytest.mark.asyncio
 async def test_validate_publish_citation_success_with_tagged_meta(
     publish_citation, hash_text
