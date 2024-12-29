@@ -1,5 +1,6 @@
 from dataclasses import asdict
 
+import pytest
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.domain.types import Event
