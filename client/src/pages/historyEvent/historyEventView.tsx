@@ -148,12 +148,6 @@ export const HistoryEventView = () => {
           </Hidden>
         </Grid>
       </Grid>
-      <SpeedDial
-        ariaLabel="Add new Event"
-        sx={{ position: "absolute", top: 16, right: 16 }}
-        icon={<SpeedDialIcon />}
-        onClick={() => navigate("/add-event")}
-      ></SpeedDial>
     </Box>
   );
 };

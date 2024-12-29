@@ -36,10 +36,6 @@ function App() {
         />
       ),
     },
-    {
-      path: "/add-event",
-      element: <AddEventPage tokenManager={tokenManager} />,
-    },
   ]);
   return (
     <ThemeProvider theme={theme}>
