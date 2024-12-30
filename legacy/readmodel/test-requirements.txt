@@ -1,4 +1,0 @@
---requirement requirements.txt
-pytest
-pytest-asyncio
-pytest-mock
