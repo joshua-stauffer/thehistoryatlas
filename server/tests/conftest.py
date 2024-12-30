@@ -26,7 +26,6 @@ from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
 from the_history_atlas.apps.eventstore.event_schema import Base as EventsAppBase
-from the_history_atlas.apps.nlp.state.schema import Base as NLPAppBase
 from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
 from the_history_atlas.apps.writemodel.state_manager.database import (
     Database as WriteModelDB,
@@ -56,7 +55,6 @@ def engine(config):
     WriteModelBase.metadata.create_all(engine)
     EventsAppBase.metadata.create_all(engine)
     ReadModelBase.metadata.create_all(engine)
-    NLPAppBase.metadata.create_all(engine)
 
     truncate_stmt = """
         truncate users cascade;
