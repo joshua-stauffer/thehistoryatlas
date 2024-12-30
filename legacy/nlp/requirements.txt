@@ -1,6 +1,0 @@
-sqlalchemy
-psycopg2-binary
-spacy
-pytest
-pytest-asyncio
-pytest-mock
