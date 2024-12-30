@@ -11,3 +11,6 @@ def get_app() -> FastAPI:
     app_manager = AppManager(config_app=config_app)
     mount_api(app=app, app_manager=app_manager)
     return app
+
+
+app = get_app()
