@@ -12,3 +12,4 @@ fastapi==0.115.6
 spacy==3.8.3
 ariadne
 boto3
+faker==33.1.0
