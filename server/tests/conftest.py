@@ -72,7 +72,6 @@ def engine(config):
         truncate taginstances cascade;
         truncate tags cascade;
         truncate time cascade;
-        truncate annotated_citations cascade;
     """
 
     with Session(engine, future=True) as session:
