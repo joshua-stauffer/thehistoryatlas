@@ -3,7 +3,7 @@ name: "Test Services"
 on:
   pull_request:
     branches:
-      - dev
+      - main
 
 jobs:
 

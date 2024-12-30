@@ -2,9 +2,7 @@ name: TheHistoryAtlas Docker Image CI
 
 on:
   push:
-    branches: [ dev ]
-#  pull_request: # test action configuration
-#    branches: [ dev ]
+    branches: [ main ]
 
 jobs:
 
