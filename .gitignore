@@ -9,7 +9,7 @@ venv
 *.egg-info
 bits-and-pieces/
 .pytest_cache
-nlp/models
+server/the_history_atlas/apps/nlp/models
 .DS_STORE
 .DS_Store
 *.DS_Store
@@ -40,8 +40,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # builder
-/builder/data/fake
-nlp/nlp_service/models/
+/legacy/builder/data/fake
+server/the_history_atlas/apps/nlp_service/models/
 
 # IDE configs
 .vscode/
@@ -52,3 +52,4 @@ secrets.yaml
 # vim
 *.swp
 *.swo
+.legacy_env

@@ -1,14 +1,12 @@
 from datetime import datetime
 from random import random
-from sqlalchemy import create_engine
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import pytest
-from geo.state.schema import Place
-from geo.state.schema import Name
-from geo.state.schema import UpdateTracker
-from geo.state.schema import Base
+from server.the_history_atlas import Place
+from server.the_history_atlas import Name
+from server.the_history_atlas import UpdateTracker
 
 
 def test_name(engine):

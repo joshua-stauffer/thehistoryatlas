@@ -1,8 +1,7 @@
 import pytest
-from geo.state.query_handler import QueryHandler
-from geo.errors import MessageMissingTypeError
-from geo.errors import MessageMissingPayloadError
-from geo.errors import UnknownQueryError
+from server.the_history_atlas import QueryHandler
+from server.the_history_atlas import MessageMissingTypeError
+from server.the_history_atlas import MessageMissingPayloadError
 
 
 @pytest.fixture

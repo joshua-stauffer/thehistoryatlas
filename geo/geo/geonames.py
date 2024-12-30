@@ -1,12 +1,3 @@
-"""Module to obtain data from geonames.org and return it in a form useable by 
-the database.
-
-This should be the only application code tightly coupled with the geonames
-data source, and if other data sources are added down the road, they should
-more or less present a consistent api.
-
-May 21st, 2021"""
-
 from collections import namedtuple
 import logging
 from zipfile import ZipFile

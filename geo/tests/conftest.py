@@ -3,7 +3,7 @@ import os
 import pytest
 from sqlalchemy import create_engine
 
-from geo.state.schema import Base
+from server.the_history_atlas import Base
 
 
 @pytest.fixture

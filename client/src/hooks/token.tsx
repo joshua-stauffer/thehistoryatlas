@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export interface TokenManager {
   token: string | null;
@@ -9,7 +9,7 @@ export interface TokenManager {
 
 export const useTokenManager = (): TokenManager => {
   const [token, setToken] = useState<string | null>(null);
-
+  useEffect(() => console.log({ token }));
   const updateToken = (updatedToken: string) => setToken(updatedToken);
 
   const isLoggedIn = (): boolean => !!token;
