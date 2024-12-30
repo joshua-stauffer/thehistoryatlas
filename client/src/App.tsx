@@ -1,8 +1,7 @@
 import React from "react";
 import { ThemeProvider } from "@mui/material/styles";
 
-import { GenericError, ResourceNotFoundError } from "./pages/errorPages";
-import { AddEventPage } from "./pages/addEvent";
+import { GenericError } from "./pages/errorPages";
 
 import { useTokenManager } from "./hooks/token";
 
@@ -14,10 +13,9 @@ import {
   LandingPage,
   landingPageLoader,
 } from "./pages/historyEvent/landingPage";
-import { fakeHistoryEventLoader } from "./pages/historyEvent/historyEventLoader";
+import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
 
 function App() {
-  const tokenManager = useTokenManager();
   const router = createBrowserRouter([
     {
       path: "/",
@@ -27,7 +25,7 @@ function App() {
     {
       path: "/stories/:storyId/events/:eventId",
       element: <HistoryEventView />,
-      loader: fakeHistoryEventLoader,
+      loader: historyEventLoader,
       errorElement: (
         <GenericError
           header={"Uh oh..."}

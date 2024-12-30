@@ -1,284 +1,54 @@
-import {
-  CalendarDate,
-  Focus,
-  HistoryEvent,
-  Person,
-  Place,
-  Point,
-  Source,
-  Story,
-  Tag,
-  Time,
-} from "../../graphql/events";
-import { events, stories } from "../../data";
-import { LoaderFunctionArgs } from "react-router-dom";
-import { faker } from "@faker-js/faker";
-import { PersonTag, PlaceTag, TimeTag } from "../../types";
-import {
-  renderDateTime,
-  renderDay,
-} from "../../components/renderDateTime/time";
-interface HistoryEventParams {
-  storyId: string | undefined;
-  eventId: string | undefined;
-}
+import { HistoryEvent } from "../../graphql/events";
 
 export interface HistoryEventData {
   events: HistoryEvent[];
-  story: Story;
   index: number;
-  currentEvent: HistoryEvent;
   loadNext: () => Promise<HistoryEvent[]>;
   loadPrev: () => Promise<HistoryEvent[]>;
 }
 
-faker.seed(872);
+export const historyEventLoader = async ({
+  params,
+}: {
+  params: { storyId?: string; eventId?: string };
+}) => {
+  const fetchEvents = async (
+    storyId?: string,
+    eventId?: string,
+    direction?: "next" | "prev"
+  ) => {
+    const queryParams = new URLSearchParams();
+    if (storyId) queryParams.append("storyId", storyId);
+    if (eventId) queryParams.append("eventId", eventId);
+    if (direction) queryParams.append("direction", direction);
 
-export const fakeHistoryEventLoader = ({
-  params: { eventId, storyId },
-}: LoaderFunctionArgs): HistoryEventData => {
-  const { story, events, index } = buildStoryAndEvents();
-  const getAnotherEventList = () => {
-    console.log("History Event Loader is generating more fake data");
-    const { events } = buildStoryAndEvents();
-    return Promise.resolve(events);
+    const response = await fetch(
+      `http://localhost:8000/history?${queryParams.toString()}`
+    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch history events");
+    }
+    return await response.json();
   };
+
+  const loadNext = async (eventId: string) => {
+    const response = await fetchEvents(params.storyId, eventId, "next");
+    return response.events;
+  };
+
+  const loadPrev = async (eventId: string) => {
+    const response = await fetchEvents(params.storyId, eventId, "prev");
+    return response.events;
+  };
+
+  // Fetch initial data
+  const initialData = await fetchEvents(params.storyId, params.eventId);
+
+  // Return data along with loadNext and loadPrev
   return {
-    story: story,
-    events: events,
-    index: index,
-    currentEvent: events[index],
-    loadNext: getAnotherEventList,
-    loadPrev: getAnotherEventList,
+    events: initialData.events,
+    index: initialData.index,
+    loadNext,
+    loadPrev,
   };
 };
-
-type StoryAndEvents = {
-  story: Story;
-  events: HistoryEvent[];
-  index: number;
-};
-
-const buildStoryAndEvents = (): StoryAndEvents => {
-  const storyTitle = buildStoryTitle();
-  const { events, index } = buildEvents(storyTitle);
-
-  const story = buildStory(storyTitle, events);
-  return {
-    events,
-    story,
-    index,
-  };
-};
-
-type BuiltEvents = {
-  events: HistoryEvent[];
-  index: number;
-};
-
-const buildEvents = (storyTitle: string): BuiltEvents => {
-  const eventCount = 10;
-  const mapOptions = {
-    name: faker.location.city(),
-    latitude: faker.location.latitude(),
-    longitude: faker.location.longitude(),
-  };
-  const dateOptions = {
-    date: faker.date.past(),
-    exact: false,
-    storyLengthInYears: 60,
-  };
-
-  let eventList: HistoryEvent[] = [];
-  for (let i = 0; i < eventCount; i++) {
-    eventList.push(buildEvent(dateOptions, mapOptions, storyTitle));
-  }
-  const exactDateOptions = {
-    ...dateOptions,
-    exact: true,
-  };
-
-  const index = Math.floor(eventCount / 2);
-  const focusedEvent = buildEvent(exactDateOptions, mapOptions, storyTitle);
-  eventList = [
-    ...eventList.slice(0, index),
-    focusedEvent,
-    ...eventList.slice(index),
-  ];
-  return { events: eventList, index: index };
-};
-
-const buildStory = (storyTitle: string, events: HistoryEvent[]): Story => {
-  return {
-    id: faker.string.uuid(),
-    name: storyTitle,
-    events: events,
-  };
-};
-
-const buildStoryTitle = () => {
-  const timeName = renderDateTime({
-    calendar: "fake",
-    time: String(faker.date.past()),
-    precision: 11,
-  });
-
-  const storyTemplates = [
-    () => `The life of ${faker.person.fullName()}.`,
-    () => `The history of ${timeName}.`,
-    () => `The history of ${faker.location.city()}.`,
-  ];
-  const randomStoryTitle =
-    storyTemplates[Math.floor(Math.random() * storyTemplates.length)];
-  return randomStoryTitle();
-};
-
-type DateOptions = {
-  date: Date;
-  exact: boolean;
-  storyLengthInYears: number;
-};
-
-const buildDate = (options: DateOptions): Date => {
-  return options.exact
-    ? options.date
-    : faker.date.anytime({
-        refDate: options.date,
-      });
-};
-
-type MapOptions = {
-  longitude: number;
-  latitude: number;
-  name: string;
-};
-
-const buildMap = (options: MapOptions): Point[] => {
-  const maximumExtraPlaces = 10;
-  const minimumExtraPlaces = 3;
-  let mapCount = Math.floor(Math.random() * maximumExtraPlaces);
-  if (mapCount < minimumExtraPlaces) {
-    mapCount = minimumExtraPlaces;
-  }
-  const points: Point[] = [];
-  for (let i = 0; i < mapCount; i++) {
-    points.push(createPoint(options));
-  }
-
-  return points;
-};
-
-const createPoint = (options: MapOptions): Point => {
-  const [latitude, longitude] = faker.location.nearbyGPSCoordinate({
-    origin: [options.latitude, options.longitude],
-    radius: 250,
-  });
-  return {
-    latitude: latitude,
-    longitude: longitude,
-    id: faker.string.uuid(),
-    name: faker.location.city(),
-  };
-};
-
-const buildSource = (): Source => {
-  return {
-    id: faker.string.uuid(),
-    text: faker.lorem.paragraph(),
-    title: faker.lorem.sentence(),
-    author: faker.person.fullName(),
-    publisher: faker.company.name(),
-    pubDate: String(faker.date.recent()),
-  };
-};
-
-type BuiltTags = {
-  tags: Tag[];
-  taggedText: string;
-};
-
-const buildTags = (
-  text: string,
-  dateOptions: DateOptions,
-  mapOptions: MapOptions
-): BuiltTags => {
-  const personName = faker.person.fullName();
-  const point = createPoint(mapOptions);
-  const date = buildDate(dateOptions);
-  const timeName = renderDay(date);
-
-  const insertWord = (
-    splitText: string[],
-    word: string,
-    index: number
-  ): string[] => {
-    return [...splitText.slice(0, index), word, ...splitText.slice(index)];
-  };
-
-  let splitText = text.split(" ");
-  splitText = insertWord(splitText, personName, 0);
-  splitText = insertWord(splitText, point.name, 2);
-  splitText = insertWord(splitText, timeName, 4);
-  const taggedText = splitText.join(" ");
-  const person: Person = {
-    type: "PERSON",
-    id: faker.string.uuid(),
-    startChar: taggedText.indexOf(personName),
-    stopChar: taggedText.indexOf(personName) + personName.length,
-    name: personName,
-    defaultStoryId: faker.string.uuid(),
-  };
-  const personStory = {};
-  const place: Place = {
-    id: point.id,
-    type: "PLACE",
-    startChar: taggedText.indexOf(point.name),
-    stopChar: taggedText.indexOf(point.name) + point.name.length,
-    name: point.name,
-    location: point,
-    defaultStoryId: faker.string.uuid(),
-  };
-  const time: Time = {
-    id: faker.string.uuid(),
-    type: "TIME",
-    startChar: taggedText.indexOf(timeName),
-    stopChar: taggedText.indexOf(timeName) + timeName.length,
-    name: timeName,
-    time: String(date),
-    calendar: "gregorian",
-    precision: 11, // day precision
-    defaultStoryId: faker.string.uuid(),
-  };
-  return {
-    tags: [person, place, time],
-    taggedText: taggedText,
-  };
-};
-
-function buildEvent(
-  dateOptions: DateOptions,
-  mapOptions: MapOptions,
-  storyTitle: string
-): HistoryEvent {
-  const text = faker.lorem.sentence();
-  const { tags, taggedText } = buildTags(text, dateOptions, mapOptions);
-
-  return {
-    id: faker.string.uuid(),
-    text: taggedText,
-    lang: "lorem",
-    date: {
-      time: String(buildDate(dateOptions)),
-      calendar: "gregorian",
-      precision: 11,
-    },
-    source: buildSource(),
-    tags: tags,
-    map: {
-      locations: buildMap(mapOptions),
-    },
-    focus: null,
-    stories: [],
-    storyTitle: storyTitle,
-  };
-}

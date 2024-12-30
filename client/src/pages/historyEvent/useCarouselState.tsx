@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { HistoryEvent } from "../../graphql/events";
 
 export const useCarouselState = (
@@ -10,15 +10,21 @@ export const useCarouselState = (
 
   const isLoadingRef = useRef(false);
 
+  // React to changes in initialEvents and initialIndex
+  useEffect(() => {
+    setHistoryEvents(initialEvents);
+    setCurrentEventIndex(initialIndex);
+  }, [initialEvents, initialIndex]);
+
   const loadMoreEvents = useCallback(
     async (
       direction: "left" | "right",
-      loadFn: () => Promise<HistoryEvent[]>
+      loadFn: (eventId: string) => Promise<HistoryEvent[]>
     ) => {
       if (isLoadingRef.current) return; // Prevent re-entry if already loading
       isLoadingRef.current = true;
 
-      const newEvents = await loadFn();
+      const newEvents = await loadFn(historyEvents[currentEventIndex].id);
       if (direction === "left") {
         setCurrentEventIndex((prevIndex) => prevIndex + newEvents.length);
       }
@@ -32,7 +38,7 @@ export const useCarouselState = (
 
       isLoadingRef.current = false;
     },
-    [isLoadingRef]
+    [currentEventIndex, historyEvents]
   );
 
   return {

@@ -2,33 +2,18 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import React, { useCallback, useEffect, useState } from "react";
-import { TimeTravelModal } from "./timeTravelModal";
-import { Link, useLoaderData, useNavigate } from "react-router-dom";
+import React from "react";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
-import {
-  Button,
-  ButtonGroup,
-  InputAdornment,
-  SpeedDial,
-  SpeedDialIcon,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { InputAdornment, TextField, Typography } from "@mui/material";
 import { EventView } from "./eventView";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
 import SearchIcon from "@mui/icons-material/Search";
 import Divider from "@mui/material/Divider";
-import { EventPointer, HistoryEvent } from "../../graphql/events";
+import { EventPointer } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
 import { useCarouselState } from "./useCarouselState";
-
-const buildSlides = (events: HistoryEvent[]): JSX.Element[] => {
-  return events.map((historyEvent, index) => (
-    <EventView event={historyEvent} key={index} />
-  ));
-};
 
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
@@ -50,8 +35,9 @@ export const HistoryEventView = () => {
     return <div>Loading...</div>;
   }
 
-  const handleLoadLeft = () => loadMoreEvents("left", loadPrev);
-  const handleLoadRight = () => loadMoreEvents("right", loadNext);
+  const handleLoadLeft = async () => await loadMoreEvents("left", loadPrev);
+
+  const handleLoadRight = async () => await loadMoreEvents("right", loadNext);
 
   const coords = currentEvent.map.locations.map((location) => ({
     latitude: location.latitude,
