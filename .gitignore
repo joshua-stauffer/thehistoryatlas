@@ -1,5 +1,4 @@
-node_modules/
-mongodata/
+
 __pycache__
 env
 test_env
@@ -7,14 +6,12 @@ venv
 .env
 *.js.map
 *.egg-info
-bits-and-pieces/
 .pytest_cache
 server/the_history_atlas/apps/nlp/models
 .DS_STORE
 .DS_Store
 *.DS_Store
 test_build_constraints.txt
-geo/data/
 
 # react gitignore
 # dependencies
@@ -39,8 +36,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# builder
-/legacy/builder/data/fake
 server/the_history_atlas/apps/nlp_service/models/
 
 # IDE configs
