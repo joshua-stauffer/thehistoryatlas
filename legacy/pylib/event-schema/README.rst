@@ -1,1 +1,0 @@
-This library allows for sharing a SQLAlchemy schema file between the EventStore and the History service.
