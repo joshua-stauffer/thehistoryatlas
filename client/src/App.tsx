@@ -3,7 +3,6 @@ import { ThemeProvider } from "@mui/material/styles";
 
 import { GenericError } from "./pages/errorPages";
 
-import { useTokenManager } from "./hooks/token";
 
 import { theme } from "./baseStyle";
 import { HistoryEventView } from "./pages/historyEvent/historyEventView";
