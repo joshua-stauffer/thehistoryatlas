@@ -23,7 +23,7 @@ export const historyEventLoader = async ({
     if (direction) queryParams.append("direction", direction);
 
     const response = await fetch(
-      `http://localhost:8000/history?${queryParams.toString()}`
+      `https://the-history-atlas-server-4ubzi.ondigitalocean.app/api/history?${queryParams.toString()}`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch history events");
