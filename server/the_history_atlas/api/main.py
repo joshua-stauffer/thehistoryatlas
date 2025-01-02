@@ -11,7 +11,7 @@ from the_history_atlas.apps.app_manager import AppManager
 
 
 def mount_api(app: FastAPI, app_manager: AppManager) -> FastAPI:
-    app = register_rest_endpoints(app)
+    app = register_rest_endpoints(app, app_manager)
     schema = build_schema()
     get_context_value = partial(get_context, _apps=app_manager)
     graphql = GraphQL(schema, debug=True, context_value=get_context_value)

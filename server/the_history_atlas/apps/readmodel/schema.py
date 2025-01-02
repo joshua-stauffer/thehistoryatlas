@@ -1,3 +1,4 @@
+import uuid
 from enum import Enum
 
 from sqlalchemy import Column, String, TIMESTAMP
@@ -5,7 +6,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
-from the_history_atlas.apps.readmodel.errors import EmptyNameError
+
 
 Base = declarative_base()
 
@@ -16,6 +17,7 @@ class Summary(Base):
     __tablename__ = "summaries"
     id = Column(UUID(as_uuid=True), primary_key=True)
     text = Column(VARCHAR)
+    # todo: move text to separate table to support multiple languages
 
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
@@ -26,6 +28,28 @@ class Summary(Base):
 
     # each summary may have multiple citations
     citations = relationship("Citation", back_populates="summary")
+
+
+class Story(Base):
+    __tablename__ = "stories"
+    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
+
+
+class StoryName(Base):
+    __tablename__ = "story_names"
+    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
+    story_id = Column(UUID(as_uuid=True), ForeignKey("stories.id"), nullable=False)
+    name = Column(VARCHAR, nullable=False)
+    lang = Column(VARCHAR, nullable=False)
+
+
+class StorySummary(Base):
+    __tablename__ = "story_summaries"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    story_id = Column(UUID(as_uuid=True), ForeignKey("stories.id"), nullable=False)
+    summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False)
+    order = Column(INTEGER, nullable=False)  # todo: add unique constraint by story_id
 
 
 class Citation(Base):
@@ -81,12 +105,11 @@ class TagInstance(Base):
         return f"{self.tag.type}"
 
 
-tag_name_assoc = Table(
-    "tag_name_assoc",
-    Base.metadata,
-    Column("tag_id", UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False),
-    Column("name_id", UUID(as_uuid=True), ForeignKey("names.id"), nullable=False),
-)
+class TagNameAssoc(Base):
+    __tablename__ = "tag_name_assoc"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
+    name_id = Column(UUID(as_uuid=True), ForeignKey("names.id"), nullable=False)
 
 
 class Tag(Base):
@@ -96,7 +119,7 @@ class Tag(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
-    names = relationship("Name", secondary=tag_name_assoc, back_populates="tags")
+    names = relationship("Name", secondary=TagNameAssoc.__table__, back_populates="tags")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
 
@@ -155,8 +178,8 @@ class Name(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(VARCHAR, unique=True, nullable=False)
-    # lang_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
-    tags = relationship("Tag", secondary=tag_name_assoc, back_populates="names")
+    lang = Column(VARCHAR, nullable=True)
+    tags = relationship("Tag", secondary=TagNameAssoc.__table__, back_populates="names")
 
     def __repr__(self):
         return f"Name(id: {self.id}, name: {self.name})"

@@ -1,66 +1,17 @@
 
 from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List, Union
+from typing import Literal
 from faker import Faker
 import random
 from uuid import uuid4
 
+from the_history_atlas.apps.app_manager import AppManager
+from the_history_atlas.apps.domain.models.core import Location, Source, CalendarDate, Tag, Map, HistoryEvent, Story
 
 fake = Faker()
 Faker.seed(872)
 
 # Models
-class Point(BaseModel):
-    id: str
-    latitude: float
-    longitude: float
-    name: str
-
-class Location(Point):
-    pass
-
-class Source(BaseModel):
-    id: str
-    text: str
-    title: str
-    author: str
-    publisher: str
-    pubDate: str
-
-class CalendarDate(BaseModel):
-    time: str
-    calendar: str
-    precision: int
-
-class Tag(BaseModel):
-    id: str
-    type: str
-    startChar: int
-    stopChar: int
-    name: str
-    defaultStoryId: str
-
-class Map(BaseModel):
-    locations: List[Location]
-
-class HistoryEvent(BaseModel):
-    id: str
-    text: str
-    lang: str
-    date: CalendarDate
-    source: Source
-    tags: List[Tag]
-    map: Map
-    focus: Union[None, str] = None
-    storyTitle: str
-    stories: List[str] = []
-
-class Story(BaseModel):
-    id: str
-    name: str
-    events: List[HistoryEvent]
-    index: int
 
 # Helper Functions
 def build_story_title():
@@ -162,10 +113,14 @@ def build_story():
     )
 
 
-def register_rest_endpoints(app: FastAPI) -> FastAPI:
+def register_rest_endpoints(app: FastAPI, app_manager: AppManager) -> FastAPI:
     # API Endpoints
     @app.get("/history", response_model=Story)
-    def get_history():
-        return build_story()
+    def get_history(
+        storyId: int | None = None,
+        eventId: int | None = None,
+        direction: Literal["next", "prev"] | None = None
+    ):
+        return app_manager
 
     return app
