@@ -1,11 +1,8 @@
-from enum import Enum
-
 from sqlalchemy import Column, String, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
-from the_history_atlas.apps.readmodel.errors import EmptyNameError
 
 Base = declarative_base()
 
@@ -143,28 +140,12 @@ class Place(Tag):
         return f"Place(latitude: {self.latitude}, longitude: {self.longitude})"
 
 
-class Language(Base):
-    __tablename__ = "languages"
-
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    code = Column(VARCHAR, nullable=False)
-
-
 class Name(Base):
     __tablename__ = "names"
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(VARCHAR, unique=True, nullable=False)
-    # lang_id = Column(UUID(as_uuid=True), ForeignKey("languages.id"), nullable=False)
     tags = relationship("Tag", secondary=tag_name_assoc, back_populates="names")
 
     def __repr__(self):
         return f"Name(id: {self.id}, name: {self.name})"
-
-
-class History(Base):
-
-    __tablename__ = "history"
-
-    id = Column(INTEGER, primary_key=True)
-    latest_event_id = Column(INTEGER, default=0)

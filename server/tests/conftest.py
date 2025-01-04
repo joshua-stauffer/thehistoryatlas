@@ -35,11 +35,8 @@ def engine(config):
 
     truncate_stmt = """
         truncate users cascade;
-        truncate citation_hashes cascade;
         truncate citations cascade;
         truncate events cascade;
-        truncate guids cascade;
-        truncate history cascade;
         truncate names cascade;
         truncate person cascade;
         truncate place cascade;

@@ -1,12 +1,7 @@
-from functools import partial
-
-from ariadne.asgi import GraphQL
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from the_history_atlas.api.context import get_context
 from the_history_atlas.api.rest import register_rest_endpoints
-from the_history_atlas.api.schema import build_schema
 from the_history_atlas.apps.app_manager import AppManager
 
 
