@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Union
@@ -17,8 +16,10 @@ class Point(BaseModel):
     longitude: float
     name: str
 
+
 class Location(Point):
     pass
+
 
 class Source(BaseModel):
     id: str
@@ -28,10 +29,12 @@ class Source(BaseModel):
     publisher: str
     pubDate: str
 
+
 class CalendarDate(BaseModel):
     time: str
     calendar: str
     precision: int
+
 
 class Tag(BaseModel):
     id: str
@@ -41,8 +44,10 @@ class Tag(BaseModel):
     name: str
     defaultStoryId: str
 
+
 class Map(BaseModel):
     locations: List[Location]
+
 
 class HistoryEvent(BaseModel):
     id: str
@@ -56,11 +61,13 @@ class HistoryEvent(BaseModel):
     storyTitle: str
     stories: List[str] = []
 
+
 class Story(BaseModel):
     id: str
     name: str
     events: List[HistoryEvent]
     index: int
+
 
 # Helper Functions
 def build_story_title():
@@ -72,10 +79,12 @@ def build_story_title():
     ]
     return random.choice(story_templates)()
 
+
 def build_date(exact: bool, base_date=None):
     if exact:
         return base_date or fake.date_this_century()
     return fake.date_between(start_date="-60y", end_date="today")
+
 
 def build_source():
     return Source(
@@ -86,6 +95,7 @@ def build_source():
         publisher=fake.company(),
         pubDate=str(fake.date_this_decade()),
     )
+
 
 def build_tags(text, map_options):
     person_name = fake.name()
@@ -121,6 +131,7 @@ def build_tags(text, map_options):
         ),
     ], tagged_text
 
+
 def build_point(map_options):
     latitude, longitude = fake.local_latlng(country_code="US", coords_only=True)
     return Location(
@@ -151,15 +162,11 @@ def build_event(map_options, story_title):
         stories=[],
     )
 
+
 def build_story():
     story_title = build_story_title()
     events = [build_event({}, story_title) for _ in range(10)]
-    return Story(
-        id=str(uuid4()),
-        name=story_title,
-        events=events,
-        index=5
-    )
+    return Story(id=str(uuid4()), name=story_title, events=events, index=5)
 
 
 def register_rest_endpoints(app: FastAPI) -> FastAPI:

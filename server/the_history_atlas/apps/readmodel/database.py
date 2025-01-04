@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import Tuple, Union, Optional, List, Dict
+from typing import Tuple, Union, Optional, List
 from uuid import uuid4, UUID
 
 from sqlalchemy import select, func, text
@@ -30,7 +30,6 @@ from the_history_atlas.apps.domain.models.readmodel.tables.time import (
 from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
-    History,
     Name,
     Person,
     Place,
