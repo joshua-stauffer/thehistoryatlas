@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from the_history_atlas.apps.accounts.database import Database as AccountsDB
 from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, fernet
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
-
+from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
 from the_history_atlas.apps.config import Config
 
 
@@ -32,6 +32,7 @@ def config():
 def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
     AccountsBase.metadata.create_all(engine)
+    ReadModelBase.metadata.create_all(engine)
 
     truncate_stmt = """
         truncate users cascade;
