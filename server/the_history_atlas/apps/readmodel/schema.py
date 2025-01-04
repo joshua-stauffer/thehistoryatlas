@@ -166,13 +166,6 @@ class Place(Tag):
         return f"Place(latitude: {self.latitude}, longitude: {self.longitude})"
 
 
-class Language(Base):
-    __tablename__ = "languages"
-
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    code = Column(VARCHAR, nullable=False)
-
-
 class Name(Base):
     __tablename__ = "names"
 
@@ -183,11 +176,3 @@ class Name(Base):
 
     def __repr__(self):
         return f"Name(id: {self.id}, name: {self.name})"
-
-
-class History(Base):
-
-    __tablename__ = "history"
-
-    id = Column(INTEGER, primary_key=True)
-    latest_event_id = Column(INTEGER, default=0)

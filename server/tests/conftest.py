@@ -25,15 +25,7 @@ from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, 
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.eventstore.event_schema import Base as EventsAppBase
 from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
-from the_history_atlas.apps.writemodel.state_manager.database import (
-    Database as WriteModelDB,
-)
-from the_history_atlas.apps.writemodel.state_manager.schema import (
-    Base as WriteModelBase,
-    GUID,
-)
 
 
 @pytest.fixture
@@ -52,17 +44,11 @@ def config():
 def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
     AccountsBase.metadata.create_all(engine)
-    WriteModelBase.metadata.create_all(engine)
-    EventsAppBase.metadata.create_all(engine)
     ReadModelBase.metadata.create_all(engine)
 
     truncate_stmt = """
         truncate users cascade;
-        truncate citation_hashes cascade;
         truncate citations cascade;
-        truncate events cascade;
-        truncate guids cascade;
-        truncate history cascade;
         truncate names cascade;
         truncate person cascade;
         truncate place cascade;
@@ -283,29 +269,3 @@ def redact_values(data: Dict, keys: set[str]) -> Dict:
 
     recursively_redact(data)
     return data
-
-
-@pytest.fixture
-def writemodel_db(
-    engine,
-    existing_summary_id,
-    existing_meta_id,
-    existing_time_id,
-    existing_place_id,
-    existing_person_id,
-):
-    db = WriteModelDB(database_client=engine, stm_timeout=0)
-
-    with Session(engine, future=True) as session:
-        session.add_all(
-            [
-                GUID(value=existing_summary_id, type="SUMMARY"),
-                GUID(value=existing_meta_id, type="META"),
-                GUID(value=existing_person_id, type="PERSON"),
-                GUID(value=existing_place_id, type="PLACE"),
-                GUID(value=existing_time_id, type="TIME"),
-            ]
-        )
-        session.commit()
-
-    return db

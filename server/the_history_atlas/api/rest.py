@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from typing import Literal
 from faker import Faker
@@ -71,6 +70,7 @@ def build_tags(text, map_options):
             defaultStoryId=str(uuid4()),
         ),
     ], tagged_text
+
 
 def build_point(map_options):
     latitude, longitude = fake.local_latlng(country_code="US", coords_only=True)
