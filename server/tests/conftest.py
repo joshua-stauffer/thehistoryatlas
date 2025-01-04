@@ -15,6 +15,7 @@ from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
 
+
 @pytest.fixture
 def config():
     config = Config()

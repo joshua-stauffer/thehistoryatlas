@@ -17,5 +17,3 @@ def mock_apps(accounts_app):
 def accounts_app():
     accounts_app = Mock(spec=Accounts)
     return accounts_app
-
-
