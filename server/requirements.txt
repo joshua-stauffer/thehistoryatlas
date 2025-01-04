@@ -9,6 +9,5 @@ psycopg2-binary
 pydantic==2.10.4
 pydantic-settings==2.7.0
 fastapi[standard]==0.115.6
-ariadne
 boto3
 faker==33.1.0
