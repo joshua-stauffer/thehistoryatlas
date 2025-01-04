@@ -5,7 +5,15 @@ import random
 from uuid import uuid4
 
 from the_history_atlas.apps.app_manager import AppManager
-from the_history_atlas.apps.domain.models.core import Location, Source, CalendarDate, Tag, Map, HistoryEvent, Story
+from the_history_atlas.apps.domain.models.core import (
+    Location,
+    Source,
+    CalendarDate,
+    Tag,
+    Map,
+    HistoryEvent,
+    Story,
+)
 
 fake = Faker()
 Faker.seed(872)
@@ -22,10 +30,12 @@ def build_story_title():
     ]
     return random.choice(story_templates)()
 
+
 def build_date(exact: bool, base_date=None):
     if exact:
         return base_date or fake.date_this_century()
     return fake.date_between(start_date="-60y", end_date="today")
+
 
 def build_source():
     return Source(
@@ -36,6 +46,7 @@ def build_source():
         publisher=fake.company(),
         pubDate=str(fake.date_this_decade()),
     )
+
 
 def build_tags(text, map_options):
     person_name = fake.name()
@@ -102,15 +113,11 @@ def build_event(map_options, story_title):
         stories=[],
     )
 
+
 def build_story():
     story_title = build_story_title()
     events = [build_event({}, story_title) for _ in range(10)]
-    return Story(
-        id=str(uuid4()),
-        name=story_title,
-        events=events,
-        index=5
-    )
+    return Story(id=str(uuid4()), name=story_title, events=events, index=5)
 
 
 def register_rest_endpoints(app: FastAPI, app_manager: AppManager) -> FastAPI:
@@ -119,7 +126,7 @@ def register_rest_endpoints(app: FastAPI, app_manager: AppManager) -> FastAPI:
     def get_history(
         storyId: int | None = None,
         eventId: int | None = None,
-        direction: Literal["next", "prev"] | None = None
+        direction: Literal["next", "prev"] | None = None,
     ):
         return app_manager
 

@@ -33,6 +33,7 @@ engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+
 def create_fake_data():
     # Create fake sources
     sources = []
@@ -134,8 +135,6 @@ def create_fake_data():
             session.add(tag_instance)
     session.commit()
 
-
-
     # Create fake names and associate them with tags
     for _ in range(20):
         name = Name(
@@ -146,6 +145,7 @@ def create_fake_data():
         for tag in tags[:5]:
             name.tags.append(tag)
     session.commit()
+
 
 if __name__ == "__main__":
     # Drop all tables and recreate them

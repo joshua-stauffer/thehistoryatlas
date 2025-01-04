@@ -7,7 +7,12 @@ from sqlalchemy import text
 
 from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.domain.models import CoordsByName
-from the_history_atlas.apps.domain.models.core import SourceInput, PersonInput, TimeInput, PlaceInput
+from the_history_atlas.apps.domain.models.core import (
+    SourceInput,
+    PersonInput,
+    TimeInput,
+    PlaceInput,
+)
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from the_history_atlas.apps.domain.models.readmodel.queries import (
     GetSummariesByIDs,
@@ -28,7 +33,10 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
     EntitySummariesByName,
 )
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.domain.models.readmodel.tables.source import SourceModelInput, SourceModel
+from the_history_atlas.apps.domain.models.readmodel.tables.source import (
+    SourceModelInput,
+    SourceModel,
+)
 from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.database import Database
 from the_history_atlas.apps.readmodel.event_handler import EventHandler
@@ -101,7 +109,6 @@ class ReadModelApp:
 
     def get_coords_by_names(self, names: list[str]) -> CoordsByName:
         return self._query_handler.get_coords_by_names(names=names)
-
 
     def get_story(
         self,
@@ -220,25 +227,32 @@ class ReadModelApp:
             """
         )
         rows = self._db.execute(
-            event_query, {"story_id": story_id, "event_id": event_id, "lang": lang, "direction": direction}
+            event_query,
+            {
+                "story_id": story_id,
+                "event_id": event_id,
+                "lang": lang,
+                "direction": direction,
+            },
         ).all()
         print()
 
     def add_source(self, source: SourceModelInput) -> SourceModel:
         id = uuid4()
         self._db.execute(
-            text("""
+            text(
+                """
                 INSERT INTO sources 
                     (id, title, author, publisher, pub_date, kwargs)
                 VALUES 
                     (:source_id, :title, :author, :publisher, :pub_date, :kwargs)
-            """),
+            """
+            ),
             {
                 **source.model_dump(),
                 "source_id": id,
-            }
+            },
         )
-
 
     def add_tag(self, tag: PersonInput | PlaceInput | TimeInput):
         ...

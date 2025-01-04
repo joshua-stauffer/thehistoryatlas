@@ -23,8 +23,6 @@ class Source(BaseModel):
     pubDate: str
 
 
-
-
 class CalendarDate(BaseModel):
     time: str
     calendar: str

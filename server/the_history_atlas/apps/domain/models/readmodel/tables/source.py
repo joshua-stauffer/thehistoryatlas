@@ -13,4 +13,3 @@ class SourceModelInput(ConfiguredBaseModel):
 
 class SourceModel(SourceModelInput):
     id: UUID
-

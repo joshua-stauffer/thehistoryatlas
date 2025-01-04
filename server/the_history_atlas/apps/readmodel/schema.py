@@ -119,7 +119,9 @@ class Tag(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
     tag_instances = relationship("TagInstance", back_populates="tag")
-    names = relationship("Name", secondary=TagNameAssoc.__table__, back_populates="tags")
+    names = relationship(
+        "Name", secondary=TagNameAssoc.__table__, back_populates="tags"
+    )
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
 
