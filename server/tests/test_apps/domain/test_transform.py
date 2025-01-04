@@ -44,9 +44,6 @@ from the_history_atlas.apps.domain.models.events.meta_tagged import (
 )
 from the_history_atlas.apps.domain.transform import from_dict
 
-import tests.conftest
-import tests.test_apps.conftest
-
 
 @pytest.fixture
 def baseline_event_data():
