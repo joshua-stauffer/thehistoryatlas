@@ -1,8 +1,6 @@
 version: "3"
 services:
     db:
-        # NOTE: using postgres 13.3 to avoid m1 libpq issue:
-        #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
         image: postgres:16
         restart: always
         environment:
@@ -25,15 +23,5 @@ services:
             - THA_DB_URI=${THA_DB_URI}
             - THA_TEST_PASSWORD=${THA_TEST_PASSWORD}
 
-    server:
-        image: ilriccio/thehistoryatlas:test_server
-        command: [ "python3", "-m", "pytest", "-vvv" ]
-        networks:
-            - tha-test
-        environment:
-            - TEST_DB_URI=${TEST_DB_URI}
-            - TTL=${TTL}
-            - REFRESH_BY=${REFRESH_BY}
-            - SEC_KEY=${SEC_KEY}
 networks:
     tha-test:
