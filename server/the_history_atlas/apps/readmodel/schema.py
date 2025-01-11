@@ -92,6 +92,8 @@ class Tag(Base):
     __tablename__ = "tags"
     id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
+    wikidata_id = Column(VARCHAR, nullable=True)
+    wikidata_url = Column(VARCHAR, nullable=True)
     tag_instances = relationship("TagInstance", back_populates="tag")
     names = relationship("Name", secondary=tag_name_assoc, back_populates="tags")
 
