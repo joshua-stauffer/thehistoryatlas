@@ -2,6 +2,7 @@ import logging
 from typing import List
 
 from the_history_atlas.apps.database import DatabaseClient
+from the_history_atlas.apps.domain.core import PersonInput, Person
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from the_history_atlas.apps.domain.models.readmodel.queries import (
@@ -94,3 +95,6 @@ class ReadModelApp:
 
     def get_coords_by_names(self, names: list[str]) -> CoordsByName:
         return self._query_handler.get_coords_by_names(names=names)
+
+    def create_person(self, person: PersonInput) -> Person:
+        ...
