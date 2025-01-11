@@ -417,6 +417,18 @@ class Database:
         )
         return PersonModel(id=id)
 
+    def get_tag_id_by_wikidata_id(self, wikidata_id: str) -> UUID:
+        with Session(self._engine, future=True) as session:
+            query = text(
+                """
+                    select id from tags where wikidata_id = :wikidata_id;
+                """
+            )
+            id = session.execute(
+                query, {"wikidata_id": wikidata_id}
+            ).scalar_one_or_none()
+            return id
+
     def get_place_by_id(self, id: UUID, session: Session) -> PlaceModel | None:
         stmt = """
             select id, latitude, longitude, geoshape, geonames_id
@@ -550,6 +562,18 @@ class Database:
         name_model = self.get_name(name=name, session=session)
         if name_model is None:
             name_model = self.create_name(name=name, session=session)
+        else:
+            # check that this name/tag combo doesn't exist
+            existing_row = session.execute(
+                text(
+                    """
+                    select * from tag_name_assoc where tag_id = :tag_id and name_id = :name_id
+                """,
+                    {"tag_id": tag_id, "name_id": name_model.id},
+                )
+            ).one_or_none()
+            if existing_row:
+                return
 
         tag_name_assoc = TagNameAssocModel(name_id=name_model.id, tag_id=tag_id)
 
@@ -557,7 +581,7 @@ class Database:
             insert into tag_name_assoc (tag_id, name_id)
                 values (:tag_id, :name_id);
         """
-        session.execute(text(stmt), tag_name_assoc.dict())
+        session.execute(text(stmt), tag_name_assoc.model_dump())
 
     def create_source(
         self,

@@ -7,34 +7,34 @@ from pydantic import BaseModel
 
 class WikiDataPersonInput(BaseModel):
     name: str
-    wikidata_id: UUID
+    wikidata_id: str
     wikidata_url: str
 
 
-class WikiDataPersonOutput(BaseModel):
+class WikiDataPersonOutput(WikiDataPersonInput):
     id: UUID
 
 
 class WikiDataPlaceInput(BaseModel):
     name: str
-    wikidata_id: UUID
+    wikidata_id: str
     wikidata_url: str
     latitude: float
     longitude: float
 
 
-class WikiDataPlaceOutput(BaseModel):
+class WikiDataPlaceOutput(WikiDataPlaceInput):
     id: UUID
 
 
 class WikiDataTimeInput(BaseModel):
     name: str
-    wikidata_id: UUID
+    wikidata_id: str
     wikidata_url: str
     date: datetime
     precision: Literal[7, 8, 9, 10, 11]
     calendar_model: str
 
 
-class WikiDataTimeOutput(BaseModel):
+class WikiDataTimeOutput(WikiDataTimeInput):
     id: UUID

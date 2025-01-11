@@ -40,12 +40,7 @@ def config():
     return config
 
 
-@pytest.fixture
-def engine(config):
-    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
-    AccountsBase.metadata.create_all(engine)
-    ReadModelBase.metadata.create_all(engine)
-
+def truncate_db(session: Session):
     truncate_stmt = """
         truncate users cascade;
         truncate citations cascade;
@@ -59,9 +54,31 @@ def engine(config):
         truncate tags cascade;
         truncate time cascade;
     """
+    session.execute(text(truncate_stmt))
+
+
+@pytest.fixture
+def cleanup_db(config):
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    with Session(engine, future=True) as session:
+        truncate_db(session)
+        session.commit()
+    engine.dispose()
+    yield
+    with Session(engine, future=True) as session:
+        truncate_db(session)
+        session.commit()
+    engine.dispose()
+
+
+@pytest.fixture
+def engine(config):
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    AccountsBase.metadata.create_all(engine)
+    ReadModelBase.metadata.create_all(engine)
 
     with Session(engine, future=True) as session:
-        session.execute(text(truncate_stmt))
+        truncate_db(session)
         helper = DBBuilder(session=session)
         helper.build_readmodel(
             sources=SOURCES,
@@ -76,7 +93,11 @@ def engine(config):
         )
         session.commit()
 
-    return engine
+    yield engine
+
+    with Session(engine, future=True) as session:
+        truncate_db(session)
+        session.commit()
 
 
 @pytest.fixture

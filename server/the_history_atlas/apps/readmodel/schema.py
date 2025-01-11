@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.schema import ForeignKey, Table
+from sqlalchemy.sql.schema import ForeignKey, Table, UniqueConstraint
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
 
 Base = declarative_base()
@@ -83,6 +83,7 @@ tag_name_assoc = Table(
     Base.metadata,
     Column("tag_id", UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False),
     Column("name_id", UUID(as_uuid=True), ForeignKey("names.id"), nullable=False),
+    UniqueConstraint("tag_id", "name_id"),
 )
 
 
@@ -92,8 +93,8 @@ class Tag(Base):
     __tablename__ = "tags"
     id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(VARCHAR)  # 'TIME' | 'PERSON' | 'PLACE'
-    wikidata_id = Column(VARCHAR, nullable=True)
-    wikidata_url = Column(VARCHAR, nullable=True)
+    wikidata_id = Column(VARCHAR, nullable=True, unique=True)
+    wikidata_url = Column(VARCHAR, nullable=True, unique=True)
     tag_instances = relationship("TagInstance", back_populates="tag")
     names = relationship("Name", secondary=tag_name_assoc, back_populates="tags")
 

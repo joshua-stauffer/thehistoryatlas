@@ -48,3 +48,7 @@ class EmptyNameError(DatabaseError):
 
 class MissingResourceError(Exception):
     ...
+
+
+class TagExistsError(DatabaseError):
+    ...

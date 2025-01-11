@@ -184,6 +184,6 @@ def register_rest_endpoints(
 
     @fastapi_app.post("/wikidata/people", response_model=WikiDataPersonOutput)
     def create_people(person: WikiDataPersonInput, apps: Apps) -> WikiDataPersonOutput:
-        return create_person(person)
+        return create_person(apps=apps, person=person)
 
     return fastapi_app

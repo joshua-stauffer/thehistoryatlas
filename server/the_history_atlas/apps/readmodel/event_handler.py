@@ -24,6 +24,7 @@ from the_history_atlas.apps.readmodel.database import Database
 from the_history_atlas.apps.readmodel.errors import (
     UnknownEventError,
     DuplicateEventError,
+    TagExistsError,
 )
 from the_history_atlas.apps.readmodel.trie import Trie
 
@@ -111,9 +112,12 @@ class EventHandler:
                 pass
 
     def create_person(self, person: PersonInput) -> Person:
+        if self._db.get_tag_id_by_wikidata_id(wikidata_id=person.wikidata_id):
+            raise TagExistsError(
+                f"Person with wikidata id {person.wikidata_id} already exists."
+            )
         id = uuid4()
         with self._db.Session() as session:
-
             self._db.create_person(
                 id=id,
                 session=session,
@@ -122,6 +126,7 @@ class EventHandler:
             )
             self._db.add_name_to_tag(name=person.name, tag_id=id, session=session)
             self._db.update_entity_trie(new_string=person.name, new_string_guid=str(id))
+            session.commit()
         return Person(id=id, **person.model_dump())
 
     def person_added(self, event: PersonAdded):
