@@ -79,28 +79,6 @@ def test_get_person_by_id_failure(readmodel_db):
     assert person is None
 
 
-@pytest.fixture
-def cleanup_tag(readmodel_db) -> Generator[Callable[[UUID], None], None, None]:
-    tags_to_cleanup: set[UUID] = set()
-
-    def _cleanup(tag_id: UUID) -> None:
-        tags_to_cleanup.add(tag_id)
-
-    yield _cleanup
-    with readmodel_db.Session() as session:
-        # cleanup
-        session.execute(
-            text(
-                """
-                delete from person where person.id in :ids;
-                delete from tags where tags.id in :ids;
-                """
-            ),
-            {"ids": tuple(tags_to_cleanup)},
-        )
-        session.commit()
-
-
 def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
     person_id = UUID("6f43d599-07ca-403f-b2ca-a2126aac9e89")
     wikidata_id = "Q1339"

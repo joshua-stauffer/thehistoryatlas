@@ -97,4 +97,4 @@ class ReadModelApp:
         return self._query_handler.get_coords_by_names(names=names)
 
     def create_person(self, person: PersonInput) -> Person:
-        ...
+        return self._event_handler.create_person(person=person)

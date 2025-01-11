@@ -121,9 +121,7 @@ class EventHandler:
                 wikidata_url=person.wikidata_url,
             )
             self._db.add_name_to_tag(name=person.name, tag_id=id, session=session)
-            self._db.update_entity_trie(
-                new_string=person.name, new_string_guid=str(person.id)
-            )
+            self._db.update_entity_trie(new_string=person.name, new_string_guid=str(id))
         return Person(id=id, **person.model_dump())
 
     def person_added(self, event: PersonAdded):

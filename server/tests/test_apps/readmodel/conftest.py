@@ -1,6 +1,9 @@
+from typing import Generator, Callable
 from unittest.mock import MagicMock
+from uuid import UUID
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from tests.db_builder import DBBuilder
@@ -57,3 +60,27 @@ def query_handler(engine):
         source_trie=source_trie,
         entity_trie=entity_trie,
     )
+
+
+@pytest.fixture
+def cleanup_tag(readmodel_db) -> Generator[Callable[[UUID], None], None, None]:
+    tags_to_cleanup: set[UUID] = set()
+
+    def _cleanup(tag_id: UUID) -> None:
+        tags_to_cleanup.add(tag_id)
+
+    yield _cleanup
+    if not tags_to_cleanup:
+        return  # don't error on an empty tuple
+    with readmodel_db.Session() as session:
+        # cleanup
+        session.execute(
+            text(
+                """
+                delete from person where person.id in :ids;
+                delete from tags where tags.id in :ids;
+                """
+            ),
+            {"ids": tuple(tags_to_cleanup)},
+        )
+        session.commit()

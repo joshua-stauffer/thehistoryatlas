@@ -10,7 +10,7 @@ from the_history_atlas.apps.app_manager import AppManager
 
 
 def mount_api(fastapi_app: FastAPI, apps: Callable[[], AppManager]) -> FastAPI:
-    app = register_rest_endpoints(app)
+    app = register_rest_endpoints(fastapi_app)
     origins = ["http://localhost:3000", "https://urchin-app-f6n6t.ondigitalocean.app"]
     app.add_middleware(
         CORSMiddleware,
