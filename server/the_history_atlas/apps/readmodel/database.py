@@ -393,14 +393,28 @@ class Database:
             return None
         return PersonModel(id=person_id)
 
-    def create_person(self, id: UUID, session: Session) -> PersonModel:
+    def create_person(
+        self,
+        id: UUID,
+        session: Session,
+        wikidata_id: str | None = None,
+        wikidata_url: str | None = None,
+    ) -> PersonModel:
         stmt = """
-                insert into tags (id, type)
-                values (:id, :type);
+                insert into tags (id, type, wikidata_id, wikidata_url)
+                values (:id, :type, :wikidata_id, :wikidata_url);
                 insert into person (id)
                 values (:id);
             """
-        session.execute(text(stmt), {"id": id, "type": "PERSON"})
+        session.execute(
+            text(stmt),
+            {
+                "id": id,
+                "type": "PERSON",
+                "wikidata_id": wikidata_id,
+                "wikidata_url": wikidata_url,
+            },
+        )
         return PersonModel(id=id)
 
     def get_place_by_id(self, id: UUID, session: Session) -> PlaceModel | None:

@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Literal, Callable, Generator
 from uuid import uuid4, UUID
 
 import pytest
@@ -79,32 +79,60 @@ def test_get_person_by_id_failure(readmodel_db):
     assert person is None
 
 
-def test_create_person(readmodel_db):
-    person_id = UUID("6f43d599-07ca-403f-b2ca-a2126aac9e89")
+@pytest.fixture
+def cleanup_tag(readmodel_db) -> Generator[Callable[[UUID], None], None, None]:
+    tags_to_cleanup: set[UUID] = set()
 
+    def _cleanup(tag_id: UUID) -> None:
+        tags_to_cleanup.add(tag_id)
+
+    yield _cleanup
     with readmodel_db.Session() as session:
-        person = readmodel_db.create_person(id=person_id, session=session)
+        # cleanup
+        session.execute(
+            text(
+                """
+                delete from person where person.id in :ids;
+                delete from tags where tags.id in :ids;
+                """
+            ),
+            {"ids": tuple(tags_to_cleanup)},
+        )
+        session.commit()
+
+
+def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
+    person_id = UUID("6f43d599-07ca-403f-b2ca-a2126aac9e89")
+    wikidata_id = "Q1339"
+    wikidata_url = "https://www.wikidata.org/wiki/Q1339"
+    cleanup_tag(person_id)
+    with readmodel_db.Session() as session:
+        person = readmodel_db.create_person(
+            id=person_id,
+            session=session,
+            wikidata_id=wikidata_id,
+            wikidata_url=wikidata_url,
+        )
         session.commit()
 
     assert isinstance(person, PersonModel)
 
     with readmodel_db.Session() as session:
-        res_id = session.execute(
-            text("select (id) from person where person.id = :id"),
-            {"id": person_id},
-        ).scalar_one()
-        assert res_id == person_id
-
-        # cleanup
-        session.execute(
-            text(
-                """
-                delete from person where person.id = :id
-                """
-            ),
-            {"id": person_id},
+        person_query = text(
+            """
+                select p.id, t.wikidata_id, t.wikidata_url
+                from person p
+                inner join tags t on p.id = t.id
+                where p.id = :id;
+            """
         )
-        session.commit()
+        row = session.execute(
+            person_query,
+            {"id": person_id},
+        ).one()
+        assert row.id == person_id
+        assert row.wikidata_id == wikidata_id
+        assert row.wikidata_url == wikidata_url
 
 
 def test_get_place_by_id_success(readmodel_db):
