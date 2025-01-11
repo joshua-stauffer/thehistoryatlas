@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class WikiDataPersonInput(BaseModel):
-    names: list[str]
+    name: str
     wikidata_id: UUID
     wikidata_url: str
 
@@ -16,7 +16,7 @@ class WikiDataPersonOutput(BaseModel):
 
 
 class WikiDataPlaceInput(BaseModel):
-    names: list[str]
+    name: str
     wikidata_id: UUID
     wikidata_url: str
     latitude: float
@@ -28,7 +28,7 @@ class WikiDataPlaceOutput(BaseModel):
 
 
 class WikiDataTimeInput(BaseModel):
-    names: list[str]
+    name: str
     wikidata_id: UUID
     wikidata_url: str
     date: datetime

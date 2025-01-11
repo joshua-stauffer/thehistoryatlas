@@ -12,10 +12,13 @@ def get_app() -> FastAPI:
     def apps():
         return app_manager
 
-    app = FastAPI(dependencies=[Depends(apps)])
+    fastapi_app = FastAPI()
 
-    mount_api(app=app)
-    return app
+    mount_api(
+        fastapi_app=fastapi_app,
+        apps=apps,
+    )
+    return fastapi_app
 
 
 app = get_app()

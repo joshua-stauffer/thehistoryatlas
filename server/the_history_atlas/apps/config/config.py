@@ -25,7 +25,6 @@ class Config:
         # database uris
         self._PROD_DB_URI = os.environ.get("PROD_DB_URI")
         self._DEV_DB_URI = os.environ.get("DEV_DB_URI")
-        self._TESTING_DB_URI = "sqlite+pysqlite:///:memory:"
 
         # are we in production?
         prod = os.environ.get("CONFIG")
@@ -35,25 +34,6 @@ class Config:
         else:
             self.CONFIG = "DEVELOPMENT"
             self.DB_URI = self._DEV_DB_URI
-
-        # are we testing?
-        if self.test_for_truthiness(os.environ.get("TESTING")):
-            self.TESTING = True
-            # override the DB_URI:
-            self.DB_URI = self._TESTING_DB_URI
-        else:
-            self.TESTING = False
-
-        # get correct values for broker
-        self.NETWORK_HOST_NAME = os.environ.get("HOST_NAME", "localhost")
-        self.BROKER_USERNAME = os.environ.get("BROKER_USERNAME", "guest")
-        self.BROKER_PASS = os.environ.get("BROKER_PASS", "guest")
-        self.QUEUE_NAME = os.environ.get("QUEUE_NAME", "")
-        self.EXCHANGE_NAME = os.environ.get("EXCHANGE_NAME", "")
-
-        # set values for GQL server
-        self.SERVER_HOST = os.environ.get("SERVER_HOST", "0.0.0.0")
-        self.SERVER_PORT = os.environ.get("SERVER_PORT", 8888)
 
     @staticmethod
     def test_for_truthiness(val):

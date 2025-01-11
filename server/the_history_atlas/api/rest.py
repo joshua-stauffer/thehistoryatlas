@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from typing import List, Union
+from typing import List, Union, Callable, Annotated
 from faker import Faker
 import random
 from uuid import uuid4
 
+from the_history_atlas.api.handlers.tags import create_person
+from the_history_atlas.api.types.tags import WikiDataPersonOutput, WikiDataPersonInput
+from the_history_atlas.apps.app_manager import AppManager
 
 fake = Faker()
 Faker.seed(872)
@@ -169,10 +172,18 @@ def build_story():
     return Story(id=str(uuid4()), name=story_title, events=events, index=5)
 
 
-def register_rest_endpoints(app: FastAPI) -> FastAPI:
+def register_rest_endpoints(
+    fastapi_app: FastAPI, app_manager: Callable[[], AppManager]
+) -> FastAPI:
+
+    Apps = Annotated[AppManager, Depends(app_manager)]
     # API Endpoints
-    @app.get("/history", response_model=Story)
+    @fastapi_app.get("/history", response_model=Story)
     def get_history():
         return build_story()
 
-    return app
+    @fastapi_app.post("/wikidata/people", response_model=WikiDataPersonOutput)
+    def create_people(person: WikiDataPersonInput, apps: Apps) -> WikiDataPersonOutput:
+        return create_person(person)
+
+    return fastapi_app

@@ -1,7 +1,5 @@
-from functools import partial
 from typing import Callable
 
-from ariadne.asgi import GraphQL
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,7 +8,7 @@ from the_history_atlas.apps.app_manager import AppManager
 
 
 def mount_api(fastapi_app: FastAPI, apps: Callable[[], AppManager]) -> FastAPI:
-    app = register_rest_endpoints(fastapi_app)
+    app = register_rest_endpoints(fastapi_app=fastapi_app, app_manager=apps)
     origins = ["http://localhost:3000", "https://urchin-app-f6n6t.ondigitalocean.app"]
     app.add_middleware(
         CORSMiddleware,
