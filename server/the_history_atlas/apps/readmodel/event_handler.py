@@ -1,10 +1,11 @@
 import logging
 from datetime import datetime, timezone
 from typing import Union
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
 
+from the_history_atlas.apps.domain.core import PersonInput, Person
 from the_history_atlas.apps.domain.models import (
     SummaryAdded,
     SummaryTagged,
@@ -108,6 +109,22 @@ class EventHandler:
                 session.commit()
             except IntegrityError:
                 pass
+
+    def create_person(self, person: PersonInput) -> Person:
+        id = uuid4()
+        with self._db.Session() as session:
+
+            self._db.create_person(
+                id=id,
+                session=session,
+                wikidata_id=person.wikidata_id,
+                wikidata_url=person.wikidata_url,
+            )
+            self._db.add_name_to_tag(name=person.name, tag_id=id, session=session)
+            self._db.update_entity_trie(
+                new_string=person.name, new_string_guid=str(person.id)
+            )
+        return Person(id=id, **person.model_dump())
 
     def person_added(self, event: PersonAdded):
         person_id = UUID(event.payload.id)
