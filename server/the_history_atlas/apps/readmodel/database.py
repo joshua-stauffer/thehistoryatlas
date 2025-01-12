@@ -5,9 +5,11 @@ from typing import Tuple, Union, Optional, List
 from uuid import uuid4, UUID
 
 from sqlalchemy import select, func, text
+from sqlalchemy.engine import row
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
+from the_history_atlas.apps.domain.core import TagPointer
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
@@ -564,6 +566,33 @@ class Database:
         get_tag = "select id from tags where tags.id = :tag_id"
         tag_id = session.execute(text(get_tag), {"tag_id": tag_id}).scalar_one_or_none()
         return tag_id is not None
+
+    def get_tags_by_wikidata_ids(self, wikidata_ids: list[str]) -> list[TagPointer]:
+        if not wikidata_ids:
+            return []
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select id, wikidata_id
+                    from tags 
+                    where wikidata_id in :wikidata_ids;
+                """
+                ),
+                {"wikidata_ids": tuple(wikidata_ids)},
+            ).all()
+        tag_pointers = [
+            TagPointer(
+                id=row.id,
+                wikidata_id=row.wikidata_id,
+            )
+            for row in rows
+        ]
+        existing_wiki_ids = {tag.wikidata_id for tag in tag_pointers}
+        for wikidata_id in wikidata_ids:
+            if wikidata_id not in existing_wiki_ids:
+                tag_pointers.append(TagPointer(wikidata_id=wikidata_id))
+        return tag_pointers
 
     def add_name_to_tag(
         self, session: Session, tag_id: UUID, name: str, lang: str | None = None

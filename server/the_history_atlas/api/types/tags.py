@@ -38,3 +38,16 @@ class WikiDataTimeInput(BaseModel):
 
 class WikiDataTimeOutput(WikiDataTimeInput):
     id: UUID
+
+
+class WikiDataTagsInput(BaseModel):
+    wikidata_ids: list[str]
+
+
+class WikiDataTagPointer(BaseModel):
+    wikidata_id: str
+    id: UUID | None = None
+
+
+class WikiDataTagsOutput(BaseModel):
+    wikidata_ids: list[WikiDataTagPointer]

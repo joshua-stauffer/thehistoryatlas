@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from the_history_atlas.apps.domain.core import TagPointer
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import Source, DefaultEntity
 from the_history_atlas.apps.domain.models.readmodel.queries import (
@@ -122,3 +123,6 @@ class QueryHandler:
     def get_coords_by_names(self, names: list[str]) -> CoordsByName:
         with self._db.Session() as session:
             return self._db.get_coords_by_names(names=names, session=session)
+
+    def get_tags_by_wikidata_ids(self, wikidata_ids: list[str]) -> list[TagPointer]:
+        return self._db.get_tags_by_wikidata_ids(wikidata_ids=wikidata_ids)

@@ -5,6 +5,11 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+class TagPointer(BaseModel):
+    wikidata_id: str
+    id: UUID | None = None
+
+
 class WikiDataEntity(BaseModel):
     wikidata_id: str
     wikidata_url: str
