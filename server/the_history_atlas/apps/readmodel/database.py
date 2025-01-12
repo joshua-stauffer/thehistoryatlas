@@ -654,6 +654,20 @@ class Database:
             session.commit()
             self._add_to_source_trie(source)
 
+    def get_source_by_title(self, title: str) -> ADMSource | None:
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select * from sources where title = :title;
+                """
+                ),
+                {"title": title},
+            ).one_or_none()
+            if not row:
+                return None
+            return ADMSource(**row)
+
     def _add_to_source_trie(self, source: Source):
         """
         Add source title and author to the search trie,

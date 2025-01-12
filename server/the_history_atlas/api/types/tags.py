@@ -51,3 +51,27 @@ class WikiDataTagPointer(BaseModel):
 
 class WikiDataTagsOutput(BaseModel):
     wikidata_ids: list[WikiDataTagPointer]
+
+
+class TagInput(BaseModel):
+    id: UUID
+    name: str
+    start_char: int
+    stop_char: int
+
+
+class WikiDataCitationInput(BaseModel):
+    access_date: datetime
+    wikidata_item_id: str
+    wikidata_item_title: str
+    wikidata_item_url: str
+
+
+class WikiDataEventInput(BaseModel):
+    summary: str
+    tags: list[TagInput]
+    citation: WikiDataCitationInput
+
+
+class WikiDataEventOutput(BaseModel):
+    id: UUID

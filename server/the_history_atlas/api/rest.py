@@ -10,6 +10,7 @@ from the_history_atlas.api.handlers.tags import (
     create_place_handler,
     create_time_handler,
     get_tags_handler,
+    create_event_handler,
 )
 from the_history_atlas.api.types.tags import (
     WikiDataPersonOutput,
@@ -20,6 +21,8 @@ from the_history_atlas.api.types.tags import (
     WikiDataTimeInput,
     WikiDataTagsOutput,
     WikiDataTagsInput,
+    WikiDataEventOutput,
+    WikiDataEventInput,
 )
 from the_history_atlas.apps.app_manager import AppManager
 
@@ -215,5 +218,9 @@ def register_rest_endpoints(
         if not wikidata_ids:
             return WikiDataTagsOutput(wikidata_ids=[])
         return get_tags_handler(apps=apps, wikidata_ids=wikidata_ids)
+
+    @fastapi_app.post("/wikidata/events", response_model=WikiDataEventOutput)
+    def create_event(event: WikiDataEventInput, apps: Apps) -> WikiDataEventOutput:
+        return create_event_handler(apps=apps, event=event)
 
     return fastapi_app

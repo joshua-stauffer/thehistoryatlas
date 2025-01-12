@@ -38,6 +38,9 @@ class Citation(Base):
     summary = relationship("Summary", back_populates="citations")
     page_num = Column(INTEGER)
     access_date = Column(VARCHAR)
+    wikidata_item_id = Column(VARCHAR)
+    wikidata_item_title = Column(VARCHAR)
+    wikidata_item_url = Column(VARCHAR)
 
     def __repr__(self):
         return f"Citation(id: {self.id}, text: {self.text}, meta: {self.meta.id})"

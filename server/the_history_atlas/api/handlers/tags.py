@@ -8,6 +8,8 @@ from the_history_atlas.api.types.tags import (
     WikiDataTagsInput,
     WikiDataTagsOutput,
     WikiDataTagPointer,
+    WikiDataEventInput,
+    WikiDataEventOutput,
 )
 from the_history_atlas.apps.app_manager import AppManager
 from the_history_atlas.apps.domain.core import PersonInput, PlaceInput, TimeInput
@@ -44,3 +46,14 @@ def get_tags_handler(apps: AppManager, wikidata_ids: list[str]) -> WikiDataTagsO
             WikiDataTagPointer(id=tag.id, wikidata_id=tag.wikidata_id) for tag in output
         ]
     )
+
+
+def create_event_handler(
+    apps: AppManager, event: WikiDataEventInput
+) -> WikiDataEventOutput:
+    id = apps.readmodel_app.create_wikidata_event(
+        text=event.summary,
+        tags=event.tags,
+        citation=event.citation,
+    )
+    return WikiDataEventOutput(id=id)

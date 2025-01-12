@@ -10,6 +10,8 @@ from the_history_atlas.apps.domain.core import (
     TimeInput,
     Time,
     TagPointer,
+    CitationInput,
+    TagInstance,
 )
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
@@ -115,3 +117,13 @@ class ReadModelApp:
 
     def get_tags_by_wikidata_ids(self, ids: list[str]) -> list[TagPointer]:
         return self._query_handler.get_tags_by_wikidata_ids(wikidata_ids=ids)
+
+    def create_wikidata_event(
+        self,
+        text: str,
+        tags: list[TagInstance],
+        citation: CitationInput,
+    ):
+        return self._event_handler.create_wikidata_event(
+            text=text, tags=tags, citation=citation
+        )

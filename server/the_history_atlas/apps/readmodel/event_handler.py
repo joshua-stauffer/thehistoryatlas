@@ -12,6 +12,8 @@ from the_history_atlas.apps.domain.core import (
     Place,
     TimeInput,
     Time,
+    TagInstance,
+    CitationInput,
 )
 from the_history_atlas.apps.domain.models import (
     SummaryAdded,
@@ -79,6 +81,59 @@ class EventHandler:
             "META_ADDED": self.meta_added,
             "META_TAGGED": self.meta_tagged,
         }
+
+    def create_wikidata_event(
+        self,
+        text: str,
+        tags: list[TagInstance],
+        citation: CitationInput,
+    ) -> UUID:
+        source = self._db.get_source_by_title(title="Wikidata")
+        if source:
+            source_id = UUID(source.id)
+        else:
+            source_id = uuid4()
+            self._db.create_source(
+                id=source_id,
+                title="Wikidata",
+                author="Wikidata Contributors",
+                publisher="Wikimedia Foundation",
+                pub_date=str(datetime.now(timezone.utc)),
+            )
+        summary_id = uuid4()
+        with self._db.Session() as session:
+            self._db.create_summary(
+                id=summary_id,
+                text=text,
+            )
+            citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
+            citation_id = uuid4()
+            self._db.create_citation(
+                id=citation_id,
+                session=session,
+                citation_text=citation_text,
+                access_date=str(citation.access_date),
+            )
+            self._db.create_citation_source_fkey(
+                session=session,
+                citation_id=citation_id,
+                source_id=source_id,
+            )
+            self._db.create_citation_summary_fkey(
+                session=session,
+                citation_id=citation_id,
+                summary_id=summary_id,
+            )
+            for tag in tags:
+                self._db.create_tag_instance(
+                    start_char=tag.start_char,
+                    stop_char=tag.stop_char,
+                    summary_id=summary_id,
+                    tag_id=tag.id,
+                    session=session,
+                )
+            session.commit()
+        return summary_id
 
     def summary_added(self, event: SummaryAdded):
         id = UUID(event.payload.id)

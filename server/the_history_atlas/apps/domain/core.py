@@ -10,6 +10,20 @@ class TagPointer(BaseModel):
     id: UUID | None = None
 
 
+class TagInstance(BaseModel):
+    id: UUID
+    name: str
+    start_char: int
+    stop_char: int
+
+
+class CitationInput(BaseModel):
+    access_date: datetime
+    wikidata_item_id: str
+    wikidata_item_title: str
+    wikidata_item_url: str
+
+
 class WikiDataEntity(BaseModel):
     wikidata_id: str
     wikidata_url: str
