@@ -5,8 +5,15 @@ from faker import Faker
 import random
 from uuid import uuid4
 
-from the_history_atlas.api.handlers.tags import create_person
-from the_history_atlas.api.types.tags import WikiDataPersonOutput, WikiDataPersonInput
+from the_history_atlas.api.handlers.tags import create_person, create_place, create_time
+from the_history_atlas.api.types.tags import (
+    WikiDataPersonOutput,
+    WikiDataPersonInput,
+    WikiDataPlaceOutput,
+    WikiDataPlaceInput,
+    WikiDataTimeOutput,
+    WikiDataTimeInput,
+)
 from the_history_atlas.apps.app_manager import AppManager
 
 fake = Faker()
@@ -185,5 +192,13 @@ def register_rest_endpoints(
     @fastapi_app.post("/wikidata/people", response_model=WikiDataPersonOutput)
     def create_people(person: WikiDataPersonInput, apps: Apps) -> WikiDataPersonOutput:
         return create_person(apps=apps, person=person)
+
+    @fastapi_app.post("/wikidata/places", response_model=WikiDataPlaceOutput)
+    def create_places(place: WikiDataPlaceInput, apps: Apps) -> WikiDataPlaceOutput:
+        return create_place(apps=apps, place=place)
+
+    @fastapi_app.post("/wikidata/times", response_model=WikiDataTimeOutput)
+    def create_times(time: WikiDataTimeInput, apps: Apps) -> WikiDataTimeOutput:
+        return create_time(apps=apps, time=time)
 
     return fastapi_app

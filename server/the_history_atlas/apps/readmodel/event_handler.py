@@ -5,7 +5,14 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
 
-from the_history_atlas.apps.domain.core import PersonInput, Person
+from the_history_atlas.apps.domain.core import (
+    PersonInput,
+    Person,
+    PlaceInput,
+    Place,
+    TimeInput,
+    Time,
+)
 from the_history_atlas.apps.domain.models import (
     SummaryAdded,
     SummaryTagged,
@@ -128,6 +135,47 @@ class EventHandler:
             self._db.update_entity_trie(new_string=person.name, new_string_guid=str(id))
             session.commit()
         return Person(id=id, **person.model_dump())
+
+    def create_place(self, place: PlaceInput) -> Place:
+        if self._db.get_tag_id_by_wikidata_id(wikidata_id=place.wikidata_id):
+            raise TagExistsError(
+                f"Place with wikidata id {place.wikidata_id} already exists."
+            )
+        id = uuid4()
+        with self._db.Session() as session:
+            self._db.create_place(
+                id=id,
+                session=session,
+                wikidata_id=place.wikidata_id,
+                wikidata_url=place.wikidata_url,
+                latitude=place.latitude,
+                longitude=place.longitude,
+            )
+            self._db.add_name_to_tag(name=place.name, tag_id=id, session=session)
+            self._db.update_entity_trie(new_string=place.name, new_string_guid=str(id))
+            session.commit()
+        return Place(id=id, **place.model_dump())
+
+    def create_time(self, time: TimeInput) -> Time:
+        if self._db.get_tag_id_by_wikidata_id(wikidata_id=time.wikidata_id):
+            raise TagExistsError(
+                f"Place with wikidata id {time.wikidata_id} already exists."
+            )
+        id = uuid4()
+        with self._db.Session() as session:
+            self._db.create_time(
+                id=id,
+                session=session,
+                wikidata_id=time.wikidata_id,
+                wikidata_url=time.wikidata_url,
+                time=time.date,
+                calendar_model=time.calendar_model,
+                precision=time.precision,
+            )
+            self._db.add_name_to_tag(name=time.name, tag_id=id, session=session)
+            self._db.update_entity_trie(new_string=time.name, new_string_guid=str(id))
+            session.commit()
+        return Time(id=id, **time.model_dump())
 
     def person_added(self, event: PersonAdded):
         person_id = UUID(event.payload.id)

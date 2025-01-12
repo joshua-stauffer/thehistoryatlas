@@ -13,3 +13,5 @@ class TimeModel(ConfiguredBaseModel):
     time: datetime
     calendar_model: str
     precision: Literal[6, 7, 8, 9, 10, 11] = TimePrecision
+    wikidata_url: str | None = None
+    wikidata_id: str | None = None

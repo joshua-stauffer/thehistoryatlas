@@ -449,6 +449,8 @@ class Database:
         self,
         session: Session,
         id: UUID,
+        wikidata_id: str | None = None,
+        wikidata_url: str | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
         geoshape: str | None = None,
@@ -460,14 +462,16 @@ class Database:
             longitude=longitude,
             geoshape=geoshape,
             geonames_id=geonames_id,
+            wikidata_id=wikidata_id,
+            wikidata_url=wikidata_url,
         )
         insert_place = """
-            insert into tags (id, type)
-                values (:id, :type);
+            insert into tags (id, type, wikidata_id, wikidata_url)
+                values (:id, :type, :wikidata_id, :wikidata_url);
             insert into place (id, latitude, longitude, geoshape, geonames_id)
                 values (:id, :latitude, :longitude, :geoshape, :geonames_id)
         """
-        session.execute(text(insert_place), place_model.dict())
+        session.execute(text(insert_place), place_model.model_dump())
         return place_model
 
     def get_time_by_id(self, id: UUID, session: Session) -> TimeModel | None:
@@ -492,17 +496,24 @@ class Database:
         time: datetime,
         calendar_model: str,
         precision: TimePrecision,
+        wikidata_id: str | None = None,
+        wikidata_url: str | None = None,
     ):
         time_model = TimeModel(
-            id=id, time=time, calendar_model=calendar_model, precision=precision
+            id=id,
+            time=time,
+            calendar_model=calendar_model,
+            precision=precision,
+            wikidata_id=wikidata_id,
+            wikidata_url=wikidata_url,
         )
         insert_time = """
-            insert into tags (id, type)
-                values (:id, :type);
+            insert into tags (id, type, wikidata_id, wikidata_url)
+                values (:id, :type, :wikidata_id, :wikidata_url);
             insert into time (id, time, calendar_model, precision)
                 values (:id, :time, :calendar_model, :precision);
         """
-        session.execute(text(insert_time), time_model.dict())
+        session.execute(text(insert_time), time_model.model_dump())
         return time_model
 
     def create_name(self, name: str, session: Session) -> NameModel:

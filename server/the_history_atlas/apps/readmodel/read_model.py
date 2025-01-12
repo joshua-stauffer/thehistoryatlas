@@ -2,7 +2,14 @@ import logging
 from typing import List
 
 from the_history_atlas.apps.database import DatabaseClient
-from the_history_atlas.apps.domain.core import PersonInput, Person
+from the_history_atlas.apps.domain.core import (
+    PersonInput,
+    Person,
+    PlaceInput,
+    Place,
+    TimeInput,
+    Time,
+)
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
 from the_history_atlas.apps.domain.models.readmodel.queries import (
@@ -98,3 +105,9 @@ class ReadModelApp:
 
     def create_person(self, person: PersonInput) -> Person:
         return self._event_handler.create_person(person=person)
+
+    def create_place(self, place: PlaceInput) -> Place:
+        return self._event_handler.create_place(place=place)
+
+    def create_time(self, time: TimeInput) -> Time:
+        return self._event_handler.create_time(time=time)
