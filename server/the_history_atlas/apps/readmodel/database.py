@@ -659,14 +659,20 @@ class Database:
             row = session.execute(
                 text(
                     """
-                    select * from sources where title = :title;
+                    select id, title, author, publisher, pub_date from sources where title = :title;
                 """
                 ),
                 {"title": title},
             ).one_or_none()
             if not row:
                 return None
-            return ADMSource(**row)
+            return ADMSource(
+                id=str(row.id),
+                title=row.title,
+                author=row.author,
+                publisher=row.publisher,
+                pub_date=str(row.pub_date),
+            )
 
     def _add_to_source_trie(self, source: Source):
         """
