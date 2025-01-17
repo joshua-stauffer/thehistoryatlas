@@ -9,7 +9,7 @@ from sqlalchemy.engine import row
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
-from the_history_atlas.apps.domain.core import TagPointer
+from the_history_atlas.apps.domain.core import TagPointer, StoryOrder
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
@@ -543,8 +543,21 @@ class Database:
         stop_char: int,
         summary_id: UUID,
         tag_id: UUID,
+        tag_instance_time: datetime,
+        time_precision: TimePrecision,
         session: Session,
     ) -> TagInstanceModel:
+        story_order = self.get_story_order(
+            session=session,
+            tag_id=tag_id,
+            tag_instance_time=tag_instance_time,
+            time_precision=time_precision,
+        )
+        self.update_story_orders(
+            session=session,
+            story_order=story_order,
+            tag_id=tag_id,
+        )
         id = uuid4()
         tag_instance = TagInstanceModel(
             id=id,
@@ -552,15 +565,97 @@ class Database:
             stop_char=stop_char,
             summary_id=summary_id,
             tag_id=tag_id,
+            story_order=story_order,
         )
         stmt = """
             insert into taginstances
-                (id, start_char, stop_char, summary_id, tag_id)
+                (id, start_char, stop_char, summary_id, tag_id, story_order)
             values
-                (:id, :start_char, :stop_char, :summary_id, :tag_id)        
+                (:id, :start_char, :stop_char, :summary_id, :tag_id, :story_order)        
         """
-        session.execute(text(stmt), tag_instance.dict())
+        session.execute(text(stmt), tag_instance.model_dump())
         return tag_instance
+
+    def get_story_order(
+        self,
+        session: Session,
+        tag_id: UUID,
+        tag_instance_time: datetime,
+        time_precision: TimePrecision,
+    ) -> int:
+        rows = session.execute(
+            text(
+                """
+                select 
+                    taginstances.id as tag_instance_id, 
+                    taginstances.story_order as story_order,
+                    time.time as datetime, 
+                    time.precision as precision
+                from summaries 
+                    join taginstances on taginstances.summary_id = summaries.id
+                    join tags on tags.id = taginstances.tag_id and tags.type = 'TIME'
+                    join time on time.id = tags.id
+                where summaries.id in (select summary_id from taginstances where tag_id = :tag_id)
+                order by time.time, time.precision
+            """
+            ),
+            {"tag_id": tag_id},
+        ).all()
+        story_order = [
+            StoryOrder.model_validate(row, from_attributes=True) for row in rows
+        ]
+        if not story_order:
+            return 0
+        for row in story_order:
+            if row.datetime < tag_instance_time:
+                continue
+            elif row.datetime == tag_instance_time and row.precision < time_precision:
+                continue
+            else:
+                return row.story_order
+        # this tag instance occurs later than all existing tag instances
+        return story_order[-1].story_order + 1
+
+    def update_story_orders(
+        self, session: Session, tag_id: UUID, story_order: int
+    ) -> None:
+        """Increment story_order for every row of taginstances with fkey tag_id where the
+        current value of story_order is equal or greater than param story_order.
+        """
+        session.execute(
+            text(
+                """
+                WITH ordered_updates AS (
+                    SELECT id 
+                    FROM taginstances
+                    WHERE tag_id = :tag_id
+                      AND story_order >= :story_order
+                    ORDER BY story_order DESC
+                )
+                UPDATE taginstances
+                SET story_order = story_order + 1
+                FROM ordered_updates
+                WHERE taginstances.id = ordered_updates.id;
+            """
+            ),
+            {"tag_id": tag_id, "story_order": story_order},
+        )
+
+    def get_time_and_precision_by_tags(self, session: Session, tag_ids: list[UUID]) -> tuple[datetime, TimePrecision]:
+        """Given a list of tag IDs, find the time and precision associated with them.
+        Raises an exception when multiple are found.
+        """
+        row = session.execute(
+            text("""
+                select 
+                    time.time as datetime, time.precision as precision
+                from tags
+                join time on tags.id = time.id
+                where tags.id in :tag_ids;
+            """),
+            {"tag_ids": tuple(tag_ids)},
+        ).one()
+        return row.datetime, row.precision
 
     def exists_tag(self, tag_id: UUID, session: Session) -> bool:
         get_tag = "select id from tags where tags.id = :tag_id"

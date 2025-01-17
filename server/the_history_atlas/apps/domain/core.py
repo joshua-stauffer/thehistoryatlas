@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+Precision = Literal[7, 8, 9, 10, 11]
+
 
 class TagPointer(BaseModel):
     wikidata_id: str
@@ -49,9 +51,16 @@ class Place(PlaceInput):
 
 class TimeInput(WikiDataEntity):
     date: datetime
-    precision: Literal[7, 8, 9, 10, 11]
+    precision: Precision
     calendar_model: str
 
 
 class Time(TimeInput):
     id: UUID
+
+
+class StoryOrder(BaseModel):
+    tag_instance_id: UUID
+    story_order: int
+    datetime: datetime
+    precision: Precision

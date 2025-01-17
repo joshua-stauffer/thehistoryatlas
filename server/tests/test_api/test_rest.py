@@ -351,20 +351,6 @@ def test_create_event(
     assert response.status_code == 200, response.text
 
 
-def setup_events(
-    client: TestClient,
-    people: list[WikiDataPersonInput],
-    places: list[WikiDataPlaceInput],
-    times: list[WikiDataTimeInput],
-    events: list[WikiDataEventInput],
-):
-
-    for time in times:
-        client.post("/wikidata/times", data=time.model_dump_json())
-    for event in events:
-        client.post("/wikidata/events", data=event.model_dump_json())
-
-
 def test_event_stories(client: TestClient):
     person = create_person(client)
     times = [create_time(client) for _ in range(10)]

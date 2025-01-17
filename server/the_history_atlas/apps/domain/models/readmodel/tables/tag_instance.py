@@ -9,3 +9,4 @@ class TagInstanceModel(ConfiguredBaseModel):
     stop_char: int
     summary_id: UUID
     tag_id: UUID
+    story_order: int

@@ -17,12 +17,16 @@ class Summary(Base):
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
 
-    # TODO: this won't work with multiple time tags, gotta figure out a more
-    #       efficient way to calculate the correct time
-    time_tag = Column(VARCHAR)  # cache timetag name for sorting
-
     # each summary may have multiple citations
     citations = relationship("Citation", back_populates="summary")
+
+
+class StoryName(Base):
+    __tablename__ = "story_names"
+    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False)
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
+    name = Column(VARCHAR, nullable=False)
+    lang = Column(VARCHAR, nullable=False)
 
 
 class Citation(Base):
@@ -77,8 +81,8 @@ class TagInstance(Base):
     tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"))
     tag = relationship("Tag", back_populates="tag_instances")
 
-    def __repr__(self):
-        return f"{self.tag.type}"
+    story_order = Column(INTEGER, nullable=False)
+    __table_args__ = (UniqueConstraint("story_order", "tag_id", name="uq_story_order"),)
 
 
 tag_name_assoc = Table(

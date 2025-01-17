@@ -101,6 +101,7 @@ class EventHandler:
                 pub_date=str(datetime.now(timezone.utc)),
             )
         summary_id = uuid4()
+
         with self._db.Session() as session:
             self._db.create_summary(
                 id=summary_id,
@@ -124,12 +125,18 @@ class EventHandler:
                 citation_id=citation_id,
                 summary_id=summary_id,
             )
+            tag_instance_time, precision = self._db.get_time_and_precision_by_tags(
+                session=session,
+                tag_ids=[tag.id for tag in tags],
+            )
             for tag in tags:
                 self._db.create_tag_instance(
                     start_char=tag.start_char,
                     stop_char=tag.stop_char,
                     summary_id=summary_id,
                     tag_id=tag.id,
+                    tag_instance_time=tag_instance_time,
+                    time_precision=precision,
                     session=session,
                 )
             session.commit()
