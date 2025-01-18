@@ -64,3 +64,8 @@ class StoryOrder(BaseModel):
     story_order: int
     datetime: datetime
     precision: Precision
+
+
+class StoryName(BaseModel):
+    name: str
+    lang: str

@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone
-from typing import Union
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
@@ -14,6 +13,7 @@ from the_history_atlas.apps.domain.core import (
     Time,
     TagInstance,
     CitationInput,
+    StoryName,
 )
 from the_history_atlas.apps.domain.models import (
     SummaryAdded,
@@ -195,8 +195,18 @@ class EventHandler:
             )
             self._db.add_name_to_tag(name=person.name, tag_id=id, session=session)
             self._db.update_entity_trie(new_string=person.name, new_string_guid=str(id))
+            self._db.add_story_names(
+                tag_id=id,
+                session=session,
+                story_names=self.get_available_person_story_names(name=person.name),
+            )
             session.commit()
         return Person(id=id, **person.model_dump())
+
+    def get_available_person_story_names(self, name: str) -> list[StoryName]:
+        return [
+            StoryName(lang="en", name=f"The Life of {name}"),
+        ]
 
     def create_place(self, place: PlaceInput) -> Place:
         if self._db.get_tag_id_by_wikidata_id(wikidata_id=place.wikidata_id):
@@ -215,8 +225,18 @@ class EventHandler:
             )
             self._db.add_name_to_tag(name=place.name, tag_id=id, session=session)
             self._db.update_entity_trie(new_string=place.name, new_string_guid=str(id))
+            self._db.add_story_names(
+                tag_id=id,
+                session=session,
+                story_names=self.get_available_place_story_names(name=place.name),
+            )
             session.commit()
         return Place(id=id, **place.model_dump())
+
+    def get_available_place_story_names(self, name: str) -> list[StoryName]:
+        return [
+            StoryName(lang="en", name=f"The History of {name}"),
+        ]
 
     def create_time(self, time: TimeInput) -> Time:
         if self._db.get_tag_id_by_wikidata_id(wikidata_id=time.wikidata_id):
@@ -236,8 +256,18 @@ class EventHandler:
             )
             self._db.add_name_to_tag(name=time.name, tag_id=id, session=session)
             self._db.update_entity_trie(new_string=time.name, new_string_guid=str(id))
+            self._db.add_story_names(
+                tag_id=id,
+                session=session,
+                story_names=self.get_available_time_story_names(name=time.name),
+            )
             session.commit()
         return Time(id=id, **time.model_dump())
+
+    def get_available_time_story_names(self, name: str) -> list[StoryName]:
+        return [
+            StoryName(lang="en", name=f"Events of {name}"),
+        ]
 
     def person_added(self, event: PersonAdded):
         person_id = UUID(event.payload.id)

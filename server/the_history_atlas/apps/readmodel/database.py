@@ -9,7 +9,7 @@ from sqlalchemy.engine import row
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
-from the_history_atlas.apps.domain.core import TagPointer, StoryOrder
+from the_history_atlas.apps.domain.core import TagPointer, StoryOrder, StoryName
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
@@ -641,18 +641,22 @@ class Database:
             {"tag_id": tag_id, "story_order": story_order},
         )
 
-    def get_time_and_precision_by_tags(self, session: Session, tag_ids: list[UUID]) -> tuple[datetime, TimePrecision]:
+    def get_time_and_precision_by_tags(
+        self, session: Session, tag_ids: list[UUID]
+    ) -> tuple[datetime, TimePrecision]:
         """Given a list of tag IDs, find the time and precision associated with them.
         Raises an exception when multiple are found.
         """
         row = session.execute(
-            text("""
+            text(
+                """
                 select 
                     time.time as datetime, time.precision as precision
                 from tags
                 join time on tags.id = time.id
                 where tags.id in :tag_ids;
-            """),
+            """
+            ),
             {"tag_ids": tuple(tag_ids)},
         ).one()
         return row.datetime, row.precision
@@ -717,6 +721,27 @@ class Database:
                 values (:tag_id, :name_id);
         """
         session.execute(text(stmt), tag_name_assoc.model_dump())
+
+    def add_story_names(
+        self, tag_id: UUID, session: Session, story_names: list[StoryName]
+    ) -> None:
+        session.execute(
+            text(
+                """
+                insert into story_names (id, tag_id, name, lang)
+                values (:id, :tag_id, :name, :lang)
+            """
+            ),
+            [
+                {
+                    "id": uuid4(),
+                    "tag_id": tag_id,
+                    "name": story_name.name,
+                    "lang": story_name.lang,
+                }
+                for story_name in story_names
+            ],
+        )
 
     def create_source(
         self,

@@ -65,10 +65,10 @@ def cleanup_db(config):
         session.commit()
     engine.dispose()
     yield
-    with Session(engine, future=True) as session:
-        truncate_db(session)
-        session.commit()
-    engine.dispose()
+    # with Session(engine, future=True) as session:
+    #     truncate_db(session)
+    #     session.commit()
+    # engine.dispose()
 
 
 @pytest.fixture
