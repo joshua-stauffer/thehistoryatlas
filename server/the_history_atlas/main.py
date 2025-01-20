@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI, Depends
 
 from the_history_atlas.api import mount_api
@@ -22,3 +23,7 @@ def get_app() -> FastAPI:
 
 
 app = get_app()
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
