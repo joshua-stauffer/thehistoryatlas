@@ -1,7 +1,18 @@
 import logging
-from typing import List
+from typing import List, Literal
+from uuid import UUID
 
-from the_history_atlas.apps.domain.core import TagPointer
+from the_history_atlas.apps.domain.core import (
+    TagPointer,
+    Story,
+    StoryPointer,
+    HistoryEvent,
+    CalendarDate,
+    Source as CoreSource,
+    Map,
+    Point,
+    Tag,
+)
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import Source, DefaultEntity
 from the_history_atlas.apps.domain.models.readmodel.queries import (
@@ -126,3 +137,98 @@ class QueryHandler:
 
     def get_tags_by_wikidata_ids(self, wikidata_ids: list[str]) -> list[TagPointer]:
         return self._db.get_tags_by_wikidata_ids(wikidata_ids=wikidata_ids)
+
+    def get_story_list(
+        self, event_id: UUID, story_id: UUID, direction: Literal["next", "prev"] | None
+    ) -> Story:
+        with self._db.Session() as session:
+            try:
+                story_pointers = self._db.get_story_pointers(
+                    summary_id=event_id,
+                    tag_id=story_id,
+                    direction=direction,
+                    session=session,
+                )
+                events = self._db.get_events(
+                    event_ids=tuple([story.event_id for story in story_pointers]),
+                    session=session,
+                )
+                story_names = self._db.get_story_names(
+                    story_ids=tuple(
+                        set(
+                            [story_pointer.story_id for story_pointer in story_pointers]
+                        )
+                    ),
+                    session=session,
+                )
+            except Exception as e:
+                print(e)
+                raise
+        return Story(
+            id=story_id,
+            events=[
+                HistoryEvent(
+                    id=event_query.event_id,
+                    text=event_query.event_row.text,
+                    lang="en",
+                    date=CalendarDate(
+                        time=event_query.calendar_date.datetime,
+                        calendar=event_query.calendar_date.calendar_model,
+                        precision=event_query.calendar_date.precision,
+                    ),
+                    source=CoreSource(
+                        id=event_query.event_row.source_id,
+                        text=event_query.event_row.source_text,
+                        title=event_query.event_row.source_title,
+                        author=event_query.event_row.source_author,
+                        publisher=event_query.event_row.source_publisher,
+                        pub_date=event_query.event_row.source_access_date,
+                    ),
+                    tags=[
+                        Tag(
+                            id=tag.tag_id,
+                            type=tag.type,
+                            start_char=tag.start_char,
+                            stop_char=tag.stop_char,
+                            name=event_query.names[tag.tag_id].names[
+                                0
+                            ],  # take first name for now
+                            default_story_id=tag.tag_id,
+                        )
+                        for tag in event_query.tags
+                    ],
+                    map=Map(
+                        locations=[
+                            Point(
+                                id=event_query.location_row.tag_id,
+                                latitude=event_query.location_row.latitude,
+                                longitude=event_query.location_row.longitude,
+                                name=event_query.names[
+                                    event_query.location_row.tag_id
+                                ].names[0],
+                            )
+                        ]
+                    ),
+                    focus=event_id,
+                    story_title=story_names[story_id],
+                    stories=list(),  # todo
+                )
+                for event_query in events
+            ],
+            name=story_names[story_id],
+        )
+
+    def get_default_story_and_event(
+        self,
+        story_id: UUID | None,
+        event_id: UUID | None,
+    ) -> StoryPointer:
+        if story_id:
+            # get the first story
+            return self._db.get_default_event_by_story(story_id=story_id)
+        elif event_id:
+            # get the person story associated with this event
+            return self._db.get_default_story_by_event(event_id=event_id)
+        else:
+            # return random story/event
+            return self._db.get_default_story_and_event()

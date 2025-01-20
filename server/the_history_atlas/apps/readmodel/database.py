@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import Tuple, Union, Optional, List
+from typing import Tuple, Union, Optional, List, Literal
 from uuid import uuid4, UUID
 
 from sqlalchemy import select, func, text
@@ -9,7 +9,12 @@ from sqlalchemy.engine import row
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
-from the_history_atlas.apps.domain.core import TagPointer, StoryOrder, StoryName
+from the_history_atlas.apps.domain.core import (
+    TagPointer,
+    StoryOrder,
+    StoryName,
+    StoryPointer,
+)
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import (
     DefaultEntity,
@@ -17,6 +22,14 @@ from the_history_atlas.apps.domain.models.readmodel import (
 )
 from the_history_atlas.apps.domain.models.readmodel.queries import FuzzySearchByName
 from the_history_atlas.apps.domain.models.readmodel.queries.coords_by_name import Coords
+from the_history_atlas.apps.domain.models.readmodel.queries.get_events import (
+    EventQuery,
+    EventRow,
+    TagRow,
+    CalendarDateRow,
+    LocationRow,
+    TagNames,
+)
 from the_history_atlas.apps.domain.models.readmodel.tables import (
     PersonModel,
     TagInstanceModel,
@@ -29,6 +42,7 @@ from the_history_atlas.apps.domain.models.readmodel.tables.time import (
     TimePrecision,
     TimeModel,
 )
+from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
@@ -307,6 +321,237 @@ class Database:
                 )
 
             return DefaultEntity(id=tag.id, name=tag.names, type="PLACE")
+
+    def get_default_story_and_event(
+        self,
+    ) -> StoryPointer:
+        with Session(self._engine, future=True) as session:
+            # get the beginning of a person's life
+            row = session.execute(
+                text(
+                    """
+                    SELECT summary_id as event_id, tag_id as story_id
+                    FROM taginstances
+                    JOIN tags ON taginstances.tag_id = tags.id
+                    WHERE taginstances.story_order = 0
+                    AND tags.type = 'PERSON'
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+                """
+                )
+            ).one()
+            return StoryPointer(
+                event_id=row.event_id,
+                story_id=row.story_id,
+            )
+
+    def get_default_event_by_story(self, story_id: UUID) -> StoryPointer:
+        # todo
+        return self.get_default_story_and_event()
+
+    def get_default_story_by_event(self, event_id: UUID) -> StoryPointer:
+        # todo
+        return self.get_default_story_and_event()
+
+    def get_story_pointers(
+        self,
+        summary_id: UUID,
+        tag_id: UUID,
+        direction: Literal["next", "prev"] | None,
+        session: Session,
+    ) -> List[StoryPointer]:
+        match direction:
+            case "next":
+                operator = ">="
+                predicate = ""
+            case "prev":
+                operator = "<="
+                predicate = ""
+            case None:
+                operator = ">="
+                predicate = "- 5"
+            case _:
+                raise RuntimeError("Unknown direction")
+        query = f"""
+                select 
+                    ti.summary_id as event_id,
+                    ti.tag_id as story_id
+                from taginstances ti
+                where ti.tag_id = :tag_id
+                and ti.story_order {operator} (
+                    select story_order from taginstances
+                    where taginstances.tag_id =  :tag_id
+                    and taginstances.summary_id = :summary_id
+                ) {predicate}
+                order by ti.story_order
+                limit 10
+            """
+        rows = session.execute(
+            text(query), {"tag_id": tag_id, "summary_id": summary_id}
+        ).all()
+        return [StoryPointer.model_validate(row, from_attributes=True) for row in rows]
+
+    def get_events(
+        self, event_ids: tuple[UUID, ...], session: Session
+    ) -> list[EventQuery]:
+        event_query = session.execute(
+            text(
+                """
+                -- event_rows
+                select 
+                    summaries.id as event_id,
+                    summaries.text as text,
+                    sources.id as source_id,
+                    citations.text as source_text,
+                    sources.title as source_title,
+                    sources.author as source_author,
+                    sources.publisher as source_publisher,
+                    citations.access_date as source_access_date
+                from summaries
+                join citations
+                    on citations.summary_id = summaries.id
+                join sources
+                    on sources.id = citations.source_id
+                where summaries.id in :summary_ids;
+            """
+            ),
+            {"summary_ids": event_ids},
+        ).all()
+        event_rows = {
+            row.event_id: EventRow.model_validate(row, from_attributes=True)
+            for row in event_query
+        }
+
+        location_query = session.execute(
+            text(
+                """
+                select
+                    summaries.id as event_id,
+                    tags.id as tag_id,
+                    place.latitude,
+                    place.longitude
+                from summaries
+                join taginstances
+                    on summaries.id = taginstances.summary_id
+                join tags
+                    on tags.id = taginstances.tag_id
+                join place
+                    on place.id = tags.id
+                where summaries.id in :summary_ids;
+            """
+            ),
+            {"summary_ids": event_ids},
+        )
+        location_rows = {
+            row.event_id: LocationRow.model_validate(row, from_attributes=True)
+            for row in location_query.all()
+        }
+        calendar_date_query = session.execute(
+            text(
+                """
+                select
+                	summaries.id as event_id,
+                    time.time as datetime,
+                    time.calendar_model as calendar_model,
+                    time.precision as precision
+                from summaries
+                join taginstances
+                    on summaries.id = taginstances.summary_id
+                join tags
+                    on tags.id = taginstances.tag_id
+                join time
+                    on time.id = tags.id
+                where summaries.id in :summary_ids;
+
+            """
+            ),
+            {"summary_ids": event_ids},
+        ).all()
+        calendar_date_rows = {
+            row.event_id: CalendarDateRow.model_validate(row, from_attributes=True)
+            for row in calendar_date_query
+        }
+        tag_query = session.execute(
+            text(
+                """
+                -- tag rows
+                select
+                    tags.type as type,
+                    summaries.id as event_id,
+                    tags.id as tag_id,
+                    taginstances.start_char as start_char,
+                    taginstances.stop_char as stop_char
+                from summaries
+                join taginstances
+                    on taginstances.summary_id = summaries.id
+                join tags
+                    on taginstances.tag_id = tags.id
+                join tag_name_assoc
+                    on tags.id = tag_name_assoc.tag_id
+                where summaries.id in :summary_ids;
+            """
+            ),
+            {"summary_ids": event_ids},
+        ).all()
+        tag_rows: defaultdict[UUID, list[TagRow]] = defaultdict(list)
+        for row in tag_query:
+            validated_row = TagRow.model_validate(row, from_attributes=True)
+            tag_rows[row.event_id].append(validated_row)
+
+        tag_ids = [
+            tag_row.tag_id
+            for tag_row_list in tag_rows.values()
+            for tag_row in tag_row_list
+        ]
+        tag_name_query = session.execute(
+            text(
+                """
+                select 
+                    tags.id as tag_id,
+                    array_agg(names.name) as names
+                from tags
+                join tag_name_assoc
+                    on tags.id = tag_name_assoc.tag_id
+                join names
+                    on names.id = tag_name_assoc.name_id
+                where tags.id in :tag_ids
+                group by tags.id;
+            """
+            ),
+            {"tag_ids": tuple(tag_ids)},
+        ).all()
+        tag_names = {
+            row.tag_id: TagNames.model_validate(row, from_attributes=True)
+            for row in tag_name_query
+        }
+        return [
+            EventQuery(
+                event_id=event_id,
+                event_row=event_row,
+                tags=tag_rows[event_id],
+                calendar_date=calendar_date_rows[event_id],
+                location_row=location_rows[event_id],
+                names=tag_names,
+            )
+            for event_id, event_row in event_rows.items()
+        ]
+
+    def get_story_names(
+        self, story_ids: tuple[UUID, ...], session: Session
+    ) -> dict[UUID, str]:
+        rows = session.execute(
+            text(
+                """
+                select
+                    tag_id as story_id,
+                    name as story_name
+                from story_names
+                where tag_id in :story_ids;
+            """
+            ),
+            {"story_ids": story_ids},
+        ).all()
+        return {row.story_id: row.story_name for row in rows}
 
     def get_coords_by_names(self, names: list[str], session: Session) -> CoordsByName:
         sql = text(

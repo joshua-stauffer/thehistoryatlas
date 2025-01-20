@@ -164,11 +164,6 @@ def client(cleanup_db):
     return TestClient(get_app())
 
 
-def test_get_history(client: TestClient) -> None:
-    response = client.get("/history")
-    assert response.status_code == 200
-
-
 def test_create_person(client: TestClient) -> None:
     input = WikiDataPersonInput(
         wikidata_id="Q1339",
@@ -351,7 +346,21 @@ def test_create_event(
     assert response.status_code == 200, response.text
 
 
-def test_event_stories(client: TestClient):
+@pytest.fixture
+def seed_story(
+    client: TestClient,
+):
+    person = create_person(client)
+    times = [create_time(client) for _ in range(10)]
+    places = [create_place(client) for _ in range(10)]
+
+    events = [
+        create_event(person=person, place=place, time=time, client=client)
+        for time, place in zip(times, places)
+    ]
+
+
+def test_create_stories(client: TestClient):
     person = create_person(client)
     times = [create_time(client) for _ in range(10)]
     places = [create_place(client) for _ in range(10)]
@@ -361,3 +370,8 @@ def test_event_stories(client: TestClient):
         for time, place in zip(times, places)
     ]
     print()
+
+
+def test_get_history_no_params(client: TestClient, seed_story) -> None:
+    response = client.get("/history")
+    assert response.status_code == 200

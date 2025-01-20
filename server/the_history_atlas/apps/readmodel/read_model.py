@@ -1,5 +1,6 @@
 import logging
-from typing import List
+from typing import List, Literal
+from uuid import UUID
 
 from the_history_atlas.apps.database import DatabaseClient
 from the_history_atlas.apps.domain.core import (
@@ -12,6 +13,8 @@ from the_history_atlas.apps.domain.core import (
     TagPointer,
     CitationInput,
     TagInstance,
+    Story,
+    StoryPointer,
 )
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
@@ -126,4 +129,20 @@ class ReadModelApp:
     ):
         return self._event_handler.create_wikidata_event(
             text=text, tags=tags, citation=citation
+        )
+
+    def get_story_list(
+        self, event_id: UUID, story_id: UUID, direction: Literal["next", "prev"] | None
+    ) -> Story:
+        return self._query_handler.get_story_list(
+            event_id=event_id, story_id=story_id, direction=direction
+        )
+
+    def get_default_story_and_event(
+        self,
+        story_id: UUID | None,
+        event_id: UUID | None,
+    ) -> StoryPointer:
+        return self._query_handler.get_default_story_and_event(
+            story_id=story_id, event_id=event_id
         )

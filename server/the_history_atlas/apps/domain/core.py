@@ -3,8 +3,14 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
+from wikidata.entity import EntityType
 
 Precision = Literal[7, 8, 9, 10, 11]
+
+
+class StoryPointer(BaseModel):
+    story_id: UUID
+    event_id: UUID
 
 
 class TagPointer(BaseModel):
@@ -69,3 +75,57 @@ class StoryOrder(BaseModel):
 class StoryName(BaseModel):
     name: str
     lang: str
+
+
+class Point(BaseModel):
+    id: UUID
+    latitude: float
+    longitude: float
+    name: str
+
+
+class Source(BaseModel):
+    id: UUID
+    text: str
+    title: str
+    author: str
+    publisher: str
+    pub_date: datetime
+
+
+class CalendarDate(BaseModel):
+    time: datetime
+    calendar: str
+    precision: Precision
+
+
+class Tag(BaseModel):
+    id: UUID
+    type: str
+    start_char: int
+    stop_char: int
+    name: str
+    default_story_id: UUID
+
+
+class Map(BaseModel):
+    locations: list[Point]
+
+
+class HistoryEvent(BaseModel):
+    id: UUID
+    text: str
+    lang: str
+    date: CalendarDate
+    source: Source
+    tags: list[Tag]
+    map: Map
+    focus: UUID | None = None
+    story_title: str
+    stories: list[str] = []
+
+
+class Story(BaseModel):
+    id: UUID
+    name: str
+    events: list[HistoryEvent]

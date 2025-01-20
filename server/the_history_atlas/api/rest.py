@@ -1,16 +1,25 @@
 from fastapi import FastAPI, Depends, Query
-from pydantic import BaseModel
-from typing import List, Union, Callable, Annotated
+from typing import Callable, Annotated, Literal
 from faker import Faker
 import random
-from uuid import uuid4
+from uuid import uuid4, UUID
 
+from the_history_atlas.api.handlers.history import get_history_handler
 from the_history_atlas.api.handlers.tags import (
     create_person_handler,
     create_place_handler,
     create_time_handler,
     get_tags_handler,
     create_event_handler,
+)
+from the_history_atlas.api.types.history import (
+    Source,
+    CalendarDate,
+    Tag,
+    Map,
+    HistoryEvent,
+    Story,
+    Point,
 )
 from the_history_atlas.api.types.tags import (
     WikiDataPersonOutput,
@@ -20,7 +29,6 @@ from the_history_atlas.api.types.tags import (
     WikiDataTimeOutput,
     WikiDataTimeInput,
     WikiDataTagsOutput,
-    WikiDataTagsInput,
     WikiDataEventOutput,
     WikiDataEventInput,
 )
@@ -30,63 +38,6 @@ fake = Faker()
 Faker.seed(872)
 
 # Models
-class Point(BaseModel):
-    id: str
-    latitude: float
-    longitude: float
-    name: str
-
-
-class Location(Point):
-    pass
-
-
-class Source(BaseModel):
-    id: str
-    text: str
-    title: str
-    author: str
-    publisher: str
-    pubDate: str
-
-
-class CalendarDate(BaseModel):
-    time: str
-    calendar: str
-    precision: int
-
-
-class Tag(BaseModel):
-    id: str
-    type: str
-    startChar: int
-    stopChar: int
-    name: str
-    defaultStoryId: str
-
-
-class Map(BaseModel):
-    locations: List[Location]
-
-
-class HistoryEvent(BaseModel):
-    id: str
-    text: str
-    lang: str
-    date: CalendarDate
-    source: Source
-    tags: List[Tag]
-    map: Map
-    focus: Union[None, str] = None
-    storyTitle: str
-    stories: List[str] = []
-
-
-class Story(BaseModel):
-    id: str
-    name: str
-    events: List[HistoryEvent]
-    index: int
 
 
 # Helper Functions
@@ -154,7 +105,7 @@ def build_tags(text, map_options):
 
 def build_point(map_options):
     latitude, longitude = fake.local_latlng(country_code="US", coords_only=True)
-    return Location(
+    return Point(
         id=str(uuid4()),
         latitude=float(latitude),
         longitude=float(longitude),
@@ -196,8 +147,15 @@ def register_rest_endpoints(
     Apps = Annotated[AppManager, Depends(app_manager)]
     # API Endpoints
     @fastapi_app.get("/history", response_model=Story)
-    def get_history():
-        return build_story()
+    def get_history(
+        apps: Apps,
+        eventId: Annotated[UUID, Query()] | None = None,
+        storyId: Annotated[UUID, Query()] | None = None,
+        direction: Annotated[Literal["next", "prev"], Query()] | None = None,
+    ) -> Story:
+        return get_history_handler(
+            apps=apps, event_id=eventId, story_id=storyId, direction=direction
+        )
 
     @fastapi_app.post("/wikidata/people", response_model=WikiDataPersonOutput)
     def create_people(person: WikiDataPersonInput, apps: Apps) -> WikiDataPersonOutput:
