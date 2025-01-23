@@ -146,7 +146,7 @@ def register_rest_endpoints(
 
     Apps = Annotated[AppManager, Depends(app_manager)]
     # API Endpoints
-    @fastapi_app.get("/history", response_model=Story)
+    @fastapi_app.get("/api/history", response_model=Story)
     def get_history(
         apps: Apps,
         eventId: Annotated[UUID, Query()] | None = None,
