@@ -18,8 +18,15 @@ function App() {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <LandingPage />,
-      loader: landingPageLoader,
+      element: <HistoryEventView />,
+      loader: historyEventLoader,
+      errorElement: (
+        <GenericError
+          header={"Uh oh..."}
+          text={"Something went wrong"}
+          details={"Check the URL and try again"}
+        />
+      ),
     },
     {
       path: "/stories/:storyId/events/:eventId",
