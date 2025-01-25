@@ -828,26 +828,59 @@ class Database:
         tag_instance_time: datetime,
         time_precision: TimePrecision,
     ) -> int:
-        rows = session.execute(
+        """Given a tag, find the order belonging to a given time."""
+        summary_rows = session.execute(
             text(
                 """
                 select 
-                    taginstances.id as tag_instance_id, 
-                    taginstances.story_order as story_order,
+                    summaries.id as summary_id,
                     time.time as datetime, 
                     time.precision as precision
                 from summaries 
+                    -- given a summary, find its time tag
                     join taginstances on taginstances.summary_id = summaries.id
                     join tags on tags.id = taginstances.tag_id and tags.type = 'TIME'
                     join time on time.id = tags.id
-                where summaries.id in (select summary_id from taginstances where tag_id = :tag_id)
+                where summaries.id in (
+                    -- find all the summaries related to input tag_id
+                    select summary_id from taginstances where tag_id = :tag_id
+                )
                 order by time.time, time.precision
             """
             ),
             {"tag_id": tag_id},
         ).all()
+        summary_map = {row.summary_id: row for row in summary_rows}
+        if not summary_map:
+            return 0
+
+        story_order_rows = session.execute(
+            text(
+                """
+                select 
+                    summaries.id as summary_id,
+                    taginstances.story_order as story_order
+                from summaries
+                    join taginstances on taginstances.summary_id = summaries.id
+                where summaries.id in :summary_ids
+                    and taginstances.tag_id = :tag_id;
+            """
+            ),
+            {
+                "summary_ids": tuple([row.summary_id for row in summary_rows]),
+                "tag_id": tag_id,
+            },
+        ).all()
+        story_order_map = {row.summary_id: row.story_order for row in story_order_rows}
+
         story_order = [
-            StoryOrder.model_validate(row, from_attributes=True) for row in rows
+            StoryOrder(
+                summary_id=summary_id,
+                story_order=story_order_map[summary_id],
+                datetime=row.datetime,
+                precision=row.precision,
+            )
+            for summary_id, row in summary_map.items()
         ]
         if not story_order:
             return 0

@@ -72,6 +72,13 @@ def cleanup_db(config):
 
 
 @pytest.fixture
+def db_session(config):
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    with Session(engine, future=True) as session:
+        yield session
+
+
+@pytest.fixture
 def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
     AccountsBase.metadata.create_all(engine)

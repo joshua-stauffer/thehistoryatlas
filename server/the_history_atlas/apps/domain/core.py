@@ -66,7 +66,7 @@ class Time(TimeInput):
 
 
 class StoryOrder(BaseModel):
-    tag_instance_id: UUID
+    summary_id: UUID
     story_order: int
     datetime: datetime
     precision: Precision

@@ -6,8 +6,10 @@ from faker import Faker
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
+from sqlalchemy.engine import row
 from sqlalchemy.orm import Session
 
+from the_history_atlas.api.types.history import Story
 from the_history_atlas.api.types.tags import (
     WikiDataPersonInput,
     WikiDataPlaceInput,
@@ -353,25 +355,91 @@ def seed_story(
     person = create_person(client)
     times = [create_time(client) for _ in range(10)]
     places = [create_place(client) for _ in range(10)]
-
     events = [
         create_event(person=person, place=place, time=time, client=client)
         for time, place in zip(times, places)
     ]
 
 
-def test_create_stories(client: TestClient):
+@pytest.mark.parametrize("EVENT_COUNT", [3, 10, 50])
+def test_create_stories_order(client: TestClient, db_session, EVENT_COUNT):
+    # arrange
+    person = create_person(client)
+    times = [create_time(client) for _ in range(EVENT_COUNT)]
+    places = [create_place(client) for _ in range(EVENT_COUNT)]
+    events = [
+        create_event(person=person, place=place, time=time, client=client)
+        for time, place in zip(times, places)
+    ]
+
+    # act
+    response = client.get("/api/history")
+    assert response.status_code == 200
+    story = Story.model_validate(response.json())
+
+    # assert
+    rows = db_session.execute(
+        text(
+            """
+            select 
+                summaries.id as summary_id,
+                taginstances.story_order as story_order,
+                (
+                    select time.time as datetime
+                    from summaries as s2
+                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
+                    join time on time.id = t2.id
+                    where s2.id = summaries.id
+                    order by time.time, time.precision
+                    limit 1
+                ) as datetime,
+                (
+                    select time.precision
+                    from summaries as s2
+                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
+                    join time on time.id = t2.id
+                    where s2.id = summaries.id
+                    order by time.time, time.precision
+                    limit 1
+                ) as precision
+            from summaries
+            join taginstances on taginstances.summary_id = summaries.id
+            where summaries.id in (
+                select summary_id 
+                from taginstances 
+                where tag_id = :tag_id
+            )
+            and taginstances.tag_id = :tag_id
+            order by story_order;
+        """
+        ),
+        {"tag_id": person.id},
+    ).all()
+    row_tuples = [(row.story_order, row.datetime) for row in rows]
+    assert len(row_tuples) == EVENT_COUNT
+    assert sorted(row_tuples) == row_tuples
+    for i, (story_order, _) in enumerate(row_tuples):
+        assert i == story_order
+
+
+def test_get_history_no_params(client: TestClient) -> None:
+    # arrange
     person = create_person(client)
     times = [create_time(client) for _ in range(10)]
     places = [create_place(client) for _ in range(10)]
-
     events = [
         create_event(person=person, place=place, time=time, client=client)
         for time, place in zip(times, places)
     ]
-    print()
 
-
-def test_get_history_no_params(client: TestClient, seed_story) -> None:
-    response = client.get("/history")
+    # act
+    response = client.get("/api/history")
     assert response.status_code == 200
+    story = Story.model_validate(response.json())
+
+    # assert
+    time_tags = sorted([time.date for time in times])
+    for event, time in zip(story.events, time_tags):
+        assert event.date.time == time
