@@ -524,8 +524,8 @@ class Database:
             row.tag_id: TagNames.model_validate(row, from_attributes=True)
             for row in tag_name_query
         }
-        return [
-            EventQuery(
+        unordered_events = {
+            event_id: EventQuery(
                 event_id=event_id,
                 event_row=event_row,
                 tags=tag_rows[event_id],
@@ -534,7 +534,8 @@ class Database:
                 names=tag_names,
             )
             for event_id, event_row in event_rows.items()
-        ]
+        }
+        return [unordered_events[event_id] for event_id in event_ids]
 
     def get_story_names(
         self, story_ids: tuple[UUID, ...], session: Session

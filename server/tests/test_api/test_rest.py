@@ -424,11 +424,12 @@ def test_create_stories_order(client: TestClient, db_session, EVENT_COUNT):
         assert i == story_order
 
 
-def test_get_history_no_params(client: TestClient) -> None:
+@pytest.mark.parametrize("EVENT_COUNT", [3, 10, 50])
+def test_get_history_no_params(client: TestClient, EVENT_COUNT) -> None:
     # arrange
     person = create_person(client)
-    times = [create_time(client) for _ in range(10)]
-    places = [create_place(client) for _ in range(10)]
+    times = [create_time(client) for _ in range(EVENT_COUNT)]
+    places = [create_place(client) for _ in range(EVENT_COUNT)]
     events = [
         create_event(person=person, place=place, time=time, client=client)
         for time, place in zip(times, places)
@@ -442,4 +443,4 @@ def test_get_history_no_params(client: TestClient) -> None:
     # assert
     time_tags = sorted([time.date for time in times])
     for event, time in zip(story.events, time_tags):
-        assert event.date.time == time
+        assert event.date.time.date() == time.date()

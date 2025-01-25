@@ -164,57 +164,58 @@ class QueryHandler:
             except Exception as e:
                 print(e)
                 raise
+        history_events = [
+            HistoryEvent(
+                id=event_query.event_id,
+                text=event_query.event_row.text,
+                lang="en",
+                date=CalendarDate(
+                    time=event_query.calendar_date.datetime,
+                    calendar=event_query.calendar_date.calendar_model,
+                    precision=event_query.calendar_date.precision,
+                ),
+                source=CoreSource(
+                    id=event_query.event_row.source_id,
+                    text=event_query.event_row.source_text,
+                    title=event_query.event_row.source_title,
+                    author=event_query.event_row.source_author,
+                    publisher=event_query.event_row.source_publisher,
+                    pub_date=event_query.event_row.source_access_date,
+                ),
+                tags=[
+                    Tag(
+                        id=tag.tag_id,
+                        type=tag.type,
+                        start_char=tag.start_char,
+                        stop_char=tag.stop_char,
+                        name=event_query.names[tag.tag_id].names[
+                            0
+                        ],  # take first name for now
+                        default_story_id=tag.tag_id,
+                    )
+                    for tag in event_query.tags
+                ],
+                map=Map(
+                    locations=[
+                        Point(
+                            id=event_query.location_row.tag_id,
+                            latitude=event_query.location_row.latitude,
+                            longitude=event_query.location_row.longitude,
+                            name=event_query.names[
+                                event_query.location_row.tag_id
+                            ].names[0],
+                        )
+                    ]
+                ),
+                focus=event_id,
+                story_title=story_names[story_id],
+                stories=list(),  # todo
+            )
+            for event_query in events
+        ]
         return Story(
             id=story_id,
-            events=[
-                HistoryEvent(
-                    id=event_query.event_id,
-                    text=event_query.event_row.text,
-                    lang="en",
-                    date=CalendarDate(
-                        time=event_query.calendar_date.datetime,
-                        calendar=event_query.calendar_date.calendar_model,
-                        precision=event_query.calendar_date.precision,
-                    ),
-                    source=CoreSource(
-                        id=event_query.event_row.source_id,
-                        text=event_query.event_row.source_text,
-                        title=event_query.event_row.source_title,
-                        author=event_query.event_row.source_author,
-                        publisher=event_query.event_row.source_publisher,
-                        pub_date=event_query.event_row.source_access_date,
-                    ),
-                    tags=[
-                        Tag(
-                            id=tag.tag_id,
-                            type=tag.type,
-                            start_char=tag.start_char,
-                            stop_char=tag.stop_char,
-                            name=event_query.names[tag.tag_id].names[
-                                0
-                            ],  # take first name for now
-                            default_story_id=tag.tag_id,
-                        )
-                        for tag in event_query.tags
-                    ],
-                    map=Map(
-                        locations=[
-                            Point(
-                                id=event_query.location_row.tag_id,
-                                latitude=event_query.location_row.latitude,
-                                longitude=event_query.location_row.longitude,
-                                name=event_query.names[
-                                    event_query.location_row.tag_id
-                                ].names[0],
-                            )
-                        ]
-                    ),
-                    focus=event_id,
-                    story_title=story_names[story_id],
-                    stories=list(),  # todo
-                )
-                for event_query in events
-            ],
+            events=history_events,
             name=story_names[story_id],
         )
 
