@@ -36,6 +36,7 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
 )
 from the_history_atlas.apps.readmodel.errors import (
     UnknownManifestTypeError,
+    MissingResourceError,
 )
 from the_history_atlas.apps.readmodel.database import Database
 from the_history_atlas.apps.readmodel.trie import Trie
@@ -155,15 +156,21 @@ class QueryHandler:
                 )
                 story_names = self._db.get_story_names(
                     story_ids=tuple(
-                        set(
-                            [story_pointer.story_id for story_pointer in story_pointers]
-                        )
+                        {
+                            *[
+                                story_pointer.story_id
+                                for story_pointer in story_pointers
+                            ],
+                            story_id,
+                        }
                     ),
                     session=session,
                 )
             except Exception as e:
-                print(e)
                 raise
+        if not story_names:
+            raise MissingResourceError("Story not found")
+
         history_events = [
             HistoryEvent(
                 id=event_query.event_id,

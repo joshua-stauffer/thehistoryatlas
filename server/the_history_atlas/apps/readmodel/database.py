@@ -362,14 +362,17 @@ class Database:
     ) -> List[StoryPointer]:
         match direction:
             case "next":
-                operator = ">="
+                operator = ">"
                 predicate = ""
+                order_by_clause = "asc"
             case "prev":
-                operator = "<="
+                operator = "<"
                 predicate = ""
+                order_by_clause = "desc"
             case None:
                 operator = ">="
                 predicate = "- 5"
+                order_by_clause = "asc"
             case _:
                 raise RuntimeError("Unknown direction")
         query = f"""
@@ -383,17 +386,24 @@ class Database:
                     where taginstances.tag_id =  :tag_id
                     and taginstances.summary_id = :summary_id
                 ) {predicate}
-                order by ti.story_order
+                order by ti.story_order {order_by_clause}
                 limit 10
             """
         rows = session.execute(
             text(query), {"tag_id": tag_id, "summary_id": summary_id}
         ).all()
-        return [StoryPointer.model_validate(row, from_attributes=True) for row in rows]
+        story_pointers = [
+            StoryPointer.model_validate(row, from_attributes=True) for row in rows
+        ]
+        if direction == "prev":
+            story_pointers.reverse()
+        return story_pointers
 
     def get_events(
         self, event_ids: tuple[UUID, ...], session: Session
     ) -> list[EventQuery]:
+        if not event_ids:
+            return []
         event_query = session.execute(
             text(
                 """

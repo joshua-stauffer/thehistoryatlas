@@ -1,13 +1,16 @@
 from datetime import datetime, timezone
 import random
+from typing import Literal
 from uuid import uuid4, UUID
 from faker import Faker
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import QueryParams
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.engine import row
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, scoped_session
 
 from the_history_atlas.api.types.history import Story
 from the_history_atlas.api.types.tags import (
@@ -24,6 +27,7 @@ from the_history_atlas.api.types.tags import (
     WikiDataTimeOutput,
     WikiDataEventOutput,
 )
+from the_history_atlas.apps.domain.core import StoryOrder
 from the_history_atlas.main import get_app
 
 fake = Faker()
@@ -424,23 +428,285 @@ def test_create_stories_order(client: TestClient, db_session, EVENT_COUNT):
         assert i == story_order
 
 
-@pytest.mark.parametrize("EVENT_COUNT", [3, 10, 50])
-def test_get_history_no_params(client: TestClient, EVENT_COUNT) -> None:
-    # arrange
-    person = create_person(client)
-    times = [create_time(client) for _ in range(EVENT_COUNT)]
-    places = [create_place(client) for _ in range(EVENT_COUNT)]
-    events = [
-        create_event(person=person, place=place, time=time, client=client)
-        for time, place in zip(times, places)
-    ]
+def get_all_events_in_order(
+    db_session: scoped_session, tag_id: UUID
+) -> list[StoryOrder]:
+    rows = db_session.execute(
+        text(
+            """
+            select 
+                summaries.id as summary_id,
+                taginstances.story_order as story_order,
+                (
+                    select time.time as datetime
+                    from summaries as s2
+                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
+                    join time on time.id = t2.id
+                    where s2.id = summaries.id
+                    order by time.time, time.precision
+                    limit 1
+                ) as datetime,
+                (
+                    select time.precision
+                    from summaries as s2
+                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
+                    join time on time.id = t2.id
+                    where s2.id = summaries.id
+                    order by time.time, time.precision
+                    limit 1
+                ) as precision
+            from summaries
+            join taginstances on taginstances.summary_id = summaries.id
+            where summaries.id in (
+                select summary_id 
+                from taginstances 
+                where tag_id = :tag_id
+            )
+            and taginstances.tag_id = :tag_id
+            order by story_order;
+        """
+        ),
+        {"tag_id": tag_id},
+    ).all()
+    return [StoryOrder.model_validate(row, from_attributes=True) for row in rows]
 
-    # act
-    response = client.get("/api/history")
-    assert response.status_code == 200
-    story = Story.model_validate(response.json())
 
-    # assert
-    time_tags = sorted([time.date for time in times])
-    for event, time in zip(story.events, time_tags):
-        assert event.date.time.date() == time.date()
+class TestGetHistory:
+    @pytest.mark.parametrize("EVENT_COUNT", [3, 10, 50])
+    def test_no_params(self, client: TestClient, EVENT_COUNT) -> None:
+        # arrange
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+
+        # act
+        response = client.get("/api/history")
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        time_tags = sorted([time.date for time in times])
+        for event, time in zip(story.events, time_tags):
+            assert event.date.time.date() == time.date()
+
+    def test_with_params(self, client: TestClient, db_session: scoped_session) -> None:
+        """When passing in params but not next/prev, expect the event
+        we pass in to be returned in the middle of the list."""
+        # arrange
+        EVENT_COUNT = 20
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+        story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=person.id
+        )
+        BASE_INDEX = 10  # index of the story we give as param
+        START_INDEX = BASE_INDEX - 5  # index of event we expect to get back first
+        END_INDEX = BASE_INDEX + 5  # index of event we expect to get back last
+        start_event = story_in_order[BASE_INDEX]
+        expected_events = story_in_order[START_INDEX:END_INDEX]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id,
+                eventId=start_event.summary_id,
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert len(story.events) == 10
+        # expect that the requested event is returned in the middle
+        for event, expected_event in zip(story.events, expected_events):
+            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.precision == expected_event.precision
+            assert event.id == expected_event.summary_id
+
+    def test_with_next(self, client: TestClient, db_session: scoped_session) -> None:
+        """When passed the param direction=next, expect the event
+        we pass in to be returned in the beginning of the event list."""
+        # arrange
+        EVENT_COUNT = 20
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+        story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=person.id
+        )
+        BASE_INDEX = 5  # index of the story we give as param
+        START_INDEX = BASE_INDEX + 1  # index of event we expect to get back first
+        END_INDEX = BASE_INDEX + 11  # index of event we expect to get back last
+        start_event = story_in_order[BASE_INDEX]
+        expected_events = story_in_order[START_INDEX:END_INDEX]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id, eventId=start_event.summary_id, direction="next"
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert len(story.events) == 10
+        # expect that the requested event is returned in the middle
+        for event, expected_event in zip(story.events, expected_events):
+            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.precision == expected_event.precision
+            assert event.id == expected_event.summary_id
+
+    def test_with_prev(self, client: TestClient, db_session: scoped_session) -> None:
+        """When passed the param direction=next, expect the event
+        we pass in to be returned in the beginning of the event list."""
+        # arrange
+        EVENT_COUNT = 20
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+        story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=person.id
+        )
+        BASE_INDEX = 15  # index of the story we give as param
+        START_INDEX = BASE_INDEX - 10  # beginning of range we expect to get back first
+        END_INDEX = BASE_INDEX  # end of range we expect to get back last
+        start_event = story_in_order[BASE_INDEX]
+        expected_events = story_in_order[START_INDEX:END_INDEX]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id, eventId=start_event.summary_id, direction="prev"
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert len(story.events) == 10
+        # expect that the requested event is returned in the middle
+        for event, expected_event in zip(story.events, expected_events):
+            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.precision == expected_event.precision
+            assert event.id == expected_event.summary_id
+
+    @pytest.mark.parametrize("direction", ["prev", "next"])
+    def test_empty_result_with_direction(
+        self, client: TestClient, direction: Literal["prev", "next"]
+    ) -> None:
+        # arrange
+        EVENT_COUNT = 1
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id, eventId=events[0].id, direction=direction
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert story.events == []
+
+    def test_single_result(self, client: TestClient) -> None:
+        # arrange
+        EVENT_COUNT = 1
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id,
+                eventId=events[0].id,
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert len(story.events) == 1
+
+    def test_missing_story_raises_404(self, client: TestClient) -> None:
+        # arrange
+        EVENT_COUNT = 1
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=uuid4(),  # random ID
+                eventId=uuid4(),
+            ),
+        )
+
+        # assert
+        assert response.status_code == 404
+
+    def test_missing_event_raises_404(self, client: TestClient) -> None:
+        # arrange
+        EVENT_COUNT = 1
+        person = create_person(client)
+        times = [create_time(client) for _ in range(EVENT_COUNT)]
+        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        events = [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in zip(times, places)
+        ]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=events[0].id,
+                eventId=uuid4(),
+            ),
+        )
+
+        # assert
+        assert response.status_code == 404

@@ -1,6 +1,8 @@
 from typing import Literal
 from uuid import UUID
 
+from fastapi import HTTPException
+
 import the_history_atlas.api.types.history as api_types
 from the_history_atlas.apps.app_manager import AppManager
 from the_history_atlas.apps.domain.core import (
@@ -12,6 +14,7 @@ from the_history_atlas.apps.domain.core import (
     Map,
     Point,
 )
+from the_history_atlas.apps.readmodel.errors import MissingResourceError
 
 
 def to_camel(string: str) -> str:
@@ -32,9 +35,12 @@ def get_history_handler(
         )
         story_id = story_pointer.story_id
         event_id = story_pointer.event_id
-    story = apps.readmodel_app.get_story_list(
-        event_id=event_id, story_id=story_id, direction=direction
-    )
+    try:
+        story = apps.readmodel_app.get_story_list(
+            event_id=event_id, story_id=story_id, direction=direction
+        )
+    except MissingResourceError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
     return convert_story_to_api(story, index=5)
 
 
