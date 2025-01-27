@@ -499,7 +499,7 @@ class TestGetHistory:
         """When passing in params but not next/prev, expect the event
         we pass in to be returned in the middle of the list."""
         # arrange
-        EVENT_COUNT = 20
+        EVENT_COUNT = 40
         person = create_person(client)
         times = [create_time(client) for _ in range(EVENT_COUNT)]
         places = [create_place(client) for _ in range(EVENT_COUNT)]
@@ -510,9 +510,9 @@ class TestGetHistory:
         story_in_order = get_all_events_in_order(
             db_session=db_session, tag_id=person.id
         )
-        BASE_INDEX = 10  # index of the story we give as param
-        START_INDEX = BASE_INDEX - 5  # index of event we expect to get back first
-        END_INDEX = BASE_INDEX + 5  # index of event we expect to get back last
+        BASE_INDEX = 20  # index of the story we give as param
+        START_INDEX = BASE_INDEX - 10  # start of range we expect
+        END_INDEX = BASE_INDEX + 11  # end of range we expect (exclusive)
         start_event = story_in_order[BASE_INDEX]
         expected_events = story_in_order[START_INDEX:END_INDEX]
 
@@ -528,7 +528,7 @@ class TestGetHistory:
         # assert
         assert response.status_code == 200
         story = Story.model_validate(response.json())
-        assert len(story.events) == 10
+        assert len(story.events) == 21
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
             assert event.date.time.date() == expected_event.datetime.date()

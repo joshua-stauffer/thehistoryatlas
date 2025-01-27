@@ -43,6 +43,7 @@ from the_history_atlas.apps.domain.models.readmodel.tables.time import (
     TimeModel,
 )
 from the_history_atlas.apps.domain.types import Event
+from the_history_atlas.apps.readmodel.errors import MissingResourceError
 from the_history_atlas.apps.readmodel.schema import (
     Base,
     Citation,
@@ -360,6 +361,7 @@ class Database:
         direction: Literal["next", "prev"] | None,
         session: Session,
     ) -> List[StoryPointer]:
+        # todo: remove direction=None
         match direction:
             case "next":
                 operator = ">"
@@ -399,6 +401,137 @@ class Database:
             story_pointers.reverse()
         return story_pointers
 
+    def get_related_story(
+        self,
+        summary_id: UUID,
+        tag_id: UUID,
+        direction: Literal["next", "prev"],
+        session: Session,
+    ) -> StoryPointer | None:
+        related_tags = session.execute(
+            text(
+                """
+                select
+                    tags.id as tag_id,
+                    tags.type as tag_type
+                from summaries
+                join taginstances on summaries.id = taginstances.summary_id
+                join tags ON taginstances.tag_id = tags.id
+                where summaries.id = :summary_id;
+            """
+            ),
+            {"summary_id": summary_id},
+        ).all()
+        related_tags_by_id = {row.tag_id: row.tag_type for row in related_tags}
+        # this logic currently assumes one tag per type
+        related_tags_by_type = {val: key for key, val in related_tags_by_id.items()}
+        tag_type = related_tags_by_id.get(tag_id)
+        if tag_type == "PERSON":
+            story_id = related_tags_by_type.get("PLACE")
+        elif tag_type == "PLACE":
+            story_id = related_tags_by_type.get("TIME")
+        else:
+            time_story_id = related_tags_by_type.get("TIME")
+            if not time_story_id:
+                return None
+            story_id = self.get_related_time_story(
+                story_id=time_story_id,
+                direction=direction,
+                session=session,
+            )
+        if not story_id:
+            return None
+        last_datetime, last_precision = self.get_time_and_precision_by_tags(
+            session=session, tag_ids=list(related_tags_by_id.keys())
+        )
+        event_id = self.get_closest_summary_id(
+            story_id=story_id,
+            datetime=last_datetime,
+            precision=last_precision,
+            direction=direction,
+            session=session,
+        )
+        if not event_id:
+            return None
+        return StoryPointer(
+            event_id=event_id,
+            story_id=story_id,
+        )
+
+    def get_related_time_story(
+        self, story_id: UUID, direction: Literal["next", "prev"], session: Session
+    ) -> UUID | None:
+        match direction:
+            case "next":
+                operator = ">"
+                order_by_clause = "asc"
+            case "prev":
+                operator = "<"
+                order_by_clause = "desc"
+            case _:
+                raise RuntimeError("Unknown direction")
+        # todo: doesnt account for precision
+        next_story_id = session.execute(
+            text(
+                f"""
+                 select 
+                 time.id
+                 from time
+                 where time.time {operator} (
+                    select time.time
+                    from tags
+                    join time 
+                    on tags.id = time.id
+                    where tags.id = :tag_id
+                )
+                order by {order_by_clause}
+                limit 1;
+            """
+            ),
+            {"tag_id": story_id},
+        ).scalar_one_or_none()
+        return next_story_id
+
+    def get_closest_summary_id(
+        self,
+        story_id: UUID,
+        datetime: datetime,
+        precision: TimePrecision,
+        direction: Literal["next", "prev"],
+        session: Session,
+    ) -> UUID | None:
+        # todo: account for precision
+        match direction:
+            case "next":
+                operator = ">"
+                order_by_clause = "asc"
+            case "prev":
+                operator = "<"
+                order_by_clause = "desc"
+            case _:
+                raise RuntimeError("Unknown direction")
+        return session.execute(
+            text(
+                f"""
+                select
+                    summaries.id as summary_id
+                from summaries
+                join taginstances on summaries.id = taginstances.summary_id
+                join tags on taginstances.tag_id = tags.id
+                join time on time.id = tags.id
+                where summaries.id in (
+                    select summaries.id from summaries
+                    join taginstances on summaries.id = taginstances.summary_id
+                    where taginstances.tag_id = :tag_id
+                )
+                and time.time {operator} :datetime
+                order by time.time {order_by_clause}
+                limit 1;
+            """
+            ),
+            {"tag_id": story_id, "datetime": datetime},
+        ).scalar_one_or_none()
+
     def get_events(
         self, event_ids: tuple[UUID, ...], session: Session
     ) -> list[EventQuery]:
@@ -431,6 +564,8 @@ class Database:
             row.event_id: EventRow.model_validate(row, from_attributes=True)
             for row in event_query
         }
+        if not event_rows:
+            raise MissingResourceError("No events found")
 
         location_query = session.execute(
             text(

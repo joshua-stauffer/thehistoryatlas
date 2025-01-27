@@ -2,6 +2,8 @@ import logging
 from typing import List, Literal
 from uuid import UUID
 
+from sqlalchemy.orm import scoped_session, Session
+
 from the_history_atlas.apps.domain.core import (
     TagPointer,
     Story,
@@ -143,31 +145,26 @@ class QueryHandler:
         self, event_id: UUID, story_id: UUID, direction: Literal["next", "prev"] | None
     ) -> Story:
         with self._db.Session() as session:
-            try:
-                story_pointers = self._db.get_story_pointers(
-                    summary_id=event_id,
-                    tag_id=story_id,
-                    direction=direction,
-                    session=session,
-                )
-                events = self._db.get_events(
-                    event_ids=tuple([story.event_id for story in story_pointers]),
-                    session=session,
-                )
-                story_names = self._db.get_story_names(
-                    story_ids=tuple(
-                        {
-                            *[
-                                story_pointer.story_id
-                                for story_pointer in story_pointers
-                            ],
-                            story_id,
-                        }
-                    ),
-                    session=session,
-                )
-            except Exception as e:
-                raise
+            story_pointers = self.get_story_pointers(
+                event_id=event_id,
+                story_id=story_id,
+                direction=direction,
+                session=session,
+            )
+            events = self._db.get_events(
+                event_ids=tuple([story.event_id for story in story_pointers]),
+                session=session,
+            )
+            story_names = self._db.get_story_names(
+                story_ids=tuple(
+                    {
+                        *[story_pointer.story_id for story_pointer in story_pointers],
+                        story_id,
+                    }
+                ),
+                session=session,
+            )
+
         if not story_names:
             raise MissingResourceError("Story not found")
 
@@ -225,6 +222,109 @@ class QueryHandler:
             events=history_events,
             name=story_names[story_id],
         )
+
+    def get_story_pointers(
+        self,
+        event_id: UUID,
+        story_id: UUID,
+        direction: Literal["next", "prev"] | None,
+        session: Session,
+    ) -> list[StoryPointer]:
+        match direction:
+            case "next":
+                return self.get_next_story_pointers(
+                    event_id=event_id,
+                    story_id=story_id,
+                    session=session,
+                )
+            case "prev":
+                return self.get_prev_story_pointers(
+                    event_id=event_id,
+                    story_id=story_id,
+                    session=session,
+                )
+            case _:
+                prev_pointers = self.get_prev_story_pointers(
+                    event_id=event_id,
+                    story_id=story_id,
+                    session=session,
+                )
+                queried_event = [
+                    StoryPointer(
+                        story_id=story_id,
+                        event_id=event_id,
+                    )
+                ]
+                next_pointers = self.get_next_story_pointers(
+                    event_id=event_id,
+                    story_id=story_id,
+                    session=session,
+                )
+                return prev_pointers + queried_event + next_pointers
+
+    def get_next_story_pointers(
+        self, event_id: UUID, story_id: UUID, session: Session
+    ) -> list[StoryPointer]:
+        DIRECTION: Literal["next"] = "next"
+        story_pointers = self._db.get_story_pointers(
+            summary_id=event_id,
+            tag_id=story_id,
+            direction=DIRECTION,
+            session=session,
+        )
+        while len(story_pointers) < 10:
+            if not len(story_pointers):
+                last_story_pointer = StoryPointer(event_id=event_id, story_id=story_id)
+            else:
+                last_story_pointer = story_pointers[-1]
+            related_story = self._db.get_related_story(
+                summary_id=last_story_pointer.event_id,
+                tag_id=last_story_pointer.story_id,
+                direction=DIRECTION,
+                session=session,
+            )
+            if not related_story:
+                break
+            related_story_pointers = self._db.get_story_pointers(
+                summary_id=related_story.event_id,
+                tag_id=related_story.story_id,
+                direction=DIRECTION,
+                session=session,
+            )
+            story_pointers.extend(related_story_pointers)
+        return story_pointers
+
+    def get_prev_story_pointers(
+        self, event_id: UUID, story_id: UUID, session: Session
+    ) -> list[StoryPointer]:
+        DIRECTION: Literal["prev"] = "prev"
+        story_pointers = self._db.get_story_pointers(
+            summary_id=event_id,
+            tag_id=story_id,
+            direction=DIRECTION,
+            session=session,
+        )
+        while len(story_pointers) < 10:
+            if not len(story_pointers):
+                last_story_pointer = StoryPointer(event_id=event_id, story_id=story_id)
+            else:
+                last_story_pointer = story_pointers[0]
+            related_story = self._db.get_related_story(
+                summary_id=last_story_pointer.event_id,
+                tag_id=last_story_pointer.story_id,
+                direction=DIRECTION,
+                session=session,
+            )
+            if not related_story:
+                break
+            related_story_pointers = self._db.get_story_pointers(
+                summary_id=related_story.event_id,
+                tag_id=related_story.story_id,
+                direction=DIRECTION,
+                session=session,
+            )
+            story_pointers = [*related_story_pointers, *story_pointers]
+        return story_pointers
 
     def get_default_story_and_event(
         self,
