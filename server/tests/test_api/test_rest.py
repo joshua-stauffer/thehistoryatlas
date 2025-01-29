@@ -77,12 +77,17 @@ def create_person(client: TestClient) -> WikiDataPersonOutput:
     return WikiDataPersonOutput.model_validate(person_output.json())
 
 
-def _generate_fake_time() -> WikiDataTimeInput:
+def _generate_fake_time(
+    start_date: str | None = None, end_date: str | None = None
+) -> WikiDataTimeInput:
     """Generate a fake WikiData time entry."""
+    if not start_date:
+        start_date = "-50y"
+    if not end_date:
+        end_date = "now"
     wikidata_id = generate_wikidata_id()
-    date = fake.date_time_between(start_date="-50y", end_date="now")
+    date = fake.date_time_between(start_date=start_date, end_date=end_date)
 
-    # Format the date string similar to the example
     date_str = date.strftime("%d %B %Y")
 
     return WikiDataTimeInput(
@@ -91,12 +96,15 @@ def _generate_fake_time() -> WikiDataTimeInput:
         name=date_str,
         date=date,
         calendar_model="https://www.wikidata.org/wiki/Q12138",  # Gregorian calendar
-        precision=random.randint(7, 11),  # Day precision, following the example
+        precision=random.randint(7, 11),
     )
 
 
-def create_time(client: TestClient) -> WikiDataTimeOutput:
-    time = _generate_fake_time()
+def create_time(
+    client: TestClient, start_date: str | None = None, end_date: str | None = None
+) -> WikiDataTimeOutput:
+    time = _generate_fake_time(start_date=start_date, end_date=end_date)
+
     time_output = client.post("/wikidata/times", data=time.model_dump_json())
     return WikiDataTimeOutput.model_validate(time_output.json())
 
@@ -536,8 +544,6 @@ class TestGetHistory:
             assert event.id == expected_event.summary_id
 
     def test_with_next(self, client: TestClient, db_session: scoped_session) -> None:
-        """When passed the param direction=next, expect the event
-        we pass in to be returned in the beginning of the event list."""
         # arrange
         EVENT_COUNT = 20
         person = create_person(client)
@@ -573,6 +579,83 @@ class TestGetHistory:
             assert event.date.time.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
+
+    def test_next_person_to_place_story(
+        self, client: TestClient, db_session: scoped_session
+    ) -> None:
+        # arrange
+        # setup a person's story
+        PERSON_EVENT_COUNT = 4
+        PERSON_END_DATE = "-20y"
+        person = create_person(client)
+        person_story_times = [
+            create_time(client, end_date=PERSON_END_DATE)
+            for _ in range(PERSON_EVENT_COUNT)
+        ]
+        person_story_places = [create_place(client) for _ in range(PERSON_EVENT_COUNT)]
+        time_place_tuples = list(zip(person_story_times, person_story_places))
+        [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in time_place_tuples
+        ]
+        person_story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=person.id
+        )
+        person_event_ids = {
+            story_order.summary_id for story_order in person_story_in_order
+        }
+
+        # setup a place's story
+        PLACE_EVENT_COUNT = 7
+        PLACE_START_DATE = "-19y"
+        sorted_time_place_tuples = sorted(time_place_tuples, key=lambda t: t[0].date)
+        last_time_place = sorted_time_place_tuples[-1]
+        place = last_time_place[1]
+        place_story_people = [create_person(client) for _ in range(PLACE_EVENT_COUNT)]
+        place_story_times = [
+            create_time(client, start_date=PLACE_START_DATE)
+            for _ in range(PLACE_EVENT_COUNT)
+        ]
+        [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, person in zip(place_story_times, place_story_people)
+        ]
+        place_story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=place.id
+        )
+        place_event_ids = {
+            story_order.summary_id for story_order in place_story_in_order
+        }
+
+        # setup the list of events we expect to get back
+        # the stories overlap on their last/first event, so we start the place story at 1
+        story_in_order = person_story_in_order + place_story_in_order[1:]
+        start_event = story_in_order[0]
+        expected_events = story_in_order[1:]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id, eventId=start_event.summary_id, direction="next"
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert len(story.events) == len(expected_events)
+        # expect that the requested event is returned in the middle
+        for event, expected_event in zip(story.events, expected_events):
+            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.precision == expected_event.precision
+            assert event.id == expected_event.summary_id
+            if event.id in person_event_ids:
+                assert event.storyTitle == f"The Life of {person.name}"
+            elif event.id in place_event_ids:
+                assert event.storyTitle == f"The History of {place.name}"
+            else:
+                pytest.fail("unexpected event id")
 
     def test_with_prev(self, client: TestClient, db_session: scoped_session) -> None:
         """When passed the param direction=next, expect the event
@@ -612,6 +695,84 @@ class TestGetHistory:
             assert event.date.time.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
+
+    def test_prev_person_to_place_story(
+        self, client: TestClient, db_session: scoped_session
+    ) -> None:
+        # arrange
+        # setup a person's story
+        PERSON_EVENT_COUNT = 4
+        PERSON_START_DATE = "-30y"
+        person = create_person(client)
+        person_story_times = [
+            create_time(client, start_date=PERSON_START_DATE)
+            for _ in range(PERSON_EVENT_COUNT)
+        ]
+        person_story_places = [create_place(client) for _ in range(PERSON_EVENT_COUNT)]
+        time_place_tuples = list(zip(person_story_times, person_story_places))
+        [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, place in time_place_tuples
+        ]
+        person_story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=person.id
+        )
+        person_event_ids = {
+            story_order.summary_id for story_order in person_story_in_order
+        }
+
+        # setup a place's story
+        PLACE_EVENT_COUNT = 7
+        PLACE_END_DATE = "-31y"
+        sorted_time_place_tuples = sorted(time_place_tuples, key=lambda t: t[0].date)
+        first_time_place = sorted_time_place_tuples[0]
+        place = first_time_place[1]
+        place_story_people = [create_person(client) for _ in range(PLACE_EVENT_COUNT)]
+        place_story_times = [
+            create_time(client, end_date=PLACE_END_DATE)
+            for _ in range(PLACE_EVENT_COUNT)
+        ]
+        [
+            create_event(person=person, place=place, time=time, client=client)
+            for time, person in zip(place_story_times, place_story_people)
+        ]
+        place_story_in_order = get_all_events_in_order(
+            db_session=db_session, tag_id=place.id
+        )
+        place_event_ids = {
+            story_order.summary_id for story_order in place_story_in_order
+        }
+
+        # setup the list of events we expect to get back
+        # the stories overlap on their last/first event, so we start the person story at 1,
+        # and exclude the start event
+        story_in_order = place_story_in_order + person_story_in_order[1:]
+        start_event = story_in_order[-1]
+        expected_events = story_in_order[:-1]
+
+        # act
+        response = client.get(
+            "/api/history",
+            params=QueryParams(
+                storyId=person.id, eventId=start_event.summary_id, direction="prev"
+            ),
+        )
+
+        # assert
+        assert response.status_code == 200
+        story = Story.model_validate(response.json())
+        assert len(story.events) == len(expected_events)
+        # expect that the requested event is returned in the middle
+        for event, expected_event in zip(story.events, expected_events):
+            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.precision == expected_event.precision
+            assert event.id == expected_event.summary_id
+            if event.id in person_event_ids:
+                assert event.storyTitle == f"The Life of {person.name}"
+            elif event.id in place_event_ids:
+                assert event.storyTitle == f"The History of {place.name}"
+            else:
+                pytest.fail("unexpected event id")
 
     @pytest.mark.parametrize("direction", ["prev", "next"])
     def test_empty_result_with_direction(

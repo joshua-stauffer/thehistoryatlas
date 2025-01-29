@@ -167,6 +167,10 @@ class QueryHandler:
 
         if not story_names:
             raise MissingResourceError("Story not found")
+        story_names_by_event_id = {
+            story_pointer.event_id: story_names[story_pointer.story_id]
+            for story_pointer in story_pointers
+        }
 
         history_events = [
             HistoryEvent(
@@ -212,7 +216,7 @@ class QueryHandler:
                     ]
                 ),
                 focus=event_id,
-                story_title=story_names[story_id],
+                story_title=story_names_by_event_id[event_query.event_id],
                 stories=list(),  # todo
             )
             for event_query in events
@@ -291,6 +295,7 @@ class QueryHandler:
                 direction=DIRECTION,
                 session=session,
             )
+            story_pointers.append(related_story)
             story_pointers.extend(related_story_pointers)
         return story_pointers
 
@@ -323,7 +328,7 @@ class QueryHandler:
                 direction=DIRECTION,
                 session=session,
             )
-            story_pointers = [*related_story_pointers, *story_pointers]
+            story_pointers = [*related_story_pointers, related_story, *story_pointers]
         return story_pointers
 
     def get_default_story_and_event(
