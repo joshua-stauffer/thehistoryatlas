@@ -871,3 +871,27 @@ class TestGetHistory:
 
         # assert
         assert response.status_code == 404
+
+
+class TestLogin:
+    def test_success(
+        self, client: TestClient, user_details: dict, seed_accounts
+    ) -> None:
+        response = client.post(
+            "/token",
+            data={
+                "username": user_details["username"],
+                "password": user_details["password"],
+            },
+        )
+        assert response.status_code == 200
+
+    def test_unauthorized(self, client: TestClient, seed_accounts) -> None:
+        response = client.post(
+            "/token",
+            data={
+                "username": "Bilbo Baggins",
+                "password": "it's precious",
+            },
+        )
+        assert response.status_code == 401

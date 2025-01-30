@@ -51,9 +51,9 @@ class DBBuilder:
     def insert_summaries(self, summaries: list[SummaryModel]):
         stmt = """
             insert into summaries 
-            (id, text, time_tag)
+            (id, text)
             values 
-            (:id, :text, :time_tag);
+            (:id, :text);
         """
         self._session.execute(text(stmt), [summary.dict() for summary in summaries])
 

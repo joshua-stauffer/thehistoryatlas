@@ -65,10 +65,10 @@ def cleanup_db(config):
         session.commit()
     engine.dispose()
     yield
-    with Session(engine, future=True) as session:
-        truncate_db(session)
-        session.commit()
-    engine.dispose()
+    # with Session(engine, future=True) as session:
+    #     truncate_db(session)
+    #     session.commit()
+    # engine.dispose()
 
 
 @pytest.fixture
@@ -121,7 +121,7 @@ def accounts_bare_db(engine):
 
 
 @pytest.fixture
-def accounts_db(accounts_bare_db, admin_user_details, engine):
+def accounts_db(accounts_bare_db, admin_user_details, config):
     """An active database instance with one admin user"""
     # must start with an admin user
     encrypted_admin_details = {
@@ -133,6 +133,23 @@ def accounts_db(accounts_bare_db, admin_user_details, engine):
         session.commit()
 
     return accounts_bare_db
+
+
+@pytest.fixture
+def seed_accounts(
+    cleanup_db, config, admin_user_details, user_details, unconfirmed_user
+):
+
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    with Session(engine, future=True) as session:
+        for user_dict in [admin_user_details, user_details, unconfirmed_user]:
+            user = {
+                **user_dict,
+                "password": encrypt(user_dict["password"]).decode(),
+            }
+            session.add(User(**user))
+        session.commit()
+    engine.dispose()
 
 
 @pytest.fixture

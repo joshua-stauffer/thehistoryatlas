@@ -4,6 +4,8 @@ from faker import Faker
 import random
 from uuid import uuid4, UUID
 
+from fastapi.security import OAuth2PasswordRequestForm
+
 from the_history_atlas.api.handlers.history import get_history_handler
 from the_history_atlas.api.handlers.tags import (
     create_person_handler,
@@ -12,6 +14,7 @@ from the_history_atlas.api.handlers.tags import (
     get_tags_handler,
     create_event_handler,
 )
+from the_history_atlas.api.handlers.users import login_handler
 from the_history_atlas.api.types.history import (
     Source,
     CalendarDate,
@@ -32,6 +35,7 @@ from the_history_atlas.api.types.tags import (
     WikiDataEventOutput,
     WikiDataEventInput,
 )
+from the_history_atlas.api.types.user import LoginResponse
 from the_history_atlas.apps.app_manager import AppManager
 
 fake = Faker()
@@ -180,5 +184,11 @@ def register_rest_endpoints(
     @fastapi_app.post("/wikidata/events", response_model=WikiDataEventOutput)
     def create_event(event: WikiDataEventInput, apps: Apps) -> WikiDataEventOutput:
         return create_event_handler(apps=apps, event=event)
+
+    @fastapi_app.post("/token")
+    def login(
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()], apps: Apps
+    ) -> LoginResponse:
+        return login_handler(form_data=form_data, apps=apps)
 
     return fastapi_app

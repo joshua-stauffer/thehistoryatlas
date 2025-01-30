@@ -8,6 +8,7 @@ from the_history_atlas.apps.accounts.errors import (
     MissingUserError,
     DeactivatedUserError,
     AuthenticationError,
+    UnconfirmedUserError,
 )
 from the_history_atlas.apps.config import Config
 
@@ -57,7 +58,12 @@ class Accounts:
         try:
             token = self._db.login(data.username, data.password)
             success = True
-        except MissingUserError or DeactivatedUserError or AuthenticationError:
+        except (
+            MissingUserError,
+            DeactivatedUserError,
+            AuthenticationError,
+            UnconfirmedUserError,
+        ):
             success = False
             token = None
         return LoginResponse(success=success, token=token)
