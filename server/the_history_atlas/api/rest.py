@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends, Query, HTTPException
 from typing import Callable, Annotated, Literal
 from faker import Faker
 import random
 from uuid import uuid4, UUID
 
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 
 from the_history_atlas.api.handlers.history import get_history_handler
 from the_history_atlas.api.handlers.tags import (
@@ -36,7 +36,15 @@ from the_history_atlas.api.types.tags import (
     WikiDataEventInput,
 )
 from the_history_atlas.api.types.user import LoginResponse
+from the_history_atlas.apps.accounts.errors import (
+    DeactivatedUserError,
+    MissingUserError,
+)
 from the_history_atlas.apps.app_manager import AppManager
+from the_history_atlas.apps.domain.models.accounts import UserDetails, GetUserPayload
+from the_history_atlas.apps.domain.models.accounts.get_user import (
+    GetUserResponsePayload,
+)
 
 fake = Faker()
 Faker.seed(872)
@@ -149,6 +157,23 @@ def register_rest_endpoints(
 ) -> FastAPI:
 
     Apps = Annotated[AppManager, Depends(app_manager)]
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+    def auth_required(
+        token: Annotated[str, Depends(oauth2_scheme)],
+        apps: Apps,
+    ) -> GetUserResponsePayload:
+        try:
+            return apps.accounts_app.get_user(data=GetUserPayload(token=token))
+        except (MissingUserError, DeactivatedUserError):
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    AuthenticatedUser = Annotated[GetUserResponsePayload, Depends(auth_required)]
+
     # API Endpoints
     @fastapi_app.get("/api/history", response_model=Story)
     def get_history(
@@ -161,28 +186,38 @@ def register_rest_endpoints(
             apps=apps, event_id=eventId, story_id=storyId, direction=direction
         )
 
-    @fastapi_app.post("/wikidata/people", response_model=WikiDataPersonOutput)
-    def create_people(person: WikiDataPersonInput, apps: Apps) -> WikiDataPersonOutput:
+    @fastapi_app.post(path="/wikidata/people", response_model=WikiDataPersonOutput)
+    def create_people(
+        person: WikiDataPersonInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataPersonOutput:
         return create_person_handler(apps=apps, person=person)
 
     @fastapi_app.post("/wikidata/places", response_model=WikiDataPlaceOutput)
-    def create_places(place: WikiDataPlaceInput, apps: Apps) -> WikiDataPlaceOutput:
+    def create_places(
+        place: WikiDataPlaceInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataPlaceOutput:
         return create_place_handler(apps=apps, place=place)
 
     @fastapi_app.post("/wikidata/times", response_model=WikiDataTimeOutput)
-    def create_times(time: WikiDataTimeInput, apps: Apps) -> WikiDataTimeOutput:
+    def create_times(
+        time: WikiDataTimeInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataTimeOutput:
         return create_time_handler(apps=apps, time=time)
 
     @fastapi_app.get("/wikidata/tags", response_model=WikiDataTagsOutput)
     def get_tags(
-        apps: Apps, wikidata_ids: Annotated[list[str] | None, Query()] = None
+        apps: Apps,
+        user: AuthenticatedUser,
+        wikidata_ids: Annotated[list[str] | None, Query()] = None,
     ) -> WikiDataTagsOutput:
         if not wikidata_ids:
             return WikiDataTagsOutput(wikidata_ids=[])
         return get_tags_handler(apps=apps, wikidata_ids=wikidata_ids)
 
     @fastapi_app.post("/wikidata/events", response_model=WikiDataEventOutput)
-    def create_event(event: WikiDataEventInput, apps: Apps) -> WikiDataEventOutput:
+    def create_event(
+        event: WikiDataEventInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataEventOutput:
         return create_event_handler(apps=apps, event=event)
 
     @fastapi_app.post("/token")

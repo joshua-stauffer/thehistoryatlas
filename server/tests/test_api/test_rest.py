@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import random
-from typing import Literal
+from typing import Literal, Dict
 from uuid import uuid4, UUID
 from faker import Faker
 
@@ -55,9 +55,11 @@ def _generate_fake_place() -> WikiDataPlaceInput:
     )
 
 
-def create_place(client: TestClient) -> WikiDataPlaceOutput:
+def create_place(client: TestClient, auth_headers: dict) -> WikiDataPlaceOutput:
     place = _generate_fake_place()
-    response = client.post("/wikidata/places", data=place.model_dump_json())
+    response = client.post(
+        "/wikidata/places", data=place.model_dump_json(), headers=auth_headers
+    )
     return WikiDataPlaceOutput.model_validate(response.json())
 
 
@@ -71,9 +73,11 @@ def _generate_fake_person() -> WikiDataPersonOutput:
     )
 
 
-def create_person(client: TestClient) -> WikiDataPersonOutput:
+def create_person(client: TestClient, auth_headers: dict) -> WikiDataPersonOutput:
     person = _generate_fake_person()
-    person_output = client.post("/wikidata/people", data=person.model_dump_json())
+    person_output = client.post(
+        "/wikidata/people", data=person.model_dump_json(), headers=auth_headers
+    )
     return WikiDataPersonOutput.model_validate(person_output.json())
 
 
@@ -101,11 +105,16 @@ def _generate_fake_time(
 
 
 def create_time(
-    client: TestClient, start_date: str | None = None, end_date: str | None = None
+    client: TestClient,
+    auth_headers: dict,
+    start_date: str | None = None,
+    end_date: str | None = None,
 ) -> WikiDataTimeOutput:
     time = _generate_fake_time(start_date=start_date, end_date=end_date)
 
-    time_output = client.post("/wikidata/times", data=time.model_dump_json())
+    time_output = client.post(
+        "/wikidata/times", data=time.model_dump_json(), headers=auth_headers
+    )
     return WikiDataTimeOutput.model_validate(time_output.json())
 
 
@@ -167,9 +176,12 @@ def create_event(
     person: WikiDataPersonOutput,
     place: WikiDataPlaceOutput,
     time: WikiDataTimeOutput,
+    auth_headers: dict[str, str],
 ) -> WikiDataEventOutput:
     event = _generate_fake_event(person, place, time)
-    event_output = client.post("/wikidata/events", data=event.model_dump_json())
+    event_output = client.post(
+        "/wikidata/events", data=event.model_dump_json(), headers=auth_headers
+    )
     return WikiDataEventOutput.model_validate(event_output.json())
 
 
@@ -178,18 +190,25 @@ def client(cleanup_db):
     return TestClient(get_app())
 
 
-def test_create_person(client: TestClient) -> None:
+@pytest.fixture
+def auth_headers(active_token: str, seed_accounts: None) -> Dict[str, str]:
+    return {"Authorization": f"Bearer {active_token}"}
+
+
+def test_create_person(client: TestClient, auth_headers: dict) -> None:
     input = WikiDataPersonInput(
         wikidata_id="Q1339",
         wikidata_url="https://www.wikidata.org/wiki/Q1339",
         name="Johann Sebastian Bach",
     )
 
-    response = client.post("/wikidata/people", data=input.model_dump_json())
+    response = client.post(
+        "/wikidata/people", data=input.model_dump_json(), headers=auth_headers
+    )
     assert response.status_code == 200, response.text
 
 
-def test_create_place(client: TestClient) -> None:
+def test_create_place(client: TestClient, auth_headers: dict) -> None:
     input = WikiDataPlaceInput(
         wikidata_id="Q7070",
         wikidata_url="https://www.wikidata.org/wiki/Q7070",
@@ -198,11 +217,13 @@ def test_create_place(client: TestClient) -> None:
         longitude=10.324444,
     )
 
-    response = client.post("/wikidata/places", data=input.model_dump_json())
+    response = client.post(
+        "/wikidata/places", data=input.model_dump_json(), headers=auth_headers
+    )
     assert response.status_code == 200, response.text
 
 
-def test_create_time(client: TestClient) -> None:
+def test_create_time(client: TestClient, auth_headers: dict) -> None:
     input = WikiDataTimeInput(
         wikidata_id="Q69125241",
         wikidata_url="https://www.wikidata.org/wiki/Q69125241",
@@ -212,7 +233,9 @@ def test_create_time(client: TestClient) -> None:
         precision=11,
     )
 
-    response = client.post("/wikidata/times", data=input.model_dump_json())
+    response = client.post(
+        "/wikidata/times", data=input.model_dump_json(), headers=auth_headers
+    )
     assert response.status_code == 200, response.text
 
 
@@ -283,9 +306,7 @@ def test_get_tags_by_wikidata_ids_missing_tags(
     assert response.json() == {"wikidata_ids": expected_response}
 
 
-def test_create_event(
-    client: TestClient,
-):
+def test_create_event(client: TestClient, auth_headers: dict):
     person_input = WikiDataPersonInput(
         wikidata_id="Q1339",
         wikidata_url="https://www.wikidata.org/wiki/Q1339",
@@ -293,7 +314,7 @@ def test_create_event(
     )
 
     created_person_output = client.post(
-        "/wikidata/people", data=person_input.model_dump_json()
+        "/wikidata/people", data=person_input.model_dump_json(), headers=auth_headers
     )
     created_person = WikiDataPersonOutput.model_validate(created_person_output.json())
 
@@ -306,7 +327,7 @@ def test_create_event(
     )
 
     created_place_output = client.post(
-        "/wikidata/places", data=place_input.model_dump_json()
+        "/wikidata/places", data=place_input.model_dump_json(), headers=auth_headers
     )
     created_place = WikiDataPlaceOutput.model_validate(created_place_output.json())
 
@@ -320,7 +341,7 @@ def test_create_event(
     )
 
     created_time_output = client.post(
-        "/wikidata/times", data=time_input.model_dump_json()
+        "/wikidata/times", data=time_input.model_dump_json(), headers=auth_headers
     )
     created_time = WikiDataTimeOutput.model_validate(created_time_output.json())
 
@@ -356,31 +377,45 @@ def test_create_event(
             ),
         ],
     )
-    response = client.post("/wikidata/events", data=event_input.model_dump_json())
+    response = client.post(
+        "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+    )
     assert response.status_code == 200, response.text
 
 
 @pytest.fixture
-def seed_story(
-    client: TestClient,
-):
+def seed_story(client: TestClient, auth_headers: dict):
     person = create_person(client)
     times = [create_time(client) for _ in range(10)]
     places = [create_place(client) for _ in range(10)]
     events = [
-        create_event(person=person, place=place, time=time, client=client)
+        create_event(
+            person=person,
+            place=place,
+            time=time,
+            client=client,
+            auth_headers=auth_headers,
+        )
         for time, place in zip(times, places)
     ]
 
 
 @pytest.mark.parametrize("EVENT_COUNT", [3, 10, 50])
-def test_create_stories_order(client: TestClient, db_session, EVENT_COUNT):
+def test_create_stories_order(
+    client: TestClient, db_session, EVENT_COUNT, auth_headers: dict
+):
     # arrange
-    person = create_person(client)
-    times = [create_time(client) for _ in range(EVENT_COUNT)]
-    places = [create_place(client) for _ in range(EVENT_COUNT)]
+    person = create_person(client, auth_headers)
+    times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+    places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
     events = [
-        create_event(person=person, place=place, time=time, client=client)
+        create_event(
+            person=person,
+            place=place,
+            time=time,
+            client=client,
+            auth_headers=auth_headers,
+        )
         for time, place in zip(times, places)
     ]
 
@@ -483,13 +518,21 @@ def get_all_events_in_order(
 
 class TestGetHistory:
     @pytest.mark.parametrize("EVENT_COUNT", [3, 10, 50])
-    def test_no_params(self, client: TestClient, EVENT_COUNT) -> None:
+    def test_no_params(
+        self, client: TestClient, EVENT_COUNT, auth_headers: dict
+    ) -> None:
         # arrange
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
 
@@ -503,16 +546,24 @@ class TestGetHistory:
         for event, time in zip(story.events, time_tags):
             assert event.date.time.date() == time.date()
 
-    def test_with_params(self, client: TestClient, db_session: scoped_session) -> None:
+    def test_with_params(
+        self, client: TestClient, db_session: scoped_session, auth_headers: dict
+    ) -> None:
         """When passing in params but not next/prev, expect the event
         we pass in to be returned in the middle of the list."""
         # arrange
         EVENT_COUNT = 40
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
         story_in_order = get_all_events_in_order(
@@ -543,14 +594,22 @@ class TestGetHistory:
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
-    def test_with_next(self, client: TestClient, db_session: scoped_session) -> None:
+    def test_with_next(
+        self, client: TestClient, db_session: scoped_session, auth_headers: dict
+    ) -> None:
         # arrange
         EVENT_COUNT = 20
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
         story_in_order = get_all_events_in_order(
@@ -581,21 +640,29 @@ class TestGetHistory:
             assert event.id == expected_event.summary_id
 
     def test_next_person_to_place_story(
-        self, client: TestClient, db_session: scoped_session
+        self, client: TestClient, db_session: scoped_session, auth_headers: dict
     ) -> None:
         # arrange
         # setup a person's story
         PERSON_EVENT_COUNT = 4
         PERSON_END_DATE = "-20y"
-        person = create_person(client)
+        person = create_person(client, auth_headers)
         person_story_times = [
-            create_time(client, end_date=PERSON_END_DATE)
+            create_time(client, end_date=PERSON_END_DATE, auth_headers=auth_headers)
             for _ in range(PERSON_EVENT_COUNT)
         ]
-        person_story_places = [create_place(client) for _ in range(PERSON_EVENT_COUNT)]
+        person_story_places = [
+            create_place(client, auth_headers) for _ in range(PERSON_EVENT_COUNT)
+        ]
         time_place_tuples = list(zip(person_story_times, person_story_places))
         [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in time_place_tuples
         ]
         person_story_in_order = get_all_events_in_order(
@@ -611,13 +678,21 @@ class TestGetHistory:
         sorted_time_place_tuples = sorted(time_place_tuples, key=lambda t: t[0].date)
         last_time_place = sorted_time_place_tuples[-1]
         place = last_time_place[1]
-        place_story_people = [create_person(client) for _ in range(PLACE_EVENT_COUNT)]
+        place_story_people = [
+            create_person(client, auth_headers) for _ in range(PLACE_EVENT_COUNT)
+        ]
         place_story_times = [
-            create_time(client, start_date=PLACE_START_DATE)
+            create_time(client, start_date=PLACE_START_DATE, auth_headers=auth_headers)
             for _ in range(PLACE_EVENT_COUNT)
         ]
         [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, person in zip(place_story_times, place_story_people)
         ]
         place_story_in_order = get_all_events_in_order(
@@ -657,16 +732,24 @@ class TestGetHistory:
             else:
                 pytest.fail("unexpected event id")
 
-    def test_with_prev(self, client: TestClient, db_session: scoped_session) -> None:
+    def test_with_prev(
+        self, client: TestClient, db_session: scoped_session, auth_headers: dict
+    ) -> None:
         """When passed the param direction=next, expect the event
         we pass in to be returned in the beginning of the event list."""
         # arrange
         EVENT_COUNT = 20
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
         story_in_order = get_all_events_in_order(
@@ -697,21 +780,29 @@ class TestGetHistory:
             assert event.id == expected_event.summary_id
 
     def test_prev_person_to_place_story(
-        self, client: TestClient, db_session: scoped_session
+        self, client: TestClient, db_session: scoped_session, auth_headers: dict
     ) -> None:
         # arrange
         # setup a person's story
         PERSON_EVENT_COUNT = 4
         PERSON_START_DATE = "-30y"
-        person = create_person(client)
+        person = create_person(client, auth_headers)
         person_story_times = [
-            create_time(client, start_date=PERSON_START_DATE)
+            create_time(client, start_date=PERSON_START_DATE, auth_headers=auth_headers)
             for _ in range(PERSON_EVENT_COUNT)
         ]
-        person_story_places = [create_place(client) for _ in range(PERSON_EVENT_COUNT)]
+        person_story_places = [
+            create_place(client, auth_headers) for _ in range(PERSON_EVENT_COUNT)
+        ]
         time_place_tuples = list(zip(person_story_times, person_story_places))
         [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in time_place_tuples
         ]
         person_story_in_order = get_all_events_in_order(
@@ -727,13 +818,21 @@ class TestGetHistory:
         sorted_time_place_tuples = sorted(time_place_tuples, key=lambda t: t[0].date)
         first_time_place = sorted_time_place_tuples[0]
         place = first_time_place[1]
-        place_story_people = [create_person(client) for _ in range(PLACE_EVENT_COUNT)]
+        place_story_people = [
+            create_person(client, auth_headers) for _ in range(PLACE_EVENT_COUNT)
+        ]
         place_story_times = [
-            create_time(client, end_date=PLACE_END_DATE)
+            create_time(client, end_date=PLACE_END_DATE, auth_headers=auth_headers)
             for _ in range(PLACE_EVENT_COUNT)
         ]
         [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, person in zip(place_story_times, place_story_people)
         ]
         place_story_in_order = get_all_events_in_order(
@@ -776,15 +875,21 @@ class TestGetHistory:
 
     @pytest.mark.parametrize("direction", ["prev", "next"])
     def test_empty_result_with_direction(
-        self, client: TestClient, direction: Literal["prev", "next"]
+        self, client: TestClient, direction: Literal["prev", "next"], auth_headers: dict
     ) -> None:
         # arrange
         EVENT_COUNT = 1
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
 
@@ -801,14 +906,20 @@ class TestGetHistory:
         story = Story.model_validate(response.json())
         assert story.events == []
 
-    def test_single_result(self, client: TestClient) -> None:
+    def test_single_result(self, client: TestClient, auth_headers: dict) -> None:
         # arrange
         EVENT_COUNT = 1
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
 
@@ -826,14 +937,22 @@ class TestGetHistory:
         story = Story.model_validate(response.json())
         assert len(story.events) == 1
 
-    def test_missing_story_raises_404(self, client: TestClient) -> None:
+    def test_missing_story_raises_404(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
         # arrange
         EVENT_COUNT = 1
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
 
@@ -849,14 +968,22 @@ class TestGetHistory:
         # assert
         assert response.status_code == 404
 
-    def test_missing_event_raises_404(self, client: TestClient) -> None:
+    def test_missing_event_raises_404(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
         # arrange
         EVENT_COUNT = 1
-        person = create_person(client)
-        times = [create_time(client) for _ in range(EVENT_COUNT)]
-        places = [create_place(client) for _ in range(EVENT_COUNT)]
+        person = create_person(client, auth_headers)
+        times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+        places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
         events = [
-            create_event(person=person, place=place, time=time, client=client)
+            create_event(
+                person=person,
+                place=place,
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
             for time, place in zip(times, places)
         ]
 
