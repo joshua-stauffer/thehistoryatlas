@@ -85,7 +85,6 @@ def test_create_place(readmodel_db):
         latitude=10.3456,
         longitude=45.5335,
         geoshape=None,
-        geonames_id=45678,
     )
 
     with readmodel_db.Session() as session:
@@ -96,7 +95,7 @@ def test_create_place(readmodel_db):
 
     with readmodel_db.Session() as session:
         stmt = """
-            select id, latitude, longitude, geoshape, geonames_id 
+            select id, latitude, longitude, geoshape
             from places where places.id = :id
         """
         res = session.execute(text(stmt), {"id": place_model.id}).one()
@@ -105,7 +104,6 @@ def test_create_place(readmodel_db):
             latitude=res[1],
             longitude=res[2],
             geoshape=res[3],
-            geonames_id=res[4],
         )
         assert place_model == result_model == db_model
 

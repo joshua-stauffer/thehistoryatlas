@@ -12,4 +12,3 @@ class PlaceModel(ConfiguredBaseModel):
     latitude: float
     longitude: float
     geoshape: str | None = None
-    geonames_id: int | None = None

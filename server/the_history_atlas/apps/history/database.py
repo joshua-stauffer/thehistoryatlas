@@ -588,7 +588,7 @@ class Database:
 
     def get_place_by_id(self, id: UUID, session: Session) -> PlaceModel | None:
         stmt = """
-            select id, latitude, longitude, geoshape, geonames_id
+            select id, latitude, longitude, geoshape 
             from places where places.id = :id;
         """
         res = session.execute(text(stmt), {"id": id}).one_or_none()
@@ -599,7 +599,6 @@ class Database:
             latitude=res[1],
             longitude=res[2],
             geoshape=res[3],
-            geonames_id=res[4],
         )
 
     def create_place(
@@ -611,22 +610,20 @@ class Database:
         latitude: float | None = None,
         longitude: float | None = None,
         geoshape: str | None = None,
-        geonames_id: int | None = None,
     ) -> PlaceModel:
         place_model = PlaceModel(
             id=id,
             latitude=latitude,
             longitude=longitude,
             geoshape=geoshape,
-            geonames_id=geonames_id,
             wikidata_id=wikidata_id,
             wikidata_url=wikidata_url,
         )
         insert_place = """
             insert into tags (id, type, wikidata_id, wikidata_url)
                 values (:id, :type, :wikidata_id, :wikidata_url);
-            insert into places (id, latitude, longitude, geoshape, geonames_id)
-                values (:id, :latitude, :longitude, :geoshape, :geonames_id)
+            insert into places (id, latitude, longitude, geoshape)
+                values (:id, :latitude, :longitude, :geoshape)
         """
         session.execute(text(insert_place), place_model.model_dump())
         return place_model
