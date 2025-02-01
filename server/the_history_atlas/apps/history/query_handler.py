@@ -2,7 +2,7 @@ import logging
 from typing import List, Literal
 from uuid import UUID
 
-from sqlalchemy.orm import scoped_session, Session
+from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.domain.core import (
     TagPointer,
@@ -16,7 +16,7 @@ from the_history_atlas.apps.domain.core import (
     Tag,
 )
 
-from the_history_atlas.apps.domain.models.history.queries import (
+from the_history_atlas.apps.domain.models.history.get_fuzzy_search_by_name import (
     GetFuzzySearchByName,
     FuzzySearchByName,
 )

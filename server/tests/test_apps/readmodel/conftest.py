@@ -4,10 +4,7 @@ from uuid import UUID
 
 import pytest
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
-from tests.db_builder import DBBuilder
-from tests.seed.readmodel import CITATIONS, SUMMARIES, SOURCES
 from the_history_atlas.apps.history import HistoryApp
 from the_history_atlas.apps.history.database import Database
 from the_history_atlas.apps.history.query_handler import QueryHandler

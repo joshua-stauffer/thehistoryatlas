@@ -1,21 +1,16 @@
-import random
 from datetime import datetime, timezone
-from typing import Literal, Callable, Generator
+from typing import Literal, Callable
 from uuid import uuid4, UUID
 
 import pytest
-from sqlalchemy import text, select
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from tests.db_builder import DBBuilder
-from tests.seed.readmodel import PEOPLE, SUMMARIES, PLACES, NAMES, TIMES, CITATIONS
-from the_history_atlas.apps.domain.models import CoordsByName
-from the_history_atlas.apps.domain.models.history import (
-    Source as ADMSource,
-    DefaultEntity,
-)
-from the_history_atlas.apps.domain.models.history.queries.coords_by_name import Coords
+from tests.seed.names import NAMES
+from tests.seed.people import PEOPLE
+from tests.seed.summaries import SUMMARIES
 from the_history_atlas.apps.domain.models.history.tables import (
     PersonModel,
     TagInstanceModel,
@@ -23,8 +18,6 @@ from the_history_atlas.apps.domain.models.history.tables import (
     PlaceModel,
     TimeModel,
 )
-from the_history_atlas.apps.history.database import Database
-from the_history_atlas.apps.history.schema import Place
 
 
 def create_tag(engine, type: Literal["PERSON", "PLACE", "TIME"]) -> UUID:

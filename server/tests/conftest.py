@@ -8,18 +8,6 @@ from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from tests.db_builder import DBBuilder
-from tests.seed.readmodel import (
-    CITATIONS,
-    SUMMARIES,
-    SOURCES,
-    PEOPLE,
-    PLACES,
-    TIMES,
-    NAMES,
-    TAG_INSTANCES,
-)
-from tests.seed.readmodel.tag_name_assocs import TAG_NAME_ASSOCS
 from the_history_atlas.apps.accounts.database import Database as AccountsDB
 from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, fernet
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User

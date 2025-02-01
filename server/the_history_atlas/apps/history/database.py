@@ -17,8 +17,10 @@ from the_history_atlas.apps.domain.core import (
 from the_history_atlas.apps.domain.models.history import (
     Source as ADMSource,
 )
-from the_history_atlas.apps.domain.models.history.queries import FuzzySearchByName
-from the_history_atlas.apps.domain.models.history.queries.get_events import (
+from the_history_atlas.apps.domain.models.history.get_fuzzy_search_by_name import (
+    FuzzySearchByName,
+)
+from the_history_atlas.apps.domain.models.history.get_events import (
     EventQuery,
     EventRow,
     TagRow,
