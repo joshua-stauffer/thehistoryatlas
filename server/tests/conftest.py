@@ -8,7 +8,7 @@ from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from the_history_atlas.apps.accounts.database import Database as AccountsDB
+from the_history_atlas.apps.accounts.repository import Repository as AccountsDB
 from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, fernet
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 

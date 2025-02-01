@@ -32,7 +32,7 @@ from the_history_atlas.apps.config import Config
 log = logging.getLogger(__name__)
 
 
-class Database:
+class Repository:
     def __init__(self, engine: Engine):
         # initialize the db
         self._engine = engine

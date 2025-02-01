@@ -1,5 +1,5 @@
 import pytest
-from the_history_atlas.apps.accounts.accounts import Accounts
+from the_history_atlas.apps.accounts.accounts_app import AccountsApp
 from the_history_atlas.apps.domain.models.accounts import (
     Credentials,
     UserDetails,
@@ -20,7 +20,7 @@ from the_history_atlas.apps.domain.models.accounts.update_user import UpdateUser
 
 @pytest.fixture
 def accounts(accounts_loaded_db, config):
-    accounts = Accounts(config=config, database_client=accounts_loaded_db._engine)
+    accounts = AccountsApp(config=config, database_client=accounts_loaded_db._engine)
     return accounts
 
 

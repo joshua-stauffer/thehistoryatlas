@@ -12,7 +12,7 @@ from the_history_atlas.apps.accounts.errors import (
 )
 from the_history_atlas.apps.config import Config
 
-from the_history_atlas.apps.accounts.database import Database
+from the_history_atlas.apps.accounts.repository import Repository
 from the_history_atlas.apps.domain.models.accounts import (
     LoginResponse,
     Credentials,
@@ -46,17 +46,17 @@ logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
 
-class Accounts:
+class AccountsApp:
     """Business logic for managing Accounts."""
 
     def __init__(self, config: Config, database_client: Engine):
         self._config = config
-        self._db = Database(engine=database_client)
+        self._repository = Repository(engine=database_client)
 
     def login(self, data: Credentials) -> LoginResponse:
         """Attempt to verify user credentials and return token if successful"""
         try:
-            token = self._db.login(data.username, data.password)
+            token = self._repository.login(data.username, data.password)
             success = True
         except (
             MissingUserError,
@@ -70,7 +70,7 @@ class Accounts:
 
     def add_user(self, data: AddUserPayload) -> AddUserResponsePayload:
         """Add a user. Requires admin credentials"""
-        token, user_details = self._db.add_user(
+        token, user_details = self._repository.add_user(
             token=data.token, user_details=data.user_details
         )
         return AddUserResponsePayload(
@@ -80,7 +80,7 @@ class Accounts:
     def update_user(self, data: UpdateUserPayload) -> UpdateUserResponsePayload:
         """Updates a user's information"""
 
-        token, user_details = self._db.update_user(
+        token, user_details = self._repository.update_user(
             token=data.token,
             user_details=data.user_details,
             credentials=data.credentials.dict(),  # todo: update db to use object
@@ -91,7 +91,7 @@ class Accounts:
 
     def get_user(self, data: GetUserPayload) -> GetUserResponsePayload:
         """Fetches a user's information"""
-        token, user_details = self._db.get_user(token=data.token)
+        token, user_details = self._repository.get_user(token=data.token)
         return GetUserResponsePayload(
             token=token, user_details=UserDetails(**user_details)
         )
@@ -101,14 +101,14 @@ class Accounts:
     ) -> IsUsernameUniqueResponsePayload:
         """Test if a given username is already in use."""
 
-        res = self._db.check_if_username_is_unique(data.username)
+        res = self._repository.check_if_username_is_unique(data.username)
         return IsUsernameUniqueResponsePayload(is_unique=res, username=data.username)
 
     def deactivate_account(
         self, data: DeactivateAccountPayload
     ) -> DeactivateAccountResponsePayload:
         """Deactivate a user's account. Requires admin credentials"""
-        token, user_details = self._db.deactivate_account(
+        token, user_details = self._repository.deactivate_account(
             token=data.token, username=data.username
         )
         return DeactivateAccountResponsePayload(
@@ -117,7 +117,7 @@ class Accounts:
 
     def confirm_account(self, token: str) -> ConfirmAccountResponsePayload:
         """Path for user to verify their email address"""
-        token, user_details = self._db.confirm_account(token)
+        token, user_details = self._repository.confirm_account(token)
         return ConfirmAccountResponsePayload(
             token=token, user_details=UserDetails(**user_details)
         )
