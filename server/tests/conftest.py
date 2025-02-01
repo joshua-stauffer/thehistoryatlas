@@ -19,12 +19,6 @@ from the_history_atlas.apps.history.schema import Base as ReadModelBase
 @pytest.fixture
 def config():
     config = Config()
-    TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
-    if not TEST_DB_URI:
-        raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
-    config.DB_URI = TEST_DB_URI
-    config.DEBUG = False
-    config.TESTING = True
     return config
 
 
