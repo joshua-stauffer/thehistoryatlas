@@ -123,9 +123,9 @@ class Database:
                 text(
                     """
                     SELECT summary_id as event_id, tag_id as story_id
-                    FROM taginstances
-                    JOIN tags ON taginstances.tag_id = tags.id
-                    WHERE taginstances.story_order = 0
+                    FROM tag_instances
+                    JOIN tags ON tag_instances.tag_id = tags.id
+                    WHERE tag_instances.story_order = 0
                     AND tags.type = 'PERSON'
                     ORDER BY RANDOM()
                     LIMIT 1;
@@ -172,12 +172,12 @@ class Database:
                 select 
                     ti.summary_id as event_id,
                     ti.tag_id as story_id
-                from taginstances ti
+                from tag_instances ti
                 where ti.tag_id = :tag_id
                 and ti.story_order {operator} (
-                    select story_order from taginstances
-                    where taginstances.tag_id =  :tag_id
-                    and taginstances.summary_id = :summary_id
+                    select story_order from tag_instances
+                    where tag_instances.tag_id =  :tag_id
+                    and tag_instances.summary_id = :summary_id
                 ) {predicate}
                 order by ti.story_order {order_by_clause}
                 limit 10
@@ -206,8 +206,8 @@ class Database:
                     tags.id as tag_id,
                     tags.type as tag_type
                 from summaries
-                join taginstances on summaries.id = taginstances.summary_id
-                join tags ON taginstances.tag_id = tags.id
+                join tag_instances on summaries.id = tag_instances.summary_id
+                join tags ON tag_instances.tag_id = tags.id
                 where summaries.id = :summary_id;
             """
             ),
@@ -307,13 +307,13 @@ class Database:
                 select
                     summaries.id as summary_id
                 from summaries
-                join taginstances on summaries.id = taginstances.summary_id
-                join tags on taginstances.tag_id = tags.id
+                join tag_instances on summaries.id = tag_instances.summary_id
+                join tags on tag_instances.tag_id = tags.id
                 join time on time.id = tags.id
                 where summaries.id in (
                     select summaries.id from summaries
-                    join taginstances on summaries.id = taginstances.summary_id
-                    where taginstances.tag_id = :tag_id
+                    join tag_instances on summaries.id = tag_instances.summary_id
+                    where tag_instances.tag_id = :tag_id
                 )
                 and time.time {operator} :datetime
                 order by time.time {order_by_clause}
@@ -367,10 +367,10 @@ class Database:
                     place.latitude,
                     place.longitude
                 from summaries
-                join taginstances
-                    on summaries.id = taginstances.summary_id
+                join tag_instances
+                    on summaries.id = tag_instances.summary_id
                 join tags
-                    on tags.id = taginstances.tag_id
+                    on tags.id = tag_instances.tag_id
                 join place
                     on place.id = tags.id
                 where summaries.id in :summary_ids;
@@ -391,10 +391,10 @@ class Database:
                     time.calendar_model as calendar_model,
                     time.precision as precision
                 from summaries
-                join taginstances
-                    on summaries.id = taginstances.summary_id
+                join tag_instances
+                    on summaries.id = tag_instances.summary_id
                 join tags
-                    on tags.id = taginstances.tag_id
+                    on tags.id = tag_instances.tag_id
                 join time
                     on time.id = tags.id
                 where summaries.id in :summary_ids;
@@ -415,13 +415,13 @@ class Database:
                     tags.type as type,
                     summaries.id as event_id,
                     tags.id as tag_id,
-                    taginstances.start_char as start_char,
-                    taginstances.stop_char as stop_char
+                    tag_instances.start_char as start_char,
+                    tag_instances.stop_char as stop_char
                 from summaries
-                join taginstances
-                    on taginstances.summary_id = summaries.id
+                join tag_instances
+                    on tag_instances.summary_id = summaries.id
                 join tags
-                    on taginstances.tag_id = tags.id
+                    on tag_instances.tag_id = tags.id
                 join tag_name_assoc
                     on tags.id = tag_name_assoc.tag_id
                 where summaries.id in :summary_ids;
@@ -708,7 +708,7 @@ class Database:
             story_order=story_order,
         )
         stmt = """
-            insert into taginstances
+            insert into tag_instances
                 (id, start_char, stop_char, summary_id, tag_id, story_order)
             values
                 (:id, :start_char, :stop_char, :summary_id, :tag_id, :story_order)        
@@ -733,12 +733,12 @@ class Database:
                     time.precision as precision
                 from summaries 
                     -- given a summary, find its time tag
-                    join taginstances on taginstances.summary_id = summaries.id
-                    join tags on tags.id = taginstances.tag_id and tags.type = 'TIME'
+                    join tag_instances on tag_instances.summary_id = summaries.id
+                    join tags on tags.id = tag_instances.tag_id and tags.type = 'TIME'
                     join time on time.id = tags.id
                 where summaries.id in (
                     -- find all the summaries related to input tag_id
-                    select summary_id from taginstances where tag_id = :tag_id
+                    select summary_id from tag_instances where tag_id = :tag_id
                 )
                 order by time.time, time.precision
             """
@@ -754,11 +754,11 @@ class Database:
                 """
                 select 
                     summaries.id as summary_id,
-                    taginstances.story_order as story_order
+                    tag_instances.story_order as story_order
                 from summaries
-                    join taginstances on taginstances.summary_id = summaries.id
+                    join tag_instances on tag_instances.summary_id = summaries.id
                 where summaries.id in :summary_ids
-                    and taginstances.tag_id = :tag_id;
+                    and tag_instances.tag_id = :tag_id;
             """
             ),
             {
@@ -792,7 +792,7 @@ class Database:
     def update_story_orders(
         self, session: Session, tag_id: UUID, story_order: int
     ) -> None:
-        """Increment story_order for every row of taginstances with fkey tag_id where the
+        """Increment story_order for every row of tag_instances with fkey tag_id where the
         current value of story_order is equal or greater than param story_order.
         """
         session.execute(
@@ -800,15 +800,15 @@ class Database:
                 """
                 WITH ordered_updates AS (
                     SELECT id 
-                    FROM taginstances
+                    FROM tag_instances
                     WHERE tag_id = :tag_id
                       AND story_order >= :story_order
                     ORDER BY story_order DESC
                 )
-                UPDATE taginstances
+                UPDATE tag_instances
                 SET story_order = story_order + 1
                 FROM ordered_updates
-                WHERE taginstances.id = ordered_updates.id;
+                WHERE tag_instances.id = ordered_updates.id;
             """
             ),
             {"tag_id": tag_id, "story_order": story_order},

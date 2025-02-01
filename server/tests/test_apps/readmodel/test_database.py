@@ -188,7 +188,7 @@ def test_create_tag_instance(readmodel_db):
     with readmodel_db.Session() as session:
         stmt = """
             select id, tag_id, summary_id, start_char, stop_char
-            from taginstances where taginstances.id = :id;
+            from tag_instances where tag_instances.id = :id;
         """
         res = session.execute(text(stmt), {"id": tag_instance.id}).one()
         assert res[0] == tag_instance.id
@@ -199,7 +199,7 @@ def test_create_tag_instance(readmodel_db):
 
         # cleanup
         session.execute(
-            text("delete from taginstances where taginstances.id = :id"),
+            text("delete from tag_instances where tag_instances.id = :id"),
             {"id": tag_instance.id},
         )
         session.commit()

@@ -111,7 +111,7 @@ class DBBuilder:
 
     def insert_tag_instances(self, tag_instances: list[TagInstanceModel]):
         stmt = """
-            insert into taginstances (id, start_char, stop_char, summary_id, tag_id)
+            insert into tag_instances (id, start_char, stop_char, summary_id, tag_id)
             values (:id, :start_char, :stop_char, :summary_id, :tag_id);
         """
         self._session.execute(

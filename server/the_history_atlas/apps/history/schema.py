@@ -70,7 +70,7 @@ class TagInstance(Base):
     """Model representing the connection point between a summary slice and
     a tag."""
 
-    __tablename__ = "taginstances"
+    __tablename__ = "tag_instances"
     id = Column(UUID(as_uuid=True), primary_key=True)
     start_char = Column(INTEGER)
     stop_char = Column(INTEGER)

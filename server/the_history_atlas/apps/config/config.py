@@ -23,7 +23,6 @@ class Config:
         self.DEBUG = bool(os.environ.get("DEBUG"))
         self.DB_URI = os.environ.get("THA_DB_URI")
 
-
     @staticmethod
     def get_timestamp() -> str:
         """Get the current time."""

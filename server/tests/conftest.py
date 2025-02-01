@@ -32,7 +32,7 @@ def truncate_db(session: Session):
         truncate sources cascade;
         truncate summaries cascade;
         truncate tag_name_assoc cascade;
-        truncate taginstances cascade;
+        truncate tag_instances cascade;
         truncate tags cascade;
         truncate time cascade;
     """

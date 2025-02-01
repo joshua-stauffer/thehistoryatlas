@@ -431,11 +431,11 @@ def test_create_stories_order(
             """
             select 
                 summaries.id as summary_id,
-                taginstances.story_order as story_order,
+                tag_instances.story_order as story_order,
                 (
                     select time.time as datetime
                     from summaries as s2
-                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join time on time.id = t2.id
                     where s2.id = summaries.id
@@ -445,7 +445,7 @@ def test_create_stories_order(
                 (
                     select time.precision
                     from summaries as s2
-                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join time on time.id = t2.id
                     where s2.id = summaries.id
@@ -453,13 +453,13 @@ def test_create_stories_order(
                     limit 1
                 ) as precision
             from summaries
-            join taginstances on taginstances.summary_id = summaries.id
+            join tag_instances on tag_instances.summary_id = summaries.id
             where summaries.id in (
                 select summary_id 
-                from taginstances 
+                from tag_instances 
                 where tag_id = :tag_id
             )
-            and taginstances.tag_id = :tag_id
+            and tag_instances.tag_id = :tag_id
             order by story_order;
         """
         ),
@@ -480,11 +480,11 @@ def get_all_events_in_order(
             """
             select 
                 summaries.id as summary_id,
-                taginstances.story_order as story_order,
+                tag_instances.story_order as story_order,
                 (
                     select time.time as datetime
                     from summaries as s2
-                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join time on time.id = t2.id
                     where s2.id = summaries.id
@@ -494,7 +494,7 @@ def get_all_events_in_order(
                 (
                     select time.precision
                     from summaries as s2
-                    join taginstances as ti2 on ti2.summary_id = s2.id
+                    join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join time on time.id = t2.id
                     where s2.id = summaries.id
@@ -502,13 +502,13 @@ def get_all_events_in_order(
                     limit 1
                 ) as precision
             from summaries
-            join taginstances on taginstances.summary_id = summaries.id
+            join tag_instances on tag_instances.summary_id = summaries.id
             where summaries.id in (
                 select summary_id 
-                from taginstances 
+                from tag_instances 
                 where tag_id = :tag_id
             )
-            and taginstances.tag_id = :tag_id
+            and tag_instances.tag_id = :tag_id
             order by story_order;
         """
         ),
