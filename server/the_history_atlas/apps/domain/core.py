@@ -3,7 +3,6 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
-from wikidata.entity import EntityType
 
 Precision = Literal[7, 8, 9, 10, 11]
 
