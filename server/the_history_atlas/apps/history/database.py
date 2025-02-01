@@ -1,11 +1,10 @@
 import logging
 from collections import defaultdict
 from datetime import datetime
-from typing import Tuple, Union, Optional, List, Literal
+from typing import Tuple, Optional, List, Literal
 from uuid import uuid4, UUID
 
-from sqlalchemy import select, func, text
-from sqlalchemy.engine import row
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -15,13 +14,10 @@ from the_history_atlas.apps.domain.core import (
     StoryName,
     StoryPointer,
 )
-from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.history import (
-    DefaultEntity,
     Source as ADMSource,
 )
 from the_history_atlas.apps.domain.models.history.queries import FuzzySearchByName
-from the_history_atlas.apps.domain.models.history.queries.coords_by_name import Coords
 from the_history_atlas.apps.domain.models.history.queries.get_events import (
     EventQuery,
     EventRow,
@@ -36,26 +32,21 @@ from the_history_atlas.apps.domain.models.history.tables import (
     NameModel,
     PlaceModel,
     TagNameAssocModel,
-    CitationModel,
 )
 from the_history_atlas.apps.domain.models.history.tables.time import (
     TimePrecision,
     TimeModel,
 )
-from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.history.errors import MissingResourceError
 from the_history_atlas.apps.history.schema import (
     Base,
-    Citation,
-    Name,
     Person,
     Place,
     Summary,
-    Tag,
     Time,
     Source,
 )
-from the_history_atlas.apps.history.trie import Trie, TrieResult
+from the_history_atlas.apps.history.trie import Trie
 
 log = logging.getLogger(__name__)
 

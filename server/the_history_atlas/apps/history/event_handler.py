@@ -1,9 +1,6 @@
 import logging
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
-
-from sqlalchemy.exc import IntegrityError
-
 from the_history_atlas.apps.domain.core import (
     PersonInput,
     Person,
@@ -15,24 +12,10 @@ from the_history_atlas.apps.domain.core import (
     CitationInput,
     StoryName,
 )
-from the_history_atlas.apps.domain.models import (
-    SummaryAdded,
-    SummaryTagged,
-    CitationAdded,
-    PersonAdded,
-    PersonTagged,
-    PlaceAdded,
-    PlaceTagged,
-    TimeAdded,
-    TimeTagged,
-    MetaAdded,
-)
-from the_history_atlas.apps.domain.models.events.meta_tagged import MetaTagged
-from the_history_atlas.apps.domain.types import Event
+
+
 from the_history_atlas.apps.history.database import Database
 from the_history_atlas.apps.history.errors import (
-    UnknownEventError,
-    DuplicateEventError,
     TagExistsError,
 )
 from the_history_atlas.apps.history.trie import Trie

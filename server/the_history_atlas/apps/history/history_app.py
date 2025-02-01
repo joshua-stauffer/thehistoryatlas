@@ -16,28 +16,9 @@ from the_history_atlas.apps.domain.core import (
     Story,
     StoryPointer,
 )
-from the_history_atlas.apps.domain.models import CoordsByName
-from the_history_atlas.apps.domain.models.history import DefaultEntity, Source
-from the_history_atlas.apps.domain.models.history.queries import (
-    GetSummariesByIDs,
-    Summary,
-    GetCitationByID,
-    Citation,
-    GetManifest,
-    Manifest,
-    GetEntitySummariesByName,
-    EntitySummary,
-    GetEntityIDsByNames,
-    EntityIDsByNames,
-    GetFuzzySearchByName,
-    FuzzySearchByName,
-    GetEntitySummariesByIDs,
-    GetPlaceByCoords,
-    PlaceByCoords,
-    EntitySummariesByName,
-)
+from the_history_atlas.apps.domain.models.history import Source
+
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.domain.types import Event
 from the_history_atlas.apps.history.database import Database
 from the_history_atlas.apps.history.event_handler import EventHandler
 from the_history_atlas.apps.history.query_handler import QueryHandler
