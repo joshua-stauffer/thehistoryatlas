@@ -795,23 +795,22 @@ class Database:
         """Increment story_order for every row of tag_instances with fkey tag_id where the
         current value of story_order is equal or greater than param story_order.
         """
+        OFFSET = 10_000_000
         session.execute(
             text(
                 """
-                WITH ordered_updates AS (
-                    SELECT id 
-                    FROM tag_instances
-                    WHERE tag_id = :tag_id
-                      AND story_order >= :story_order
-                    ORDER BY story_order DESC
-                )
                 UPDATE tag_instances
-                SET story_order = story_order + 1
-                FROM ordered_updates
-                WHERE tag_instances.id = ordered_updates.id;
+                SET story_order = story_order + :offset 
+                WHERE tag_id = :tag_id
+                  AND story_order >= :story_order;
+
+                UPDATE tag_instances
+                SET story_order = story_order - (:offset - 1) 
+                WHERE tag_id = :tag_id
+                  AND story_order >= :story_order + :offset;
             """
             ),
-            {"tag_id": tag_id, "story_order": story_order},
+            {"tag_id": tag_id, "story_order": story_order, "offset": OFFSET},
         )
 
     def get_time_and_precision_by_tags(
