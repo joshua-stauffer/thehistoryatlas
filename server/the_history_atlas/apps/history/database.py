@@ -918,7 +918,7 @@ class Database:
         title: str,
         author: str,
         publisher: str,
-        pub_date: str,
+        pub_date: str | None,
         citation_id: Optional[UUID] = None,
         **kwargs,
     ):

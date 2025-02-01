@@ -47,7 +47,7 @@ class EventHandler:
                 title="Wikidata",
                 author="Wikidata Contributors",
                 publisher="Wikimedia Foundation",
-                pub_date=str(datetime.now(timezone.utc)),
+                pub_date=None,
             )
         summary_id = uuid4()
 

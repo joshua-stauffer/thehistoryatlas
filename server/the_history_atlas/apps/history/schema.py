@@ -62,7 +62,7 @@ class Source(Base):
     title = Column(VARCHAR, nullable=False)
     author = Column(VARCHAR, nullable=False)
     publisher = Column(VARCHAR, nullable=False)
-    pub_date = Column(VARCHAR, nullable=False)
+    pub_date = Column(VARCHAR, nullable=True)
     kwargs = Column(JSONB, nullable=False, default={})
 
 
