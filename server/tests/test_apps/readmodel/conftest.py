@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session
 
 from tests.db_builder import DBBuilder
 from tests.seed.readmodel import CITATIONS, SUMMARIES, SOURCES
-from the_history_atlas.apps.readmodel import ReadModelApp
-from the_history_atlas.apps.readmodel.database import Database
-from the_history_atlas.apps.readmodel.query_handler import QueryHandler
-from the_history_atlas.apps.readmodel.trie import Trie
+from the_history_atlas.apps.history import HistoryApp
+from the_history_atlas.apps.history.database import Database
+from the_history_atlas.apps.history.query_handler import QueryHandler
+from the_history_atlas.apps.history.trie import Trie
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def mock_db():
 
 @pytest.fixture
 def readmodel_app(engine, config):
-    return ReadModelApp(database_client=engine, config_app=config)
+    return HistoryApp(database_client=engine, config_app=config)
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 
-from the_history_atlas.apps.domain.models.readmodel.tables import SourceModel
+from the_history_atlas.apps.domain.models.history.tables import SourceModel
 
 SOURCES: List[SourceModel] = [
     SourceModel(

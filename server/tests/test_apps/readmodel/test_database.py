@@ -11,20 +11,20 @@ from sqlalchemy.orm import Session
 from tests.db_builder import DBBuilder
 from tests.seed.readmodel import PEOPLE, SUMMARIES, PLACES, NAMES, TIMES, CITATIONS
 from the_history_atlas.apps.domain.models import CoordsByName
-from the_history_atlas.apps.domain.models.readmodel import (
+from the_history_atlas.apps.domain.models.history import (
     Source as ADMSource,
     DefaultEntity,
 )
-from the_history_atlas.apps.domain.models.readmodel.queries.coords_by_name import Coords
-from the_history_atlas.apps.domain.models.readmodel.tables import (
+from the_history_atlas.apps.domain.models.history.queries.coords_by_name import Coords
+from the_history_atlas.apps.domain.models.history.tables import (
     PersonModel,
     TagInstanceModel,
     NameModel,
     PlaceModel,
     TimeModel,
 )
-from the_history_atlas.apps.readmodel.database import Database
-from the_history_atlas.apps.readmodel.schema import Place
+from the_history_atlas.apps.history.database import Database
+from the_history_atlas.apps.history.schema import Place
 
 
 def create_tag(engine, type: Literal["PERSON", "PLACE", "TIME"]) -> UUID:

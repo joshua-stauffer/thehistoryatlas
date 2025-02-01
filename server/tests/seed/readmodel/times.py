@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from the_history_atlas.apps.domain.models.readmodel.tables import TimeModel
+from the_history_atlas.apps.domain.models.history.tables import TimeModel
 
 TIMES: list[TimeModel] = [
     TimeModel(

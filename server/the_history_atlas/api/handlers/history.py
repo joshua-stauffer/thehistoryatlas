@@ -14,7 +14,7 @@ from the_history_atlas.apps.domain.core import (
     Map,
     Point,
 )
-from the_history_atlas.apps.readmodel.errors import MissingResourceError
+from the_history_atlas.apps.history.errors import MissingResourceError
 
 
 def to_camel(string: str) -> str:

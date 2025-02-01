@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from the_history_atlas.apps.domain.models.readmodel.tables import TagNameAssocModel
+from the_history_atlas.apps.domain.models.history.tables import TagNameAssocModel
 
 TAG_NAME_ASSOCS: list[TagNameAssocModel] = [
     TagNameAssocModel(

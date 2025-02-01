@@ -16,15 +16,15 @@ from the_history_atlas.apps.domain.core import (
     Tag,
 )
 
-from the_history_atlas.apps.domain.models.readmodel.queries import (
+from the_history_atlas.apps.domain.models.history.queries import (
     GetFuzzySearchByName,
     FuzzySearchByName,
 )
-from the_history_atlas.apps.readmodel.errors import (
+from the_history_atlas.apps.history.errors import (
     MissingResourceError,
 )
-from the_history_atlas.apps.readmodel.database import Database
-from the_history_atlas.apps.readmodel.trie import Trie
+from the_history_atlas.apps.history.database import Database
+from the_history_atlas.apps.history.trie import Trie
 
 log = logging.getLogger(__name__)
 

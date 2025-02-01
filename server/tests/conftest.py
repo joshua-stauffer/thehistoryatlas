@@ -25,7 +25,7 @@ from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, 
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
+from the_history_atlas.apps.history.schema import Base as ReadModelBase
 
 
 @pytest.fixture

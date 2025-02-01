@@ -16,13 +16,13 @@ from the_history_atlas.apps.domain.core import (
     StoryPointer,
 )
 from the_history_atlas.apps.domain.models import CoordsByName
-from the_history_atlas.apps.domain.models.readmodel import (
+from the_history_atlas.apps.domain.models.history import (
     DefaultEntity,
     Source as ADMSource,
 )
-from the_history_atlas.apps.domain.models.readmodel.queries import FuzzySearchByName
-from the_history_atlas.apps.domain.models.readmodel.queries.coords_by_name import Coords
-from the_history_atlas.apps.domain.models.readmodel.queries.get_events import (
+from the_history_atlas.apps.domain.models.history.queries import FuzzySearchByName
+from the_history_atlas.apps.domain.models.history.queries.coords_by_name import Coords
+from the_history_atlas.apps.domain.models.history.queries.get_events import (
     EventQuery,
     EventRow,
     TagRow,
@@ -30,7 +30,7 @@ from the_history_atlas.apps.domain.models.readmodel.queries.get_events import (
     LocationRow,
     TagNames,
 )
-from the_history_atlas.apps.domain.models.readmodel.tables import (
+from the_history_atlas.apps.domain.models.history.tables import (
     PersonModel,
     TagInstanceModel,
     NameModel,
@@ -38,13 +38,13 @@ from the_history_atlas.apps.domain.models.readmodel.tables import (
     TagNameAssocModel,
     CitationModel,
 )
-from the_history_atlas.apps.domain.models.readmodel.tables.time import (
+from the_history_atlas.apps.domain.models.history.tables.time import (
     TimePrecision,
     TimeModel,
 )
 from the_history_atlas.apps.domain.types import Event
-from the_history_atlas.apps.readmodel.errors import MissingResourceError
-from the_history_atlas.apps.readmodel.schema import (
+from the_history_atlas.apps.history.errors import MissingResourceError
+from the_history_atlas.apps.history.schema import (
     Base,
     Citation,
     Name,
@@ -55,7 +55,7 @@ from the_history_atlas.apps.readmodel.schema import (
     Time,
     Source,
 )
-from the_history_atlas.apps.readmodel.trie import Trie, TrieResult
+from the_history_atlas.apps.history.trie import Trie, TrieResult
 
 log = logging.getLogger(__name__)
 

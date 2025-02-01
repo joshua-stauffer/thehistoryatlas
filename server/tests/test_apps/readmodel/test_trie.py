@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from the_history_atlas.apps.readmodel.trie import Trie, Node, TrieResult
+from the_history_atlas.apps.history.trie import Trie, Node, TrieResult
 
 
 @pytest.fixture

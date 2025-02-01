@@ -2,7 +2,7 @@ from typing import List
 
 from sqlalchemy import text
 
-from the_history_atlas.apps.domain.models.readmodel.tables import (
+from the_history_atlas.apps.domain.models.history.tables import (
     CitationModel,
     SourceModel,
     SummaryModel,

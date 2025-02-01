@@ -17,8 +17,8 @@ from the_history_atlas.apps.domain.core import (
     StoryPointer,
 )
 from the_history_atlas.apps.domain.models import CoordsByName
-from the_history_atlas.apps.domain.models.readmodel import DefaultEntity, Source
-from the_history_atlas.apps.domain.models.readmodel.queries import (
+from the_history_atlas.apps.domain.models.history import DefaultEntity, Source
+from the_history_atlas.apps.domain.models.history.queries import (
     GetSummariesByIDs,
     Summary,
     GetCitationByID,
@@ -38,16 +38,16 @@ from the_history_atlas.apps.domain.models.readmodel.queries import (
 )
 from the_history_atlas.apps.config import Config
 from the_history_atlas.apps.domain.types import Event
-from the_history_atlas.apps.readmodel.database import Database
-from the_history_atlas.apps.readmodel.event_handler import EventHandler
-from the_history_atlas.apps.readmodel.query_handler import QueryHandler
-from the_history_atlas.apps.readmodel.trie import Trie
+from the_history_atlas.apps.history.database import Database
+from the_history_atlas.apps.history.event_handler import EventHandler
+from the_history_atlas.apps.history.query_handler import QueryHandler
+from the_history_atlas.apps.history.trie import Trie
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
 
 
-class ReadModelApp:
+class HistoryApp:
     def __init__(self, config_app: Config, database_client: DatabaseClient):
         self.config = config_app
         source_trie = Trie()

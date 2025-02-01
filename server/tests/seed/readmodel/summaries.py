@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from the_history_atlas.apps.domain.models.readmodel.tables import SummaryModel
+from the_history_atlas.apps.domain.models.history.tables import SummaryModel
 
 SUMMARIES: list[SummaryModel] = [
     SummaryModel(
