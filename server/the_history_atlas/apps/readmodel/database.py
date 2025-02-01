@@ -74,158 +74,6 @@ class Database:
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
 
-    def get_citation(self, citation_guid: str) -> dict:
-        """Resolves citation GUID to its value in the database"""
-        log.debug(f"Looking up citation for citation GUID {citation_guid}")
-        with Session(self._engine, future=True) as session:
-            res = session.execute(
-                select(Citation).where(Citation.id == citation_guid)
-            ).scalar_one_or_none()
-            if res:
-                return {
-                    "id": citation_guid,
-                    "text": res.text,
-                    "meta": {"accessDate": res.access_date, "pageNum": res.page_num},
-                    "source_id": res.source_id,
-                }
-            else:
-                log.debug(f"Found no citation for citation GUID {citation_guid}")
-                return {}
-
-    def get_citation_by_id(self, id: UUID, session: Session) -> CitationModel | None:
-        stmt = """
-            select id, text, source_id, summary_id, page_num, access_date
-            from citations where citations.id = :id
-        """
-        output = session.execute(text(stmt), {"id": id}).one_or_none()
-        if output is None:
-            return output
-        (id, citation_text, source_id, summary_id, page_num, access_date) = output
-        return CitationModel(
-            id=id,
-            text=citation_text,
-            source_id=source_id,
-            summary_id=summary_id,
-            page_num=page_num,
-            access_date=access_date,
-        )
-
-    def get_summaries(self, summary_guids: list[str]) -> list[dict]:
-        """Expects a list of summary guids and returns their data in a dict
-        keyed by guid"""
-        log.debug(f"Received request to return {len(summary_guids)} summaries.")
-        result = list()
-        with Session(self._engine, future=True) as session:
-            for guid in summary_guids:
-                res = session.execute(
-                    select(Summary).where(Summary.id == guid)
-                ).scalar_one_or_none()
-                if res:
-                    result.append(
-                        {
-                            "guid": guid,
-                            "text": res.text,
-                            "tags": [self.get_tag_instance_data(t) for t in res.tags],
-                            "citation_ids": [r.guid for r in res.citations],
-                        }
-                    )
-        log.debug(f"Returning {len(result)} summaries")
-        return result
-
-    def get_manifest_by_person(self, person_guid: str) -> tuple[list, list]:
-        """Returns a list of given person's citations"""
-        return self._get_manifest_util(entity_base=Person, guid=person_guid)
-
-    def get_manifest_by_place(self, place_guid: str) -> tuple[list, list]:
-        """Returns a list of given place's citations"""
-        return self._get_manifest_util(entity_base=Place, guid=place_guid)
-
-    def get_manifest_by_time(self, time_guid: str) -> tuple[list, list]:
-        """Returns a list of given place's citations"""
-        return self._get_manifest_util(entity_base=Time, guid=time_guid)
-
-    def _get_manifest_util(self, entity_base, guid) -> tuple[list, list]:
-        """Utility to query db for manifest -- also calculates timeline summary."""
-        log.debug(f"Looking up manifest for GUID {guid}")
-        with Session(self._engine, future=True) as session:
-            entity = session.execute(
-                select(entity_base).where(entity_base.id == guid)
-            ).scalar_one_or_none()
-            if not entity:
-                log.debug(f"Manifest lookup found nothing for GUID {guid}")
-                return [], []
-
-            tag_instances = entity.tag_instances
-
-            tag_list = [t for t in tag_instances]
-            # TODO: update this to better handle multiple time tags
-            tag_list.sort(key=lambda a: a.summary.time_tag)
-            tag_result = list()
-            timeline_dict = dict()
-            for tag in tag_list:
-                tag_result.append(tag.summary.id)
-                year = self.get_year_from_date(tag.summary.time_tag)
-                if time_res := timeline_dict.get(year):
-                    time_res["count"] += 1
-                else:
-                    timeline_dict[year] = {"count": 1, "root_guid": tag.summary.id}
-        timeline_result = [
-            {
-                "year": year,
-                "count": timeline_dict[year]["count"],
-                "root_id": timeline_dict[year]["root_guid"],
-            }
-            for year in timeline_dict.keys()
-        ]
-        return tag_result, timeline_result
-
-    def get_guids_by_name(self, name: str) -> list[UUID]:
-        """Allows searching on known names. Returns list of GUIDs, if any."""
-        with Session(self._engine, future=True) as session:
-            res = session.execute(
-                select(Name).where(Name.name == name)
-            ).scalar_one_or_none()
-            if not res:
-                return list()
-            return [tag.id for tag in res.tags]
-
-    def get_entity_summary_by_guid_batch(self, guids: list[str]) -> list[dict]:
-        """Given a list of guids, find their type, name/alt names,
-        first and last citation dates, and citation count, and returns
-        a dict of the data keyed by guid."""
-        res = list()
-        with Session(self._engine, future=True) as session:
-            for guid in guids:
-                entity = session.execute(
-                    select(Tag).where(Tag.id == guid)
-                ).scalar_one_or_none()
-                if entity is None or not entity.tag_instances:
-                    log.debug(f"Could not find entity {guid}")
-                    continue
-                names = [name.name for name in entity.names]
-
-                # get min/max of date range
-                min_time = entity.tag_instances[0].summary.time_tag
-                max_time = entity.tag_instances[0].summary.time_tag
-                for tag in entity.tag_instances:
-                    time = tag.summary.time_tag
-                    if time < min_time:
-                        min_time = time
-                    if time > max_time:
-                        max_time = time
-
-                res.append(
-                    {
-                        "type": entity.type,
-                        "id": guid,
-                        "citation_count": len(entity.tag_instances),
-                        "names": names,
-                        "first_citation_date": min_time,
-                        "last_citation_date": max_time,
-                    }
-                )
-        return res
-
     def get_all_entity_names(self) -> List[Tuple[str, str]]:
         """Util for building Entity search trie. Returns a list of (name, guid) tuples."""
         res = []
@@ -272,56 +120,6 @@ class Database:
             )
             for trie_result in self._entity_trie.find(name, res_count=10)
         ]
-
-    def get_sources_by_search_term(self, sources: list[TrieResult]) -> list[ADMSource]:
-        """Match a list of Sources by title and author against a search term."""
-        res: List[ADMSource] = []
-        source_ids = set([id for source in sources for id in source.ids])
-        with Session(self._engine, future=True) as session:
-            for source_id in source_ids:
-                source = session.query(Source).filter(Source.id == source_id).one()
-                res.append(
-                    ADMSource(
-                        id=source_id,
-                        title=source.title,
-                        author=source.author,
-                        publisher=source.publisher,
-                        pub_date=source.pub_date,
-                    )
-                )
-        return res
-
-    def get_place_by_coords(
-        self, latitude: float, longitude: float
-    ) -> Union[str, None]:
-        """Search for a place by latitude or longitude and receive a GUID in return"""
-
-        with Session(self._engine, future=True) as session:
-            res = session.execute(
-                select(Place)
-                .where(Place.latitude == latitude)
-                .where(Place.longitude == longitude)
-            ).scalar_one_or_none()
-
-            if res:
-                return res.id
-            return None
-
-    def get_default_entity(self) -> DefaultEntity:
-        """
-        Get a default starting entity
-        """
-        # always start with a place
-        with Session(self._engine, future=True) as session:
-            tag = session.execute(
-                select(Place).order_by(func.random()).limit(1)
-            ).scalar_one_or_none()
-            if tag is None:
-                raise Exception(
-                    "Database must have at least one entity -- add a new citation, and try again."
-                )
-
-            return DefaultEntity(id=tag.id, name=tag.names, type="PLACE")
 
     def get_default_story_and_event(
         self,
@@ -699,23 +497,6 @@ class Database:
         ).all()
         return {row.story_id: row.story_name for row in rows}
 
-    def get_coords_by_names(self, names: list[str], session: Session) -> CoordsByName:
-        sql = text(
-            """
-            select names.name, place.latitude, place.longitude 
-            from names 
-                join tag_name_assoc on names.id = tag_name_assoc.name_id
-                join tags on tag_name_assoc.tag_id = tags.id
-                join place on tags.id = place.id
-            where names.name in :name_list;
-        """
-        )
-        rows = session.execute(sql, {"name_list": tuple(names)}).all()
-        coords_by_name = defaultdict(list)
-        for name, latitude, longitude in rows:
-            coords_by_name[name].append(Coords(latitude=latitude, longitude=longitude))
-        return CoordsByName(coords=coords_by_name)
-
     def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary"""
         log.info(f"Creating a new summary: {text[:50]}...")
@@ -775,16 +556,6 @@ class Database:
         session.execute(
             text(stmt), {"summary_id": summary_id, "citation_id": citation_id}
         )
-
-    def get_person_by_id(self, id: UUID, session: Session) -> PersonModel | None:
-        stmt = """
-            select (id)
-            from person where person.id = :id;
-        """
-        person_id = session.execute(text(stmt), {"id": id}).scalar_one_or_none()
-        if person_id is None:
-            return None
-        return PersonModel(id=person_id)
 
     def create_person(
         self,
@@ -866,21 +637,6 @@ class Database:
         """
         session.execute(text(insert_place), place_model.model_dump())
         return place_model
-
-    def get_time_by_id(self, id: UUID, session: Session) -> TimeModel | None:
-        stmt = """
-            select id, time, calendar_model, precision
-            from time where time.id = :id;
-        """
-        res = session.execute(text(stmt), {"id": id}).one_or_none()
-        if res is None:
-            return None
-        return TimeModel(
-            id=res[0],
-            time=res[1],
-            calendar_model=res[2],
-            precision=res[3],
-        )
 
     def create_time(
         self,
@@ -1085,11 +841,6 @@ class Database:
         ).one()
         return row.datetime, row.precision
 
-    def exists_tag(self, tag_id: UUID, session: Session) -> bool:
-        get_tag = "select id from tags where tags.id = :tag_id"
-        tag_id = session.execute(text(get_tag), {"tag_id": tag_id}).scalar_one_or_none()
-        return tag_id is not None
-
     def get_tags_by_wikidata_ids(self, wikidata_ids: list[str]) -> list[TagPointer]:
         if not wikidata_ids:
             return []
@@ -1127,13 +878,14 @@ class Database:
             name_model = self.create_name(name=name, session=session)
         else:
             # check that this name/tag combo doesn't exist
+            assert tag_id
             existing_row = session.execute(
                 text(
                     """
-                    select * from tag_name_assoc where tag_id = :tag_id and name_id = :name_id
-                """,
-                    {"tag_id": tag_id, "name_id": name_model.id},
-                )
+                    select * from tag_name_assoc where tag_name_assoc.tag_id = :tag_id and tag_name_assoc.name_id = :name_id;
+                """
+                ),
+                {"tag_id": tag_id, "name_id": name_model.id},
             ).one_or_none()
             if existing_row:
                 return
@@ -1239,8 +991,6 @@ class Database:
             for word in author_words:
                 self._source_trie.insert(word, guid=id)
 
-    # TRIE MANAGEMENT
-
     def update_entity_trie(
         self,
         new_string=None,
@@ -1265,30 +1015,3 @@ class Database:
                     f"Update_trie was provided with old_string {old_string} but not a new_string_guid."
                 )
             self._entity_trie.delete(string=old_string, guid=old_string_guid)
-
-    def get_tag_instance_data(self, tag_instance):
-        """Accepts a TagInstance object and returns a dict representation"""
-        res = {
-            "start_char": tag_instance.start_char,
-            "stop_char": tag_instance.stop_char,
-            "tag_type": tag_instance.tag.type,
-            "tag_guid": tag_instance.tag.guid,
-        }
-        tag = tag_instance.tag
-        if tag.type == "TIME":
-            res["name"] = tag.name
-        elif tag.type == "PLACE":
-            res["names"] = self.split_names(tag.names)
-            coords = {"latitude": tag.latitude, "longitude": tag.longitude}
-            if tag.geoshape:
-                coords["geoshape"] = tag.geoshape
-            res["coords"] = coords
-        elif tag.type == "PERSON":
-            res["names"] = self.split_names(tag.names)
-        else:
-            raise ValueError(f"Unknown tag type {tag.type}!")
-        return res
-
-    def get_year_from_date(self, date) -> int:
-        split_date = date.split("|")
-        return int(split_date[0])

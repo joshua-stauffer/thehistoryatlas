@@ -67,47 +67,8 @@ class ReadModelApp:
             database_instance=database, source_trie=source_trie, entity_trie=entity_trie
         )
 
-    def handle_event(self, event: Event):
-        self._event_handler.handle_event(event=event)
-
-    def get_summaries_by_ids(self, query: GetSummariesByIDs) -> List[Summary]:
-        return self._query_handler.get_summaries_by_id(query)
-
-    def get_citation_by_id(self, query: GetCitationByID) -> Citation:
-        return self._query_handler.get_citation_by_id(query)
-
-    def get_manifest(self, query: GetManifest) -> Manifest:
-        return self._query_handler.get_manifest(query)
-
-    def get_entity_summaries_by_name(
-        self, query: GetEntitySummariesByName
-    ) -> EntitySummariesByName:
-        return self._query_handler.get_entity_summaries_by_name(query)
-
-    def get_entity_ids_by_names(self, query: GetEntityIDsByNames) -> EntityIDsByNames:
-        return self._query_handler.get_entity_ids_by_names(query)
-
-    def get_fuzzy_search_by_name(
-        self, query: GetFuzzySearchByName
-    ) -> List[FuzzySearchByName]:
-        return self._query_handler.get_fuzzy_search_by_name(query)
-
-    def get_entity_summaries_by_ids(
-        self, query: GetEntitySummariesByIDs
-    ) -> List[EntitySummary]:
-        return self._query_handler.get_entity_summaries_by_ids(query)
-
-    def get_place_by_coords(self, query: GetPlaceByCoords) -> PlaceByCoords:
-        return self._query_handler.get_place_by_coords(query)
-
-    def get_default_entity(self) -> DefaultEntity:
-        return self._query_handler.get_default_entity()
-
     def get_sources_by_search_term(self, search_term: str) -> List[Source]:
         return self._query_handler.get_sources_by_search_term(search_term=search_term)
-
-    def get_coords_by_names(self, names: list[str]) -> CoordsByName:
-        return self._query_handler.get_coords_by_names(names=names)
 
     def create_person(self, person: PersonInput) -> Person:
         return self._event_handler.create_person(person=person)

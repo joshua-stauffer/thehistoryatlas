@@ -278,11 +278,12 @@ def wikidata_ids(engine) -> list[str]:
 
 
 def test_get_tags_by_wikidata_ids_success(
-    client: TestClient, wikidata_ids: list[WikiDataTagPointer]
+    client: TestClient, wikidata_ids: list[WikiDataTagPointer], auth_headers: dict
 ) -> None:
     response = client.get(
         "/wikidata/tags",
         params={"wikidata_ids": [pointer.wikidata_id for pointer in wikidata_ids]},
+        headers=auth_headers,
     )
     assert response.status_code == 200, response.text
     assert response.json() == {
@@ -291,7 +292,7 @@ def test_get_tags_by_wikidata_ids_success(
 
 
 def test_get_tags_by_wikidata_ids_missing_tags(
-    client: TestClient, wikidata_ids: list[WikiDataTagPointer]
+    client: TestClient, wikidata_ids: list[WikiDataTagPointer], auth_headers: dict
 ) -> None:
     extra_id = "Q8943682"
     existing_ids = [pointer.wikidata_id for pointer in wikidata_ids]
@@ -301,7 +302,7 @@ def test_get_tags_by_wikidata_ids_missing_tags(
         *existing_pointers,
         {"wikidata_id": extra_id, "id": None},
     ]
-    response = client.get("/wikidata/tags", params=params)
+    response = client.get("/wikidata/tags", params=params, headers=auth_headers)
     assert response.status_code == 200, response.text
     assert response.json() == {"wikidata_ids": expected_response}
 

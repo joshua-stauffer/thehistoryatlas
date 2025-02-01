@@ -76,6 +76,7 @@ def db_session(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
     with Session(engine, future=True) as session:
         yield session
+    engine.dispose()
 
 
 @pytest.fixture
@@ -83,28 +84,13 @@ def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
     AccountsBase.metadata.create_all(engine)
     ReadModelBase.metadata.create_all(engine)
-
-    with Session(engine, future=True) as session:
-        truncate_db(session)
-        helper = DBBuilder(session=session)
-        helper.build_readmodel(
-            sources=SOURCES,
-            citations=CITATIONS,
-            summaries=SUMMARIES,
-            people=PEOPLE,
-            places=PLACES,
-            times=TIMES,
-            names=NAMES,
-            tag_name_assocs=TAG_NAME_ASSOCS,
-            tag_instances=TAG_INSTANCES,
-        )
-        session.commit()
-
     yield engine
 
     with Session(engine, future=True) as session:
         truncate_db(session)
         session.commit()
+
+    engine.dispose()
 
 
 @pytest.fixture

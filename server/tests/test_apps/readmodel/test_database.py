@@ -8,6 +8,7 @@ from sqlalchemy import text, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from tests.db_builder import DBBuilder
 from tests.seed.readmodel import PEOPLE, SUMMARIES, PLACES, NAMES, TIMES, CITATIONS
 from the_history_atlas.apps.domain.models import CoordsByName
 from the_history_atlas.apps.domain.models.readmodel import (
@@ -51,34 +52,6 @@ def create_name(engine, name: str) -> UUID:
     return name_id
 
 
-def test_session(readmodel_db):
-    with readmodel_db.Session() as session:
-        lookup_id = UUID("1318e533-80e0-4f2b-bd08-ae7150ffee86")
-        id = session.execute(
-            text("select id from tags where tags.id = :id;"), {"id": lookup_id}
-        ).scalar_one()
-        assert id == lookup_id
-
-
-def test_get_person_by_id_success(readmodel_db):
-    person_id = PEOPLE[0].id
-
-    with readmodel_db.Session() as session:
-        person = readmodel_db.get_person_by_id(id=person_id, session=session)
-
-    assert isinstance(person, PersonModel)
-    assert person.id == person_id
-
-
-def test_get_person_by_id_failure(readmodel_db):
-    person_id = UUID("60e17edf-54ec-4212-9e3f-9f679bf70489")
-
-    with readmodel_db.Session() as session:
-        person = readmodel_db.get_person_by_id(id=person_id, session=session)
-
-    assert person is None
-
-
 def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
     person_id = UUID("6f43d599-07ca-403f-b2ca-a2126aac9e89")
     wikidata_id = "Q1339"
@@ -111,25 +84,6 @@ def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
         assert row.id == person_id
         assert row.wikidata_id == wikidata_id
         assert row.wikidata_url == wikidata_url
-
-
-def test_get_place_by_id_success(readmodel_db):
-    place_id = PLACES[0].id
-
-    with readmodel_db.Session() as session:
-        place = readmodel_db.get_place_by_id(id=place_id, session=session)
-
-    assert isinstance(place, PlaceModel)
-    assert place.id == place_id
-
-
-def test_get_place_by_id_failure(readmodel_db):
-    place_id = UUID("60e17edf-54ec-4212-9e3f-9f679bf70489")
-
-    with readmodel_db.Session() as session:
-        place = readmodel_db.get_place_by_id(id=place_id, session=session)
-
-    assert place is None
 
 
 def test_create_place(readmodel_db):
@@ -173,25 +127,6 @@ def test_create_place(readmodel_db):
         )
 
 
-def test_get_time_by_id_success(readmodel_db):
-    time_id = TIMES[0].id
-
-    with readmodel_db.Session() as session:
-        time = readmodel_db.get_time_by_id(id=time_id, session=session)
-
-    assert isinstance(time, TimeModel)
-    assert time.id == time_id
-
-
-def test_get_time_by_id_failure(readmodel_db):
-    time_id = UUID("60e17edf-54ec-4212-9e3f-9f679bf70489")
-
-    with readmodel_db.Session() as session:
-        time = readmodel_db.get_time_by_id(id=time_id, session=session)
-
-    assert time is None
-
-
 def test_create_time(readmodel_db):
     time_model = TimeModel(
         id=uuid4(),
@@ -231,35 +166,27 @@ def test_create_time(readmodel_db):
         )
 
 
-def test_exists_tag_is_true(readmodel_db):
-    tag_id = PLACES[0].id
-
-    with readmodel_db.Session() as session:
-        exists = readmodel_db.exists_tag(tag_id=tag_id, session=session)
-        assert exists is True
-
-
-def test_exists_tag_is_false(readmodel_db):
-    tag_id = UUID("beacc9c9-a1fc-4a37-95bc-58d56291c6f5")
-
-    with readmodel_db.Session() as session:
-        exists = readmodel_db.exists_tag(tag_id=tag_id, session=session)
-        assert exists is False
-
-
 def test_create_tag_instance(readmodel_db):
+    # arrange
     tag_id = PEOPLE[0].id
     summary_id = SUMMARIES[0].id
     start_char = 5
     stop_char = 10
 
     with readmodel_db.Session() as session:
+        db_builder = DBBuilder(session=session)
+        db_builder.insert_people(people=PEOPLE)
+        db_builder.insert_summaries(summaries=SUMMARIES)
+
+        # act
         tag_instance = readmodel_db.create_tag_instance(
             tag_id=tag_id,
             summary_id=summary_id,
             start_char=start_char,
             stop_char=stop_char,
             session=session,
+            tag_instance_time=datetime.now(timezone.utc),
+            time_precision=9,
         )
         session.commit()
 
@@ -289,6 +216,8 @@ def test_get_name_success(readmodel_db):
     seed_name_model = NAMES[0]
 
     with readmodel_db.Session() as session:
+        db_builder = DBBuilder(session=session)
+        db_builder.insert_names(names=NAMES)
         name_model = readmodel_db.get_name(name=seed_name_model.name, session=session)
 
     assert isinstance(name_model, NameModel)
@@ -506,252 +435,8 @@ def test_create_citation_summary_fkey(readmodel_db):
         session.commit()
 
 
-def test_get_citation_by_id_success(readmodel_db):
-    citation_model = CITATIONS[0]
-
-    with readmodel_db.Session() as session:
-        citation = readmodel_db.get_citation_by_id(
-            id=citation_model.id, session=session
-        )
-
-    assert citation == citation_model
-
-
-def test_get_citation_by_id_failure(readmodel_db):
-    nonexistent_id = UUID("fd5a0077-6d53-4af3-b622-831f031002f2")
-
-    with readmodel_db.Session() as session:
-        citation = readmodel_db.get_citation_by_id(id=nonexistent_id, session=session)
-
-    assert citation is None
-
-
-@pytest.mark.xfail(reason="test not implemented")
-def test_get_citation():
-    assert False, "Remove method or add test"
-
-
-@pytest.mark.xfail(reason="test not implemented")
-def test_get_summaries():
-    assert False, "Remove method or add test"
-
-
-@pytest.mark.xfail(reason="test not implemented")
-def test_get_all_source_titles_and_authors():
-    assert False, "Remove method or add test"
-
-
-def test_get_coords_by_names(readmodel_db):
-    names = ["Eisenach"]
-
-    with readmodel_db.Session() as session:
-        coords_by_name = readmodel_db.get_coords_by_names(names=names, session=session)
-
-    assert coords_by_name == CoordsByName(
-        coords={
-            "Eisenach": [
-                Coords(
-                    latitude=10.3147,
-                    longitude=50.9796,
-                )
-            ]
-        }
-    )
-
-
-@pytest.mark.xfail(reason="test not implemented")
-def test_create_summary():
-    assert False, "Remove method or add test"
-
-
-@pytest.mark.xfail(reason="test not implemented")
-def test_create_name():
-    assert False, "Remove method or add test"
-
-
-@pytest.mark.xfail(reason="test not implemented")
-def test_create_source():
-    assert False, "Remove method or add test"
-
-
-def test_get_citation_returns_error_with_unknown_guid(readmodel_db):
-    guid = "f4cba804-b500-46c8-9f83-89749b777a40"
-    res = readmodel_db.get_citation(guid)
-    assert isinstance(res, dict)
-    assert len(res.keys()) == 0
-
-
-def test_get_summaries_returns_error_with_unknown_guid(readmodel_db):
-    guid = "f4cba804-b500-46c8-9f83-89749b777a40"
-    res = readmodel_db.get_summaries([guid])
-    assert len(res) == 0
-
-
-def test_get_manifest_by_person_returns_empty_list(readmodel_db):
-    tags, timelines = readmodel_db.get_manifest_by_person(
-        "f4cba804-b500-46c8-9f83-89749b777a40"
-    )
-    assert isinstance(timelines, list)
-    assert len(timelines) == 0
-    assert isinstance(tags, list)
-    assert len(tags) == 0
-
-
-@pytest.mark.xfail(
-    raises=AssertionError, reason="data seems to be missing", strict=True
-)
-def test_get_manifest_by_person(readmodel_db):
-    person_guids = [str(person.id) for person in PEOPLE]
-    for guid in person_guids:
-        manifest_res, timeline_res = readmodel_db.get_manifest_by_person(guid)
-        assert isinstance(manifest_res, list)
-        assert all(isinstance(e, str) for e in manifest_res)
-        assert len(manifest_res) > 0
-        assert isinstance(timeline_res, list)
-        for res in timeline_res:
-            assert isinstance(res, dict)
-            assert isinstance(res["count"], int)
-            assert isinstance(res["root_id"], str)
-            assert isinstance(res["year"], int)
-
-
-@pytest.mark.xfail(
-    raises=AssertionError, reason="data seems to be missing", strict=True
-)
-def test_get_manifest_by_place(readmodel_db):
-    place_guids = [str(person.id) for person in PEOPLE]
-    for guid in place_guids:
-        manifest_res, timeline_res = readmodel_db.get_manifest_by_place(guid)
-        assert isinstance(manifest_res, list)
-        assert all(isinstance(e, str) for e in manifest_res)
-        assert len(manifest_res) > 0
-        assert isinstance(timeline_res, list)
-        for res in timeline_res:
-            assert isinstance(res, dict)
-            assert isinstance(res["count"], int)
-            assert isinstance(res["root_id"], str)
-            assert isinstance(res["year"], int)
-
-
-@pytest.mark.xfail(
-    raises=AssertionError, reason="data seems to be missing", strict=True
-)
-def test_get_manifest_by_time(readmodel_db):
-    time_guids = [str(time.id) for time in TIMES]
-    for guid in time_guids:
-        manifest_res, timeline_res = readmodel_db.get_manifest_by_time(guid)
-        assert isinstance(manifest_res, list)
-        assert all(isinstance(e, str) for e in manifest_res)
-        assert len(manifest_res) > 0
-        assert isinstance(timeline_res, list)
-        for res in timeline_res:
-            assert isinstance(res, dict)
-            assert isinstance(res["count"], int)
-            assert isinstance(res["root_id"], str)
-            assert isinstance(res["year"], int)
-
-
-def test_get_guids_by_name(readmodel_db):
-    name = NAMES[0].name
-    res = readmodel_db.get_guids_by_name(name)
-    assert len(res) == 1
-
-
-def test_get_guids_by_name_returns_empty(readmodel_db):
-    res = readmodel_db.get_guids_by_name("This name doesnt exist")
-    assert isinstance(res, list)
-    assert len(res) == 0
-
-
-def test_get_entity_summary_by_guid_batch_returns_empty(readmodel_db):
-    res = readmodel_db.get_entity_summary_by_guid_batch([])
-    assert isinstance(res, list)
-    assert len(res) == 0
-
-
-def test_get_entity_summary_by_guid_batch(readmodel_db):
-    time_guids = [str(time.id) for time in TIMES]
-    person_guids = [str(person.id) for person in PEOPLE]
-    place_guids = [str(place.id) for place in PLACES]
-    combined_guids = [*time_guids, *place_guids, *person_guids]
-    res = readmodel_db.get_entity_summary_by_guid_batch(combined_guids)
-    assert isinstance(res, list)
-    assert len(res) == len(combined_guids)
-    for summary in res:
-        assert isinstance(summary, dict)
-        guid = summary["id"]
-        assert isinstance(guid, str)
-        if summary["type"] == "TIME":
-            assert guid in time_guids
-        elif summary["type"] == "PLACE":
-            assert guid in place_guids
-        elif summary["type"] == "PERSON":
-            assert guid in person_guids
-        else:
-            assert False  # Summary type had an unexpected value
-        assert summary["citation_count"] > 0
-        assert isinstance(summary["names"], list)
-        for name in summary["names"]:
-            assert isinstance(name, str)
-        assert isinstance(summary["first_citation_date"], str)
-        assert isinstance(summary["last_citation_date"], str)
-        assert summary["first_citation_date"] <= summary["last_citation_date"]
-
-
-def test_get_all_entity_names(readmodel_db):
-    res = readmodel_db.get_all_entity_names()
-    assert len(res) > 0
-    assert isinstance(res, list)
-    for tup in res:
-        assert isinstance(tup, tuple)
-        name, guid = tup
-        assert isinstance(name, str)
-        assert isinstance(guid, UUID)
-
-
 @pytest.mark.xfail(reason="UUID provided to TrieResult.guids instead of string")
 def test_get_name_by_fuzzy_search(readmodel_db):
     res1 = readmodel_db.get_name_by_fuzzy_search("A person name")
     assert isinstance(res1, list)
     assert len(res1) <= 10
-
-
-@pytest.mark.xfail(reason="finish test")
-def test_get_sources_by_search_term_title(readmodel_db, source_title):
-
-    sources = readmodel_db.get_sources_by_search_term(source_title)
-
-    with readmodel_db.Session() as session:
-        sql = text(
-            """
-            
-        """
-        )
-
-
-def test_get_place_by_coords(readmodel_db):
-    """Cover successful path - coordinates are found"""
-    # find a set of coordinates to query
-    place_guid = str(PLACES[0].id)
-    with readmodel_db.Session() as session:
-        res = session.execute(select(Place).where(Place.id == place_guid)).scalar_one()
-        latitude = res.latitude
-        longitude = res.longitude
-
-    guid = readmodel_db.get_place_by_coords(latitude=latitude, longitude=longitude)
-    assert guid == UUID(place_guid)
-
-
-def test_get_place_by_coords_with_new_coords(readmodel_db):
-    """Cover failed path -- no coordinates are found"""
-    # coords are set by random.random(), which is less than one.
-    latitude = 1 + random.random()
-    longitude = 1 - random.random()
-
-    guid = readmodel_db.get_place_by_coords(latitude=latitude, longitude=longitude)
-    assert guid is None
-
-
-def test_get_default_entity(readmodel_db):
-    entity = readmodel_db.get_default_entity()
-    assert isinstance(entity, DefaultEntity)
