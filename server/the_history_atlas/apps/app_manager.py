@@ -8,7 +8,7 @@ class AppManager:
     config_app: Config
     database_app: DatabaseApp
     accounts_app: AccountsApp
-    readmodel_app: HistoryApp
+    history_app: HistoryApp
 
     def __init__(self, config_app: Config):
         self.config_app = config_app
@@ -16,8 +16,7 @@ class AppManager:
         self.accounts_app = AccountsApp(
             config=self.config_app, database_client=self.database_app.client()
         )
-
-        self.readmodel_app = HistoryApp(
+        self.history_app = HistoryApp(
             config_app=self.config_app,
             database_client=self.database_app.client(),
         )

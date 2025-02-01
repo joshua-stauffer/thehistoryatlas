@@ -29,14 +29,14 @@ def get_history_handler(
     direction: Literal["next", "prev"] | None,
 ) -> api_types.Story:
     if not event_id or not story_id:
-        story_pointer = apps.readmodel_app.get_default_story_and_event(
+        story_pointer = apps.history_app.get_default_story_and_event(
             story_id=story_id,
             event_id=event_id,
         )
         story_id = story_pointer.story_id
         event_id = story_pointer.event_id
     try:
-        story = apps.readmodel_app.get_story_list(
+        story = apps.history_app.get_story_list(
             event_id=event_id, story_id=story_id, direction=direction
         )
     except MissingResourceError as exc:
