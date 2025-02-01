@@ -27,7 +27,7 @@ from the_history_atlas.apps.domain.core import (
 )
 
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.history.database import Database
+from the_history_atlas.apps.history.repository import Repository
 from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
 from the_history_atlas.apps.history.trie import Trie
 
@@ -41,35 +41,39 @@ class HistoryApp:
         source_trie = Trie()
         entity_trie = Trie()
 
-        database = Database(
+        repository = Repository(
             database_client=database_client,
             source_trie=source_trie,
             entity_trie=entity_trie,
         )
-        self._db = database
+        self._repository = repository
         self._source_trie = source_trie.build(
-            entity_tuples=database.get_all_source_titles_and_authors()
+            entity_tuples=repository.get_all_source_titles_and_authors()
         )
         self._entity_trie = entity_trie.build(
-            entity_tuples=database.get_all_entity_names()
+            entity_tuples=repository.get_all_entity_names()
         )
 
     def create_person(self, person: PersonInput) -> Person:
-        if self._db.get_tag_id_by_wikidata_id(wikidata_id=person.wikidata_id):
+        if self._repository.get_tag_id_by_wikidata_id(wikidata_id=person.wikidata_id):
             raise TagExistsError(
                 f"Person with wikidata id {person.wikidata_id} already exists."
             )
         id = uuid4()
-        with self._db.Session() as session:
-            self._db.create_person(
+        with self._repository.Session() as session:
+            self._repository.create_person(
                 id=id,
                 session=session,
                 wikidata_id=person.wikidata_id,
                 wikidata_url=person.wikidata_url,
             )
-            self._db.add_name_to_tag(name=person.name, tag_id=id, session=session)
-            self._db.update_entity_trie(new_string=person.name, new_string_guid=str(id))
-            self._db.add_story_names(
+            self._repository.add_name_to_tag(
+                name=person.name, tag_id=id, session=session
+            )
+            self._repository.update_entity_trie(
+                new_string=person.name, new_string_guid=str(id)
+            )
+            self._repository.add_story_names(
                 tag_id=id,
                 session=session,
                 story_names=self.get_available_person_story_names(name=person.name),
@@ -78,13 +82,13 @@ class HistoryApp:
         return Person(id=id, **person.model_dump())
 
     def create_place(self, place: PlaceInput) -> Place:
-        if self._db.get_tag_id_by_wikidata_id(wikidata_id=place.wikidata_id):
+        if self._repository.get_tag_id_by_wikidata_id(wikidata_id=place.wikidata_id):
             raise TagExistsError(
                 f"Place with wikidata id {place.wikidata_id} already exists."
             )
         id = uuid4()
-        with self._db.Session() as session:
-            self._db.create_place(
+        with self._repository.Session() as session:
+            self._repository.create_place(
                 id=id,
                 session=session,
                 wikidata_id=place.wikidata_id,
@@ -92,9 +96,13 @@ class HistoryApp:
                 latitude=place.latitude,
                 longitude=place.longitude,
             )
-            self._db.add_name_to_tag(name=place.name, tag_id=id, session=session)
-            self._db.update_entity_trie(new_string=place.name, new_string_guid=str(id))
-            self._db.add_story_names(
+            self._repository.add_name_to_tag(
+                name=place.name, tag_id=id, session=session
+            )
+            self._repository.update_entity_trie(
+                new_string=place.name, new_string_guid=str(id)
+            )
+            self._repository.add_story_names(
                 tag_id=id,
                 session=session,
                 story_names=self.get_available_place_story_names(name=place.name),
@@ -103,13 +111,13 @@ class HistoryApp:
         return Place(id=id, **place.model_dump())
 
     def create_time(self, time: TimeInput) -> Time:
-        if self._db.get_tag_id_by_wikidata_id(wikidata_id=time.wikidata_id):
+        if self._repository.get_tag_id_by_wikidata_id(wikidata_id=time.wikidata_id):
             raise TagExistsError(
                 f"Place with wikidata id {time.wikidata_id} already exists."
             )
         id = uuid4()
-        with self._db.Session() as session:
-            self._db.create_time(
+        with self._repository.Session() as session:
+            self._repository.create_time(
                 id=id,
                 session=session,
                 wikidata_id=time.wikidata_id,
@@ -118,9 +126,11 @@ class HistoryApp:
                 calendar_model=time.calendar_model,
                 precision=time.precision,
             )
-            self._db.add_name_to_tag(name=time.name, tag_id=id, session=session)
-            self._db.update_entity_trie(new_string=time.name, new_string_guid=str(id))
-            self._db.add_story_names(
+            self._repository.add_name_to_tag(name=time.name, tag_id=id, session=session)
+            self._repository.update_entity_trie(
+                new_string=time.name, new_string_guid=str(id)
+            )
+            self._repository.add_story_names(
                 tag_id=id,
                 session=session,
                 story_names=self.get_available_time_story_names(name=time.name),
@@ -129,7 +139,7 @@ class HistoryApp:
         return Time(id=id, **time.model_dump())
 
     def get_tags_by_wikidata_ids(self, ids: list[str]) -> list[TagPointer]:
-        return self._db.get_tags_by_wikidata_ids(wikidata_ids=ids)
+        return self._repository.get_tags_by_wikidata_ids(wikidata_ids=ids)
 
     def create_wikidata_event(
         self,
@@ -137,12 +147,12 @@ class HistoryApp:
         tags: list[TagInstance],
         citation: CitationInput,
     ):
-        source = self._db.get_source_by_title(title="Wikidata")
+        source = self._repository.get_source_by_title(title="Wikidata")
         if source:
             source_id = UUID(source.id)
         else:
             source_id = uuid4()
-            self._db.create_source(
+            self._repository.create_source(
                 id=source_id,
                 title="Wikidata",
                 author="Wikidata Contributors",
@@ -151,35 +161,38 @@ class HistoryApp:
             )
         summary_id = uuid4()
 
-        with self._db.Session() as session:
-            self._db.create_summary(
+        with self._repository.Session() as session:
+            self._repository.create_summary(
                 id=summary_id,
                 text=text,
             )
             citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
             citation_id = uuid4()
-            self._db.create_citation(
+            self._repository.create_citation(
                 id=citation_id,
                 session=session,
                 citation_text=citation_text,
                 access_date=str(citation.access_date),
             )
-            self._db.create_citation_source_fkey(
+            self._repository.create_citation_source_fkey(
                 session=session,
                 citation_id=citation_id,
                 source_id=source_id,
             )
-            self._db.create_citation_summary_fkey(
+            self._repository.create_citation_summary_fkey(
                 session=session,
                 citation_id=citation_id,
                 summary_id=summary_id,
             )
-            tag_instance_time, precision = self._db.get_time_and_precision_by_tags(
+            (
+                tag_instance_time,
+                precision,
+            ) = self._repository.get_time_and_precision_by_tags(
                 session=session,
                 tag_ids=[tag.id for tag in tags],
             )
             for tag in tags:
-                self._db.create_tag_instance(
+                self._repository.create_tag_instance(
                     start_char=tag.start_char,
                     stop_char=tag.stop_char,
                     summary_id=summary_id,
@@ -234,7 +247,7 @@ class HistoryApp:
         self, event_id: UUID, story_id: UUID, session: Session
     ) -> list[StoryPointer]:
         DIRECTION: Literal["next"] = "next"
-        story_pointers = self._db.get_story_pointers(
+        story_pointers = self._repository.get_story_pointers(
             summary_id=event_id,
             tag_id=story_id,
             direction=DIRECTION,
@@ -245,7 +258,7 @@ class HistoryApp:
                 last_story_pointer = StoryPointer(event_id=event_id, story_id=story_id)
             else:
                 last_story_pointer = story_pointers[-1]
-            related_story = self._db.get_related_story(
+            related_story = self._repository.get_related_story(
                 summary_id=last_story_pointer.event_id,
                 tag_id=last_story_pointer.story_id,
                 direction=DIRECTION,
@@ -253,7 +266,7 @@ class HistoryApp:
             )
             if not related_story:
                 break
-            related_story_pointers = self._db.get_story_pointers(
+            related_story_pointers = self._repository.get_story_pointers(
                 summary_id=related_story.event_id,
                 tag_id=related_story.story_id,
                 direction=DIRECTION,
@@ -267,7 +280,7 @@ class HistoryApp:
         self, event_id: UUID, story_id: UUID, session: Session
     ) -> list[StoryPointer]:
         DIRECTION: Literal["prev"] = "prev"
-        story_pointers = self._db.get_story_pointers(
+        story_pointers = self._repository.get_story_pointers(
             summary_id=event_id,
             tag_id=story_id,
             direction=DIRECTION,
@@ -278,7 +291,7 @@ class HistoryApp:
                 last_story_pointer = StoryPointer(event_id=event_id, story_id=story_id)
             else:
                 last_story_pointer = story_pointers[0]
-            related_story = self._db.get_related_story(
+            related_story = self._repository.get_related_story(
                 summary_id=last_story_pointer.event_id,
                 tag_id=last_story_pointer.story_id,
                 direction=DIRECTION,
@@ -286,7 +299,7 @@ class HistoryApp:
             )
             if not related_story:
                 break
-            related_story_pointers = self._db.get_story_pointers(
+            related_story_pointers = self._repository.get_story_pointers(
                 summary_id=related_story.event_id,
                 tag_id=related_story.story_id,
                 direction=DIRECTION,
@@ -298,18 +311,18 @@ class HistoryApp:
     def get_story_list(
         self, event_id: UUID, story_id: UUID, direction: Literal["next", "prev"] | None
     ) -> Story:
-        with self._db.Session() as session:
+        with self._repository.Session() as session:
             story_pointers = self.get_story_pointers(
                 event_id=event_id,
                 story_id=story_id,
                 direction=direction,
                 session=session,
             )
-            events = self._db.get_events(
+            events = self._repository.get_events(
                 event_ids=tuple([story.event_id for story in story_pointers]),
                 session=session,
             )
-            story_names = self._db.get_story_names(
+            story_names = self._repository.get_story_names(
                 story_ids=tuple(
                     {
                         *[story_pointer.story_id for story_pointer in story_pointers],
@@ -388,13 +401,13 @@ class HistoryApp:
     ) -> StoryPointer:
         if story_id:
             # get the first story
-            return self._db.get_default_event_by_story(story_id=story_id)
+            return self._repository.get_default_event_by_story(story_id=story_id)
         elif event_id:
             # get the person story associated with this event
-            return self._db.get_default_story_by_event(event_id=event_id)
+            return self._repository.get_default_story_by_event(event_id=event_id)
         else:
             # return random story/event
-            return self._db.get_default_story_and_event()
+            return self._repository.get_default_story_and_event()
 
     def get_available_person_story_names(self, name: str) -> list[StoryName]:
         return [

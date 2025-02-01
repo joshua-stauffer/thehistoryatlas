@@ -6,13 +6,13 @@ import pytest
 from sqlalchemy import text
 
 from the_history_atlas.apps.history import HistoryApp
-from the_history_atlas.apps.history.database import Database
+from the_history_atlas.apps.history.repository import Repository
 from the_history_atlas.apps.history.trie import Trie
 
 
 @pytest.fixture
 def mock_db():
-    return MagicMock(spec=Database)
+    return MagicMock(spec=Repository)
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def history_app(engine, config):
 def history_db(engine):
     source_trie = Trie()
     entity_trie = Trie()
-    database = Database(
+    database = Repository(
         database_client=engine, source_trie=source_trie, entity_trie=entity_trie
     )
     source_trie.build(entity_tuples=database.get_all_source_titles_and_authors())

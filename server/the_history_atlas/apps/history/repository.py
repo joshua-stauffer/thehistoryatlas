@@ -53,7 +53,7 @@ from the_history_atlas.apps.history.trie import Trie
 log = logging.getLogger(__name__)
 
 
-class Database:
+class Repository:
 
     Session: sessionmaker
 
