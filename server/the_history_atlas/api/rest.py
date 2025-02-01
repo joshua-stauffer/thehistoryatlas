@@ -133,7 +133,7 @@ def build_event(map_options, story_title):
         text=tagged_text,
         lang="en",
         date=CalendarDate(
-            time=str(build_date(exact=True)),
+            datetime=str(build_date(exact=True)),
             calendar="gregorian",
             precision=11,
         ),

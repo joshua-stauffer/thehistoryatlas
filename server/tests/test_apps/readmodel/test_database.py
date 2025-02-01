@@ -123,7 +123,7 @@ def test_create_place(readmodel_db):
 def test_create_time(readmodel_db):
     time_model = TimeModel(
         id=uuid4(),
-        time=datetime(year=1685, month=3, day=21, tzinfo=timezone.utc),
+        datetime=datetime(year=1685, month=3, day=21, tzinfo=timezone.utc),
         calendar_model="http://www.wikidata.org/entity/Q1985727",
         precision=6,
     )
@@ -136,13 +136,13 @@ def test_create_time(readmodel_db):
 
     with readmodel_db.Session() as session:
         stmt = """
-            select id, time, calendar_model, precision 
+            select id, datetime, calendar_model, precision 
             from times where times.id = :id
         """
         res = session.execute(text(stmt), {"id": time_model.id}).one()
         db_model = TimeModel(
             id=res[0],
-            time=res[1],
+            datetime=res[1],
             calendar_model=res[2],
             precision=res[3],
         )

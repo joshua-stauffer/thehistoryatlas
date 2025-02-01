@@ -93,7 +93,7 @@ class Source(BaseModel):
 
 
 class CalendarDate(BaseModel):
-    time: datetime
+    datetime: datetime
     calendar: str
     precision: Precision
 

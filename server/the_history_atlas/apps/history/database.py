@@ -268,8 +268,8 @@ class Database:
                  select 
                  times.id
                  from times
-                 where times.time {operator} (
-                    select times.time
+                 where times.datetime {operator} (
+                    select times.datetime
                     from tags
                     join times
                     on tags.id = times.id
@@ -315,8 +315,8 @@ class Database:
                     join tag_instances on summaries.id = tag_instances.summary_id
                     where tag_instances.tag_id = :tag_id
                 )
-                and times.time {operator} :datetime
-                order by times.time {order_by_clause}
+                and times.datetime {operator} :datetime
+                order by times.datetime {order_by_clause}
                 limit 1;
             """
             ),
@@ -387,7 +387,7 @@ class Database:
                 """
                 select
                 	summaries.id as event_id,
-                    times.time as datetime,
+                    times.datetime as datetime,
                     times.calendar_model as calendar_model,
                     times.precision as precision
                 from summaries
@@ -635,7 +635,7 @@ class Database:
         self,
         session: Session,
         id: UUID,
-        time: datetime,
+        datetime: datetime,
         calendar_model: str,
         precision: TimePrecision,
         wikidata_id: str | None = None,
@@ -643,7 +643,7 @@ class Database:
     ):
         time_model = TimeModel(
             id=id,
-            time=time,
+            datetime=datetime,
             calendar_model=calendar_model,
             precision=precision,
             wikidata_id=wikidata_id,
@@ -652,8 +652,8 @@ class Database:
         insert_time = """
             insert into tags (id, type, wikidata_id, wikidata_url)
                 values (:id, :type, :wikidata_id, :wikidata_url);
-            insert into times (id, time, calendar_model, precision)
-                values (:id, :time, :calendar_model, :precision);
+            insert into times (id, datetime, calendar_model, precision)
+                values (:id, :datetime, :calendar_model, :precision);
         """
         session.execute(text(insert_time), time_model.model_dump())
         return time_model
@@ -729,7 +729,7 @@ class Database:
                 """
                 select 
                     summaries.id as summary_id,
-                    times.time as datetime, 
+                    times.datetime as datetime, 
                     times.precision as precision
                 from summaries 
                     -- given a summary, find its time tag
@@ -740,7 +740,7 @@ class Database:
                     -- find all the summaries related to input tag_id
                     select summary_id from tag_instances where tag_id = :tag_id
                 )
-                order by times.time, times.precision
+                order by times.datetime, times.precision
             """
             ),
             {"tag_id": tag_id},
@@ -823,7 +823,7 @@ class Database:
             text(
                 """
                 select 
-                    times.time as datetime, times.precision as precision
+                    times.datetime as datetime, times.precision as precision
                 from tags
                 join times on tags.id = times.id
                 where tags.id in :tag_ids;

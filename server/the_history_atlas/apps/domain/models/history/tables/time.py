@@ -10,7 +10,7 @@ TimePrecision = 6 | 7 | 8 | 9 | 10 | 11
 class TimeModel(ConfiguredBaseModel):
     id: UUID
     type: Literal["TIME"] = "TIME"
-    time: datetime
+    datetime: datetime
     calendar_model: str
     precision: Literal[6, 7, 8, 9, 10, 11] = TimePrecision
     wikidata_url: str | None = None

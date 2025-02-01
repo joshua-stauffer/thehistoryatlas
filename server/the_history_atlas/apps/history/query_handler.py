@@ -84,7 +84,7 @@ class QueryHandler:
                 text=event_query.event_row.text,
                 lang="en",
                 date=CalendarDate(
-                    time=event_query.calendar_date.datetime,
+                    datetime=event_query.calendar_date.datetime,
                     calendar=event_query.calendar_date.calendar_model,
                     precision=event_query.calendar_date.precision,
                 ),

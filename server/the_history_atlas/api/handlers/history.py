@@ -73,7 +73,7 @@ def convert_event_to_api(event: HistoryEvent) -> api_types.HistoryEvent:
 def convert_calendar_date_to_api(date: CalendarDate) -> api_types.CalendarDate:
     """Convert the internal CalendarDate model to the API CalendarDate model."""
     return api_types.CalendarDate(
-        time=date.time, calendar=date.calendar, precision=date.precision
+        datetime=date.datetime, calendar=date.calendar, precision=date.precision
     )
 
 

@@ -433,13 +433,13 @@ def test_create_stories_order(
                 summaries.id as summary_id,
                 tag_instances.story_order as story_order,
                 (
-                    select times.time as datetime
+                    select times.datetime as datetime
                     from summaries as s2
                     join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by times.time, times.precision
+                    order by times.datetime, times.precision
                     limit 1
                 ) as datetime,
                 (
@@ -449,7 +449,7 @@ def test_create_stories_order(
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by times.time, times.precision
+                    order by times.datetime, times.precision
                     limit 1
                 ) as precision
             from summaries
@@ -482,13 +482,13 @@ def get_all_events_in_order(
                 summaries.id as summary_id,
                 tag_instances.story_order as story_order,
                 (
-                    select times.time as datetime
+                    select times.datetime as datetime
                     from summaries as s2
                     join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by times.time, times.precision
+                    order by times.datetime, times.precision
                     limit 1
                 ) as datetime,
                 (
@@ -498,7 +498,7 @@ def get_all_events_in_order(
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
                     join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by times.time, times.precision
+                    order by times.datetime, times.precision
                     limit 1
                 ) as precision
             from summaries
@@ -545,7 +545,7 @@ class TestGetHistory:
         story = Story.model_validate(response.json())
         time_tags = sorted([time.date for time in times])
         for event, time in zip(story.events, time_tags):
-            assert event.date.time.date() == time.date()
+            assert event.date.datetime.date() == time.date()
 
     def test_with_params(
         self, client: TestClient, db_session: scoped_session, auth_headers: dict
@@ -591,7 +591,7 @@ class TestGetHistory:
         assert len(story.events) == 21
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.datetime.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -636,7 +636,7 @@ class TestGetHistory:
         assert len(story.events) == 10
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.datetime.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -723,7 +723,7 @@ class TestGetHistory:
         assert len(story.events) == len(expected_events)
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.datetime.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
             if event.id in person_event_ids:
@@ -776,7 +776,7 @@ class TestGetHistory:
         assert len(story.events) == 10
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.datetime.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -864,7 +864,7 @@ class TestGetHistory:
         assert len(story.events) == len(expected_events)
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.time.date() == expected_event.datetime.date()
+            assert event.date.datetime.date() == expected_event.datetime.date()
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
             if event.id in person_event_ids:

@@ -161,7 +161,7 @@ class EventHandler:
                 session=session,
                 wikidata_id=time.wikidata_id,
                 wikidata_url=time.wikidata_url,
-                time=time.date,
+                datetime=time.date,
                 calendar_model=time.calendar_model,
                 precision=time.precision,
             )
