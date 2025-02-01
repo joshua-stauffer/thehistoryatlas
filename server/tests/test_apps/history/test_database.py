@@ -45,13 +45,13 @@ def create_name(engine, name: str) -> UUID:
     return name_id
 
 
-def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
+def test_create_person(history_db, cleanup_tag: Callable[[UUID], None]):
     person_id = UUID("6f43d599-07ca-403f-b2ca-a2126aac9e89")
     wikidata_id = "Q1339"
     wikidata_url = "https://www.wikidata.org/wiki/Q1339"
     cleanup_tag(person_id)
-    with readmodel_db.Session() as session:
-        person = readmodel_db.create_person(
+    with history_db.Session() as session:
+        person = history_db.create_person(
             id=person_id,
             session=session,
             wikidata_id=wikidata_id,
@@ -61,7 +61,7 @@ def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
 
     assert isinstance(person, PersonModel)
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         person_query = text(
             """
                 select p.id, t.wikidata_id, t.wikidata_url
@@ -79,7 +79,7 @@ def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
         assert row.wikidata_url == wikidata_url
 
 
-def test_create_place(readmodel_db):
+def test_create_place(history_db):
     place_model = PlaceModel(
         id=uuid4(),
         latitude=10.3456,
@@ -87,13 +87,13 @@ def test_create_place(readmodel_db):
         geoshape=None,
     )
 
-    with readmodel_db.Session() as session:
-        result_model = readmodel_db.create_place(
+    with history_db.Session() as session:
+        result_model = history_db.create_place(
             session=session, **place_model.dict(exclude={"extra", "type"})
         )
         session.commit()
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         stmt = """
             select id, latitude, longitude, geoshape
             from places where places.id = :id
@@ -118,7 +118,7 @@ def test_create_place(readmodel_db):
         )
 
 
-def test_create_time(readmodel_db):
+def test_create_time(history_db):
     time_model = TimeModel(
         id=uuid4(),
         datetime=datetime(year=1685, month=3, day=21, tzinfo=timezone.utc),
@@ -126,13 +126,13 @@ def test_create_time(readmodel_db):
         precision=6,
     )
 
-    with readmodel_db.Session() as session:
-        result_model = readmodel_db.create_time(
+    with history_db.Session() as session:
+        result_model = history_db.create_time(
             session=session, **time_model.dict(exclude={"extra", "type"})
         )
         session.commit()
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         stmt = """
             select id, datetime, calendar_model, precision 
             from times where times.id = :id
@@ -157,20 +157,20 @@ def test_create_time(readmodel_db):
         )
 
 
-def test_create_tag_instance(readmodel_db):
+def test_create_tag_instance(history_db):
     # arrange
     tag_id = PEOPLE[0].id
     summary_id = SUMMARIES[0].id
     start_char = 5
     stop_char = 10
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         db_builder = DBBuilder(session=session)
         db_builder.insert_people(people=PEOPLE)
         db_builder.insert_summaries(summaries=SUMMARIES)
 
         # act
-        tag_instance = readmodel_db.create_tag_instance(
+        tag_instance = history_db.create_tag_instance(
             tag_id=tag_id,
             summary_id=summary_id,
             start_char=start_char,
@@ -183,7 +183,7 @@ def test_create_tag_instance(readmodel_db):
 
     assert isinstance(tag_instance, TagInstanceModel)
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         stmt = """
             select id, tag_id, summary_id, start_char, stop_char
             from tag_instances where tag_instances.id = :id;
@@ -203,37 +203,37 @@ def test_create_tag_instance(readmodel_db):
         session.commit()
 
 
-def test_get_name_success(readmodel_db):
+def test_get_name_success(history_db):
     seed_name_model = NAMES[0]
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         db_builder = DBBuilder(session=session)
         db_builder.insert_names(names=NAMES)
-        name_model = readmodel_db.get_name(name=seed_name_model.name, session=session)
+        name_model = history_db.get_name(name=seed_name_model.name, session=session)
 
     assert isinstance(name_model, NameModel)
     assert name_model.id == seed_name_model.id
     assert name_model.name == seed_name_model.name
 
 
-def test_get_name_failure(readmodel_db):
+def test_get_name_failure(history_db):
     nonexistent_name = "supercalifragilistic expialidocious"
 
-    with readmodel_db.Session() as session:
-        name_model = readmodel_db.get_name(name=nonexistent_name, session=session)
+    with history_db.Session() as session:
+        name_model = history_db.get_name(name=nonexistent_name, session=session)
 
     assert name_model is None
 
 
-def test_add_name_to_tag_with_nonexistent_name(engine, readmodel_db):
+def test_add_name_to_tag_with_nonexistent_name(engine, history_db):
     tag_id = create_tag(engine, type="PERSON")
     name = "Charlie Parker"
 
-    with readmodel_db.Session() as session:
-        readmodel_db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
+    with history_db.Session() as session:
+        history_db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
         session.commit()
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         stmt = text(
             """
             select names.name
@@ -253,13 +253,13 @@ def test_add_name_to_tag_with_nonexistent_name(engine, readmodel_db):
         session.commit()
 
 
-def test_add_name_to_tag_with_existing_name(readmodel_db, engine):
+def test_add_name_to_tag_with_existing_name(history_db, engine):
     tag_id = create_tag(engine, type="PERSON")
     name = "Charlie Parker"
     name_id = create_name(engine, name=name)
 
-    with readmodel_db.Session() as session:
-        readmodel_db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
+    with history_db.Session() as session:
+        history_db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
 
         stmt = text(
             """
@@ -281,23 +281,23 @@ def test_add_name_to_tag_with_existing_name(readmodel_db, engine):
         session.commit()
 
 
-def test_add_name_to_tag_errors_if_tag_is_missing(readmodel_db):
+def test_add_name_to_tag_errors_if_tag_is_missing(history_db):
     tag_id = uuid4()
     name = "Charlie Parker"
 
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         with pytest.raises(IntegrityError):
-            readmodel_db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
+            history_db.add_name_to_tag(tag_id=tag_id, name=name, session=session)
 
 
-def test_create_citation(readmodel_db):
+def test_create_citation(history_db):
     id = uuid4()
     citation_text = "peter piper picked a peck of pickled peppers."
     page_num = 243
     access_date = "2022-04-19"
 
-    with readmodel_db.Session() as session:
-        readmodel_db.create_citation(
+    with history_db.Session() as session:
+        history_db.create_citation(
             session=session,
             id=id,
             citation_text=citation_text,
@@ -323,7 +323,7 @@ def test_create_citation(readmodel_db):
         session.commit()
 
 
-def test_create_citation_source_fkey(readmodel_db):
+def test_create_citation_source_fkey(history_db):
     citation_id = uuid4()
     citation_text = "eenie meanie miney moe"
     source_id = uuid4()
@@ -338,7 +338,7 @@ def test_create_citation_source_fkey(readmodel_db):
         insert into sources (id, title, author, publisher, pub_date, kwargs)
             values (:source_id, :title, :author, :publisher, :pub_date, :kwargs);
     """
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         session.execute(
             text(stmt),
             {
@@ -354,7 +354,7 @@ def test_create_citation_source_fkey(readmodel_db):
         )
         session.commit()
 
-        readmodel_db.create_citation_source_fkey(
+        history_db.create_citation_source_fkey(
             citation_id=citation_id, source_id=source_id, session=session
         )
         session.commit()
@@ -378,7 +378,7 @@ def test_create_citation_source_fkey(readmodel_db):
         session.commit()
 
 
-def test_create_citation_summary_fkey(readmodel_db):
+def test_create_citation_summary_fkey(history_db):
     citation_id = uuid4()
     citation_text = "eenie meanie miney moe"
     summary_id = uuid4()
@@ -390,7 +390,7 @@ def test_create_citation_summary_fkey(readmodel_db):
         insert into summaries (id, text)
             values (:summary_id, :summary_text);
     """
-    with readmodel_db.Session() as session:
+    with history_db.Session() as session:
         session.execute(
             text(stmt),
             {
@@ -402,7 +402,7 @@ def test_create_citation_summary_fkey(readmodel_db):
         )
         session.commit()
 
-        readmodel_db.create_citation_summary_fkey(
+        history_db.create_citation_summary_fkey(
             citation_id=citation_id, summary_id=summary_id, session=session
         )
         session.commit()
@@ -427,7 +427,7 @@ def test_create_citation_summary_fkey(readmodel_db):
 
 
 @pytest.mark.xfail(reason="UUID provided to TrieResult.guids instead of string")
-def test_get_name_by_fuzzy_search(readmodel_db):
-    res1 = readmodel_db.get_name_by_fuzzy_search("A person name")
+def test_get_name_by_fuzzy_search(history_db):
+    res1 = history_db.get_name_by_fuzzy_search("A person name")
     assert isinstance(res1, list)
     assert len(res1) <= 10
