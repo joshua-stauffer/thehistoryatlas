@@ -107,7 +107,7 @@ def accounts_bare_db(engine):
 
 
 @pytest.fixture
-def accounts_db(accounts_bare_db, admin_user_details, config):
+def accounts_db(accounts_bare_db, admin_user_details, config, engine):
     """An active database instance with one admin user"""
     # must start with an admin user
     encrypted_admin_details = {
