@@ -78,7 +78,7 @@ class TagInstance(Base):
     summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"))
     summary = relationship("Summary", back_populates="tags")
     # parent tag
-    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"))
+    tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), index=True)
     tag = relationship("Tag", back_populates="tag_instances")
 
     story_order = Column(INTEGER, nullable=False)
@@ -88,8 +88,16 @@ class TagInstance(Base):
 tag_name_assoc = Table(
     "tag_name_assoc",
     Base.metadata,
-    Column("tag_id", UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False),
-    Column("name_id", UUID(as_uuid=True), ForeignKey("names.id"), nullable=False),
+    Column(
+        "tag_id", UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False, index=True
+    ),
+    Column(
+        "name_id",
+        UUID(as_uuid=True),
+        ForeignKey("names.id"),
+        nullable=False,
+        index=True,
+    ),
     UniqueConstraint("tag_id", "name_id"),
 )
 
@@ -112,7 +120,7 @@ class Time(Tag):
 
     __tablename__ = "time"
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
-    time = Column(TIMESTAMP(timezone=True))
+    time = Column(TIMESTAMP(timezone=True), index=True)
     calendar_model = Column(String(64))
     #  6 - millennium, 7 - century, 8 - decade, 9 - year, 10 - month, 11 - day
     precision = Column(INTEGER)
@@ -139,8 +147,8 @@ class Place(Tag):
     __tablename__ = "place"
 
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
-    latitude = Column(FLOAT)
-    longitude = Column(FLOAT)
+    latitude = Column(FLOAT, index=True)
+    longitude = Column(FLOAT, index=True)
     geoshape = Column(VARCHAR)
     geonames_id = Column(INTEGER)
 
