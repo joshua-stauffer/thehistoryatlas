@@ -46,9 +46,6 @@ class Citation(Base):
     wikidata_item_title = Column(VARCHAR)
     wikidata_item_url = Column(VARCHAR)
 
-    def __repr__(self):
-        return f"Citation(id: {self.id}, text: {self.text}, meta: {self.meta.id})"
-
 
 class Source(Base):
     """
@@ -127,9 +124,6 @@ class Time(Tag):
 
     __mapper_args__ = {"polymorphic_identity": "TIME"}
 
-    def __repr__(self):
-        return f"TimeTag(id: {self.id}, name: {self.name})"
-
 
 class Person(Tag):
 
@@ -137,9 +131,6 @@ class Person(Tag):
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
-
-    def __repr__(self):
-        return f"PersonTag(id: {self.id}, names: {self.names})"
 
 
 class Place(Tag):
@@ -154,9 +145,6 @@ class Place(Tag):
 
     __mapper_args__ = {"polymorphic_identity": "PLACE"}
 
-    def __repr__(self):
-        return f"Place(latitude: {self.latitude}, longitude: {self.longitude})"
-
 
 class Name(Base):
     __tablename__ = "names"
@@ -164,6 +152,3 @@ class Name(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(VARCHAR, unique=True, nullable=False)
     tags = relationship("Tag", secondary=tag_names, back_populates="names")
-
-    def __repr__(self):
-        return f"Name(id: {self.id}, name: {self.name})"
