@@ -30,6 +30,7 @@ jobs:
           env:
             TEST_DB_URI: ${{ secrets.TEST_DB_URI }}
             DEV_DB_URI: ${{ secrets.TEST_DB_URI }}
+            THA_DB_URI: ${{ secrets.TEST_DB_URI }}
             TTL: ${{ secrets.ACCOUNTS_TTL }}
             REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
             SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
