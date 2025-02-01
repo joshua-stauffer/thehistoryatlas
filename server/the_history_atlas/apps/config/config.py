@@ -25,6 +25,7 @@ class Config:
         # database uris
         self._PROD_DB_URI = os.environ.get("PROD_DB_URI")
         self._DEV_DB_URI = os.environ.get("DEV_DB_URI")
+        self._TESTING_DB_URI = "sqlite+pysqlite:///:memory:"
 
         # are we in production?
         prod = os.environ.get("CONFIG")
@@ -34,6 +35,13 @@ class Config:
         else:
             self.CONFIG = "DEVELOPMENT"
             self.DB_URI = self._DEV_DB_URI
+
+        if self.test_for_truthiness(os.environ.get("TESTING")):
+            self.TESTING = False
+            # override the DB_URI:
+            self.DB_URI = self._TESTING_DB_URI
+        else:
+            self.TESTING = False
 
     @staticmethod
     def test_for_truthiness(val):
