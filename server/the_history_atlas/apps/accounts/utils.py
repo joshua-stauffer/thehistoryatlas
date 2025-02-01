@@ -1,5 +1,7 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
+
+
 from the_history_atlas.apps.accounts.errors import known_exceptions
 
 log = logging.getLogger(__name__)
@@ -7,7 +9,7 @@ log = logging.getLogger(__name__)
 
 def update_last_login() -> str:
     """returns a string of the current time"""
-    return str(datetime.utcnow())
+    return str(datetime.now(timezone.utc))
 
 
 def error_handler(func):

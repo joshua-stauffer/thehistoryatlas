@@ -2,7 +2,7 @@ from typing import List
 
 from sqlalchemy import text
 
-from the_history_atlas.apps.domain.models.readmodel.tables import (
+from the_history_atlas.apps.domain.models.history.tables import (
     CitationModel,
     SourceModel,
     SummaryModel,
@@ -19,28 +19,6 @@ class DBBuilder:
     def __init__(self, session):
         self._session = session
 
-    def build_readmodel(
-        self,
-        citations: List[CitationModel],
-        sources: List[SourceModel],
-        summaries: List[SummaryModel],
-        people: List[PersonModel],
-        places: List[PlaceModel],
-        times: List[TimeModel],
-        names: List[NameModel],
-        tag_name_assocs: List[TagNameAssocModel],
-        tag_instances: List[TagInstanceModel],
-    ):
-        self.insert_sources(sources)
-        self.insert_summaries(summaries)
-        self.insert_citations(citations)
-        self.insert_people(people)
-        self.insert_places(places)
-        self.insert_times(times)
-        self.insert_names(names)
-        self.insert_tag_name_assocs(tag_name_assocs)
-        self.insert_tag_instances(tag_instances)
-
     def insert_citations(self, citations: list[CitationModel]):
         stmt = """
             insert into citations (id, text,  page_num, access_date, summary_id, source_id)
@@ -51,9 +29,9 @@ class DBBuilder:
     def insert_summaries(self, summaries: list[SummaryModel]):
         stmt = """
             insert into summaries 
-            (id, text, time_tag)
+            (id, text)
             values 
-            (:id, :text, :time_tag);
+            (:id, :text);
         """
         self._session.execute(text(stmt), [summary.dict() for summary in summaries])
 
@@ -61,7 +39,7 @@ class DBBuilder:
         stmt = """
             insert into tags (id, type)
             values (:id, :type);
-            insert into person (id)
+            insert into people (id)
             values (:id);
         """
         self._session.execute(text(stmt), [person.dict() for person in people])
@@ -70,7 +48,7 @@ class DBBuilder:
         stmt = """
             insert into tags (id, type)
             values (:id, :type);
-            insert into place (id, latitude, longitude, geoshape, geonames_id)
+            insert into places (id, latitude, longitude, geoshape, geonames_id)
             values (:id, :latitude, :longitude, :geoshape, :geonames_id);
         """
         self._session.execute(text(stmt), [place.dict() for place in places])
@@ -79,7 +57,7 @@ class DBBuilder:
         stmt = """
             insert into tags (id, type)
             values (:id, :type);
-            insert into time (id, time, calendar_model, precision)
+            insert into times (id, time, calendar_model, precision)
             values (:id, :time, :calendar_model, :precision)
         """
         self._session.execute(text(stmt), [time.dict() for time in times])
@@ -100,18 +78,16 @@ class DBBuilder:
         """
         self._session.execute(text(stmt), [name.dict() for name in names])
 
-    def insert_tag_name_assocs(self, tag_name_assocs: list[TagNameAssocModel]):
+    def insert_tag_names(self, tag_names: list[TagNameAssocModel]):
         stmt = """
-            insert into tag_name_assoc (tag_id, name_id)
+            insert into tag_names (tag_id, name_id)
             values (:tag_id, :name_id);
         """
-        self._session.execute(
-            text(stmt), [tag_name_assoc.dict() for tag_name_assoc in tag_name_assocs]
-        )
+        self._session.execute(text(stmt), [tag_name.dict() for tag_name in tag_names])
 
     def insert_tag_instances(self, tag_instances: list[TagInstanceModel]):
         stmt = """
-            insert into taginstances (id, start_char, stop_char, summary_id, tag_id)
+            insert into tag_instances (id, start_char, stop_char, summary_id, tag_id)
             values (:id, :start_char, :stop_char, :summary_id, :tag_id);
         """
         self._session.execute(

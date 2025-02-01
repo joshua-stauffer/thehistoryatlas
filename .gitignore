@@ -48,3 +48,4 @@ secrets.yaml
 *.swp
 *.swo
 .legacy_env
+.test_env

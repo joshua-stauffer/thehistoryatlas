@@ -8,36 +8,57 @@ from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from tests.db_builder import DBBuilder
-from tests.seed.readmodel import (
-    CITATIONS,
-    SUMMARIES,
-    SOURCES,
-    PEOPLE,
-    PLACES,
-    TIMES,
-    NAMES,
-    TAG_INSTANCES,
-)
-from tests.seed.readmodel.tag_name_assocs import TAG_NAME_ASSOCS
-from the_history_atlas.apps.accounts.database import Database as AccountsDB
+from the_history_atlas.apps.accounts.repository import Repository as AccountsDB
 from the_history_atlas.apps.accounts.encryption import encrypt, get_token, TTL, fernet
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase, User
 
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.readmodel.schema import Base as ReadModelBase
+from the_history_atlas.apps.history.schema import Base as ReadModelBase
 
 
 @pytest.fixture
 def config():
     config = Config()
-    TEST_DB_URI = os.environ.get("TEST_DB_URI", None)
-    if not TEST_DB_URI:
-        raise Exception("Env variable `TEST_DB_URI` must be set to run test suite.")
-    config.DB_URI = TEST_DB_URI
-    config.DEBUG = False
-    config.TESTING = True
     return config
+
+
+def truncate_db(session: Session):
+    truncate_stmt = """
+        truncate users cascade;
+        truncate citations cascade;
+        truncate names cascade;
+        truncate people cascade;
+        truncate places cascade;
+        truncate sources cascade;
+        truncate summaries cascade;
+        truncate tag_names cascade;
+        truncate tag_instances cascade;
+        truncate tags cascade;
+        truncate times cascade;
+    """
+    session.execute(text(truncate_stmt))
+
+
+@pytest.fixture
+def cleanup_db(config):
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    with Session(engine, future=True) as session:
+        truncate_db(session)
+        session.commit()
+    engine.dispose()
+    yield
+    with Session(engine, future=True) as session:
+        truncate_db(session)
+        session.commit()
+    engine.dispose()
+
+
+@pytest.fixture
+def db_session(config):
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    with Session(engine, future=True) as session:
+        yield session
+    engine.dispose()
 
 
 @pytest.fixture
@@ -45,38 +66,13 @@ def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
     AccountsBase.metadata.create_all(engine)
     ReadModelBase.metadata.create_all(engine)
-
-    truncate_stmt = """
-        truncate users cascade;
-        truncate citations cascade;
-        truncate names cascade;
-        truncate person cascade;
-        truncate place cascade;
-        truncate sources cascade;
-        truncate summaries cascade;
-        truncate tag_name_assoc cascade;
-        truncate taginstances cascade;
-        truncate tags cascade;
-        truncate time cascade;
-    """
+    yield engine
 
     with Session(engine, future=True) as session:
-        session.execute(text(truncate_stmt))
-        helper = DBBuilder(session=session)
-        helper.build_readmodel(
-            sources=SOURCES,
-            citations=CITATIONS,
-            summaries=SUMMARIES,
-            people=PEOPLE,
-            places=PLACES,
-            times=TIMES,
-            names=NAMES,
-            tag_name_assocs=TAG_NAME_ASSOCS,
-            tag_instances=TAG_INSTANCES,
-        )
+        truncate_db(session)
         session.commit()
 
-    return engine
+    engine.dispose()
 
 
 @pytest.fixture
@@ -93,7 +89,7 @@ def accounts_bare_db(engine):
 
 
 @pytest.fixture
-def accounts_db(accounts_bare_db, admin_user_details, engine):
+def accounts_db(accounts_bare_db, admin_user_details, config, engine):
     """An active database instance with one admin user"""
     # must start with an admin user
     encrypted_admin_details = {
@@ -105,6 +101,23 @@ def accounts_db(accounts_bare_db, admin_user_details, engine):
         session.commit()
 
     return accounts_bare_db
+
+
+@pytest.fixture
+def seed_accounts(
+    cleanup_db, config, admin_user_details, user_details, unconfirmed_user
+):
+
+    engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+    with Session(engine, future=True) as session:
+        for user_dict in [admin_user_details, user_details, unconfirmed_user]:
+            user = {
+                **user_dict,
+                "password": encrypt(user_dict["password"]).decode(),
+            }
+            session.add(User(**user))
+        session.commit()
+    engine.dispose()
 
 
 @pytest.fixture

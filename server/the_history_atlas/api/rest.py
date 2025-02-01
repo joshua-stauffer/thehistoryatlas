@@ -1,72 +1,55 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from typing import List, Union
+from fastapi import FastAPI, Depends, Query, HTTPException
+from typing import Callable, Annotated, Literal
 from faker import Faker
 import random
-from uuid import uuid4
+from uuid import uuid4, UUID
 
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+
+from the_history_atlas.api.handlers.history import get_history_handler
+from the_history_atlas.api.handlers.tags import (
+    create_person_handler,
+    create_place_handler,
+    create_time_handler,
+    get_tags_handler,
+    create_event_handler,
+)
+from the_history_atlas.api.handlers.users import login_handler
+from the_history_atlas.api.types.history import (
+    Source,
+    CalendarDate,
+    Tag,
+    Map,
+    HistoryEvent,
+    Story,
+    Point,
+)
+from the_history_atlas.api.types.tags import (
+    WikiDataPersonOutput,
+    WikiDataPersonInput,
+    WikiDataPlaceOutput,
+    WikiDataPlaceInput,
+    WikiDataTimeOutput,
+    WikiDataTimeInput,
+    WikiDataTagsOutput,
+    WikiDataEventOutput,
+    WikiDataEventInput,
+)
+from the_history_atlas.api.types.user import LoginResponse
+from the_history_atlas.apps.accounts.errors import (
+    DeactivatedUserError,
+    MissingUserError,
+)
+from the_history_atlas.apps.app_manager import AppManager
+from the_history_atlas.apps.domain.models.accounts import UserDetails, GetUserPayload
+from the_history_atlas.apps.domain.models.accounts.get_user import (
+    GetUserResponsePayload,
+)
 
 fake = Faker()
 Faker.seed(872)
 
 # Models
-class Point(BaseModel):
-    id: str
-    latitude: float
-    longitude: float
-    name: str
-
-
-class Location(Point):
-    pass
-
-
-class Source(BaseModel):
-    id: str
-    text: str
-    title: str
-    author: str
-    publisher: str
-    pubDate: str
-
-
-class CalendarDate(BaseModel):
-    time: str
-    calendar: str
-    precision: int
-
-
-class Tag(BaseModel):
-    id: str
-    type: str
-    startChar: int
-    stopChar: int
-    name: str
-    defaultStoryId: str
-
-
-class Map(BaseModel):
-    locations: List[Location]
-
-
-class HistoryEvent(BaseModel):
-    id: str
-    text: str
-    lang: str
-    date: CalendarDate
-    source: Source
-    tags: List[Tag]
-    map: Map
-    focus: Union[None, str] = None
-    storyTitle: str
-    stories: List[str] = []
-
-
-class Story(BaseModel):
-    id: str
-    name: str
-    events: List[HistoryEvent]
-    index: int
 
 
 # Helper Functions
@@ -134,7 +117,7 @@ def build_tags(text, map_options):
 
 def build_point(map_options):
     latitude, longitude = fake.local_latlng(country_code="US", coords_only=True)
-    return Location(
+    return Point(
         id=str(uuid4()),
         latitude=float(latitude),
         longitude=float(longitude),
@@ -150,7 +133,7 @@ def build_event(map_options, story_title):
         text=tagged_text,
         lang="en",
         date=CalendarDate(
-            time=str(build_date(exact=True)),
+            datetime=str(build_date(exact=True)),
             calendar="gregorian",
             precision=11,
         ),
@@ -169,10 +152,78 @@ def build_story():
     return Story(id=str(uuid4()), name=story_title, events=events, index=5)
 
 
-def register_rest_endpoints(app: FastAPI) -> FastAPI:
-    # API Endpoints
-    @app.get("/history", response_model=Story)
-    def get_history():
-        return build_story()
+def register_rest_endpoints(
+    fastapi_app: FastAPI, app_manager: Callable[[], AppManager]
+) -> FastAPI:
 
-    return app
+    Apps = Annotated[AppManager, Depends(app_manager)]
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+    def auth_required(
+        token: Annotated[str, Depends(oauth2_scheme)],
+        apps: Apps,
+    ) -> GetUserResponsePayload:
+        try:
+            return apps.accounts_app.get_user(data=GetUserPayload(token=token))
+        except (MissingUserError, DeactivatedUserError):
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    AuthenticatedUser = Annotated[GetUserResponsePayload, Depends(auth_required)]
+
+    # API Endpoints
+    @fastapi_app.get("/api/history", response_model=Story)
+    def get_history(
+        apps: Apps,
+        eventId: Annotated[UUID, Query()] | None = None,
+        storyId: Annotated[UUID, Query()] | None = None,
+        direction: Annotated[Literal["next", "prev"], Query()] | None = None,
+    ) -> Story:
+        return get_history_handler(
+            apps=apps, event_id=eventId, story_id=storyId, direction=direction
+        )
+
+    @fastapi_app.post(path="/wikidata/people", response_model=WikiDataPersonOutput)
+    def create_people(
+        person: WikiDataPersonInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataPersonOutput:
+        return create_person_handler(apps=apps, person=person)
+
+    @fastapi_app.post("/wikidata/places", response_model=WikiDataPlaceOutput)
+    def create_places(
+        place: WikiDataPlaceInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataPlaceOutput:
+        return create_place_handler(apps=apps, place=place)
+
+    @fastapi_app.post("/wikidata/times", response_model=WikiDataTimeOutput)
+    def create_times(
+        time: WikiDataTimeInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataTimeOutput:
+        return create_time_handler(apps=apps, time=time)
+
+    @fastapi_app.get("/wikidata/tags", response_model=WikiDataTagsOutput)
+    def get_tags(
+        apps: Apps,
+        user: AuthenticatedUser,
+        wikidata_ids: Annotated[list[str] | None, Query()] = None,
+    ) -> WikiDataTagsOutput:
+        if not wikidata_ids:
+            return WikiDataTagsOutput(wikidata_ids=[])
+        return get_tags_handler(apps=apps, wikidata_ids=wikidata_ids)
+
+    @fastapi_app.post("/wikidata/events", response_model=WikiDataEventOutput)
+    def create_event(
+        event: WikiDataEventInput, apps: Apps, user: AuthenticatedUser
+    ) -> WikiDataEventOutput:
+        return create_event_handler(apps=apps, event=event)
+
+    @fastapi_app.post("/token")
+    def login(
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()], apps: Apps
+    ) -> LoginResponse:
+        return login_handler(form_data=form_data, apps=apps)
+
+    return fastapi_app
