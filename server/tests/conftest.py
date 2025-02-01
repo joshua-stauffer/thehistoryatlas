@@ -27,14 +27,14 @@ def truncate_db(session: Session):
         truncate users cascade;
         truncate citations cascade;
         truncate names cascade;
-        truncate person cascade;
-        truncate place cascade;
+        truncate people cascade;
+        truncate places cascade;
         truncate sources cascade;
         truncate summaries cascade;
-        truncate tag_name_assoc cascade;
+        truncate tag_names cascade;
         truncate tag_instances cascade;
         truncate tags cascade;
-        truncate time cascade;
+        truncate times cascade;
     """
     session.execute(text(truncate_stmt))
 

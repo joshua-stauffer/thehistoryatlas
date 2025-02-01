@@ -65,7 +65,7 @@ def test_create_person(readmodel_db, cleanup_tag: Callable[[UUID], None]):
         person_query = text(
             """
                 select p.id, t.wikidata_id, t.wikidata_url
-                from person p
+                from people p
                 inner join tags t on p.id = t.id
                 where p.id = :id;
             """
@@ -97,7 +97,7 @@ def test_create_place(readmodel_db):
     with readmodel_db.Session() as session:
         stmt = """
             select id, latitude, longitude, geoshape, geonames_id 
-            from place where place.id = :id
+            from places where places.id = :id
         """
         res = session.execute(text(stmt), {"id": place_model.id}).one()
         db_model = PlaceModel(
@@ -111,7 +111,7 @@ def test_create_place(readmodel_db):
 
         # cleanup
         delete_stmt = """
-            delete from place where place.id = :id;
+            delete from places where places.id = :id;
             delete from tags where tags.id = :id;
         """
         session.execute(
@@ -137,7 +137,7 @@ def test_create_time(readmodel_db):
     with readmodel_db.Session() as session:
         stmt = """
             select id, time, calendar_model, precision 
-            from time where time.id = :id
+            from times where times.id = :id
         """
         res = session.execute(text(stmt), {"id": time_model.id}).one()
         db_model = TimeModel(
@@ -150,7 +150,7 @@ def test_create_time(readmodel_db):
 
         # cleanup
         delete_stmt = """
-            delete from time where time.id = :id;
+            delete from times where times.id = :id;
             delete from tags where tags.id = :id;
         """
         session.execute(
@@ -239,15 +239,15 @@ def test_add_name_to_tag_with_nonexistent_name(engine, readmodel_db):
         stmt = text(
             """
             select names.name
-            from tag_name_assoc join names on tag_name_assoc.name_id = names.id
-            where tag_name_assoc.tag_id = :tag_id;
+            from tag_names join names on tag_names.name_id = names.id
+            where tag_names.tag_id = :tag_id;
         """
         )
         name_res = session.execute(stmt, {"tag_id": tag_id}).scalar_one()
         assert name_res == name
 
         stmt = """
-            delete from tag_name_assoc where tag_name_assoc.tag_id = :tag_id;
+            delete from tag_names where tag_names.tag_id = :tag_id;
             delete from tags where tags.id = :tag_id;
             delete from names where names.name = :name
         """
@@ -266,8 +266,8 @@ def test_add_name_to_tag_with_existing_name(readmodel_db, engine):
         stmt = text(
             """
             select names.id
-            from tag_name_assoc join names on tag_name_assoc.name_id = names.id
-            where tag_name_assoc.tag_id = :tag_id;
+            from tag_names join names on tag_names.name_id = names.id
+            where tag_names.tag_id = :tag_id;
         """
         )
         name_res = session.execute(stmt, {"tag_id": tag_id}).scalar_one()
@@ -275,7 +275,7 @@ def test_add_name_to_tag_with_existing_name(readmodel_db, engine):
 
         # cleanup
         stmt = """
-            delete from tag_name_assoc where tag_name_assoc.tag_id = :tag_id;
+            delete from tag_names where tag_names.tag_id = :tag_id;
             delete from tags where tags.id = :tag_id;
             delete from names where names.name = :name
         """

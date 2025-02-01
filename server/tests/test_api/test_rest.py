@@ -433,23 +433,23 @@ def test_create_stories_order(
                 summaries.id as summary_id,
                 tag_instances.story_order as story_order,
                 (
-                    select time.time as datetime
+                    select times.time as datetime
                     from summaries as s2
                     join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
-                    join time on time.id = t2.id
+                    join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by time.time, time.precision
+                    order by times.time, times.precision
                     limit 1
                 ) as datetime,
                 (
-                    select time.precision
+                    select times.precision
                     from summaries as s2
                     join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
-                    join time on time.id = t2.id
+                    join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by time.time, time.precision
+                    order by times.time, times.precision
                     limit 1
                 ) as precision
             from summaries
@@ -482,23 +482,23 @@ def get_all_events_in_order(
                 summaries.id as summary_id,
                 tag_instances.story_order as story_order,
                 (
-                    select time.time as datetime
+                    select times.time as datetime
                     from summaries as s2
                     join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
-                    join time on time.id = t2.id
+                    join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by time.time, time.precision
+                    order by times.time, times.precision
                     limit 1
                 ) as datetime,
                 (
-                    select time.precision
+                    select times.precision
                     from summaries as s2
                     join tag_instances as ti2 on ti2.summary_id = s2.id
                     join tags as t2 on t2.id = ti2.tag_id and t2.type = 'TIME'
-                    join time on time.id = t2.id
+                    join times on times.id = t2.id
                     where s2.id = summaries.id
-                    order by time.time, time.precision
+                    order by times.time, times.precision
                     limit 1
                 ) as precision
             from summaries

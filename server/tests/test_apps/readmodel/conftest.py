@@ -74,9 +74,9 @@ def cleanup_tag(readmodel_db) -> Generator[Callable[[UUID], None], None, None]:
         session.execute(
             text(
                 """
-                delete from person where person.id in :ids;
+                delete from people where people.id in :ids;
                 delete from story_names where story_names.tag_id in :ids;
-                delete from tag_name_assoc where tag_name_assoc.tag_id in :ids;
+                delete from tag_names where tag_names.tag_id in :ids;
                 delete from tags where tags.id in :ids;
                 """
             ),

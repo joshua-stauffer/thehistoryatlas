@@ -266,13 +266,13 @@ class Database:
             text(
                 f"""
                  select 
-                 time.id
-                 from time
-                 where time.time {operator} (
-                    select time.time
+                 times.id
+                 from times
+                 where times.time {operator} (
+                    select times.time
                     from tags
-                    join time 
-                    on tags.id = time.id
+                    join times
+                    on tags.id = times.id
                     where tags.id = :tag_id
                 )
                 order by {order_by_clause}
@@ -309,14 +309,14 @@ class Database:
                 from summaries
                 join tag_instances on summaries.id = tag_instances.summary_id
                 join tags on tag_instances.tag_id = tags.id
-                join time on time.id = tags.id
+                join times on times.id = tags.id
                 where summaries.id in (
                     select summaries.id from summaries
                     join tag_instances on summaries.id = tag_instances.summary_id
                     where tag_instances.tag_id = :tag_id
                 )
-                and time.time {operator} :datetime
-                order by time.time {order_by_clause}
+                and times.time {operator} :datetime
+                order by times.time {order_by_clause}
                 limit 1;
             """
             ),
@@ -364,15 +364,15 @@ class Database:
                 select
                     summaries.id as event_id,
                     tags.id as tag_id,
-                    place.latitude,
-                    place.longitude
+                    places.latitude,
+                    places.longitude
                 from summaries
                 join tag_instances
                     on summaries.id = tag_instances.summary_id
                 join tags
                     on tags.id = tag_instances.tag_id
-                join place
-                    on place.id = tags.id
+                join places
+                    on places.id = tags.id
                 where summaries.id in :summary_ids;
             """
             ),
@@ -387,16 +387,16 @@ class Database:
                 """
                 select
                 	summaries.id as event_id,
-                    time.time as datetime,
-                    time.calendar_model as calendar_model,
-                    time.precision as precision
+                    times.time as datetime,
+                    times.calendar_model as calendar_model,
+                    times.precision as precision
                 from summaries
                 join tag_instances
                     on summaries.id = tag_instances.summary_id
                 join tags
                     on tags.id = tag_instances.tag_id
-                join time
-                    on time.id = tags.id
+                join times
+                    on times.id = tags.id
                 where summaries.id in :summary_ids;
 
             """
@@ -422,8 +422,8 @@ class Database:
                     on tag_instances.summary_id = summaries.id
                 join tags
                     on tag_instances.tag_id = tags.id
-                join tag_name_assoc
-                    on tags.id = tag_name_assoc.tag_id
+                join tag_names
+                    on tags.id = tag_names.tag_id
                 where summaries.id in :summary_ids;
             """
             ),
@@ -446,10 +446,10 @@ class Database:
                     tags.id as tag_id,
                     array_agg(names.name) as names
                 from tags
-                join tag_name_assoc
-                    on tags.id = tag_name_assoc.tag_id
+                join tag_names
+                    on tags.id = tag_names.tag_id
                 join names
-                    on names.id = tag_name_assoc.name_id
+                    on names.id = tag_names.name_id
                 where tags.id in :tag_ids
                 group by tags.id;
             """
@@ -560,7 +560,7 @@ class Database:
         stmt = """
                 insert into tags (id, type, wikidata_id, wikidata_url)
                 values (:id, :type, :wikidata_id, :wikidata_url);
-                insert into person (id)
+                insert into people (id)
                 values (:id);
             """
         session.execute(
@@ -589,7 +589,7 @@ class Database:
     def get_place_by_id(self, id: UUID, session: Session) -> PlaceModel | None:
         stmt = """
             select id, latitude, longitude, geoshape, geonames_id
-            from place where place.id = :id;
+            from places where places.id = :id;
         """
         res = session.execute(text(stmt), {"id": id}).one_or_none()
         if res is None:
@@ -625,7 +625,7 @@ class Database:
         insert_place = """
             insert into tags (id, type, wikidata_id, wikidata_url)
                 values (:id, :type, :wikidata_id, :wikidata_url);
-            insert into place (id, latitude, longitude, geoshape, geonames_id)
+            insert into places (id, latitude, longitude, geoshape, geonames_id)
                 values (:id, :latitude, :longitude, :geoshape, :geonames_id)
         """
         session.execute(text(insert_place), place_model.model_dump())
@@ -652,7 +652,7 @@ class Database:
         insert_time = """
             insert into tags (id, type, wikidata_id, wikidata_url)
                 values (:id, :type, :wikidata_id, :wikidata_url);
-            insert into time (id, time, calendar_model, precision)
+            insert into times (id, time, calendar_model, precision)
                 values (:id, :time, :calendar_model, :precision);
         """
         session.execute(text(insert_time), time_model.model_dump())
@@ -729,18 +729,18 @@ class Database:
                 """
                 select 
                     summaries.id as summary_id,
-                    time.time as datetime, 
-                    time.precision as precision
+                    times.time as datetime, 
+                    times.precision as precision
                 from summaries 
                     -- given a summary, find its time tag
                     join tag_instances on tag_instances.summary_id = summaries.id
                     join tags on tags.id = tag_instances.tag_id and tags.type = 'TIME'
-                    join time on time.id = tags.id
+                    join times on times.id = tags.id
                 where summaries.id in (
                     -- find all the summaries related to input tag_id
                     select summary_id from tag_instances where tag_id = :tag_id
                 )
-                order by time.time, time.precision
+                order by times.time, times.precision
             """
             ),
             {"tag_id": tag_id},
@@ -823,9 +823,9 @@ class Database:
             text(
                 """
                 select 
-                    time.time as datetime, time.precision as precision
+                    times.time as datetime, times.precision as precision
                 from tags
-                join time on tags.id = time.id
+                join times on tags.id = times.id
                 where tags.id in :tag_ids;
             """
             ),
@@ -874,7 +874,7 @@ class Database:
             existing_row = session.execute(
                 text(
                     """
-                    select * from tag_name_assoc where tag_name_assoc.tag_id = :tag_id and tag_name_assoc.name_id = :name_id;
+                    select * from tag_names where tag_names.tag_id = :tag_id and tag_names.name_id = :name_id;
                 """
                 ),
                 {"tag_id": tag_id, "name_id": name_model.id},
@@ -882,13 +882,13 @@ class Database:
             if existing_row:
                 return
 
-        tag_name_assoc = TagNameAssocModel(name_id=name_model.id, tag_id=tag_id)
+        tag_names = TagNameAssocModel(name_id=name_model.id, tag_id=tag_id)
 
         stmt = """
-            insert into tag_name_assoc (tag_id, name_id)
+            insert into tag_names (tag_id, name_id)
                 values (:tag_id, :name_id);
         """
-        session.execute(text(stmt), tag_name_assoc.model_dump())
+        session.execute(text(stmt), tag_names.model_dump())
 
     def add_story_names(
         self, tag_id: UUID, session: Session, story_names: list[StoryName]

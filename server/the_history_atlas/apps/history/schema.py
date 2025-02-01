@@ -30,7 +30,7 @@ class StoryName(Base):
 
 
 class Citation(Base):
-    """Model representing citations and their meta data, with links to
+    """Model representing citations and their metadata, with links to
     their tags"""
 
     __tablename__ = "citations"
@@ -85,8 +85,8 @@ class TagInstance(Base):
     __table_args__ = (UniqueConstraint("story_order", "tag_id", name="uq_story_order"),)
 
 
-tag_name_assoc = Table(
-    "tag_name_assoc",
+tag_names = Table(
+    "tag_names",
     Base.metadata,
     Column(
         "tag_id", UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False, index=True
@@ -111,14 +111,14 @@ class Tag(Base):
     wikidata_id = Column(VARCHAR, nullable=True, unique=True)
     wikidata_url = Column(VARCHAR, nullable=True, unique=True)
     tag_instances = relationship("TagInstance", back_populates="tag")
-    names = relationship("Name", secondary=tag_name_assoc, back_populates="tags")
+    names = relationship("Name", secondary=tag_names, back_populates="tags")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
 
 
 class Time(Tag):
 
-    __tablename__ = "time"
+    __tablename__ = "times"
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
     time = Column(TIMESTAMP(timezone=True), index=True)
     calendar_model = Column(String(64))
@@ -133,7 +133,7 @@ class Time(Tag):
 
 class Person(Tag):
 
-    __tablename__ = "person"
+    __tablename__ = "people"
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
 
     __mapper_args__ = {"polymorphic_identity": "PERSON"}
@@ -144,7 +144,7 @@ class Person(Tag):
 
 class Place(Tag):
 
-    __tablename__ = "place"
+    __tablename__ = "places"
 
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
     latitude = Column(FLOAT, index=True)
@@ -163,7 +163,7 @@ class Name(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(VARCHAR, unique=True, nullable=False)
-    tags = relationship("Tag", secondary=tag_name_assoc, back_populates="names")
+    tags = relationship("Tag", secondary=tag_names, back_populates="names")
 
     def __repr__(self):
         return f"Name(id: {self.id}, name: {self.name})"
