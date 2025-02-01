@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 
 from the_history_atlas.api import mount_api
 from the_history_atlas.apps.app_manager import AppManager
