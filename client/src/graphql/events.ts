@@ -12,7 +12,7 @@ export interface HistoryEvent {
 }
 
 export interface CalendarDate {
-  time: string;
+  datetime: string;
   calendar: string;
   precision: number;
 }
