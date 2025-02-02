@@ -18,7 +18,7 @@ interface EventViewProps {
 const cardSpacingInternal = "5px";
 
 const citationSX = {
-  fontSize: "12px",
+  fontSize: "12px", marginLeft: "20px",
 };
 
 export const EventView = ({ event }: EventViewProps) => {
@@ -38,20 +38,23 @@ export const EventView = ({ event }: EventViewProps) => {
       </Typography>
 
       <Typography variant={"body1"} mt={"20px"} sx={citationSX}>
-        "{event.source.text}"
+        Source: {event.source.title}
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
-        -- {event.source.title} ({event.source.author})
+        Accessed on: {renderDateTime({datetime: event.source.pubDate, precision: 11, calendar: ""})}
       </Typography>
+    <Typography variant={"body1"} sx={citationSX}>
+        Authors: {event.source.author}
+    </Typography>
       <Divider
         sx={{
           marginTop: "20px",
           marginBottom: "20px",
         }}
       />
-      <Typography variant={"body2"} fontSize={"18px"}>
-        Other stories with this event
-      </Typography>
+      {/*<Typography variant={"body2"} fontSize={"18px"} marginLeft={"20px"}>*/}
+      {/*  Other stories with this event*/}
+      {/*</Typography>*/}
       {event.stories.map((story) => (
         <>
           <Link to={`/stories/${story.id}/events/${event.id}`}>
