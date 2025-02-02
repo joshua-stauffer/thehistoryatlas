@@ -1023,3 +1023,43 @@ class TestLogin:
             },
         )
         assert response.status_code == 401
+
+
+class TestSampleData:
+    @pytest.mark.skip(reason="This test uses test infrastructure to seed database.")
+    def test_build_sample_data(self, auth_headers: dict) -> None:
+        client = TestClient(get_app())
+        NUM_PEOPLE = 100
+        NUM_PLACES = 300
+        MIN_EVENTS = 1
+        MAX_EVENTS = 100
+        people = [create_person(client, auth_headers) for _ in range(NUM_PEOPLE)]
+        places = [create_place(client, auth_headers) for _ in range(NUM_PLACES)]
+
+        num_events = random.randint(MIN_EVENTS, MAX_EVENTS)
+        for person in people:
+            self.build_person_story(
+                person=person,
+                num_events=num_events,
+                auth_headers=auth_headers,
+                client=client,
+                places=places,
+            )
+
+    def build_person_story(
+        self,
+        person: WikiDataPersonOutput,
+        num_events: int,
+        auth_headers: dict,
+        client: TestClient,
+        places: list[WikiDataPlaceOutput],
+    ):
+        for _ in range(num_events):
+            time = create_time(client, auth_headers)
+            create_event(
+                person=person,
+                place=random.choice(places),
+                time=time,
+                client=client,
+                auth_headers=auth_headers,
+            )
