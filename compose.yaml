@@ -1,0 +1,27 @@
+version: "3"
+services:
+    db:
+        image: postgres:16
+        restart: always
+        environment:
+            - POSTGRES_PASSWORD=${POSTGRES_PASS}
+        networks:
+            - tha-test
+        ports:
+            - 5432:5432
+
+    provisioner:
+        build:
+            context:
+                test_provisioner
+        depends_on:
+            - db
+        restart: "no"
+        networks:
+            - tha-test
+        environment:
+            - THA_DB_URI=${THA_DB_URI}
+            - THA_TEST_PASSWORD=${THA_TEST_PASSWORD}
+
+networks:
+    tha-test:

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "the_history_atlas"
+version = "0.0.1"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]

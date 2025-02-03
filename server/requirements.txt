@@ -1,0 +1,12 @@
+cryptography
+requests
+sqlalchemy
+pytest
+pytest-asyncio
+pytest-mock
+black
+psycopg2-binary
+pydantic==2.10.4
+pydantic-settings==2.7.0
+fastapi[standard]==0.115.6
+faker==33.1.0

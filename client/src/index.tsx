@@ -7,11 +7,9 @@ import { ApolloClient } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 import { cache } from "./graphql/cache";
 
-// this comment will trigger a rebuild
-
 export const client = new ApolloClient({
   cache,
-  uri: "http://localhost:4400",
+  uri: "http://localhost:8000/graphql", // todo: replace with env var
   connectToDevTools: true,
 });
 

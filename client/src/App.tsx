@@ -1,67 +1,49 @@
 import React from "react";
-import { useEffect } from "react";
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
-import { useQuery, useReactiveVar } from "@apollo/client";
-import { addToHistory, currentEntity } from "./hooks/history";
-import { ResourceNotFoundError } from "./pages/errorPages";
-import { AddCitationPage } from "./pages/addCitation";
-import { LoginPage } from "./pages/login";
-import { FeedPage } from "./pages/feed";
-import { useTokenManager } from "./hooks/token";
+
+import { GenericError } from "./pages/errorPages";
+
 
 import { theme } from "./baseStyle";
+import { HistoryEventView } from "./pages/historyEvent/historyEventView";
+
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import {
-  DefaultEntityResult,
-  DefaultEntityVars,
-  DEFAULT_ENTITY,
-} from "./graphql/defaultEntity";
+  LandingPage,
+  landingPageLoader,
+} from "./pages/historyEvent/landingPage";
+import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
 
 function App() {
-  const entity = useReactiveVar(currentEntity);
-  const tokenManager = useTokenManager();
-
-  const {
-    loading: defaultEntityLoading,
-    error: defaultEntityError,
-    data: defaultEntityData,
-  } = useQuery<DefaultEntityResult, DefaultEntityVars>(DEFAULT_ENTITY);
-
-  useEffect(() => {
-    if (!!defaultEntityData) {
-      addToHistory({
-        entity: {
-          guid: defaultEntityData.defaultEntity.id,
-          type: defaultEntityData.defaultEntity.type,
-          name: defaultEntityData.defaultEntity.name,
-        },
-        lastSummaryGUID: undefined,
-      });
-    }
-  }, [defaultEntityData]);
-
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <HistoryEventView />,
+      loader: historyEventLoader,
+      errorElement: (
+        <GenericError
+          header={"Uh oh..."}
+          text={"Something went wrong"}
+          details={"Check the URL and try again"}
+        />
+      ),
+    },
+    {
+      path: "/stories/:storyId/events/:eventId",
+      element: <HistoryEventView />,
+      loader: historyEventLoader,
+      errorElement: (
+        <GenericError
+          header={"Uh oh..."}
+          text={"Something went wrong"}
+          details={"Check the URL and try again"}
+        />
+      ),
+    },
+  ]);
   return (
     <ThemeProvider theme={theme}>
-      <Router>
-        <Switch>
-          <Route path="/login">
-            <LoginPage tokenManager={tokenManager} />
-          </Route>
-          <Route path="/add-citation">
-            <AddCitationPage tokenManager={tokenManager} />
-          </Route>
-          <Route path="/">
-            {entity === null ? (
-              <h1>Loading Feed</h1>
-            ) : (
-              <FeedPage tokenManager={tokenManager} />
-            )}
-          </Route>
-          <Route path="*">
-            <ResourceNotFoundError tokenManager={tokenManager} />
-          </Route>
-        </Switch>
-      </Router>
+      <RouterProvider router={router} />
     </ThemeProvider>
   );
 }
