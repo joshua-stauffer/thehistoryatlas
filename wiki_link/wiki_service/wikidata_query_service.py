@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from re import search
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional, Set, Literal
 from urllib.error import HTTPError
 
 import requests
@@ -129,7 +129,7 @@ def build_geoshape_location(
     )
 
 
-def wikidata_time_to_text(time_def: TimeDefinition) -> str:
+def wikidata_time_to_text(time: str, precision: Literal[7, 8, 9, 10, 11]) -> str:
     """
     Convert a Wikidata time definition to a human-readable date string.
 
@@ -141,27 +141,27 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
       - 7: century precision → "20th century"
     """
     # Remove leading '+' and any trailing parts (like the 'Z') not needed for parsing.
-    raw_time = time_def.time
+    raw_time = time
     if raw_time.startswith("+"):
         raw_time = raw_time[1:]
 
     # Parse only the date and time part (first 19 characters: "YYYY-MM-DDTHH:MM:SS")
     dt = datetime.strptime(raw_time[:19], "%Y-%m-%dT%H:%M:%S")
 
-    if time_def.precision == 11:
+    if precision == 11:
         # Full date: e.g. "December 31, 1980"
         return dt.strftime("%B %d, %Y")
-    elif time_def.precision == 10:
+    elif precision == 10:
         # Month precision: e.g. "December 1980"
         return dt.strftime("%B %Y")
-    elif time_def.precision == 9:
+    elif precision == 9:
         # Year precision: e.g. "1980"
         return dt.strftime("%Y")
-    elif time_def.precision == 8:
+    elif precision == 8:
         # Decade precision: e.g. "1980s"
         decade = (dt.year // 10) * 10
         return f"{decade}s"
-    elif time_def.precision == 7:
+    elif precision == 7:
         # Century precision: e.g. "20th century"
         century = (dt.year - 1) // 100 + 1
         # Determine the ordinal suffix (handles 11-13 as well)
@@ -238,13 +238,26 @@ class WikiDataQueryService:
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
         result = requests.get(url)
         json_result = result.json()
-        with open("./einstein_place.json", "w") as f:
-            f.write(json.dumps(json_result, indent=4))
         error = json_result.get("error", None)
         if error is not None:
             raise WikiDataQueryServiceError(error)
         entity_dict = json_result["entities"][id]
         return self.build_entity(entity_dict)
+
+    def get_entities(self, ids: list[str]) -> list[Entity]:
+        """
+        Query the WikiData REST API to retrieve an item by ID.
+        """
+        url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={','.join(ids)}&format=json"
+        result = requests.get(url)
+        json_result = result.json()
+        error = json_result.get("error", None)
+        if error is not None:
+            raise WikiDataQueryServiceError(error)
+        return [
+            self.build_entity(entity_dict)
+            for entity_dict in  json_result["entities"].values()
+        ]
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """

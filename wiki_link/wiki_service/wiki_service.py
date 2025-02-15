@@ -4,10 +4,11 @@ from typing import Callable
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database
+from wiki_service.event_factories.event_factory import get_event_factories
 from wiki_service.utils import get_current_time
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
-    WikiDataQueryServiceError,
+    WikiDataQueryServiceError, Entity,
 )
 
 log = getLogger(__name__)
@@ -29,6 +30,7 @@ class WikiService:
         self._database = database_factory()
         self._wikidata_query_service = wikidata_query_service_factory()
         self._config = config_factory()
+        self._entity_cache: dict[str, Entity] = {}
 
     def search_for_people(self):
         """
@@ -83,3 +85,9 @@ class WikiService:
         except Exception as e:
             report_errors(f"Unknown error occurred: {e}")
             return
+
+    def process_event_batch(self, entity_ids: set[str]) -> None:
+        entities = self.load_entity_batch(entity_ids=entity_ids)
+
+    def load_entity_batch(self, entity_ids: set[str]) -> list[Entity]:
+
