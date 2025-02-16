@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, TypeVar, Generic
+from typing import Callable, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from wiki_service.wikidata_query_service import (
+    Entity,
     CoordinateLocation,
     GeoshapeLocation,
     TimeDefinition,
@@ -15,6 +16,7 @@ class WikiTag(BaseModel):
     wiki_id: str
     start_char: int
     stop_char: int
+    entity: Entity
 
 
 class PersonWikiTag(WikiTag):
@@ -27,9 +29,8 @@ class PlaceWikiTag(WikiTag):
 
 class TimeWikiTag(WikiTag):
     wiki_id: str | None
-    time: str
-    precision: int
-    calendar_model: str
+    time_definition: TimeDefinition
+    entity: Entity | None
 
 
 class WikiEvent(BaseModel):
@@ -39,25 +40,13 @@ class WikiEvent(BaseModel):
     time_tag: TimeWikiTag
 
 
-class WikidataValue(BaseModel):
-    type: str
-    value: str
-    # Not all fields have a datatype
-    datatype: str | None = None
-    # Use an alias for "xml:lang"
-    xml_lang: str | None = Field(None, alias="xml:lang")
-
-
 class UnprocessableEventError(Exception):
     ...
 
 
-
-
-_QueryResult = TypeVar("_QueryResult", bound=BaseModel)
-
-
-class EventFactory(ABC, Generic[_QueryResult]):
+class EventFactory(ABC):
+    def __init__(self, entity: Entity):
+        self._entity = entity
 
     @property
     @abstractmethod
@@ -70,16 +59,15 @@ class EventFactory(ABC, Generic[_QueryResult]):
         ...
 
     @abstractmethod
-    def query(self, limit: int, offset: int) -> str:
-        ...
-
-    @property
-    @abstractmethod
-    def QueryResult(self) -> type[_QueryResult]:
+    def entity_has_event(self) -> bool:
         ...
 
     @abstractmethod
-    def create_wiki_event(self, query_result: _QueryResult) -> WikiEvent:
+    def supporting_entity_ids(self) -> list[str]:
+        ...
+
+    @abstractmethod
+    def create_wiki_event(self, supporting_entities: dict[str, Entity]) -> WikiEvent:
         ...
 
 
