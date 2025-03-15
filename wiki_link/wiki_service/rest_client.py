@@ -74,8 +74,8 @@ class RestClient:
     def create_time(
         self,
         name: str,
-        wikidata_id: str,
-        wikidata_url: str,
+        wikidata_id: str | None,
+        wikidata_url: str | None,
         date: datetime,
         calendar_model: str,
         precision: int,

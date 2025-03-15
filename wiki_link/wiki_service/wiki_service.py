@@ -23,16 +23,17 @@ class WikiServiceError(Exception): ...
 class WikiService:
     def __init__(
         self,
-        wikidata_query_service_factory: Callable[
-            [], WikiDataQueryService
-        ] = lambda: WikiDataQueryService(WikiServiceConfig()),
-        config_factory: Callable[[], WikiServiceConfig] = lambda: WikiServiceConfig(),
-        database_factory: Callable[[], Database] = Database.factory,
+        wikidata_query_service_factory: Callable[[], WikiDataQueryService],
+        database_factory: Callable[[], Database],
+        config_factory: Callable[[], WikiServiceConfig],
+        rest_client_factory: Callable[[WikiServiceConfig], RestClient] | None = None,
     ):
         self._config = config_factory()
         self._database = database_factory()
-        self._wikidata_query_service = wikidata_query_service_factory()
-        self._rest_client = RestClient(config=self._config)
+        self._query = wikidata_query_service_factory()
+        self._rest_client = (
+            rest_client_factory or (lambda config: RestClient(config))
+        )(self._config)
 
     def search_for_people(self):
         """
@@ -42,9 +43,7 @@ class WikiService:
         offset = self._database.get_last_person_offset()
         limit = self._config.WIKIDATA_SEARCH_LIMIT
         try:
-            people = self._wikidata_query_service.find_people(
-                limit=limit, offset=offset
-            )
+            people = self._query.find_people(limit=limit, offset=offset)
         except WikiDataQueryServiceError as e:
             log.warning(f"WikiData Query Service encountered error and failed: {e}")
             return
@@ -65,31 +64,44 @@ class WikiService:
             log.info("WikiQueue is empty.")
             return
         log.info(f"Processing entity: {item}")
-        report_errors = partial(
-            self._database.report_queue_error,
-            wiki_id=item.wiki_id,
-            error_time=get_current_time(),
-        )
         try:
-            entity = self._wikidata_query_service.get_entity(id=item.wiki_id)
+            entity = self._query.get_entity(id=item.wiki_id)
             if item.entity_type != "PERSON":
-                report_errors(f"Unknown entity type field: {item.entity_type}")
-                raise WikiServiceError(f"Unknown entity type: `{item.entity_type}`")
-            event_factories = get_event_factories(
-                entity=entity, query=self._wikidata_query_service
-            )
-            for event_factory in event_factories:
-                self._create_wiki_event(event_factory)
-            # Remove from queue after successful processing
-            self._database.remove_item_from_queue(wiki_id=item.wiki_id)
+                self._database.report_queue_error(
+                    wiki_id=item.wiki_id,
+                    error_time=get_current_time(),
+                    errors=f"Unknown entity type field: {item.entity_type}",
+                )
+                return
+            event_factories = get_event_factories(entity=entity, query=self._query)
+            try:
+                for event_factory in event_factories:
+                    self._create_wiki_event(event_factory, item.wiki_id)
+                # Remove from queue only after all events are successfully created
+                self._database.remove_item_from_queue(wiki_id=item.wiki_id)
+            except RestClientError as e:
+                self._database.report_queue_error(
+                    wiki_id=item.wiki_id,
+                    error_time=get_current_time(),
+                    errors=f"REST client error: {e}",
+                )
+                return
         except WikiDataQueryServiceError as e:
-            report_errors(f"WikiData query had an error: {e}")
+            self._database.report_queue_error(
+                wiki_id=item.wiki_id,
+                error_time=get_current_time(),
+                errors=f"WikiData query had an error: {e}",
+            )
             return
         except Exception as e:
-            report_errors(f"Unknown error occurred: {e}")
+            self._database.report_queue_error(
+                wiki_id=item.wiki_id,
+                error_time=get_current_time(),
+                errors=f"Unknown error occurred: {e}",
+            )
             return
 
-    def _create_wiki_event(self, event_factory: EventFactory) -> None:
+    def _create_wiki_event(self, event_factory: EventFactory, wiki_id: str) -> None:
         if not event_factory.entity_has_event():
             return
 
@@ -107,7 +119,8 @@ class WikiService:
             # Check which tags already exist
             existing_tags = self._rest_client.get_tags(wikidata_ids=wikidata_ids)
             id_map = {
-                tag["wikidata_id"]: tag["id"] for tag in existing_tags["wikidata_ids"]
+                tag["wikidata_id"]: tag["id"]
+                for tag in existing_tags.get("wikidata_ids", [])
             }
 
             # Create missing tags
@@ -132,16 +145,31 @@ class WikiService:
                     )
                     id_map[event.place_tag.wiki_id] = result["id"]
 
-            if event.time_tag.wiki_id and not id_map.get(event.time_tag.wiki_id):
+            # Create time tag
+            if event.time_tag.wiki_id:
+                if not id_map.get(event.time_tag.wiki_id):
+                    result = self._rest_client.create_time(
+                        name=event.time_tag.name,
+                        wikidata_id=event.time_tag.wiki_id,
+                        wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
+                        date=event.time_tag.time_definition.datetime,
+                        calendar_model=event.time_tag.time_definition.calendar_model,
+                        precision=event.time_tag.time_definition.precision,
+                    )
+                    time_id = result["id"]
+                else:
+                    time_id = id_map[event.time_tag.wiki_id]
+            else:
+                # Create time tag without WikiData ID
                 result = self._rest_client.create_time(
                     name=event.time_tag.name,
-                    wikidata_id=event.time_tag.wiki_id,
-                    wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
+                    wikidata_id=None,
+                    wikidata_url=None,
                     date=event.time_tag.time_definition.datetime,
                     calendar_model=event.time_tag.time_definition.calendar_model,
                     precision=event.time_tag.time_definition.precision,
                 )
-                id_map[event.time_tag.wiki_id] = result["id"]
+                time_id = result["id"]
 
             # Create event tags
             tags = []
@@ -164,20 +192,6 @@ class WikiService:
                 }
             )
 
-            if event.time_tag.wiki_id:
-                time_id = id_map[event.time_tag.wiki_id]
-            else:
-                # Create time tag without WikiData ID
-                result = self._rest_client.create_time(
-                    name=event.time_tag.name,
-                    wikidata_id=None,
-                    wikidata_url=None,
-                    date=event.time_tag.time_definition.datetime,
-                    calendar_model=event.time_tag.time_definition.calendar_model,
-                    precision=event.time_tag.time_definition.precision,
-                )
-                time_id = result["id"]
-
             tags.append(
                 {
                     "id": time_id,
@@ -190,29 +204,30 @@ class WikiService:
             # Create the event
             citation = {
                 "access_date": datetime.now(timezone.utc).isoformat(),
-                "wikidata_item_id": event.people_tags[
-                    0
-                ].wiki_id,  # Use first person as main subject
-                "wikidata_item_title": event.people_tags[0].name,
-                "wikidata_item_url": f"https://www.wikidata.org/wiki/{event.people_tags[0].wiki_id}",
+                "url": f"https://www.wikidata.org/wiki/{wiki_id}",
+                "title": "Wikidata",
             }
 
             self._rest_client.create_event(
-                summary=event.summary, tags=tags, citation=citation
+                summary=event.summary,
+                tags=tags,
+                citation=citation,
             )
 
-            # Record successful creation
+            # Record successful event creation
             self._database.upsert_created_event(
-                wiki_id=event.people_tags[0].wiki_id,
+                wiki_id=wiki_id,
                 factory_label=event_factory.label,
                 factory_version=event_factory.version,
+                errors=None,
             )
 
         except (RestClientError, Exception) as e:
             # Record error
             self._database.upsert_created_event(
-                wiki_id=event.people_tags[0].wiki_id,
+                wiki_id=wiki_id,
                 factory_label=event_factory.label,
                 factory_version=event_factory.version,
                 errors={"error": str(e)},
             )
+            raise  # Re-raise the error to be handled by the caller
