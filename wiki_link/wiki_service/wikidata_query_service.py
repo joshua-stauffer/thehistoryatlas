@@ -62,6 +62,11 @@ class GeoshapeLocation(BaseModel):
     data: Dict
 
 
+class GeoLocation(BaseModel):
+    coordinates: CoordinateLocation | None
+    geoshape: GeoshapeLocation | None
+
+
 class TimeDefinition(BaseModel):
     id: str
     rank: str
@@ -238,13 +243,26 @@ class WikiDataQueryService:
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
         result = requests.get(url)
         json_result = result.json()
-        with open("./einstein_place.json", "w") as f:
-            f.write(json.dumps(json_result, indent=4))
         error = json_result.get("error", None)
         if error is not None:
             raise WikiDataQueryServiceError(error)
         entity_dict = json_result["entities"][id]
         return self.build_entity(entity_dict)
+
+    def get_label(self, id: str, language: str) -> str:
+        url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
+        result = requests.get(url)
+        if not result.ok:
+            raise WikiDataQueryServiceError(
+                f"Query label request failed with {result.status_code}: {result.json()}"
+            )
+        return result.text.strip('"')
+
+    def get_geo_location(self, id: str) -> GeoLocation:
+        entity = self.get_entity(id)
+        coordinate = self.get_coordinate_location(entity)
+        geoshape = self.get_geoshape_location(entity)
+        return GeoLocation(coordinates=coordinate, geoshape=geoshape)
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """

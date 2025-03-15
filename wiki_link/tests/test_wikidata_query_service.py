@@ -87,3 +87,10 @@ def test_get_wikidata_people_count(config):
     count = service.get_wikidata_people_count()
     assert isinstance(count, int)
     assert count > 11_000_000
+
+
+def test_get_label(config):
+    service = WikiDataQueryService(config)
+
+    label = service.get_label(id="Q1339", language="en")
+    assert label == "Johann Sebastian Bach"

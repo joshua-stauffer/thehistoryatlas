@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List
+from typing import Callable, List, Protocol
 
 from pydantic import BaseModel
 
@@ -8,6 +8,7 @@ from wiki_service.wikidata_query_service import (
     CoordinateLocation,
     GeoshapeLocation,
     TimeDefinition,
+    GeoLocation,
 )
 
 
@@ -16,7 +17,6 @@ class WikiTag(BaseModel):
     wiki_id: str
     start_char: int
     stop_char: int
-    entity: Entity
 
 
 class PersonWikiTag(WikiTag):
@@ -24,13 +24,12 @@ class PersonWikiTag(WikiTag):
 
 
 class PlaceWikiTag(WikiTag):
-    location: CoordinateLocation | GeoshapeLocation
+    location: GeoLocation
 
 
 class TimeWikiTag(WikiTag):
     wiki_id: str | None
     time_definition: TimeDefinition
-    entity: Entity | None
 
 
 class WikiEvent(BaseModel):
@@ -44,9 +43,18 @@ class UnprocessableEventError(Exception):
     ...
 
 
+class Query(Protocol):
+    def get_label(self, id: str, language: str) -> str:
+        ...
+
+    def get_geo_location(self, id: str) -> GeoLocation:
+        ...
+
+
 class EventFactory(ABC):
-    def __init__(self, entity: Entity):
+    def __init__(self, entity: Entity, query: Query) -> None:
         self._entity = entity
+        self._query = query
 
     @property
     @abstractmethod
@@ -63,11 +71,7 @@ class EventFactory(ABC):
         ...
 
     @abstractmethod
-    def supporting_entity_ids(self) -> list[str]:
-        ...
-
-    @abstractmethod
-    def create_wiki_event(self, supporting_entities: dict[str, Entity]) -> WikiEvent:
+    def create_wiki_event(self) -> WikiEvent:
         ...
 
 

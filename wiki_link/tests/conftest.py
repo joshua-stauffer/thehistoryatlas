@@ -5,8 +5,14 @@ import pathlib
 import pytest
 
 from wiki_service.config import WikiServiceConfig
+from wiki_service.event_factories.event_factory import Query
 from wiki_service.event_factories.q_numbers import DATE_OF_BIRTH
-from wiki_service.wikidata_query_service import WikiDataQueryService, Entity
+from wiki_service.wikidata_query_service import (
+    WikiDataQueryService,
+    Entity,
+    GeoLocation,
+    CoordinateLocation,
+)
 
 
 @pytest.fixture
@@ -92,3 +98,43 @@ def bach_place_of_birth(root_dir):
 @pytest.fixture
 def eisenach_entity(bach_place_of_birth) -> Entity:
     return WikiDataQueryService.build_entity(bach_place_of_birth["entities"]["Q7070"])
+
+
+@pytest.fixture
+def eisenach_geo_location() -> GeoLocation:
+    return GeoLocation(
+        coordinates=CoordinateLocation(
+            altitude=None,
+            globe="http://www.wikidata.org/entity/Q2",
+            hash="4c6b99762b7b08050e9500910d4cdfb87df55a2f",
+            id="q7070$C57E3018-C5AF-41F9-B6B1-630539705B9F",
+            latitude=50.974722222222,
+            longitude=10.324444444444,
+            precision=0.00027777777777778,
+            property="P625",
+            rank="normal",
+            snaktype="value",
+            type="statement",
+        ),
+        geoshape=None,
+    )
+
+
+class MockQuery:
+    def __init__(
+        self,
+        entity_lookup: dict[str, str],
+        geo_location: GeoLocation,
+        expected_geo_location_id: str,
+    ):
+        self.entity_lookup = entity_lookup
+        self.geo_location = geo_location
+        self.expected_geo_location_id = expected_geo_location_id
+
+    def get_label(self, id: str, language: str):
+        assert id in self.entity_lookup
+        return self.entity_lookup[id]
+
+    def get_geo_location(self, id: str):
+        assert id == self.expected_geo_location_id
+        return self.geo_location
