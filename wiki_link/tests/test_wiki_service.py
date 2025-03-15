@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock, AsyncMock, patch, ANY
 from uuid import uuid4
+from datetime import datetime, timezone
 
 import pytest
 
@@ -12,7 +13,13 @@ from wiki_service.wikidata_query_service import (
     Entity,
     Property,
     WikiDataQueryServiceError,
+    CoordinateLocation,
+    TimeDefinition,
+    GeoLocation,
 )
+from wiki_service.config import WikiServiceConfig
+from wiki_service.event_factories.event_factory import EventFactory
+from wiki_service.rest_client import RestClient, RestClientError
 
 
 @dataclass
@@ -697,3 +704,291 @@ def test_search_for_people_handles_wiki_service_error(config):
 
     database.add_items_to_queue.assert_not_called()
     database.save_last_person_offset.assert_not_called()
+
+
+@pytest.fixture
+def mock_database():
+    return Mock(spec=Database)
+
+
+@pytest.fixture
+def mock_wikidata_service():
+    return Mock(spec=WikiDataQueryService)
+
+
+@pytest.fixture
+def mock_rest_client():
+    return Mock(spec=RestClient)
+
+
+@pytest.fixture
+def mock_config():
+    config = WikiServiceConfig()
+    config.username = "test_user"
+    config.password = "test_pass"
+    return config
+
+
+@pytest.fixture
+def wiki_service(mock_database, mock_wikidata_service, mock_rest_client, mock_config):
+    with patch("wiki_service.wiki_service.RestClient") as mock_rest_client_class:
+        mock_rest_client_class.return_value = mock_rest_client
+        service = WikiService(
+            wikidata_query_service_factory=lambda: mock_wikidata_service,
+            config_factory=lambda: mock_config,
+            database_factory=lambda: mock_database,
+        )
+        return service
+
+
+def test_build_events_from_person_empty_queue(wiki_service, mock_database):
+    # Arrange
+    mock_database.get_oldest_item_from_queue.return_value = None
+
+    # Act
+    wiki_service.build_events_from_person()
+
+    # Assert
+    mock_database.get_oldest_item_from_queue.assert_called_once()
+
+
+def test_build_events_from_person_wrong_entity_type(wiki_service, mock_database):
+    # Arrange
+    mock_database.get_oldest_item_from_queue.return_value = Mock(
+        wiki_id="Q123", entity_type="PLACE"
+    )
+
+    # Act
+    wiki_service.build_events_from_person()
+
+    # Assert
+    mock_database.report_queue_error.assert_called_once_with(
+        wiki_id="Q123", error_time=ANY, errors="Unknown entity type field: PLACE"
+    )
+
+
+def test_build_events_from_person_success(
+    wiki_service, mock_database, mock_wikidata_service, mock_rest_client
+):
+    # Arrange
+    mock_database.get_oldest_item_from_queue.return_value = Mock(
+        wiki_id="Q123", entity_type="PERSON"
+    )
+
+    # Mock entity data
+    entity = Entity(
+        id="Q123",
+        labels={"en": {"language": "en", "value": "Test Person"}},
+        claims={
+            "P19": [
+                {"mainsnak": {"datavalue": {"value": {"id": "Q456"}}}}
+            ],  # birthplace
+            "P569": [{"mainsnak": {"property": "P569"}}],  # birthdate
+        },
+    )
+    mock_wikidata_service.get_entity.return_value = entity
+
+    # Mock event factory
+    mock_event = Mock(
+        summary="Test Person was born in Test Place",
+        people_tags=[
+            Mock(name="Test Person", wiki_id="Q123", start_char=0, stop_char=10)
+        ],
+        place_tag=Mock(
+            name="Test Place",
+            wiki_id="Q456",
+            start_char=23,
+            stop_char=33,
+            location=GeoLocation(
+                coordinates=CoordinateLocation(latitude=51.5074, longitude=-0.1278),
+                geoshape=None,
+            ),
+        ),
+        time_tag=Mock(
+            name="1900",
+            wiki_id="Q789",
+            start_char=11,
+            stop_char=15,
+            time_definition=TimeDefinition(
+                datetime=datetime(1900, 1, 1, tzinfo=timezone.utc),
+                calendar_model="Q1985727",
+                precision=9,
+            ),
+        ),
+    )
+    mock_event_factory = Mock(spec=EventFactory)
+    mock_event_factory.entity_has_event.return_value = True
+    mock_event_factory.create_wiki_event.return_value = mock_event
+    mock_event_factory.label = "Test Factory"
+    mock_event_factory.version = 1
+
+    with patch("wiki_service.wiki_service.get_event_factories") as mock_get_factories:
+        mock_get_factories.return_value = [mock_event_factory]
+
+        # Mock REST responses
+        mock_rest_client.get_tags.return_value = {
+            "wikidata_ids": [
+                {"wikidata_id": "Q123", "id": None},
+                {"wikidata_id": "Q456", "id": None},
+                {"wikidata_id": "Q789", "id": None},
+            ]
+        }
+        mock_rest_client.create_person.return_value = {"id": "uuid-1"}
+        mock_rest_client.create_place.return_value = {"id": "uuid-2"}
+        mock_rest_client.create_time.return_value = {"id": "uuid-3"}
+        mock_rest_client.create_event.return_value = {"id": "uuid-4"}
+
+        # Act
+        wiki_service.build_events_from_person()
+
+        # Assert
+        mock_database.get_oldest_item_from_queue.assert_called_once()
+        mock_wikidata_service.get_entity.assert_called_once_with(id="Q123")
+        mock_get_factories.assert_called_once_with(
+            entity=entity, query=mock_wikidata_service
+        )
+        mock_event_factory.entity_has_event.assert_called_once()
+        mock_event_factory.create_wiki_event.assert_called_once()
+
+        # Verify REST calls
+        mock_rest_client.get_tags.assert_called_once_with(
+            wikidata_ids=["Q123", "Q456", "Q789"]
+        )
+        mock_rest_client.create_person.assert_called_once_with(
+            name="Test Person",
+            wikidata_id="Q123",
+            wikidata_url="https://www.wikidata.org/wiki/Q123",
+        )
+        mock_rest_client.create_place.assert_called_once_with(
+            name="Test Place",
+            wikidata_id="Q456",
+            wikidata_url="https://www.wikidata.org/wiki/Q456",
+            latitude=51.5074,
+            longitude=-0.1278,
+        )
+        mock_rest_client.create_time.assert_called_once_with(
+            name="1900",
+            wikidata_id="Q789",
+            wikidata_url="https://www.wikidata.org/wiki/Q789",
+            date=datetime(1900, 1, 1, tzinfo=timezone.utc),
+            calendar_model="Q1985727",
+            precision=9,
+        )
+
+        mock_rest_client.create_event.assert_called_once_with(
+            summary="Test Person was born in Test Place",
+            tags=[
+                {
+                    "id": "uuid-1",
+                    "name": "Test Person",
+                    "start_char": 0,
+                    "stop_char": 10,
+                },
+                {
+                    "id": "uuid-2",
+                    "name": "Test Place",
+                    "start_char": 23,
+                    "stop_char": 33,
+                },
+                {"id": "uuid-3", "name": "1900", "start_char": 11, "stop_char": 15},
+            ],
+            citation={
+                "access_date": ANY,
+                "wikidata_item_id": "Q123",
+                "wikidata_item_title": "Test Person",
+                "wikidata_item_url": "https://www.wikidata.org/wiki/Q123",
+            },
+        )
+
+        mock_database.upsert_created_event.assert_called_once_with(
+            wiki_id="Q123", factory_label="Test Factory", factory_version=1
+        )
+        mock_database.remove_item_from_queue.assert_called_once_with(wiki_id="Q123")
+
+
+def test_build_events_from_person_rest_error(
+    wiki_service, mock_database, mock_wikidata_service, mock_rest_client
+):
+    # Arrange
+    mock_database.get_oldest_item_from_queue.return_value = Mock(
+        wiki_id="Q123", entity_type="PERSON"
+    )
+
+    entity = Entity(
+        id="Q123",
+        labels={"en": Label(language="en", value="Test Person")},
+        claims={
+            "P19": [{"mainsnak": {"datavalue": {"value": {"id": "Q456"}}}}],
+            "P569": [{"mainsnak": {"property": "P569"}}],
+        },
+    )
+    mock_wikidata_service.get_entity.return_value = entity
+
+    mock_event = Mock(
+        summary="Test Person was born in Test Place",
+        people_tags=[
+            Mock(name="Test Person", wiki_id="Q123", start_char=0, stop_char=10)
+        ],
+        place_tag=Mock(
+            name="Test Place",
+            wiki_id="Q456",
+            start_char=23,
+            stop_char=33,
+            location=GeoLocation(coordinates=None, geoshape=None),
+        ),
+        time_tag=Mock(
+            name="1900",
+            wiki_id=None,
+            start_char=11,
+            stop_char=15,
+            time_definition=TimeDefinition(
+                datetime=datetime(1900, 1, 1, tzinfo=timezone.utc),
+                calendar_model="Q1985727",
+                precision=9,
+            ),
+        ),
+    )
+    mock_event_factory = Mock(spec=EventFactory)
+    mock_event_factory.entity_has_event.return_value = True
+    mock_event_factory.create_wiki_event.return_value = mock_event
+    mock_event_factory.label = "Test Factory"
+    mock_event_factory.version = 1
+
+    with patch("wiki_service.wiki_service.get_event_factories") as mock_get_factories:
+        mock_get_factories.return_value = [mock_event_factory]
+
+        # Mock REST error
+        mock_rest_client.get_tags.side_effect = RestClientError("Failed to get tags")
+
+        # Act
+        wiki_service.build_events_from_person()
+
+        # Assert
+        mock_database.upsert_created_event.assert_called_once_with(
+            wiki_id="Q123",
+            factory_label="Test Factory",
+            factory_version=1,
+            errors={"error": "Failed to get tags"},
+        )
+        mock_database.remove_item_from_queue.assert_not_called()
+
+
+def test_build_events_from_person_wikidata_error(
+    wiki_service, mock_database, mock_wikidata_service
+):
+    # Arrange
+    mock_database.get_oldest_item_from_queue.return_value = Mock(
+        wiki_id="Q123", entity_type="PERSON"
+    )
+    mock_wikidata_service.get_entity.side_effect = WikiDataQueryServiceError(
+        "API error"
+    )
+
+    # Act
+    wiki_service.build_events_from_person()
+
+    # Assert
+    mock_database.report_queue_error.assert_called_once_with(
+        wiki_id="Q123", error_time=ANY, errors="WikiData query had an error: API error"
+    )
+    mock_database.remove_item_from_queue.assert_not_called()

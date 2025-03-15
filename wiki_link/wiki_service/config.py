@@ -12,5 +12,6 @@ class WikiServiceConfig(Config):
         self.username = os.environ.get("WIKILINK_USERNAME")
         self.password = os.environ.get("WIKILINK_PASSWORD")
         self.base_url = os.environ.get("WIKILINK_BASE_URL")
+        self.server_base_url = os.environ.get("SERVER_BASE_URL", "localhost:8000")
         # if not all([self.base_url, self.username, self.password]):
         #     raise EnvironmentError("Missing environment variables")
