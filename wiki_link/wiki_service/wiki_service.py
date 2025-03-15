@@ -13,8 +13,7 @@ from wiki_service.wikidata_query_service import (
 log = getLogger(__name__)
 
 
-class WikiServiceError(Exception):
-    ...
+class WikiServiceError(Exception): ...
 
 
 class WikiService:

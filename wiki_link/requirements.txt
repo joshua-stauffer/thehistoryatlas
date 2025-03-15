@@ -1,1 +1,7 @@
 sparqlwrapper
+pytest
+pytest-mock
+black
+psycopg2-binary
+pydantic==2.10.4
+pydantic-settings==2.7.0

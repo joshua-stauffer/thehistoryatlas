@@ -19,8 +19,7 @@ class WikiTag(BaseModel):
     stop_char: int
 
 
-class PersonWikiTag(WikiTag):
-    ...
+class PersonWikiTag(WikiTag): ...
 
 
 class PlaceWikiTag(WikiTag):
@@ -39,16 +38,13 @@ class WikiEvent(BaseModel):
     time_tag: TimeWikiTag
 
 
-class UnprocessableEventError(Exception):
-    ...
+class UnprocessableEventError(Exception): ...
 
 
 class Query(Protocol):
-    def get_label(self, id: str, language: str) -> str:
-        ...
+    def get_label(self, id: str, language: str) -> str: ...
 
-    def get_geo_location(self, id: str) -> GeoLocation:
-        ...
+    def get_geo_location(self, id: str) -> GeoLocation: ...
 
 
 class EventFactory(ABC):
@@ -58,21 +54,17 @@ class EventFactory(ABC):
 
     @property
     @abstractmethod
-    def version(self) -> int:
-        ...
+    def version(self) -> int: ...
 
     @property
     @abstractmethod
-    def label(self) -> str:
-        ...
+    def label(self) -> str: ...
 
     @abstractmethod
-    def entity_has_event(self) -> bool:
-        ...
+    def entity_has_event(self) -> bool: ...
 
     @abstractmethod
-    def create_wiki_event(self) -> WikiEvent:
-        ...
+    def create_wiki_event(self) -> WikiEvent: ...
 
 
 _event_factories = []

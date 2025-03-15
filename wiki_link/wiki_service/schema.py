@@ -1,6 +1,6 @@
-from sqlalchemy import Column, DATETIME
+from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER
+from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER, TIMESTAMP
 
 Base = declarative_base()
 
@@ -14,9 +14,9 @@ class IDLookup(Base):
 
     wiki_id = Column(VARCHAR, unique=True, primary_key=True)
     entity_type = Column(VARCHAR, nullable=True)
-    local_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    last_checked = Column(DATETIME, nullable=False)
-    last_modified_at = Column(DATETIME, nullable=False)
+    local_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    last_checked = Column(TIMESTAMP(timezone=True), nullable=False)
+    last_modified_at = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
 class WikiQueue(Base):
@@ -28,7 +28,7 @@ class WikiQueue(Base):
     wiki_url = Column(VARCHAR)
     entity_type = Column(VARCHAR, nullable=False)
     errors = Column(JSONB, default={})
-    time_added = Column(DATETIME, nullable=False)
+    time_added = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
 class Config(Base):

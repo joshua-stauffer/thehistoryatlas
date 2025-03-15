@@ -120,8 +120,7 @@ class PersonWasBorn(EventFactory):
         else:
             return None
 
-    def _parent_ids(self) -> list[str] | None:
-        ...
+    def _parent_ids(self) -> list[str] | None: ...
 
     def _time_definition(self):
         return build_time_definition_from_claim(

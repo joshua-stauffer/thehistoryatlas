@@ -1,10 +1,54 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+import pytest
 from wiki_service.database import Database, Item
-from wiki_service.schema import IDLookup, WikiQueue
-from wiki_service.types import EntityType
+from wiki_service.schema import IDLookup, WikiQueue, Config
+from wiki_service.types import EntityType, WikiDataItem
+from sqlalchemy import create_engine, text
+
+
+@pytest.fixture
+def engine(config):
+    return create_engine(config.DB_URI, echo=config.DEBUG, future=True)
+
+
+@pytest.fixture
+def wiki_id() -> str:
+    return "Q937"
+
+
+@pytest.fixture
+def local_id() -> str:
+    return UUID("4e42b20e-838c-4808-9353-b20ec80e6e54")
+
+
+@pytest.fixture
+def seed_id_lookup(engine, wiki_id: str, local_id: UUID):
+    with Session(engine, future=True) as session:
+        session.add(
+            IDLookup(
+                wiki_id=wiki_id,
+                entity_type="PERSON",
+                local_id=local_id,
+                last_checked="2023-01-19 19:14:35",
+                last_modified_at="2023-01-19 19:14:35",
+            )
+        )
+        session.commit()
+    yield
+    with Session(engine, future=True) as session:
+        session.execute(
+            text(
+                """
+                delete from id_lookup where wiki_id = :wiki_id;
+            """
+            ),
+            {"wiki_id": wiki_id},
+        )
+        session.commit()
 
 
 def test_wiki_id_exists_with_non_existent_id(config):
@@ -13,47 +57,23 @@ def test_wiki_id_exists_with_non_existent_id(config):
     assert db.wiki_id_exists(wiki_id=not_an_id) is False
 
 
-def test_wiki_id_exists_with_real_id(config):
+def test_wiki_id_exists_with_real_id(config, seed_id_lookup, wiki_id: str):
     db = Database(config=config)
-    wiki_id = "Q937"
-    with Session(db._engine, future=True) as session:
-        session.add(
-            IDLookup(
-                wiki_id=wiki_id,
-                wiki_type="WIKIDATA",
-                entity_type="PERSON",
-                last_checked="2023-01-19 19:14:35",
-                last_modified_at="2023-01-19 19:14:35",
-            )
-        )
-        try:
-            session.commit()
-        except Exception as e:
-            pass
-
     assert db.wiki_id_exists(wiki_id=wiki_id) is True
-    with Session(db._engine, future=True) as session:
-        row = session.query(IDLookup).filter(IDLookup.wiki_id == wiki_id).one()
-        session.delete(row)
-        session.commit()
 
 
-def test_add_wiki_entry(config):
+def test_add_wiki_entry(config, wiki_id: str):
     db = Database(config=config)
-    wiki_id = "Q937"
-    wiki_type: WikiType = "WIKIDATA"
     entity_type: EntityType = "PERSON"
-    last_modified_at = "2023-01-19 19:41:54"
+    last_modified_at = datetime(2023, 1, 19, 19, 41, 54, tzinfo=timezone.utc)
     db.add_wiki_entry(
         wiki_id=wiki_id,
-        wiki_type=wiki_type,
         entity_type=entity_type,
         last_modified_at=last_modified_at,
     )
     with Session(db._engine, future=True) as session:
         row = session.query(IDLookup).filter(IDLookup.wiki_id == wiki_id).one()
         assert row.wiki_id == wiki_id
-        assert row.wiki_type == wiki_type
         assert row.entity_type == entity_type
         assert row.last_modified_at == last_modified_at
         assert row.last_checked > last_modified_at
@@ -62,24 +82,8 @@ def test_add_wiki_entry(config):
         session.commit()
 
 
-def test_add_local_id(config):
+def test_add_local_id(config, seed_id_lookup, local_id, wiki_id: str):
     db = Database(config=config)
-    wiki_id = "Q937"
-    local_id = "4e42b20e-838c-4808-9353-b20ec80e6e54"
-    with Session(db._engine, future=True) as session:
-        session.add(
-            IDLookup(
-                wiki_id=wiki_id,
-                wiki_type="WIKIDATA",
-                entity_type="PERSON",
-                last_checked="2023-01-19 19:14:35",
-                last_modified_at="2023-01-19 19:14:35",
-            )
-        )
-        try:
-            session.commit()
-        except Exception as e:
-            pass
     db.correlate_local_id_to_wiki_id(wiki_id=wiki_id, local_id=local_id)
     with Session(db._engine, future=True) as session:
         row = session.query(IDLookup).filter(IDLookup.wiki_id == wiki_id).one()
@@ -88,51 +92,27 @@ def test_add_local_id(config):
         session.commit()
 
 
-def test_update_wiki_id(config):
-    db = Database(config=config)
-    wiki_id = "Q937"
-    wiki_type = "WIKIDATA"
-    entity_type = "PERSON"
-    last_modified_at = "2023-01-19 19:41:54"
-    last_checked = "2023-01-19 20:54:41"
-    with Session(db._engine, future=True) as session:
-        session.add(
-            IDLookup(
-                wiki_id=wiki_id,
-                wiki_type=wiki_type,
-                entity_type=entity_type,
-                last_checked=last_checked,
-                last_modified_at=last_modified_at,
-            )
-        )
-        try:
-            session.commit()
-        except Exception as e:
-            pass
-
-    with Session(db._engine, future=True) as session:
-        row = session.query(IDLookup).filter(IDLookup.wiki_id == wiki_id).one()
-        session.delete(row)
-        session.commit()
-
-
 def test_add_ids_to_queue(config):
     db = Database(config=config)
-    start_time = str(datetime.utcnow())
 
-    ids = ["Q1", "Q2", "Q3", "Q4", "Q5"]
     entity_type: EntityType = "PERSON"
+    items = [
+        WikiDataItem(
+            url="https://www.wikidata.org/wiki/Q1339",
+            qid="Q1339",
+        ),
+        WikiDataItem(
+            url="https://www.wikidata.org/wiki/Q1340",
+            qid="Q1340",
+        ),
+    ]
 
-    db.add_items_to_queue(entity_type=entity_type, items=ids)
-    end_time = str(datetime.utcnow())
+    db.add_items_to_queue(entity_type=entity_type, items=items)
     with Session(db._engine, future=True) as session:
-        for id in ids:
-            row = session.query(WikiQueue).filter(WikiQueue.wiki_id == id).one()
-            assert row.wiki_id in ids
+        for item in items:
+            row = session.query(WikiQueue).filter(WikiQueue.wiki_id == item.qid).one()
             assert row.entity_type == entity_type
-            assert row.wiki_type == wiki_type
             assert row.errors == {}
-            assert start_time < row.time_added < end_time
             session.delete(row)
         session.commit()
 
@@ -148,16 +128,11 @@ def test_get_oldest_item_from_queue(config):
     ]
     with Session(db._engine, future=True) as session:
         items = [
-            WikiQueue(
-                wiki_id=id, time_added=time, wiki_type="WIKIDATA", entity_type="PERSON"
-            )
+            WikiQueue(wiki_id=id, time_added=time, entity_type="PERSON")
             for id, time in id_times
         ]
         session.add_all(items)
-        try:
-            session.commit()
-        except Exception as e:
-            pass
+        session.commit()
 
     for id, time in sorted(id_times):
         item = db.get_oldest_item_from_queue()
@@ -180,22 +155,17 @@ def test_remove_item_from_queue_doesnt_error_on_empty_queue(config):
 def test_remove_item_from_queue(config):
     db = Database(config=config)
     entity_type: EntityType = "PERSON"
-    wiki_type: WikiType = "WIKIDATA"
     wiki_id = "Q1"
     time_added = "2023-01-19 22:26:35"
     with Session(db._engine, future=True) as session:
         session.add(
             WikiQueue(
                 wiki_id=wiki_id,
-                wiki_type=wiki_type,
                 entity_type=entity_type,
                 time_added=time_added,
             )
         )
-        try:
-            session.commit()
-        except Exception as e:
-            pass
+        session.commit()
 
     db.remove_item_from_queue(wiki_id=wiki_id)
 
@@ -209,14 +179,12 @@ def test_remove_item_from_queue(config):
 def test_report_queue_error(config):
     db = Database(config=config)
     entity_type: EntityType = "PERSON"
-    wiki_type: WikiType = "WIKIDATA"
     wiki_id = "Q1"
     time_added = "2023-01-19 22:26:35"
     with Session(db._engine, future=True) as session:
         session.add(
             WikiQueue(
                 wiki_id=wiki_id,
-                wiki_type=wiki_type,
                 entity_type=entity_type,
                 time_added=time_added,
             )

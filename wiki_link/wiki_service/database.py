@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 
 from sqlalchemy import create_engine
 from sqlalchemy import select
@@ -13,13 +14,12 @@ from wiki_service.config import WikiServiceConfig
 from wiki_service.schema import Base, WikiQueue
 from wiki_service.schema import IDLookup
 from wiki_service.schema import Config as ConfigModel
-from wiki_service.types import WikiType, EntityType, WikiDataItem
+from wiki_service.types import EntityType, WikiDataItem
 
 log = logging.getLogger(__name__)
 
 
-class DatabaseError(Exception):
-    ...
+class DatabaseError(Exception): ...
 
 
 @dataclass
@@ -38,16 +38,14 @@ class Database:
     def add_wiki_entry(
         self,
         wiki_id: str,
-        wiki_type: WikiType,
         last_modified_at: str,
         entity_type: Optional[EntityType] = None,
     ) -> None:
         with Session(self._engine, future=True) as session:
             row = IDLookup(
                 wiki_id=wiki_id,
-                wiki_type=wiki_type,
                 entity_type=entity_type,
-                local_id=None,
+                local_id=None,  # added when entity is created
                 last_modified_at=last_modified_at,
                 last_checked=str(datetime.utcnow()),
             )

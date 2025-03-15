@@ -4,11 +4,6 @@ from uuid import uuid4
 
 import pytest
 
-from abstract_domain_model.models.commands import CommandSuccess
-from abstract_domain_model.models.commands.add_person import AddPerson
-from abstract_domain_model.transform import from_dict
-from mock_rpc_manager import MockRPCManager
-from rpc_manager import RPCManager, RPCSuccess, RPCFailure
 from wiki_service.database import Database, Item
 from wiki_service.types import WikiDataItem
 from wiki_service.wiki_service import WikiService
@@ -553,12 +548,10 @@ def people():
 
 
 def test_wiki_service_init(config):
-    broker = Mock()
     wikidata_query_service = Mock()
     database = Mock()
     config = Mock()
     wiki_service = WikiService(
-        broker_factory=broker,
         wikidata_query_service_factory=wikidata_query_service,
         database_factory=database,
         config_factory=config,
@@ -580,9 +573,6 @@ def test_search_for_people_success(config, people):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
     wdqs = Mock()
     wdqs.find_people.return_value = people
 
@@ -591,14 +581,10 @@ def test_search_for_people_success(config, people):
     database.wiki_id_exists.return_value = False
     database.get_last_person_offset.return_value = offset
 
-    command_publisher = Mock()
-
     wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
         wikidata_query_service_factory=lambda: wdqs,
         database_factory=lambda: database,
         config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
     )
 
     wiki_service.search_for_people()
@@ -623,9 +609,6 @@ def test_search_for_people_ignores_ids_that_already_exist(config, people):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
     wdqs = Mock()
     wdqs.find_people.return_value = people
 
@@ -634,14 +617,10 @@ def test_search_for_people_ignores_ids_that_already_exist(config, people):
     database.wiki_id_exists.return_value = True
     database.get_last_person_offset.return_value = offset
 
-    command_publisher = Mock()
-
     wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
         wikidata_query_service_factory=lambda: wdqs,
         database_factory=lambda: database,
         config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
     )
 
     wiki_service.search_for_people()
@@ -666,9 +645,6 @@ def test_search_for_people_ignores_id_already_in_queue(config, people):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
     wdqs = Mock()
     wdqs.find_people.return_value = people
 
@@ -677,14 +653,10 @@ def test_search_for_people_ignores_id_already_in_queue(config, people):
     database.wiki_id_exists.return_value = False
     database.get_last_person_offset.return_value = offset
 
-    command_publisher = Mock()
-
     wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
         wikidata_query_service_factory=lambda: wdqs,
         database_factory=lambda: database,
         config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
     )
 
     wiki_service.search_for_people()
@@ -707,9 +679,6 @@ def test_search_for_people_handles_wiki_service_error(config):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
     wdqs = Mock()
     wdqs.find_people.side_effect = WikiDataQueryServiceError
 
@@ -718,186 +687,13 @@ def test_search_for_people_handles_wiki_service_error(config):
     database.wiki_id_exists.return_value = False
     database.get_last_person_offset.return_value = offset
 
-    command_publisher = Mock()
-
     wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
         wikidata_query_service_factory=lambda: wdqs,
         database_factory=lambda: database,
         config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
     )
 
     wiki_service.search_for_people()
 
     database.add_items_to_queue.assert_not_called()
     database.save_last_person_offset.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_build_entity_success(config, entity, item):
-    """
-    Given:
-        Database returns an Item from the WikiQueue
-        WikiDataQueryService returns an Entity
-        RPCManager returns RPCSuccess
-    Expect:
-        EntityAdded command to be published
-        no errors to be reported
-        the Item to be removed from the WikiQueue
-    """
-
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
-    wdqs = Mock()
-    wdqs.get_entity.return_value = entity
-
-    database = Mock()
-    database.get_oldest_item_from_queue.return_value = item
-
-    command_publisher = MockRPCManager(timeout=0, pub_function=lambda a, b: AsyncMock)
-    command_publisher.add_response(
-        RPCSuccess(message=asdict(CommandSuccess(type="ENTITY_ADDED")))
-    )
-
-    wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
-    )
-
-    await wiki_service.build_entity()
-
-    assert (
-        len(command_publisher.messages) == 1
-    ), "Expect one message to have been published"
-    command = from_dict(command_publisher.messages[0])
-    assert isinstance(command, AddPerson)
-    database.report_queue_error.assert_not_called()
-    database.remove_item_from_queue.assert_called_with(wiki_id=item.wiki_id)
-
-
-@pytest.mark.asyncio
-async def test_build_entity_with_empty_queue(config):
-    """
-    Given:
-        Database does not return an Item from the WikiQueue
-    Expect:
-        no errors to be reported
-        no entity to be queried
-        no command to be made
-    """
-
-    broker = Mock()
-
-    wdqs = Mock()
-
-    database = Mock()
-    database.get_oldest_item_from_queue.return_value = None
-
-    command_publisher = Mock()
-
-    wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
-    )
-
-    await wiki_service.build_entity()
-
-    wdqs.get_entity.assert_not_called()
-    database.report_queue_error.assert_not_called()
-    command_publisher.make_call.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_build_entity_when_wikidata_query_fails(config, entity, item):
-    """
-    Given:
-        Database returns an Item from the WikiQueue
-        WikiDataQueryService raises an exception
-    Expect:
-        an error is reported
-        the item remains in the WikiQueue
-        no command is made
-    """
-
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
-    wdqs = Mock()
-    wdqs.get_entity.side_effect = WikiDataQueryServiceError(
-        "WikiData query service had an error"
-    )
-
-    database = Mock()
-    database.get_oldest_item_from_queue.return_value = item
-
-    command_publisher = Mock()
-
-    wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
-    )
-
-    await wiki_service.build_entity()
-
-    database.report_queue_error.assert_called()
-    database.remove_item_from_queue.assert_not_called()
-    command_publisher.make_call.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_build_entity_when_command_fails(config, entity, item):
-    """
-    Given:
-        Database returns an Item from the WikiQueue
-        WikiDataQueryService returns an Entity
-        RPCManager returns RPCSuccess
-    Expect:
-        EntityAdded command to be published
-        no errors to be reported
-        the Item to be removed from the WikiQueue
-    """
-
-    broker = Mock()
-    broker.publish_command = AsyncMock()
-
-    wdqs = Mock()
-    wdqs.get_entity.return_value = entity
-
-    database = Mock()
-    database.get_oldest_item_from_queue.return_value = item
-
-    command_publisher = MockRPCManager(timeout=0, pub_function=lambda a, b: AsyncMock)
-    command_publisher.add_response(
-        RPCFailure(
-            errors={"error": "an error happened and the command wasn't published"}
-        )
-    )
-
-    wiki_service = WikiService(
-        broker_factory=lambda config_factory, event_handler: broker,
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        command_publisher=lambda timeout, pub_function: command_publisher,
-    )
-
-    await wiki_service.build_entity()
-
-    assert (
-        len(command_publisher.messages) == 1
-    ), "Expect one message to have been published"
-    command = from_dict(command_publisher.messages[0])
-    assert isinstance(command, AddPerson)
-    database.report_queue_error.assert_called()
-    database.remove_item_from_queue.assert_not_called()

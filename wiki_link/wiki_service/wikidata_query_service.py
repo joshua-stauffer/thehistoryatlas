@@ -13,8 +13,7 @@ from wiki_service.config import WikiServiceConfig
 from wiki_service.types import WikiDataItem
 
 
-class WikiDataQueryServiceError(Exception):
-    ...
+class WikiDataQueryServiceError(Exception): ...
 
 
 class Entity(BaseModel):
