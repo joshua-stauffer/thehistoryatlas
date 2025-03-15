@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER, TIMESTAMP
@@ -29,6 +31,17 @@ class WikiQueue(Base):
     entity_type = Column(VARCHAR, nullable=False)
     errors = Column(JSONB, default={})
     time_added = Column(TIMESTAMP(timezone=True), nullable=False)
+
+
+class CreatedEvents(Base):
+    __tablename__ = "created_events"
+    wiki_id = Column(VARCHAR, primary_key=True)
+    factory_label = Column(VARCHAR, nullable=False)
+    factory_version = Column(INTEGER, nullable=False)
+    errors = Column(JSONB, default={})
+    updated_at = Column(
+        TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc)
+    )
 
 
 class Config(Base):

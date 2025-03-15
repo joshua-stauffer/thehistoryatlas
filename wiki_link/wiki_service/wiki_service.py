@@ -4,10 +4,12 @@ from typing import Callable
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database
+from wiki_service.event_factories.event_factory import get_event_factories, EventFactory
 from wiki_service.utils import get_current_time
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     WikiDataQueryServiceError,
+    Entity,
 )
 
 log = getLogger(__name__)
@@ -54,11 +56,7 @@ class WikiService:
         )
         self._database.save_last_person_offset(offset=limit + offset)
 
-    def build_entity(self):
-        """
-        Get a QID to be processed, resolve its properties from WikiData,
-        and publish an event.
-        """
+    def build_events_from_person(self):
         item = self._database.get_oldest_item_from_queue()
         if item is None:
             log.info("WikiQueue is empty.")
@@ -71,14 +69,21 @@ class WikiService:
         )
         try:
             entity = self._wikidata_query_service.get_entity(id=item.wiki_id)
-            if item.entity_type == "PERSON":
-                event = self._build_person(item=item, entity=entity)
-            else:
+            if item.entity_type != "PERSON":
                 report_errors(f"Unknown entity type field: {item.entity_type}")
                 raise WikiServiceError(f"Unknown entity type: `{item.entity_type}`")
+            event_factories = get_event_factories(
+                entity=entity, query=self._wikidata_query_service
+            )
+            for event_factory in event_factories:
+                self._create_wiki_event(event_factory)
         except WikiDataQueryServiceError as e:
             report_errors(f"WikiData query had an error: {e}")
             return
         except Exception as e:
             report_errors(f"Unknown error occurred: {e}")
+            return
+
+    def _create_wiki_event(self, event_factory: EventFactory) -> None:
+        if not event_factory.entity_has_event():
             return

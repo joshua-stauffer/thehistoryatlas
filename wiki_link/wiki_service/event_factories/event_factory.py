@@ -75,5 +75,7 @@ def register_event_factory(cls: type[EventFactory]) -> type[EventFactory]:
     return cls
 
 
-def get_event_factories() -> list[EventFactory]:
-    return _event_factories
+def get_event_factories(entity: Entity, query: Query) -> list[EventFactory]:
+    return [
+        factory_class(entity=entity, query=query) for factory_class in _event_factories
+    ]
