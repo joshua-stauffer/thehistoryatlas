@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 import pytest
 from wiki_service.database import Database, Item
-from wiki_service.schema import IDLookup, WikiQueue, Config
+from wiki_service.schema import IDLookup, WikiQueue, Config, CreatedEvents
 from wiki_service.types import EntityType, WikiDataItem
 from sqlalchemy import create_engine, text
 
@@ -206,5 +206,94 @@ def test_report_queue_error(config):
         for time in error_times:
             assert row.errors[time] == error
 
+        session.delete(row)
+        session.commit()
+
+
+def test_upsert_created_event_new_row(config):
+    """Test creating a new CreatedEvents row"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    factory_version = 1
+    errors = {"error1": "test error"}
+
+    # Create new row
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+        errors=errors,
+    )
+
+    # Verify row was created correctly
+    with Session(db._engine, future=True) as session:
+        row = session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        assert row.wiki_id == wiki_id
+        assert row.factory_label == factory_label
+        assert row.factory_version == factory_version
+        assert row.errors == errors
+        session.delete(row)
+        session.commit()
+
+
+def test_upsert_created_event_update_row(config):
+    """Test updating an existing CreatedEvents row"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    initial_version = 1
+    updated_version = 2
+    initial_errors = {"error1": "test error"}
+    updated_errors = {"error2": "new error"}
+
+    # Create initial row
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=initial_version,
+        errors=initial_errors,
+    )
+
+    # Update the row
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=updated_version,
+        errors=updated_errors,
+    )
+
+    # Verify row was updated correctly
+    with Session(db._engine, future=True) as session:
+        row = session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        assert row.wiki_id == wiki_id
+        assert row.factory_label == factory_label
+        assert row.factory_version == updated_version
+        assert row.errors == updated_errors
+        session.delete(row)
+        session.commit()
+
+
+def test_upsert_created_event_no_errors(config):
+    """Test creating a row without errors"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    factory_version = 1
+
+    # Create row without errors
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+    )
+
+    # Verify row was created correctly
+    with Session(db._engine, future=True) as session:
+        row = session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        assert row.wiki_id == wiki_id
+        assert row.factory_label == factory_label
+        assert row.factory_version == factory_version
+        assert row.errors == {}
         session.delete(row)
         session.commit()

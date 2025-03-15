@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from uuid import UUID
 
@@ -14,6 +14,7 @@ from wiki_service.config import WikiServiceConfig
 from wiki_service.schema import Base, WikiQueue
 from wiki_service.schema import IDLookup
 from wiki_service.schema import Config as ConfigModel
+from wiki_service.schema import CreatedEvents
 from wiki_service.types import EntityType, WikiDataItem
 
 log = logging.getLogger(__name__)
@@ -183,6 +184,45 @@ class Database:
     @staticmethod
     def _get_default_config() -> ConfigModel:
         return ConfigModel(id=1, last_person_search_offset=0)
+
+    def upsert_created_event(
+        self,
+        wiki_id: str,
+        factory_label: str,
+        factory_version: int,
+        errors: Optional[dict] = None,
+    ) -> None:
+        """
+        Create or update a CreatedEvents row.
+        If the row exists, update the factory_version and errors fields.
+        If it doesn't exist, create a new row.
+
+        Args:
+            wiki_id: The wiki ID to create/update
+            factory_label: The label of the factory that created the event
+            factory_version: The version of the factory
+            errors: Optional dictionary of errors encountered during creation
+        """
+        with Session(self._engine, future=True) as session:
+            row = (
+                session.query(CreatedEvents)
+                .filter(CreatedEvents.wiki_id == wiki_id)
+                .one_or_none()
+            )
+            if row is None:
+                row = CreatedEvents(
+                    wiki_id=wiki_id,
+                    factory_label=factory_label,
+                    factory_version=factory_version,
+                    errors=errors or {},
+                )
+            else:
+                row.factory_version = factory_version
+                row.errors = errors or {}
+                row.updated_at = datetime.now(timezone.utc)
+            
+            session.add(row)
+            session.commit()
 
     @classmethod
     def factory(cls) -> "Database":
