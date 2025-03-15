@@ -228,7 +228,9 @@ def test_upsert_created_event_new_row(config):
 
     # Verify row was created correctly
     with Session(db._engine, future=True) as session:
-        row = session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        row = (
+            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        )
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
         assert row.factory_version == factory_version
@@ -265,7 +267,9 @@ def test_upsert_created_event_update_row(config):
 
     # Verify row was updated correctly
     with Session(db._engine, future=True) as session:
-        row = session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        row = (
+            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        )
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
         assert row.factory_version == updated_version
@@ -290,10 +294,133 @@ def test_upsert_created_event_no_errors(config):
 
     # Verify row was created correctly
     with Session(db._engine, future=True) as session:
-        row = session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        row = (
+            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        )
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
         assert row.factory_version == factory_version
         assert row.errors == {}
+        session.delete(row)
+        session.commit()
+
+
+def test_event_exists_matching_row(config):
+    """Test event_exists returns True when a matching row exists"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    factory_version = 1
+    errors = {"error1": "test error"}
+
+    # Create a row
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+        errors=errors,
+    )
+
+    # Check that event_exists returns True
+    assert (
+        db.event_exists(
+            wiki_id=wiki_id,
+            factory_label=factory_label,
+            factory_version=factory_version,
+        )
+        is True
+    )
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        row = (
+            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        )
+        session.delete(row)
+        session.commit()
+
+
+def test_event_exists_no_matching_row(config):
+    """Test event_exists returns False when no matching row exists"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    factory_version = 1
+
+    # Check that event_exists returns False for non-existent row
+    assert (
+        db.event_exists(
+            wiki_id=wiki_id,
+            factory_label=factory_label,
+            factory_version=factory_version,
+        )
+        is False
+    )
+
+
+def test_event_exists_different_version(config):
+    """Test event_exists returns False when row exists but version differs"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    initial_version = 1
+    different_version = 2
+
+    # Create a row with initial version
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=initial_version,
+    )
+
+    # Check that event_exists returns False for different version
+    assert (
+        db.event_exists(
+            wiki_id=wiki_id,
+            factory_label=factory_label,
+            factory_version=different_version,
+        )
+        is False
+    )
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        row = (
+            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        )
+        session.delete(row)
+        session.commit()
+
+
+def test_event_exists_different_factory(config):
+    """Test event_exists returns False when row exists but factory differs"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    different_factory = "other_factory"
+    factory_version = 1
+
+    # Create a row with initial factory
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+    )
+
+    # Check that event_exists returns False for different factory
+    assert (
+        db.event_exists(
+            wiki_id=wiki_id,
+            factory_label=different_factory,
+            factory_version=factory_version,
+        )
+        is False
+    )
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        row = (
+            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+        )
         session.delete(row)
         session.commit()

@@ -220,9 +220,35 @@ class Database:
                 row.factory_version = factory_version
                 row.errors = errors or {}
                 row.updated_at = datetime.now(timezone.utc)
-            
+
             session.add(row)
             session.commit()
+
+    def event_exists(
+        self, wiki_id: str, factory_label: str, factory_version: int
+    ) -> bool:
+        """
+        Check if a CreatedEvents row exists with the given wiki_id, factory_label, and factory_version.
+
+        Args:
+            wiki_id: The wiki ID to check
+            factory_label: The label of the factory
+            factory_version: The version of the factory
+
+        Returns:
+            bool: True if a matching row exists, False otherwise
+        """
+        with Session(self._engine, future=True) as session:
+            row = (
+                session.query(CreatedEvents)
+                .filter(
+                    CreatedEvents.wiki_id == wiki_id,
+                    CreatedEvents.factory_label == factory_label,
+                    CreatedEvents.factory_version == factory_version,
+                )
+                .one_or_none()
+            )
+            return row is not None
 
     @classmethod
     def factory(cls) -> "Database":
