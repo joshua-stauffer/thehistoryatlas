@@ -1,4 +1,4 @@
-from dataclasses import  dataclass
+from dataclasses import dataclass
 from unittest.mock import Mock, patch, ANY
 from datetime import datetime, timezone
 
@@ -12,7 +12,6 @@ from wiki_service.wikidata_query_service import (
     Entity,
     Property,
     WikiDataQueryServiceError,
-
     GeoLocation,
 )
 from wiki_service.config import WikiServiceConfig
@@ -29,9 +28,8 @@ class MockWikiServiceConfig:
 def item():
     return Item(
         wiki_id="Q110003",
-        wiki_type="WIKIDATA",
-        wiki_link="http://www.wikidata.org/entity/Q110003",
         entity_type="PERSON",
+        wiki_link="http://www.wikidata.org/entity/Q110003",
     )
 
 
@@ -553,15 +551,15 @@ def people():
 
 
 def test_wiki_service_init(config):
-    wikidata_query_service = Mock()
-    database = Mock()
-    config = Mock()
-    rest_client = Mock()
+    wikidata_query_service = Mock(spec=WikiDataQueryService)
+    database = Mock(spec=Database)
+    config = Mock(spec=WikiServiceConfig)
+    rest_client = Mock(spec=RestClient)
     wiki_service = WikiService(
-        wikidata_query_service_factory=lambda: wikidata_query_service,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        rest_client_factory=lambda _: rest_client,
+        wikidata_query_service=wikidata_query_service,
+        database=database,
+        config=config,
+        rest_client=rest_client,
     )
     assert isinstance(wiki_service, WikiService)
 
@@ -580,10 +578,10 @@ def test_search_for_people_success(config, people):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    wdqs = Mock()
+    wdqs = Mock(spec=WikiDataQueryService)
     wdqs.find_people.return_value = people
 
-    database = Mock()
+    database = Mock(spec=Database)
     database.is_wiki_id_in_queue.return_value = False
     database.wiki_id_exists.return_value = False
     database.get_last_person_offset.return_value = offset
@@ -591,10 +589,10 @@ def test_search_for_people_success(config, people):
     mock_client = Mock(spec=RestClient)
 
     wiki_service = WikiService(
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        rest_client_factory=lambda _: mock_client,
+        wikidata_query_service=wdqs,
+        database=database,
+        config=config,
+        rest_client=mock_client,
     )
 
     wiki_service.search_for_people()
@@ -619,10 +617,10 @@ def test_search_for_people_ignores_ids_that_already_exist(config, people):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    wdqs = Mock()
+    wdqs = Mock(spec=WikiDataQueryService)
     wdqs.find_people.return_value = people
 
-    database = Mock()
+    database = Mock(spec=Database)
     database.is_wiki_id_in_queue.return_value = False
     database.wiki_id_exists.return_value = True
     database.get_last_person_offset.return_value = offset
@@ -630,10 +628,10 @@ def test_search_for_people_ignores_ids_that_already_exist(config, people):
     mock_client = Mock(spec=RestClient)
 
     wiki_service = WikiService(
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        rest_client_factory=lambda _: mock_client,
+        wikidata_query_service=wdqs,
+        database=database,
+        config=config,
+        rest_client=mock_client,
     )
 
     wiki_service.search_for_people()
@@ -658,10 +656,10 @@ def test_search_for_people_ignores_id_already_in_queue(config, people):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    wdqs = Mock()
+    wdqs = Mock(spec=WikiDataQueryService)
     wdqs.find_people.return_value = people
 
-    database = Mock()
+    database = Mock(spec=Database)
     database.is_wiki_id_in_queue.return_value = True
     database.wiki_id_exists.return_value = False
     database.get_last_person_offset.return_value = offset
@@ -669,10 +667,10 @@ def test_search_for_people_ignores_id_already_in_queue(config, people):
     mock_client = Mock(spec=RestClient)
 
     wiki_service = WikiService(
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        rest_client_factory=lambda _: mock_client,
+        wikidata_query_service=wdqs,
+        database=database,
+        config=config,
+        rest_client=mock_client,
     )
 
     wiki_service.search_for_people()
@@ -695,10 +693,10 @@ def test_search_for_people_handles_wiki_service_error(config):
     offset = 0
     config.WIKIDATA_SEARCH_LIMIT = limit
 
-    wdqs = Mock()
+    wdqs = Mock(spec=WikiDataQueryService)
     wdqs.find_people.side_effect = WikiDataQueryServiceError
 
-    database = Mock()
+    database = Mock(spec=Database)
     database.is_wiki_id_in_queue.return_value = False
     database.wiki_id_exists.return_value = False
     database.get_last_person_offset.return_value = offset
@@ -706,10 +704,10 @@ def test_search_for_people_handles_wiki_service_error(config):
     mock_client = Mock(spec=RestClient)
 
     wiki_service = WikiService(
-        wikidata_query_service_factory=lambda: wdqs,
-        database_factory=lambda: database,
-        config_factory=lambda: config,
-        rest_client_factory=lambda _: mock_client,
+        wikidata_query_service=wdqs,
+        database=database,
+        config=config,
+        rest_client=mock_client,
     )
 
     wiki_service.search_for_people()
@@ -785,10 +783,10 @@ def mock_event_factory():
 def wiki_service(mock_wikidata_service, mock_database, mock_rest_client, config):
     """Create a WikiService instance with mocked dependencies"""
     return WikiService(
-        wikidata_query_service_factory=lambda: mock_wikidata_service,
-        database_factory=lambda: mock_database,
-        config_factory=lambda: config,
-        rest_client_factory=lambda _: mock_rest_client,
+        wikidata_query_service=mock_wikidata_service,
+        database=mock_database,
+        config=config,
+        rest_client=mock_rest_client,
     )
 
 
@@ -970,3 +968,123 @@ def test_build_events_from_person_wikidata_error(
         wiki_id="Q123", error_time=ANY, errors="WikiData query had an error: API error"
     )
     mock_database.remove_item_from_queue.assert_not_called()
+
+
+def test_run_with_no_new_people(wiki_service, mock_database, mock_wikidata_service):
+    # Arrange
+    mock_wikidata_service.find_people.return_value = []
+    mock_database.get_last_person_offset.return_value = 0
+
+    # Act
+    wiki_service.run()
+
+    # Assert
+    mock_wikidata_service.find_people.assert_called_once()
+    mock_database.get_oldest_item_from_queue.assert_not_called()
+
+
+def test_run_with_num_people_limit(
+    wiki_service,
+    mock_database,
+    mock_wikidata_service,
+    mock_rest_client,
+    mock_event_factory,
+    item,
+    entity,
+):
+    # Arrange
+    mock_wikidata_service.find_people.return_value = [
+        WikiDataItem(
+            qid="Q1",
+            url="https://www.wikidata.org/wiki/Q1",
+        ),
+        WikiDataItem(
+            qid="Q2",
+            url="https://www.wikidata.org/wiki/Q2",
+        ),
+    ]
+    mock_database.get_last_person_offset.return_value = 0
+    mock_database.is_wiki_id_in_queue.return_value = False
+    mock_database.wiki_id_exists.return_value = False
+    mock_database.get_oldest_item_from_queue.side_effect = [item, None]
+    mock_wikidata_service.get_entity.return_value = entity
+    mock_event_factory.entity_has_event.return_value = True
+
+    # Act
+    wiki_service.run(num_people=1)
+
+    # Assert
+    mock_wikidata_service.find_people.assert_called_once()
+    mock_database.add_items_to_queue.assert_called_once()
+    assert mock_database.get_oldest_item_from_queue.call_count == 2
+    mock_database.remove_item_from_queue.assert_called_once()
+
+
+def test_run_processes_until_queue_empty(
+    wiki_service,
+    mock_database,
+    mock_wikidata_service,
+    mock_rest_client,
+    mock_event_factory,
+    item,
+    entity,
+):
+    # Arrange
+    mock_wikidata_service.find_people.return_value = [
+        WikiDataItem(
+            qid="Q1",
+            url="https://www.wikidata.org/wiki/Q1",
+        ),
+        WikiDataItem(
+            qid="Q2",
+            url="https://www.wikidata.org/wiki/Q2",
+        ),
+    ]
+    mock_database.get_last_person_offset.return_value = 0
+    mock_database.is_wiki_id_in_queue.return_value = False
+    mock_database.wiki_id_exists.return_value = False
+    mock_database.get_oldest_item_from_queue.side_effect = [item, item, None]
+    mock_wikidata_service.get_entity.return_value = entity
+    mock_event_factory.entity_has_event.return_value = True
+
+    # Act
+    wiki_service.run()
+
+    # Assert
+    mock_wikidata_service.find_people.assert_called_once()
+    mock_database.add_items_to_queue.assert_called_once()
+    assert mock_database.get_oldest_item_from_queue.call_count == 3
+    assert mock_database.remove_item_from_queue.call_count == 2
+
+
+def test_run_continues_on_error(
+    wiki_service,
+    mock_database,
+    mock_wikidata_service,
+    mock_rest_client,
+    mock_event_factory,
+    item,
+    entity,
+):
+    # Arrange
+    mock_wikidata_service.find_people.return_value = [
+        WikiDataItem(
+            qid="Q1",
+            url="https://www.wikidata.org/wiki/Q1",
+        ),
+    ]
+    mock_database.get_last_person_offset.return_value = 0
+    mock_database.is_wiki_id_in_queue.return_value = False
+    mock_database.wiki_id_exists.return_value = False
+    mock_database.get_oldest_item_from_queue.side_effect = [item, item, None]
+    mock_wikidata_service.get_entity.side_effect = [Exception("Test error"), entity]
+    mock_event_factory.entity_has_event.return_value = True
+
+    # Act
+    wiki_service.run()
+
+    # Assert
+    mock_wikidata_service.find_people.assert_called_once()
+    mock_database.add_items_to_queue.assert_called_once()
+    assert mock_database.get_oldest_item_from_queue.call_count == 3
+    assert mock_database.remove_item_from_queue.call_count == 1

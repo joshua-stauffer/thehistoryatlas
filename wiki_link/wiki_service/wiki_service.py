@@ -23,30 +23,35 @@ class WikiServiceError(Exception): ...
 class WikiService:
     def __init__(
         self,
-        wikidata_query_service_factory: Callable[[], WikiDataQueryService],
-        database_factory: Callable[[], Database],
-        config_factory: Callable[[], WikiServiceConfig],
-        rest_client_factory: Callable[[WikiServiceConfig], RestClient] | None = None,
+        wikidata_query_service: WikiDataQueryService,
+        database: Database,
+        config: WikiServiceConfig,
+        rest_client: RestClient | None = None,
     ):
-        self._config = config_factory()
-        self._database = database_factory()
-        self._query = wikidata_query_service_factory()
-        self._rest_client = (
-            rest_client_factory or (lambda config: RestClient(config))
-        )(self._config)
+        self._config = config
+        self._database = database
+        self._query = wikidata_query_service
+        self._rest_client = rest_client or RestClient(config)
 
-    def search_for_people(self):
+    def search_for_people(self, num_people: int | None = None):
         """
         Query WikiData for all instances of Homo Sapien, and add each entry
         to the WikiQueue, if it doesn't yet exist in the system.
+
+        Args:
+            num_people: Optional number of people to search for. If None, uses config limit.
         """
         offset = self._database.get_last_person_offset()
-        limit = self._config.WIKIDATA_SEARCH_LIMIT
+        limit = (
+            min(num_people, self._config.WIKIDATA_SEARCH_LIMIT)
+            if num_people
+            else self._config.WIKIDATA_SEARCH_LIMIT
+        )
         try:
             people = self._query.find_people(limit=limit, offset=offset)
         except WikiDataQueryServiceError as e:
             log.warning(f"WikiData Query Service encountered error and failed: {e}")
-            return
+            return 0
         people = [
             person
             for person in people
@@ -54,9 +59,45 @@ class WikiService:
             and self._database.wiki_id_exists(wiki_id=person.qid) is False
         ]
         self._database.add_items_to_queue(
-            entity_type="PERSON", wiki_type="WIKIDATA", items=people
+            entity_type="PERSON", items=people
         )
         self._database.save_last_person_offset(offset=limit + offset)
+        return len(people)
+
+    def run(self, num_people: int | None = None) -> None:
+        """
+        Run the WikiService pipeline to search for people and build events.
+
+        Args:
+            num_people: Optional number of people to process. If None, processes all available.
+        """
+        # First search for people
+        people_added = self.search_for_people(num_people=num_people)
+        if people_added == 0:
+            log.info("No new people found to process")
+            return
+
+        # Process events until queue is empty or we've hit our limit
+        processed = 0
+        while True:
+            if num_people and processed >= num_people:
+                log.info(f"Reached processing limit of {num_people} people")
+                break
+
+            item = self._database.get_oldest_item_from_queue()
+            if item is None:
+                log.info("Queue is empty, processing complete")
+                break
+
+            try:
+                self.build_events_from_person()
+                self._database.remove_item_from_queue(wiki_id=item.wiki_id)
+                processed += 1
+            except Exception as e:
+                log.error(f"Error processing person: {e}")
+                continue
+
+        log.info(f"Processed {processed} people successfully")
 
     def build_events_from_person(self):
         item = self._database.get_oldest_item_from_queue()
