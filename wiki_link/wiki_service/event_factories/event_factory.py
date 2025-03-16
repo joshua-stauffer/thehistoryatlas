@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List, Protocol
+from typing import List, Protocol
 
 from pydantic import BaseModel
 
 from wiki_service.wikidata_query_service import (
     Entity,
-    CoordinateLocation,
-    GeoshapeLocation,
     TimeDefinition,
     GeoLocation,
 )

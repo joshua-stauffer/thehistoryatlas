@@ -55,9 +55,7 @@ class WikiService:
             if self._database.is_wiki_id_in_queue(wiki_id=person.qid) is False
             and self._database.wiki_id_exists(wiki_id=person.qid) is False
         ]
-        self._database.add_items_to_queue(
-            entity_type="PERSON", items=people
-        )
+        self._database.add_items_to_queue(entity_type="PERSON", items=people)
         self._database.save_last_person_offset(offset=limit + offset)
         return len(people)
 

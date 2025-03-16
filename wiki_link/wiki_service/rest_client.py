@@ -76,7 +76,7 @@ class RestClient:
         name: str,
         wikidata_id: str | None,
         wikidata_url: str | None,
-        date: datetime,
+        date: str,
         calendar_model: str,
         precision: int,
     ) -> dict:
@@ -87,7 +87,7 @@ class RestClient:
                 "name": name,
                 "wikidata_id": wikidata_id,
                 "wikidata_url": wikidata_url,
-                "date": date.isoformat(),
+                "date": date,
                 "calendar_model": calendar_model,
                 "precision": precision,
             },

@@ -144,7 +144,7 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
     """
     # Remove leading '+' and any trailing parts (like the 'Z') not needed for parsing.
     raw_time = time_def.time
-    if raw_time.startswith("+"):
+    if raw_time.startswith(("+", "-")):
         raw_time = raw_time[1:]
 
     # Parse only the date and time part (first 19 characters: "YYYY-MM-DDTHH:MM:SS")
@@ -152,17 +152,17 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
 
     if time_def.precision == 11:
         # Full date: e.g. "December 31, 1980"
-        return dt.strftime("%B %d, %Y")
+        date_str = dt.strftime("%B %d, %Y")
     elif time_def.precision == 10:
         # Month precision: e.g. "December 1980"
-        return dt.strftime("%B %Y")
+        date_str = dt.strftime("%B %Y")
     elif time_def.precision == 9:
         # Year precision: e.g. "1980"
-        return dt.strftime("%Y")
+        date_str = dt.strftime("%Y")
     elif time_def.precision == 8:
         # Decade precision: e.g. "1980s"
         decade = (dt.year // 10) * 10
-        return f"{decade}s"
+        date_str = f"{decade}s"
     elif time_def.precision == 7:
         # Century precision: e.g. "20th century"
         century = (dt.year - 1) // 100 + 1
@@ -171,10 +171,14 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
             suffix = "th"
         else:
             suffix = {1: "st", 2: "nd", 3: "rd"}.get(century % 10, "th")
-        return f"{century}{suffix} century"
+        date_str = f"{century}{suffix} century"
     else:
         # Fallback: return ISO formatted date
-        return dt.isoformat()
+        date_str = dt.isoformat()
+
+    is_negative = raw_time.startswith("-")
+    bc_suffix = " B.C.E" if is_negative else ""
+    return date_str + bc_suffix
 
 
 class Property(BaseModel):

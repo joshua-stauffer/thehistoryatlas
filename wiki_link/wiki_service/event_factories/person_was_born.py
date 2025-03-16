@@ -13,15 +13,11 @@ from wiki_service.event_factories.event_factory import (
 from wiki_service.event_factories.q_numbers import (
     PLACE_OF_BIRTH,
     DATE_OF_BIRTH,
-    COORDINATE_LOCATION,
     MOTHER,
     FATHER,
 )
 from wiki_service.wikidata_query_service import (
     build_time_definition_from_claim,
-    TimeDefinition,
-    Entity,
-    build_coordinate_location,
     wikidata_time_to_text,
 )
 
