@@ -41,7 +41,13 @@ def get_history_handler(
         )
     except MissingResourceError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
-    return convert_story_to_api(story, index=5)
+    if not direction:
+        index = [event.id for event in story.events].index(event_id)
+    elif direction == "prev":
+        index = len(story.events) - 1
+    elif direction == "next":
+        index = 0
+    return convert_story_to_api(story, index=index)
 
 
 def convert_story_to_api(story: Story, index: int) -> api_types.Story:
