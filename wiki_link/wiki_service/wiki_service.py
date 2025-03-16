@@ -1,6 +1,4 @@
-from functools import partial
 from logging import getLogger
-from typing import Callable
 from datetime import datetime, timezone
 
 from wiki_service.config import WikiServiceConfig
@@ -11,7 +9,6 @@ from wiki_service.utils import get_current_time
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     WikiDataQueryServiceError,
-    Entity,
 )
 
 log = getLogger(__name__)
@@ -144,6 +141,7 @@ class WikiService:
 
     def _create_wiki_event(self, event_factory: EventFactory, wiki_id: str) -> None:
         if not event_factory.entity_has_event():
+            log.info(f"no event found for wiki_id: {wiki_id}")
             return
 
         try:
@@ -185,6 +183,7 @@ class WikiService:
                         longitude=coords.longitude,
                     )
                     id_map[event.place_tag.wiki_id] = result["id"]
+                # todo: handle case of geoshape, no coords
 
             # Create time tag
             if event.time_tag.wiki_id:
@@ -193,8 +192,8 @@ class WikiService:
                         name=event.time_tag.name,
                         wikidata_id=event.time_tag.wiki_id,
                         wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
-                        date=event.time_tag.time_definition.datetime,
-                        calendar_model=event.time_tag.time_definition.calendar_model,
+                        date=event.time_tag.time_definition.time,
+                        calendar_model=event.time_tag.time_definition.calendarmodel,
                         precision=event.time_tag.time_definition.precision,
                     )
                     time_id = result["id"]
@@ -206,8 +205,8 @@ class WikiService:
                     name=event.time_tag.name,
                     wikidata_id=None,
                     wikidata_url=None,
-                    date=event.time_tag.time_definition.datetime,
-                    calendar_model=event.time_tag.time_definition.calendar_model,
+                    date=event.time_tag.time_definition.time,
+                    calendar_model=event.time_tag.time_definition.calendarmodel,
                     precision=event.time_tag.time_definition.precision,
                 )
                 time_id = result["id"]
