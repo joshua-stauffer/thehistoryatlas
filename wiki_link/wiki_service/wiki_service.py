@@ -112,7 +112,7 @@ class WikiService:
             event_factories = get_event_factories(entity=entity, query=self._query)
             try:
                 for event_factory in event_factories:
-                    self._create_wiki_event(event_factory, item.wiki_id)
+                    self._create_wiki_event(event_factory, item.wiki_id, entity.title)
                 # Remove from queue only after all events are successfully created
                 self._database.remove_item_from_queue(wiki_id=item.wiki_id)
             except RestClientError as e:
@@ -137,7 +137,9 @@ class WikiService:
             )
             return
 
-    def _create_wiki_event(self, event_factory: EventFactory, wiki_id: str) -> None:
+    def _create_wiki_event(
+        self, event_factory: EventFactory, wiki_id: str, entity_title: str
+    ) -> None:
         if not event_factory.entity_has_event():
             log.info(f"no event found for wiki_id: {wiki_id}")
             return
@@ -242,8 +244,9 @@ class WikiService:
             # Create the event
             citation = {
                 "access_date": datetime.now(timezone.utc).isoformat(),
-                "url": f"https://www.wikidata.org/wiki/{wiki_id}",
-                "title": "Wikidata",
+                "wikidata_item_url": f"https://www.wikidata.org/wiki/{wiki_id}",
+                "wikidata_item_title": entity_title,
+                "wikidata_item_id": wiki_id,
             }
 
             self._rest_client.create_event(
