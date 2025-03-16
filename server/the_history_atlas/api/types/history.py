@@ -22,7 +22,7 @@ class Source(BaseModel):
 
 
 class CalendarDate(BaseModel):
-    datetime: datetime
+    datetime: str
     calendar: str
     precision: int
 

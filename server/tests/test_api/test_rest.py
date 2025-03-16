@@ -93,12 +93,13 @@ def _generate_fake_time(
     date = fake.date_time_between(start_date=start_date, end_date=end_date)
 
     date_str = date.strftime("%d %B %Y")
+    date_iso = date.strftime("%Y-%m-%d")
 
     return WikiDataTimeInput(
         wikidata_id=wikidata_id,
         wikidata_url=generate_wikidata_url(wikidata_id),
         name=date_str,
-        date=date,
+        date=date_iso,
         calendar_model="https://www.wikidata.org/wiki/Q12138",  # Gregorian calendar
         precision=random.randint(7, 11),
     )
@@ -228,7 +229,7 @@ def test_create_time(client: TestClient, auth_headers: dict) -> None:
         wikidata_id="Q69125241",
         wikidata_url="https://www.wikidata.org/wiki/Q69125241",
         name="31 March 1685",
-        date=datetime(year=1685, month=3, day=31),
+        date="+1685-03-21T00:00:00Z",
         calendar_model="https://www.wikidata.org/wiki/Q12138",
         precision=11,
     )
@@ -336,7 +337,7 @@ def test_create_event(client: TestClient, auth_headers: dict):
         wikidata_id="Q69125241",
         wikidata_url="https://www.wikidata.org/wiki/Q69125241",
         name="March 31st, 1685",
-        date=datetime(year=1685, month=3, day=31),
+        date="+1685-03-21T00:00:00Z",
         calendar_model="https://www.wikidata.org/wiki/Q12138",
         precision=11,
     )
@@ -545,7 +546,7 @@ class TestGetHistory:
         story = Story.model_validate(response.json())
         time_tags = sorted([time.date for time in times])
         for event, time in zip(story.events, time_tags):
-            assert event.date.datetime.date() == time.date()
+            assert event.date.datetime == time
 
     def test_with_params(
         self, client: TestClient, db_session: scoped_session, auth_headers: dict
@@ -591,7 +592,7 @@ class TestGetHistory:
         assert len(story.events) == 21
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -636,7 +637,7 @@ class TestGetHistory:
         assert len(story.events) == 10
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -723,7 +724,7 @@ class TestGetHistory:
         assert len(story.events) == len(expected_events)
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
             if event.id in person_event_ids:
@@ -776,7 +777,7 @@ class TestGetHistory:
         assert len(story.events) == 10
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -864,7 +865,7 @@ class TestGetHistory:
         assert len(story.events) == len(expected_events)
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
             if event.id in person_event_ids:

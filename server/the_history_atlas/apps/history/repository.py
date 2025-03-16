@@ -680,7 +680,7 @@ class Repository:
         stop_char: int,
         summary_id: UUID,
         tag_id: UUID,
-        tag_instance_time: datetime,
+        tag_instance_time: str,
         time_precision: TimePrecision,
         session: Session,
     ) -> TagInstanceModel:
@@ -717,7 +717,7 @@ class Repository:
         self,
         session: Session,
         tag_id: UUID,
-        tag_instance_time: datetime,
+        tag_instance_time: str,
         time_precision: TimePrecision,
     ) -> int:
         """Given a tag, find the order belonging to a given time."""
@@ -812,7 +812,7 @@ class Repository:
 
     def get_time_and_precision_by_tags(
         self, session: Session, tag_ids: list[UUID]
-    ) -> tuple[datetime, TimePrecision]:
+    ) -> tuple[str, TimePrecision]:
         """Given a list of tag IDs, find the time and precision associated with them.
         Raises an exception when multiple are found.
         """

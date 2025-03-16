@@ -28,7 +28,7 @@ class TagRow(BaseModel):
 
 class CalendarDateRow(BaseModel):
     event_id: UUID
-    datetime: datetime
+    datetime: str
     calendar_model: str
     precision: Precision
 

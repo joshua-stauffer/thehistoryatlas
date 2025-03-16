@@ -121,14 +121,14 @@ def test_create_place(history_db):
 def test_create_time(history_db):
     time_model = TimeModel(
         id=uuid4(),
-        datetime=datetime(year=1685, month=3, day=21, tzinfo=timezone.utc),
+        datetime="+1685-03-21T00:00:00Z",
         calendar_model="http://www.wikidata.org/entity/Q1985727",
         precision=6,
     )
 
     with history_db.Session() as session:
         result_model = history_db.create_time(
-            session=session, **time_model.dict(exclude={"extra", "type"})
+            session=session, **time_model.model_dump(exclude={"extra", "type"})
         )
         session.commit()
 
