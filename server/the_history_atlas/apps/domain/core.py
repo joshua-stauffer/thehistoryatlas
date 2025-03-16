@@ -54,6 +54,9 @@ class Place(PlaceInput):
 
 
 class TimeInput(WikiDataEntity):
+    # times aren't guaranteed to have an ID in wikidata
+    wikidata_id: str | None
+    wikidata_url: str | None
     date: str
     precision: Precision
     calendar_model: str
