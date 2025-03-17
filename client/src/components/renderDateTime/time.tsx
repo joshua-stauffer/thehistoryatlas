@@ -55,7 +55,7 @@ export const dayMap = new Map([
 ]);
 
 export const renderDateTime = (date: CalendarDate) => {
-  const dateObject = new Date(date.datetime);
+  const dateObject = new Date(date.datetime.slice(1));
   switch (date.precision) {
     case 7:
       return renderCentury(dateObject);
