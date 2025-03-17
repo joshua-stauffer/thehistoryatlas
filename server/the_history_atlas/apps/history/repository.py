@@ -275,7 +275,7 @@ class Repository:
                     on tags.id = times.id
                     where tags.id = :tag_id
                 )
-                order by {order_by_clause}
+                order by times.datetime {order_by_clause}
                 limit 1;
             """
             ),
