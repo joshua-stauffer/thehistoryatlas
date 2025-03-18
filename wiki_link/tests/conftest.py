@@ -6,7 +6,7 @@ import pytest
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.event_factories.event_factory import Query
-from wiki_service.event_factories.q_numbers import DATE_OF_BIRTH
+from wiki_service.event_factories.q_numbers import DATE_OF_BIRTH, DATE_OF_DEATH
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     Entity,
@@ -117,6 +117,63 @@ def eisenach_geo_location() -> GeoLocation:
             type="statement",
         ),
         geoshape=None,
+    )
+
+
+@pytest.fixture
+def leipzig_geo_location() -> GeoLocation:
+    return GeoLocation(
+        coordinates=CoordinateLocation(
+            id="Q1022$COORDINATE_ID",
+            rank="normal",
+            type="statement",
+            snaktype="value",
+            property="P625",
+            hash="some_hash",
+            latitude=51.3397,
+            longitude=12.3731,
+            altitude=None,
+            precision=0.0001,
+            globe="http://www.wikidata.org/entity/Q2"
+        ),
+        geoshape=None
+    )
+
+
+@pytest.fixture
+def bach_entity_death_precision_10(bach_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(bach_json_result["entities"]["Q1339"])
+    time_claim = next(
+        claim
+        for claim in entity.claims[DATE_OF_DEATH]
+        if claim["mainsnak"]["property"] == DATE_OF_DEATH
+    )
+    time_claim["mainsnak"]["datavalue"]["value"]["precision"] = 10
+    return entity
+
+
+@pytest.fixture
+def bach_entity_death_precision_9(bach_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(bach_json_result["entities"]["Q1339"])
+    time_claim = next(
+        claim
+        for claim in entity.claims[DATE_OF_DEATH]
+        if claim["mainsnak"]["property"] == DATE_OF_DEATH
+    )
+    time_claim["mainsnak"]["datavalue"]["value"]["precision"] = 9
+    return entity
+
+
+@pytest.fixture
+def einstein_place_of_death_json_result(root_dir):
+    with open(root_dir / "data/einstein_place_of_death_query.json", "r") as f:
+        return json.loads(f.read())
+
+
+@pytest.fixture
+def einstein_place_of_death(einstein_place_of_death_json_result) -> Entity:
+    return WikiDataQueryService.build_entity(
+        einstein_place_of_death_json_result["entities"]["Q1345"]
     )
 
 

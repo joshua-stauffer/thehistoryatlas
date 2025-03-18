@@ -1,0 +1,46 @@
+{
+    "entities": {
+        "Q1345": {
+            "id": "Q1345",
+            "pageid": 1234,
+            "ns": 0,
+            "title": "Q1345",
+            "lastrevid": 1234567890,
+            "modified": "2024-03-21T00:00:00Z",
+            "type": "item",
+            "labels": {
+                "en": {
+                    "language": "en",
+                    "value": "Princeton"
+                }
+            },
+            "descriptions": {},
+            "aliases": {},
+            "claims": {
+                "P625": [
+                    {
+                        "id": "Q1345$COORDINATE_ID",
+                        "type": "statement",
+                        "rank": "normal",
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P625",
+                            "hash": "some_hash",
+                            "datavalue": {
+                                "value": {
+                                    "latitude": 40.3573,
+                                    "longitude": -74.6672,
+                                    "altitude": null,
+                                    "precision": 0.0001,
+                                    "globe": "http://www.wikidata.org/entity/Q2"
+                                },
+                                "type": "globecoordinate"
+                            }
+                        }
+                    }
+                ]
+            },
+            "sitelinks": {}
+        }
+    }
+} 
