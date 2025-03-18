@@ -1,3 +1,4 @@
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -222,6 +223,10 @@ class Database:
                 )
                 session.add(row)
             else:
+                if errors:
+                    errors_dict = {"errors": json.dumps(errors)}
+                else:
+                    errors_dict = {}
                 session.execute(
                     text(
                         """
@@ -236,8 +241,8 @@ class Database:
                         "wiki_id": wiki_id,
                         "factory_label": factory_label,
                         "factory_version": factory_version,
-                        "errors": errors or {},
                         "updated_at": datetime.now(timezone.utc),
+                        **errors_dict,
                     },
                 )
 
