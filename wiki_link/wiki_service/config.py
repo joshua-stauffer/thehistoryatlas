@@ -1,11 +1,9 @@
 import os
 
-from the_history_atlas.apps.config import Config
 
-
-class WikiServiceConfig(Config):
+class WikiServiceConfig:
     def __init__(self):
-        super().__init__()
+        self.DB_URI = os.environ.get("THA_DB_URI")
         self.WIKIDATA_SEARCH_LIMIT = 10
         self.WIKIDATA_SPARQL_URL = "https://query.wikidata.org/sparql"
         self.USER_ID = "a5749422-65c1-4ce5-a582-7b08c3e71de6"
@@ -13,5 +11,3 @@ class WikiServiceConfig(Config):
         self.password = os.environ.get("WIKILINK_PASSWORD")
         self.base_url = os.environ.get("WIKILINK_BASE_URL")
         self.server_base_url = os.environ.get("SERVER_BASE_URL", "localhost:8000")
-        # if not all([self.base_url, self.username, self.password]):
-        #     raise EnvironmentError("Missing environment variables")
