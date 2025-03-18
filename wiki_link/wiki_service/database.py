@@ -2,10 +2,9 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional, List
-from uuid import UUID
 
 from sqlalchemy import create_engine
-from sqlalchemy import select, and_
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -204,16 +203,16 @@ class Database:
             errors: Optional dictionary of errors encountered during creation
         """
         with Session(self._engine, future=True) as session:
-            row = (
-                session.query(CreatedEvents)
-                .filter(
-                    and_(
-                        CreatedEvents.wiki_id == wiki_id,
-                        CreatedEvents.factory_label == factory_label,
-                    )
-                )
-                .one_or_none()
-            )
+            row = session.execute(
+                text(
+                    """
+                        select factory_version, errors from created_events
+                        where wiki_id = :wiki_id
+                        and factory_label = :factory_label
+                    """
+                ),
+                {"wiki_id": wiki_id, "factory_label": factory_label},
+            ).one_or_none()
             if row is None:
                 row = CreatedEvents(
                     wiki_id=wiki_id,
@@ -221,12 +220,27 @@ class Database:
                     factory_version=factory_version,
                     errors=errors or {},
                 )
+                session.add(row)
             else:
-                row.factory_version = factory_version
-                row.errors = errors or {}
-                row.updated_at = datetime.now(timezone.utc)
+                session.execute(
+                    text(
+                        """
+                        update created_events
+                        set (factory_version, errors, updated_at)
+                        from (:factory_version, :errors, :updated_at)
+                        where wiki_id = :wiki_id
+                        and factory_label = :factory_label;
+                    """
+                    ),
+                    {
+                        "wiki_id": wiki_id,
+                        "factory_label": factory_label,
+                        "factory_version": factory_version,
+                        "errors": errors or {},
+                        "updated_at": datetime.now(timezone.utc),
+                    },
+                )
 
-            session.add(row)
             session.commit()
 
     def event_exists(
@@ -244,15 +258,23 @@ class Database:
             bool: True if a matching row exists, False otherwise
         """
         with Session(self._engine, future=True) as session:
-            row = (
-                session.query(CreatedEvents)
-                .filter(
-                    CreatedEvents.wiki_id == wiki_id,
-                    CreatedEvents.factory_label == factory_label,
-                    CreatedEvents.factory_version == factory_version,
-                )
-                .one_or_none()
-            )
+            row = session.execute(
+                text(
+                    """
+                        select * from created_events c
+                        where (
+                            c.wiki_id = :wiki_id
+                            and c.factory_label = :factory_label
+                            and c.factory_version = :factory_version
+                        );
+                    """
+                ),
+                {
+                    "wiki_id": wiki_id,
+                    "factory_label": factory_label,
+                    "factory_version": factory_version,
+                },
+            ).one_or_none()
             return row is not None
 
     @classmethod
