@@ -24,5 +24,5 @@ jobs:
           sleep 10  # Wait for database to be ready
       - name: Test Wiki Service
         env:
-          THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
+          TEST_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
         run: docker compose -f wiki_link/test_cluster.yaml up wiki --exit-code-from wiki
