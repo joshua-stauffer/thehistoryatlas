@@ -5,7 +5,7 @@ from typing import Optional, List
 from uuid import UUID
 
 from sqlalchemy import create_engine
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
@@ -206,7 +206,12 @@ class Database:
         with Session(self._engine, future=True) as session:
             row = (
                 session.query(CreatedEvents)
-                .filter(CreatedEvents.wiki_id == wiki_id)
+                .filter(
+                    and_(
+                        CreatedEvents.wiki_id == wiki_id,
+                        CreatedEvents.factory_label == factory_label,
+                    )
+                )
                 .one_or_none()
             )
             if row is None:
