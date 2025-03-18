@@ -25,8 +25,7 @@ services:
 
     wiki:
         build:
-            context:
-                wiki_service
+            context: .
             dockerfile: Dockerfile
         depends_on:
             - db
