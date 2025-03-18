@@ -21,7 +21,6 @@ jobs:
           THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
         run: |
           docker compose -f wiki_link/test_cluster.yaml up db provisioner -d
-          sleep 10  # Wait for database to be ready
       - name: Test Wiki Service
         env:
           TEST_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
