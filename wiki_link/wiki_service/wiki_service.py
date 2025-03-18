@@ -2,7 +2,7 @@ from logging import getLogger
 from datetime import datetime, timezone
 
 from wiki_service.config import WikiServiceConfig
-from wiki_service.database import Database
+from wiki_service.database import Database, Item
 from wiki_service.event_factories.event_factory import get_event_factories, EventFactory
 from wiki_service.rest_client import RestClient, RestClientError
 from wiki_service.utils import get_current_time
@@ -85,7 +85,7 @@ class WikiService:
                 break
 
             try:
-                self.build_events_from_person()
+                self.build_events_from_person(item=item)
                 self._database.remove_item_from_queue(wiki_id=item.wiki_id)
                 processed += 1
             except Exception as e:
@@ -94,11 +94,7 @@ class WikiService:
 
         log.info(f"Processed {processed} people successfully")
 
-    def build_events_from_person(self):
-        item = self._database.get_oldest_item_from_queue()
-        if item is None:
-            log.info("WikiQueue is empty.")
-            return
+    def build_events_from_person(self, item: Item) -> None:
         log.info(f"Processing entity: {item}")
         try:
             entity = self._query.get_entity(id=item.wiki_id)
@@ -110,11 +106,15 @@ class WikiService:
                 )
                 return
             event_factories = get_event_factories(entity=entity, query=self._query)
+            english_label = entity.labels.get("en")
+            if english_label:
+                label = english_label.value
+            else:
+                label = f"Unknown label ({entity.title})"
+
             try:
                 for event_factory in event_factories:
-                    self._create_wiki_event(event_factory, item.wiki_id, entity.title)
-                # Remove from queue only after all events are successfully created
-                self._database.remove_item_from_queue(wiki_id=item.wiki_id)
+                    self._create_wiki_event(event_factory, item.wiki_id, label)
             except RestClientError as e:
                 self._database.report_queue_error(
                     wiki_id=item.wiki_id,
@@ -141,7 +141,16 @@ class WikiService:
         self, event_factory: EventFactory, wiki_id: str, entity_title: str
     ) -> None:
         if not event_factory.entity_has_event():
-            log.info(f"no event found for wiki_id: {wiki_id}")
+            log.info(f"{event_factory.label} has no event for wiki_id: {wiki_id}")
+            return
+        elif self._database.event_exists(
+            wiki_id=wiki_id,
+            factory_label=event_factory.label,
+            factory_version=event_factory.version,
+        ):
+            log.info(
+                f"{event_factory.label} event already processed for wiki_id: {wiki_id}"
+            )
             return
 
         try:
