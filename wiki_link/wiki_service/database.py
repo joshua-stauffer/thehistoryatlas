@@ -223,26 +223,23 @@ class Database:
                 )
                 session.add(row)
             else:
-                if errors:
-                    errors_dict = {"errors": json.dumps(errors)}
-                else:
-                    errors_dict = {}
                 session.execute(
                     text(
                         """
                         update created_events
-                        set (factory_version, errors, updated_at)
-                        from (:factory_version, :errors, :updated_at)
+                        set factory_version = :factory_version,
+                            errors = :errors,
+                            updated_at = :updated_at
                         where wiki_id = :wiki_id
                         and factory_label = :factory_label;
-                    """
+                        """
                     ),
                     {
                         "wiki_id": wiki_id,
                         "factory_label": factory_label,
                         "factory_version": factory_version,
+                        "errors": json.dumps(errors) if errors else json.dumps({}),
                         "updated_at": datetime.now(timezone.utc),
-                        **errors_dict,
                     },
                 )
 
@@ -266,12 +263,10 @@ class Database:
             row = session.execute(
                 text(
                     """
-                        select * from created_events c
-                        where (
-                            c.wiki_id = :wiki_id
-                            and c.factory_label = :factory_label
-                            and c.factory_version = :factory_version
-                        );
+                        select 1 from created_events
+                        where wiki_id = :wiki_id
+                        and factory_label = :factory_label
+                        and factory_version = :factory_version;
                     """
                 ),
                 {
