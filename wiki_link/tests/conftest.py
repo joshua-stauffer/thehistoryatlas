@@ -43,7 +43,7 @@ def einstein_entity(einstein_json_result) -> Entity:
 
 @pytest.fixture
 def einstein_place_of_birth_json_result(root_dir):
-    with open(root_dir / "data/einstein_place_of_birtH_query.json", "r") as f:
+    with open(root_dir / "data/einstein_place_of_birth_query.json", "r") as f:
         return json.loads(f.read())
 
 
