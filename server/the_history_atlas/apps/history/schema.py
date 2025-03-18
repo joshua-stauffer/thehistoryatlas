@@ -12,7 +12,7 @@ class Summary(Base):
 
     __tablename__ = "summaries"
     id = Column(UUID(as_uuid=True), primary_key=True)
-    text = Column(VARCHAR)
+    text = Column(VARCHAR, unique=True)
 
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
