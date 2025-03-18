@@ -21,6 +21,7 @@ from wiki_service.wikidata_query_service import (
 
 logger = logging.getLogger(__name__)
 
+
 @register_event_factory
 class PersonDied(EventFactory):
     @property
@@ -112,4 +113,4 @@ class PersonDied(EventFactory):
             case 10 | 9:  # month or year
                 return f"{person} died in {time} in {place}."
             case _:
-                raise UnprocessableEventError(f"Unexpected time precision: {precision}") 
+                raise UnprocessableEventError(f"Unexpected time precision: {precision}")

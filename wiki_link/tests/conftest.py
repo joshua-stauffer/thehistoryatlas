@@ -134,9 +134,9 @@ def leipzig_geo_location() -> GeoLocation:
             longitude=12.3731,
             altitude=None,
             precision=0.0001,
-            globe="http://www.wikidata.org/entity/Q2"
+            globe="http://www.wikidata.org/entity/Q2",
         ),
-        geoshape=None
+        geoshape=None,
     )
 
 

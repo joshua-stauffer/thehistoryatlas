@@ -56,8 +56,7 @@ class TestPersonDied:
         factory = PersonDied(entity=bach_entity_death_precision_10, query=mock_query)
         wiki_event = factory.create_wiki_event()
         assert (
-            wiki_event.summary
-            == "Johann Sebastian Bach died in July 1750 in Leipzig."
+            wiki_event.summary == "Johann Sebastian Bach died in July 1750 in Leipzig."
         )
 
     def test_summary_precision_9(
@@ -72,10 +71,7 @@ class TestPersonDied:
         )
         factory = PersonDied(entity=bach_entity_death_precision_9, query=mock_query)
         wiki_event = factory.create_wiki_event()
-        assert (
-            wiki_event.summary
-            == "Johann Sebastian Bach died in 1750 in Leipzig."
-        )
+        assert wiki_event.summary == "Johann Sebastian Bach died in 1750 in Leipzig."
 
     def test_einstein(
         self, einstein_entity: Entity, einstein_place_of_death: Entity, config
@@ -86,4 +82,4 @@ class TestPersonDied:
         assert (
             wiki_event.summary
             == "On April 18, 1955, Albert Einstein died in Princeton."
-        ) 
+        )
