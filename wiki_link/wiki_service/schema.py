@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import Column
@@ -35,7 +36,8 @@ class WikiQueue(Base):
 
 class CreatedEvents(Base):
     __tablename__ = "created_events"
-    wiki_id = Column(VARCHAR, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    wiki_id = Column(VARCHAR, nullable=False)
     factory_label = Column(VARCHAR, nullable=False)
     factory_version = Column(INTEGER, nullable=False)
     errors = Column(JSONB, default={})
