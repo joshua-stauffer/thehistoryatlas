@@ -1,4 +1,4 @@
-name: "Test Wiki Service"
+name: "Test Wiki Link"
 
 on:
   pull_request:
@@ -20,8 +20,8 @@ jobs:
           POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
           THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
         run: |
-          docker compose -f wiki_link/test_cluster.yaml up db provisioner -d
+          docker compose -f wiki_link/test_wiki_link.yaml up db provisioner -d
       - name: Test Wiki Service
         env:
           TEST_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
-        run: docker compose -f wiki_link/test_cluster.yaml up wiki --exit-code-from wiki
+        run: docker compose -f wiki_link/test_wiki_link.yaml up wiki --exit-code-from wiki

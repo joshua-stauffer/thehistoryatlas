@@ -1,4 +1,4 @@
-name: "Test Services"
+name: "Test Server"
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ jobs:
       -   name: Setup Test Environment
           env:
             POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-          run: docker compose -f test_cluster.yaml up db provisioner -d
+          run: docker compose -f test_server.yaml up db provisioner -d
       -   name: Test Server
           env:
             THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
@@ -33,4 +33,4 @@ jobs:
             REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
             SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}
           run: |
-            docker compose -f test_cluster.yaml up server --exit-code-from server
+            docker compose -f test_server.yaml up server --exit-code-from server
