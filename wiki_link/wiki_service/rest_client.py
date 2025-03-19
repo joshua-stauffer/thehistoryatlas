@@ -1,4 +1,5 @@
 import requests
+import json
 from typing import List, Optional
 from uuid import UUID
 from datetime import datetime, timezone
@@ -36,13 +37,15 @@ class RestClient:
 
     def create_person(self, name: str, wikidata_id: str, wikidata_url: str) -> dict:
         """Create a new person tag"""
+        data = {
+            "name": name,
+            "wikidata_id": wikidata_id,
+            "wikidata_url": wikidata_url,
+        }
         response = self._session.post(
             f"{self._base_url}/wikidata/people",
-            json={
-                "name": name,
-                "wikidata_id": wikidata_id,
-                "wikidata_url": wikidata_url,
-            },
+            data=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8"},
         )
         if not response.ok:
             raise RestClientError(f"Failed to create person: {response.text}")
@@ -57,15 +60,17 @@ class RestClient:
         longitude: float,
     ) -> dict:
         """Create a new place tag"""
+        data = {
+            "name": name,
+            "wikidata_id": wikidata_id,
+            "wikidata_url": wikidata_url,
+            "latitude": latitude,
+            "longitude": longitude,
+        }
         response = self._session.post(
             f"{self._base_url}/wikidata/places",
-            json={
-                "name": name,
-                "wikidata_id": wikidata_id,
-                "wikidata_url": wikidata_url,
-                "latitude": latitude,
-                "longitude": longitude,
-            },
+            data=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8"},
         )
         if not response.ok:
             raise RestClientError(f"Failed to create place: {response.text}")
@@ -81,16 +86,18 @@ class RestClient:
         precision: int,
     ) -> dict:
         """Create a new time tag"""
+        data = {
+            "name": name,
+            "wikidata_id": wikidata_id,
+            "wikidata_url": wikidata_url,
+            "date": date,
+            "calendar_model": calendar_model,
+            "precision": precision,
+        }
         response = self._session.post(
             f"{self._base_url}/wikidata/times",
-            json={
-                "name": name,
-                "wikidata_id": wikidata_id,
-                "wikidata_url": wikidata_url,
-                "date": date,
-                "calendar_model": calendar_model,
-                "precision": precision,
-            },
+            data=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8"},
         )
         if not response.ok:
             raise RestClientError(f"Failed to create time: {response.text}")
@@ -98,9 +105,11 @@ class RestClient:
 
     def create_event(self, summary: str, tags: List[dict], citation: dict) -> dict:
         """Create a new event"""
+        data = {"summary": summary, "tags": tags, "citation": citation}
         response = self._session.post(
             f"{self._base_url}/wikidata/events",
-            json={"summary": summary, "tags": tags, "citation": citation},
+            data=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8"},
         )
         if not response.ok:
             raise RestClientError(f"Failed to create event: {response.text}")

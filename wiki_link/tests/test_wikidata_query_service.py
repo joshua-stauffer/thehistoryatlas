@@ -1,4 +1,5 @@
 import pytest
+import os
 
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
@@ -9,6 +10,7 @@ from wiki_service.wikidata_query_service import (
     Property,
 )
 from wiki_service.types import WikiDataItem
+from wiki_service.config import WikiServiceConfig
 
 
 def test_query_person(config):
@@ -94,3 +96,75 @@ def test_get_label(config):
 
     label = service.get_label(id="Q1339", language="en")
     assert label == "Johann Sebastian Bach"
+
+
+def test_non_ascii_labels():
+    """Test that labels with non-ASCII characters are handled correctly"""
+    # Create a mock entity dictionary with non-ASCII characters
+    entity_dict = {
+        "id": "Q123",
+        "pageid": 123,
+        "ns": 0,
+        "title": "Test",
+        "lastrevid": 1234,
+        "modified": "2024-03-20T00:00:00Z",
+        "type": "item",
+        "labels": {
+            "es": {"language": "es", "value": "María Ruiz-Tagle"},
+            "ja": {"language": "ja", "value": "日本語"},
+        },
+        "descriptions": {},
+        "aliases": {},
+        "claims": {},
+        "sitelinks": {},
+    }
+
+    # Test the static method directly without needing a service instance
+    entity = WikiDataQueryService.build_entity(entity_dict)
+
+    # Verify that non-ASCII characters are preserved correctly
+    assert entity.labels["es"].value == "María Ruiz-Tagle"
+    assert entity.labels["ja"].value == "日本語"
+
+
+def test_non_ascii_labels_live_api(monkeypatch):
+    """Test that labels with non-ASCII characters are handled correctly when fetching from the live API"""
+    # Set up minimal environment for config
+    monkeypatch.setenv("THA_DB_URI", "")
+
+    # Q8605 is Simón Bolívar, a well-known historical figure with non-ASCII characters
+    service = WikiDataQueryService(WikiServiceConfig())
+    entity = service.get_entity(id="Q8605")
+
+    # Verify that Spanish name contains correct non-ASCII characters
+    assert "Simón" in entity.labels["es"].value
+    assert "Bolívar" in entity.labels["es"].value
+
+
+def test_non_ascii_labels_unicode_escapes():
+    """Test that labels with Unicode escape sequences are handled correctly"""
+    # Create a mock entity dictionary with Unicode escape sequences
+    entity_dict = {
+        "id": "Q123",
+        "pageid": 123,
+        "ns": 0,
+        "title": "Test",
+        "lastrevid": 1234,
+        "modified": "2024-03-20T00:00:00Z",
+        "type": "item",
+        "labels": {
+            "es": {
+                "language": "es",
+                "value": "Mar\u00eda Ruiz-Tagle",  # This is how it appears in your system
+            }
+        },
+        "descriptions": {},
+        "aliases": {},
+        "claims": {},
+        "sitelinks": {},
+    }
+
+    entity = WikiDataQueryService.build_entity(entity_dict)
+
+    # Verify that the Unicode escape sequence is properly converted to the actual character
+    assert entity.labels["es"].value == "María Ruiz-Tagle"
