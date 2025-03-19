@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch
 import requests
 import json
+from uuid import UUID
 
 from wiki_service.rest_client import RestClient, RestClientError
 from wiki_service.config import WikiServiceConfig
@@ -213,4 +214,95 @@ def test_create_person_error_handling(mock_session, config):
             name="Test Person",
             wikidata_id="Q123",
             wikidata_url="http://example.com/Q123",
+        )
+
+
+def test_check_time_exists_found(mock_session, config):
+    """Test checking if a time exists when it does exist in the database"""
+    client = RestClient(config)
+
+    # Reset the mock to clear the auth call
+    mock_session.reset_mock()
+    mock_session.post.return_value.ok = True
+
+    # Mock response with a UUID indicating time was found
+    time_id = "550e8400-e29b-41d4-a716-446655440000"
+    mock_session.post.return_value.json.return_value = {"id": time_id}
+
+    # Check if a time exists
+    datetime = "2024-03-19T00:00:00Z"
+    calendar_model = "http://www.wikidata.org/entity/Q1985727"
+    precision = 11
+
+    result = client.check_time_exists(
+        datetime=datetime,
+        calendar_model=calendar_model,
+        precision=precision,
+    )
+
+    # Verify the request was made with correct data
+    mock_session.post.assert_called_once()
+    call_args = mock_session.post.call_args
+
+    # Check that the URL is correct
+    assert call_args[0][0] == "http://test.example.com/times/exist"
+
+    # Parse the JSON to verify structure
+    data = json.loads(call_args[1]["data"].decode("utf-8"))
+    assert data["datetime"] == datetime
+    assert data["calendar_model"] == calendar_model
+    assert data["precision"] == precision
+
+    # Verify the result is the expected UUID
+    assert isinstance(result, UUID)
+    assert str(result) == time_id
+
+
+def test_check_time_exists_not_found(mock_session, config):
+    """Test checking if a time exists when it does not exist in the database"""
+    client = RestClient(config)
+
+    # Reset the mock to clear the auth call
+    mock_session.reset_mock()
+    mock_session.post.return_value.ok = True
+
+    # Mock response with a null ID indicating time was not found
+    mock_session.post.return_value.json.return_value = {"id": None}
+
+    # Check if a time exists
+    datetime = "2024-03-19T00:00:00Z"
+    calendar_model = "http://www.wikidata.org/entity/Q1985727"
+    precision = 11
+
+    result = client.check_time_exists(
+        datetime=datetime,
+        calendar_model=calendar_model,
+        precision=precision,
+    )
+
+    # Verify the request was made with correct data
+    mock_session.post.assert_called_once()
+
+    # Verify the result is None
+    assert result is None
+
+
+def test_check_time_exists_error_handling(mock_session, config):
+    """Test error handling when checking time existence fails"""
+    client = RestClient(config)
+
+    # Reset the mock to clear the auth call
+    mock_session.reset_mock()
+    mock_session.post.return_value.ok = False
+    mock_session.post.return_value.text = "Error checking time existence"
+
+    # Try to check if a time exists, expect an error
+    with pytest.raises(
+        RestClientError,
+        match="Failed to check time existence: Error checking time existence",
+    ):
+        client.check_time_exists(
+            datetime="2024-03-19T00:00:00Z",
+            calendar_model="http://www.wikidata.org/entity/Q1985727",
+            precision=11,
         )

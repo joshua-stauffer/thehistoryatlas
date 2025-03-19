@@ -103,6 +103,41 @@ class RestClient:
             raise RestClientError(f"Failed to create time: {response.text}")
         return response.json()
 
+    def check_time_exists(
+        self,
+        datetime: str,
+        calendar_model: str,
+        precision: int,
+    ) -> Optional[UUID]:
+        """Check if a time with the given attributes exists in the database.
+
+        Args:
+            datetime: The datetime string to check
+            calendar_model: The calendar model to check
+            precision: The time precision to check
+
+        Returns:
+            UUID if a matching time exists, None otherwise
+
+        Raises:
+            RestClientError: If the API request fails
+        """
+        data = {
+            "datetime": datetime,
+            "calendar_model": calendar_model,
+            "precision": precision,
+        }
+        response = self._session.post(
+            f"{self._base_url}/times/exist",
+            data=json.dumps(data, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8"},
+        )
+        if not response.ok:
+            raise RestClientError(f"Failed to check time existence: {response.text}")
+
+        result = response.json()
+        return UUID(result["id"]) if result["id"] else None
+
     def create_event(self, summary: str, tags: List[dict], citation: dict) -> dict:
         """Create a new event"""
         data = {"summary": summary, "tags": tags, "citation": citation}
