@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from unittest.mock import Mock, patch, ANY, create_autospec
 from datetime import datetime, timezone
+from uuid import UUID
 
 import pytest
 
@@ -13,9 +14,17 @@ from wiki_service.wikidata_query_service import (
     Property,
     WikiDataQueryServiceError,
     GeoLocation,
+    TimeDefinition,
+    CoordinateLocation,
 )
 from wiki_service.config import WikiServiceConfig
-from wiki_service.event_factories.event_factory import EventFactory
+from wiki_service.event_factories.event_factory import (
+    EventFactory,
+    WikiEvent,
+    PersonWikiTag,
+    PlaceWikiTag,
+    TimeWikiTag,
+)
 from wiki_service.rest_client import RestClient, RestClientError
 
 
@@ -835,24 +844,27 @@ class TestBuildEvents:
         place_tag = Mock()
         place_tag.wiki_id = "Q456"
         place_tag.name = "Test Place"
-        place_tag.start_char = 11
-        place_tag.stop_char = 20
-        place_tag.location = Mock()
-        place_tag.location.coordinates = Mock()
-        place_tag.location.coordinates.latitude = 0
-        place_tag.location.coordinates.longitude = 0
+        place_tag.start_char = 12
+        place_tag.stop_char = 22
+        location = Mock()
+        coordinate_location = Mock()
+        coordinate_location.latitude = 37.7749
+        coordinate_location.longitude = -122.4194
+        location.coordinates = coordinate_location
+        place_tag.location = location
         mock_event.place_tag = place_tag
 
-        # Create time tag
-        time_tag = Mock()
-        time_tag.wiki_id = "Q789"
+        # Set up time tag WITHOUT a WikiData ID (this will trigger the check_time_exists path)
+        time_tag = create_autospec(TimeWikiTag)
+        time_tag.wiki_id = None
         time_tag.name = "Test Time"
-        time_tag.start_char = 21
-        time_tag.stop_char = 30
-        time_tag.time_definition = Mock()
-        time_tag.time_definition.time = "2024-01-01"
-        time_tag.time_definition.calendarmodel = "gregorian"
-        time_tag.time_definition.precision = "day"
+        time_tag.start_char = 24
+        time_tag.stop_char = 33
+        time_definition = create_autospec(TimeDefinition)
+        time_definition.time = "2024-03-19T00:00:00Z"
+        time_definition.calendarmodel = "http://www.wikidata.org/entity/Q1985727"
+        time_definition.precision = 11
+        time_tag.time_definition = time_definition
         mock_event.time_tag = time_tag
 
         mock_event.summary = "Test summary"
@@ -889,8 +901,8 @@ class TestBuildEvents:
                 name="Test Place",
                 wikidata_id="Q456",
                 wikidata_url="https://www.wikidata.org/wiki/Q456",
-                latitude=0,
-                longitude=0,
+                latitude=37.7749,
+                longitude=-122.4194,
             )
             mock_rest_client.create_time.assert_called_once_with(
                 name="Test Time",
@@ -958,6 +970,127 @@ class TestBuildEvents:
             errors="WikiData query had an error: API error",
         )
         mock_database.remove_item_from_queue.assert_not_called()
+
+    def test_build_events_reuses_existing_time(
+        self,
+        wiki_service,
+        mock_database,
+        mock_wikidata_service,
+        mock_event_factory,
+    ):
+        # Arrange
+        wiki_id = "Q110003"
+        entity_title = "Fritz Mueller"
+        item_mock = create_autospec(Item)
+        item_mock.wiki_id = wiki_id
+        item_mock.entity_type = "PERSON"
+
+        entity_mock = create_autospec(Entity)
+        entity_mock.id = wiki_id
+        entity_mock.title = wiki_id
+        entity_mock.labels = {"en": Property(language="en", value=entity_title)}
+
+        # Set up the mock event factory
+        mock_event_factory.entity_has_event.return_value = True
+        mock_event_factory.version = 1
+        mock_event_factory.label = "test_factory"
+
+        # Create a mock event with a time tag that doesn't have a WikiData ID
+        mock_event = create_autospec(WikiEvent)
+        mock_event.summary = "Test event summary"
+
+        # Set up people tags
+        person_tag = create_autospec(PersonWikiTag)
+        person_tag.wiki_id = "Q123"
+        person_tag.name = "Test Person"
+        person_tag.start_char = 0
+        person_tag.stop_char = 10
+        mock_event.people_tags = [person_tag]
+
+        # Set up place tag
+        place_tag = create_autospec(PlaceWikiTag)
+        place_tag.wiki_id = "Q456"
+        place_tag.name = "Test Place"
+        place_tag.start_char = 12
+        place_tag.stop_char = 22
+        location = create_autospec(GeoLocation)
+        coordinate_location = create_autospec(CoordinateLocation)
+        coordinate_location.latitude = 37.7749
+        coordinate_location.longitude = -122.4194
+        location.coordinates = coordinate_location
+        place_tag.location = location
+        mock_event.place_tag = place_tag
+
+        # Set up time tag WITHOUT a WikiData ID (this will trigger the check_time_exists path)
+        time_tag = create_autospec(TimeWikiTag)
+        time_tag.wiki_id = None
+        time_tag.name = "Test Time"
+        time_tag.start_char = 24
+        time_tag.stop_char = 33
+        time_definition = create_autospec(TimeDefinition)
+        time_definition.time = "2024-03-19T00:00:00Z"
+        time_definition.calendarmodel = "http://www.wikidata.org/entity/Q1985727"
+        time_definition.precision = 11
+        time_tag.time_definition = time_definition
+        mock_event.time_tag = time_tag
+
+        mock_event_factory.create_wiki_event.return_value = mock_event
+
+        # Create a fresh mock for RestClient that won't be affected by the fixture setup
+        mock_rest_client = Mock(spec=RestClient)
+
+        # Replace the REST client in WikiService with our custom mock
+        wiki_service._rest_client = mock_rest_client
+
+        # Mock the get_event_factories function to return our mocked factory
+        with patch(
+            "wiki_service.wiki_service.get_event_factories"
+        ) as mock_get_factories:
+            mock_get_factories.return_value = [mock_event_factory]
+
+            # Mock that the database reports event doesn't exist
+            mock_database.event_exists.return_value = False
+
+            # Mock the WikiData query service to return our entity
+            mock_wikidata_service.get_entity.return_value = entity_mock
+
+            # Mock RestClient
+            # First return that no tags exist by their WikiData ID
+            mock_rest_client.get_tags.return_value = {"wikidata_ids": []}
+
+            # Mock that the time exists in the database when checked by attributes
+            existing_time_id = "550e8400-e29b-41d4-a716-446655440000"
+            mock_rest_client.check_time_exists.return_value = UUID(existing_time_id)
+
+            # Mock successful creation of person and place
+            mock_rest_client.create_person.return_value = {"id": "person-uuid"}
+            mock_rest_client.create_place.return_value = {"id": "place-uuid"}
+
+            # Mock successful event creation
+            mock_rest_client.create_event.return_value = {"id": "event-uuid"}
+
+            # Act
+            wiki_service.build_events_from_person(item=item_mock)
+
+            # Assert
+            # Verify check_time_exists was called with the right parameters
+            mock_rest_client.check_time_exists.assert_called_once_with(
+                datetime=time_definition.time,
+                calendar_model=time_definition.calendarmodel,
+                precision=time_definition.precision,
+            )
+
+            # Verify create_time was NOT called (since we found an existing time)
+            mock_rest_client.create_time.assert_not_called()
+
+            # Verify the event was created with the existing time ID
+            mock_rest_client.create_event.assert_called_once()
+            call_args = mock_rest_client.create_event.call_args
+
+            # Check the tag IDs in the event creation call
+            tags = call_args[1]["tags"]
+            time_tag_in_call = next(tag for tag in tags if tag["name"] == "Test Time")
+            assert time_tag_in_call["id"] == existing_time_id
 
 
 def test_run_with_no_new_people(wiki_service, mock_database, mock_wikidata_service):

@@ -209,16 +209,25 @@ class WikiService:
                 else:
                     time_id = id_map[event.time_tag.wiki_id]
             else:
-                # Create time tag without WikiData ID
-                result = self._rest_client.create_time(
-                    name=event.time_tag.name,
-                    wikidata_id=None,
-                    wikidata_url=None,
-                    date=event.time_tag.time_definition.time,
+                # Check if the time already exists
+                time_exists = self._rest_client.check_time_exists(
+                    datetime=event.time_tag.time_definition.time,
                     calendar_model=event.time_tag.time_definition.calendarmodel,
                     precision=event.time_tag.time_definition.precision,
                 )
-                time_id = result["id"]
+                if time_exists:
+                    time_id = str(time_exists)
+                else:
+                    # Create time tag without WikiData ID
+                    result = self._rest_client.create_time(
+                        name=event.time_tag.name,
+                        wikidata_id=None,
+                        wikidata_url=None,
+                        date=event.time_tag.time_definition.time,
+                        calendar_model=event.time_tag.time_definition.calendarmodel,
+                        precision=event.time_tag.time_definition.precision,
+                    )
+                    time_id = result["id"]
 
             # Create event tags
             tags = []
