@@ -1132,3 +1132,80 @@ def test_create_place_with_unicode(
         {"tag_id": created_place.id},
     ).one()
     assert result.name == "São Paulo"
+
+
+class TestTimeExists:
+    def test_time_exists_success_time_exists(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Test successful response when time exists in the database."""
+        # First create a time
+        time = create_time(client, auth_headers)
+
+        # Then check if it exists
+        request_data = {
+            "datetime": time.date,
+            "calendar_model": time.calendar_model,
+            "precision": time.precision,
+        }
+
+        response = client.post(
+            "/api/time/exists", json=request_data, headers=auth_headers
+        )
+
+        # Assert response
+        assert response.status_code == 200, f"Response: {response.text}"
+        response_data = response.json()
+        assert "id" in response_data
+        assert response_data["id"] == str(time.id)
+
+    def test_time_exists_success_time_not_exists(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Test successful response when time does not exist in the database."""
+        # Use a datetime that likely doesn't exist in the database
+        request_data = {
+            "datetime": "3000-01-01",
+            "calendar_model": "https://www.wikidata.org/wiki/Q12138",
+            "precision": 11,
+        }
+
+        response = client.post(
+            "/api/time/exists", json=request_data, headers=auth_headers
+        )
+
+        # Assert response
+        assert response.status_code == 200, f"Response: {response.text}"
+        response_data = response.json()
+        assert "id" in response_data
+        assert response_data["id"] is None
+
+    def test_time_exists_failure_no_authentication(self, client: TestClient) -> None:
+        """Test failure when no authentication is provided."""
+        request_data = {
+            "datetime": "2023-01-01",
+            "calendar_model": "https://www.wikidata.org/wiki/Q12138",
+            "precision": 11,
+        }
+
+        response = client.post("/api/time/exists", json=request_data)
+
+        # Assert response
+        assert response.status_code == 401, f"Response: {response.text}"
+
+    def test_time_exists_failure_invalid_request(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Test failure when request data is invalid."""
+        # Missing required fields
+        request_data = {
+            "datetime": "2023-01-01"
+            # Missing calendar_model and precision
+        }
+
+        response = client.post(
+            "/api/time/exists", json=request_data, headers=auth_headers
+        )
+
+        # Assert response
+        assert response.status_code == 422, f"Response: {response.text}"

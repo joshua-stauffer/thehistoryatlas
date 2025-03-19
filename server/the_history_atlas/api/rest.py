@@ -231,7 +231,7 @@ def register_rest_endpoints(
     ) -> LoginResponse:
         return login_handler(form_data=form_data, apps=apps)
 
-    @fastapi_app.post("/api/time/exists", response_model=TimeExistsResponse)
+    @fastapi_app.post("/times/exist", response_model=TimeExistsResponse)
     def check_time_exists(
         request: TimeExistsRequest,
         apps: Apps,
