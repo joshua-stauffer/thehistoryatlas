@@ -19,24 +19,21 @@
             "claims": {
                 "P625": [
                     {
-                        "id": "Q1345$COORDINATE_ID",
-                        "type": "statement",
-                        "rank": "normal",
                         "mainsnak": {
                             "snaktype": "value",
                             "property": "P625",
-                            "hash": "some_hash",
                             "datavalue": {
                                 "value": {
                                     "latitude": 40.3573,
                                     "longitude": -74.6672,
-                                    "altitude": null,
                                     "precision": 0.0001,
                                     "globe": "http://www.wikidata.org/entity/Q2"
                                 },
                                 "type": "globecoordinate"
                             }
-                        }
+                        },
+                        "type": "statement",
+                        "rank": "normal"
                     }
                 ]
             },
