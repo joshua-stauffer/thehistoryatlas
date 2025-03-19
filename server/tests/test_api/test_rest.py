@@ -1064,3 +1064,71 @@ class TestSampleData:
                 client=client,
                 auth_headers=auth_headers,
             )
+
+
+def test_create_person_with_unicode(
+    client: TestClient, auth_headers: dict, db_session: Session
+) -> None:
+    """Test that a person with Unicode characters in their name is correctly persisted."""
+    input = WikiDataPersonInput(
+        wikidata_id="Q34660",
+        wikidata_url="https://www.wikidata.org/wiki/Q34660",
+        name="José Carreras",  # Unicode name with accented characters
+    )
+
+    # Create the person
+    response = client.post(
+        "/wikidata/people", data=input.model_dump_json(), headers=auth_headers
+    )
+    assert response.status_code == 200, response.text
+    created_person = WikiDataPersonOutput.model_validate(response.json())
+
+    # Verify the person was created with correct name in database
+    result = db_session.execute(
+        text(
+            """
+            SELECT names.name 
+            FROM names 
+            JOIN tag_names ON names.id = tag_names.name_id 
+            JOIN tags ON tags.id = tag_names.tag_id 
+            WHERE tags.id = :tag_id
+        """
+        ),
+        {"tag_id": created_person.id},
+    ).one()
+    assert result.name == "José Carreras"
+
+
+def test_create_place_with_unicode(
+    client: TestClient, auth_headers: dict, db_session: Session
+) -> None:
+    """Test that a place with Unicode characters in its name is correctly persisted."""
+    input = WikiDataPlaceInput(
+        wikidata_id="Q1726",
+        wikidata_url="https://www.wikidata.org/wiki/Q1726",
+        name="São Paulo",  # Unicode name with accented characters
+        latitude=-23.550520,
+        longitude=-46.633308,
+    )
+
+    # Create the place
+    response = client.post(
+        "/wikidata/places", data=input.model_dump_json(), headers=auth_headers
+    )
+    assert response.status_code == 200, response.text
+    created_place = WikiDataPlaceOutput.model_validate(response.json())
+
+    # Verify the place was created with correct name in database
+    result = db_session.execute(
+        text(
+            """
+            SELECT names.name 
+            FROM names 
+            JOIN tag_names ON names.id = tag_names.name_id 
+            JOIN tags ON tags.id = tag_names.tag_id 
+            WHERE tags.id = :tag_id
+        """
+        ),
+        {"tag_id": created_place.id},
+    ).one()
+    assert result.name == "São Paulo"
