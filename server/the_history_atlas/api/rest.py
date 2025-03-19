@@ -6,7 +6,10 @@ from uuid import uuid4, UUID
 
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 
-from the_history_atlas.api.handlers.history import get_history_handler
+from the_history_atlas.api.handlers.history import (
+    get_history_handler,
+    check_time_exists_handler,
+)
 from the_history_atlas.api.handlers.tags import (
     create_person_handler,
     create_place_handler,
@@ -23,6 +26,8 @@ from the_history_atlas.api.types.history import (
     HistoryEvent,
     Story,
     Point,
+    TimeExistsRequest,
+    TimeExistsResponse,
 )
 from the_history_atlas.api.types.tags import (
     WikiDataPersonOutput,
@@ -225,5 +230,13 @@ def register_rest_endpoints(
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()], apps: Apps
     ) -> LoginResponse:
         return login_handler(form_data=form_data, apps=apps)
+
+    @fastapi_app.post("/api/time/exists", response_model=TimeExistsResponse)
+    def check_time_exists(
+        request: TimeExistsRequest,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TimeExistsResponse:
+        return check_time_exists_handler(apps=apps, request=request)
 
     return fastapi_app

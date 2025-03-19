@@ -119,3 +119,24 @@ def convert_point_to_api(point: Point) -> api_types.Point:
     return api_types.Point(
         id=point.id, latitude=point.latitude, longitude=point.longitude, name=point.name
     )
+
+
+def check_time_exists_handler(
+    apps: AppManager,
+    request: api_types.TimeExistsRequest,
+) -> api_types.TimeExistsResponse:
+    """Check if a time exists in the database.
+
+    Args:
+        apps: The application manager
+        request: The request containing datetime, calendar_model, and precision
+
+    Returns:
+        TimeExistsResponse: Response containing the ID of the matching time if found, None otherwise
+    """
+    time_id = apps.history_app.check_time_exists(
+        datetime=request.datetime,
+        calendar_model=request.calendar_model,
+        precision=request.precision,
+    )
+    return api_types.TimeExistsResponse(id=time_id)
