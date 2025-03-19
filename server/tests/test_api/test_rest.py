@@ -1149,9 +1149,7 @@ class TestTimeExists:
             "precision": time.precision,
         }
 
-        response = client.post(
-            "/api/time/exists", json=request_data, headers=auth_headers
-        )
+        response = client.post("/times/exist", json=request_data, headers=auth_headers)
 
         # Assert response
         assert response.status_code == 200, f"Response: {response.text}"
@@ -1170,9 +1168,7 @@ class TestTimeExists:
             "precision": 11,
         }
 
-        response = client.post(
-            "/api/time/exists", json=request_data, headers=auth_headers
-        )
+        response = client.post("/times/exist", json=request_data, headers=auth_headers)
 
         # Assert response
         assert response.status_code == 200, f"Response: {response.text}"
@@ -1188,7 +1184,7 @@ class TestTimeExists:
             "precision": 11,
         }
 
-        response = client.post("/api/time/exists", json=request_data)
+        response = client.post("/times/exist", json=request_data)
 
         # Assert response
         assert response.status_code == 401, f"Response: {response.text}"
@@ -1203,9 +1199,7 @@ class TestTimeExists:
             # Missing calendar_model and precision
         }
 
-        response = client.post(
-            "/api/time/exists", json=request_data, headers=auth_headers
-        )
+        response = client.post("/times/exist", json=request_data, headers=auth_headers)
 
         # Assert response
         assert response.status_code == 422, f"Response: {response.text}"

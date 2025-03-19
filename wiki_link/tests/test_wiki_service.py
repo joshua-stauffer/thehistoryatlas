@@ -854,17 +854,18 @@ class TestBuildEvents:
         place_tag.location = location
         mock_event.place_tag = place_tag
 
-        # Set up time tag WITHOUT a WikiData ID (this will trigger the check_time_exists path)
-        time_tag = create_autospec(TimeWikiTag)
-        time_tag.wiki_id = None
+        # Create time tag WITH a WikiData ID
+        time_tag = Mock()
+        time_tag.wiki_id = "Q789"
         time_tag.name = "Test Time"
         time_tag.start_char = 24
         time_tag.stop_char = 33
-        time_definition = create_autospec(TimeDefinition)
-        time_definition.time = "2024-03-19T00:00:00Z"
-        time_definition.calendarmodel = "http://www.wikidata.org/entity/Q1985727"
-        time_definition.precision = 11
-        time_tag.time_definition = time_definition
+        time_tag.time_definition = Mock()
+        time_tag.time_definition.time = "2024-01-01"
+        time_tag.time_definition.calendarmodel = (
+            "http://www.wikidata.org/entity/Q1985727"
+        )
+        time_tag.time_definition.precision = 11
         mock_event.time_tag = time_tag
 
         mock_event.summary = "Test summary"
@@ -909,8 +910,8 @@ class TestBuildEvents:
                 wikidata_id="Q789",
                 wikidata_url="https://www.wikidata.org/wiki/Q789",
                 date="2024-01-01",
-                calendar_model="gregorian",
-                precision="day",
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=11,
             )
             mock_rest_client.create_event.assert_called_once()
             mock_database.upsert_created_event.assert_called_once()
