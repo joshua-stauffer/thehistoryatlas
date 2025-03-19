@@ -257,7 +257,7 @@ class WikiDataQueryService:
             raise WikiDataQueryServiceError(
                 f"Query label request failed with {result.status_code}: {result.json()}"
             )
-        return result.text.strip('"')
+        return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     def get_geo_location(self, id: str) -> GeoLocation:
         entity = self.get_entity(id)
