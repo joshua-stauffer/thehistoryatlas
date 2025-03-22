@@ -22,7 +22,7 @@ class Source(BaseModel):
 
 
 class CalendarDate(BaseModel):
-    datetime: datetime
+    datetime: str
     calendar: str
     precision: int
 
@@ -58,3 +58,13 @@ class Story(BaseModel):
     name: str
     events: List[HistoryEvent]
     index: int
+
+
+class TimeExistsRequest(BaseModel):
+    datetime: str
+    calendar_model: str
+    precision: int
+
+
+class TimeExistsResponse(BaseModel):
+    id: UUID | None = None

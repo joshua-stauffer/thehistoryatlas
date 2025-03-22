@@ -1,0 +1,43 @@
+{
+    "entities": {
+        "Q3012": {
+            "id": "Q3012",
+            "pageid": 1234,
+            "ns": 0,
+            "title": "Q3012",
+            "lastrevid": 1234567890,
+            "modified": "2024-03-21T00:00:00Z",
+            "type": "item",
+            "labels": {
+                "en": {
+                    "language": "en",
+                    "value": "Ulm"
+                }
+            },
+            "descriptions": {},
+            "aliases": {},
+            "claims": {
+                "P625": [
+                    {
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P625",
+                            "datavalue": {
+                                "value": {
+                                    "latitude": 48.4010822,
+                                    "longitude": 9.987607599999999,
+                                    "precision": 0.0001,
+                                    "globe": "http://www.wikidata.org/entity/Q2"
+                                },
+                                "type": "globecoordinate"
+                            }
+                        },
+                        "type": "statement",
+                        "rank": "normal"
+                    }
+                ]
+            },
+            "sitelinks": {}
+        }
+    }
+} 

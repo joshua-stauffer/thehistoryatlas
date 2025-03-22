@@ -43,6 +43,7 @@ server/the_history_atlas/apps/nlp_service/models/
 .idea/
 geo/app/data/
 secrets.yaml
+.cursor/
 
 # vim
 *.swp

@@ -12,7 +12,7 @@ class Summary(Base):
 
     __tablename__ = "summaries"
     id = Column(UUID(as_uuid=True), primary_key=True)
-    text = Column(VARCHAR)
+    text = Column(VARCHAR, unique=True)
 
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
@@ -117,7 +117,7 @@ class Time(Tag):
 
     __tablename__ = "times"
     id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), primary_key=True)
-    datetime = Column(TIMESTAMP(timezone=True), index=True)
+    datetime = Column(VARCHAR, index=True)
     calendar_model = Column(String(64))
     #  6 - millennium, 7 - century, 8 - decade, 9 - year, 10 - month, 11 - day
     precision = Column(INTEGER)

@@ -423,3 +423,25 @@ class HistoryApp:
         return [
             StoryName(lang="en", name=f"Events of {name}"),
         ]
+
+    def check_time_exists(
+        self, datetime: str, calendar_model: str, precision: int
+    ) -> UUID | None:
+        """Check if a time with the given parameters exists in the database.
+
+        Args:
+            datetime: The datetime string to check
+            calendar_model: The calendar model to check
+            precision: The time precision value to check
+
+        Returns:
+            tuple: (exists, id) where exists is True if a matching time exists, False otherwise
+                  and id is the UUID of the matching time if exists is True, None otherwise
+        """
+        with Session(self._repository._engine, future=True) as session:
+            return self._repository.time_exists(
+                datetime=datetime,
+                calendar_model=calendar_model,
+                precision=precision,
+                session=session,
+            )

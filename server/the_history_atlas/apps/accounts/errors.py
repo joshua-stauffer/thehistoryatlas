@@ -1,5 +1,5 @@
 """
-Expected exceptions for the Accounts Service. Should return a meaningful string 
+Expected exceptions for the Accounts Service. Should return a meaningful string
 representation, which will be returned to the requesting service. All exceptions
 should be included in the **known_exceptions** list.
 """

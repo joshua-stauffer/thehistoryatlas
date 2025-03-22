@@ -275,7 +275,7 @@ class Repository:
                     on tags.id = times.id
                     where tags.id = :tag_id
                 )
-                order by {order_by_clause}
+                order by times.datetime {order_by_clause}
                 limit 1;
             """
             ),
@@ -680,7 +680,7 @@ class Repository:
         stop_char: int,
         summary_id: UUID,
         tag_id: UUID,
-        tag_instance_time: datetime,
+        tag_instance_time: str,
         time_precision: TimePrecision,
         session: Session,
     ) -> TagInstanceModel:
@@ -717,7 +717,7 @@ class Repository:
         self,
         session: Session,
         tag_id: UUID,
-        tag_instance_time: datetime,
+        tag_instance_time: str,
         time_precision: TimePrecision,
     ) -> int:
         """Given a tag, find the order belonging to a given time."""
@@ -812,7 +812,7 @@ class Repository:
 
     def get_time_and_precision_by_tags(
         self, session: Session, tag_ids: list[UUID]
-    ) -> tuple[datetime, TimePrecision]:
+    ) -> tuple[str, TimePrecision]:
         """Given a list of tag IDs, find the time and precision associated with them.
         Raises an exception when multiple are found.
         """
@@ -1004,3 +1004,40 @@ class Repository:
                     f"Update_trie was provided with old_string {old_string} but not a new_string_guid."
                 )
             self._entity_trie.delete(string=old_string, guid=old_string_guid)
+
+    def time_exists(
+        self,
+        datetime: str,
+        calendar_model: str,
+        precision: TimePrecision,
+        session: Session,
+    ) -> UUID | None:
+        """Check if a time with the given parameters exists in the database.
+
+        Args:
+            datetime: The datetime string to check
+            calendar_model: The calendar model to check
+            precision: The time precision to check
+            session: The database session
+
+        Returns:
+            tuple: (exists, id) where exists is True if a matching time exists, False otherwise
+                  and id is the UUID of the matching time if exists is True, None otherwise
+        """
+        row = session.execute(
+            text(
+                """
+                select id from times
+                where datetime = :datetime
+                and calendar_model = :calendar_model
+                and precision = :precision
+            """
+            ),
+            {
+                "datetime": datetime,
+                "calendar_model": calendar_model,
+                "precision": precision,
+            },
+        ).scalar_one_or_none()
+
+        return row

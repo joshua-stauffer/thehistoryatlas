@@ -37,8 +37,7 @@ class WikiDataEntity(BaseModel):
     name: str
 
 
-class PersonInput(WikiDataEntity):
-    ...
+class PersonInput(WikiDataEntity): ...
 
 
 class Person(PersonInput):
@@ -55,7 +54,10 @@ class Place(PlaceInput):
 
 
 class TimeInput(WikiDataEntity):
-    date: datetime
+    # times aren't guaranteed to have an ID in wikidata
+    wikidata_id: str | None
+    wikidata_url: str | None
+    date: str
     precision: Precision
     calendar_model: str
 
@@ -67,7 +69,7 @@ class Time(TimeInput):
 class StoryOrder(BaseModel):
     summary_id: UUID
     story_order: int
-    datetime: datetime
+    datetime: str
     precision: Precision
 
 
@@ -93,7 +95,7 @@ class Source(BaseModel):
 
 
 class CalendarDate(BaseModel):
-    datetime: datetime
+    datetime: str
     calendar: str
     precision: Precision
 

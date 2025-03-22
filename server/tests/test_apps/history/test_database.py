@@ -18,6 +18,8 @@ from the_history_atlas.apps.domain.models.history.tables import (
     PlaceModel,
     TimeModel,
 )
+from the_history_atlas.apps.history.repository import Repository
+from the_history_atlas.apps.history.trie import Trie
 
 
 def create_tag(engine, type: Literal["PERSON", "PLACE", "TIME"]) -> UUID:
@@ -121,14 +123,14 @@ def test_create_place(history_db):
 def test_create_time(history_db):
     time_model = TimeModel(
         id=uuid4(),
-        datetime=datetime(year=1685, month=3, day=21, tzinfo=timezone.utc),
+        datetime="+1685-03-21T00:00:00Z",
         calendar_model="http://www.wikidata.org/entity/Q1985727",
         precision=6,
     )
 
     with history_db.Session() as session:
         result_model = history_db.create_time(
-            session=session, **time_model.dict(exclude={"extra", "type"})
+            session=session, **time_model.model_dump(exclude={"extra", "type"})
         )
         session.commit()
 
@@ -431,3 +433,66 @@ def test_get_name_by_fuzzy_search(history_db):
     res1 = history_db.get_name_by_fuzzy_search("A person name")
     assert isinstance(res1, list)
     assert len(res1) <= 10
+
+
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+
+
+class TestTimeExists:
+    def test_success(self, history_db, engine):
+        test_time = datetime(2024, 3, 14, tzinfo=timezone.utc)
+        test_calendar = "gregorian"
+        test_precision = 11  # DAY precision
+
+        # Create a test time entry using the engine directly
+        time_id = create_tag(engine, "TIME")
+
+        with history_db.Session() as session:
+            # Insert the time data
+            stmt = """
+                insert into times (id, datetime, calendar_model, precision)
+                values (:id, :datetime, :calendar_model, :precision)
+            """
+            session.execute(
+                text(stmt),
+                {
+                    "id": time_id,
+                    "datetime": str(test_time),  # Convert to string for storage
+                    "calendar_model": test_calendar,
+                    "precision": test_precision,
+                },
+            )
+            session.commit()
+
+            # Test the repository method directly
+            id_result = history_db.time_exists(
+                datetime=str(test_time),
+                calendar_model=test_calendar,
+                precision=test_precision,
+                session=session,
+            )
+            assert id_result == time_id
+
+            # Clean up
+            cleanup_stmt = """
+                delete from times where times.id = :id;
+                delete from tags where tags.id = :id;
+            """
+            session.execute(text(cleanup_stmt), {"id": time_id})
+            session.commit()
+
+    def test_failure(self, history_db):
+        test_calendar = "gregorian"
+        test_precision = 11  # DAY precision
+        non_existing_time = datetime(2023, 3, 14, tzinfo=timezone.utc)
+
+        with history_db.Session() as session:
+            # Test for a non-existent time
+            id_result = history_db.time_exists(
+                datetime=str(non_existing_time),
+                calendar_model=test_calendar,
+                precision=test_precision,
+                session=session,
+            )
+            assert id_result is None

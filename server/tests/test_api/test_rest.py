@@ -93,12 +93,13 @@ def _generate_fake_time(
     date = fake.date_time_between(start_date=start_date, end_date=end_date)
 
     date_str = date.strftime("%d %B %Y")
+    date_iso = date.strftime("%Y-%m-%d")
 
     return WikiDataTimeInput(
         wikidata_id=wikidata_id,
         wikidata_url=generate_wikidata_url(wikidata_id),
         name=date_str,
-        date=date,
+        date=date_iso,
         calendar_model="https://www.wikidata.org/wiki/Q12138",  # Gregorian calendar
         precision=random.randint(7, 11),
     )
@@ -228,7 +229,7 @@ def test_create_time(client: TestClient, auth_headers: dict) -> None:
         wikidata_id="Q69125241",
         wikidata_url="https://www.wikidata.org/wiki/Q69125241",
         name="31 March 1685",
-        date=datetime(year=1685, month=3, day=31),
+        date="+1685-03-21T00:00:00Z",
         calendar_model="https://www.wikidata.org/wiki/Q12138",
         precision=11,
     )
@@ -336,7 +337,7 @@ def test_create_event(client: TestClient, auth_headers: dict):
         wikidata_id="Q69125241",
         wikidata_url="https://www.wikidata.org/wiki/Q69125241",
         name="March 31st, 1685",
-        date=datetime(year=1685, month=3, day=31),
+        date="+1685-03-21T00:00:00Z",
         calendar_model="https://www.wikidata.org/wiki/Q12138",
         precision=11,
     )
@@ -545,7 +546,7 @@ class TestGetHistory:
         story = Story.model_validate(response.json())
         time_tags = sorted([time.date for time in times])
         for event, time in zip(story.events, time_tags):
-            assert event.date.datetime.date() == time.date()
+            assert event.date.datetime == time
 
     def test_with_params(
         self, client: TestClient, db_session: scoped_session, auth_headers: dict
@@ -591,7 +592,7 @@ class TestGetHistory:
         assert len(story.events) == 21
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -636,7 +637,7 @@ class TestGetHistory:
         assert len(story.events) == 10
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -723,7 +724,7 @@ class TestGetHistory:
         assert len(story.events) == len(expected_events)
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
             if event.id in person_event_ids:
@@ -776,7 +777,7 @@ class TestGetHistory:
         assert len(story.events) == 10
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
 
@@ -864,7 +865,7 @@ class TestGetHistory:
         assert len(story.events) == len(expected_events)
         # expect that the requested event is returned in the middle
         for event, expected_event in zip(story.events, expected_events):
-            assert event.date.datetime.date() == expected_event.datetime.date()
+            assert event.date.datetime == expected_event.datetime
             assert event.date.precision == expected_event.precision
             assert event.id == expected_event.summary_id
             if event.id in person_event_ids:
@@ -1063,3 +1064,142 @@ class TestSampleData:
                 client=client,
                 auth_headers=auth_headers,
             )
+
+
+def test_create_person_with_unicode(
+    client: TestClient, auth_headers: dict, db_session: Session
+) -> None:
+    """Test that a person with Unicode characters in their name is correctly persisted."""
+    input = WikiDataPersonInput(
+        wikidata_id="Q34660",
+        wikidata_url="https://www.wikidata.org/wiki/Q34660",
+        name="José Carreras",  # Unicode name with accented characters
+    )
+
+    # Create the person
+    response = client.post(
+        "/wikidata/people", data=input.model_dump_json(), headers=auth_headers
+    )
+    assert response.status_code == 200, response.text
+    created_person = WikiDataPersonOutput.model_validate(response.json())
+
+    # Verify the person was created with correct name in database
+    result = db_session.execute(
+        text(
+            """
+            SELECT names.name 
+            FROM names 
+            JOIN tag_names ON names.id = tag_names.name_id 
+            JOIN tags ON tags.id = tag_names.tag_id 
+            WHERE tags.id = :tag_id
+        """
+        ),
+        {"tag_id": created_person.id},
+    ).one()
+    assert result.name == "José Carreras"
+
+
+def test_create_place_with_unicode(
+    client: TestClient, auth_headers: dict, db_session: Session
+) -> None:
+    """Test that a place with Unicode characters in its name is correctly persisted."""
+    input = WikiDataPlaceInput(
+        wikidata_id="Q1726",
+        wikidata_url="https://www.wikidata.org/wiki/Q1726",
+        name="São Paulo",  # Unicode name with accented characters
+        latitude=-23.550520,
+        longitude=-46.633308,
+    )
+
+    # Create the place
+    response = client.post(
+        "/wikidata/places", data=input.model_dump_json(), headers=auth_headers
+    )
+    assert response.status_code == 200, response.text
+    created_place = WikiDataPlaceOutput.model_validate(response.json())
+
+    # Verify the place was created with correct name in database
+    result = db_session.execute(
+        text(
+            """
+            SELECT names.name 
+            FROM names 
+            JOIN tag_names ON names.id = tag_names.name_id 
+            JOIN tags ON tags.id = tag_names.tag_id 
+            WHERE tags.id = :tag_id
+        """
+        ),
+        {"tag_id": created_place.id},
+    ).one()
+    assert result.name == "São Paulo"
+
+
+class TestTimeExists:
+    def test_time_exists_success_time_exists(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Test successful response when time exists in the database."""
+        # First create a time
+        time = create_time(client, auth_headers)
+
+        # Then check if it exists
+        request_data = {
+            "datetime": time.date,
+            "calendar_model": time.calendar_model,
+            "precision": time.precision,
+        }
+
+        response = client.post("/times/exist", json=request_data, headers=auth_headers)
+
+        # Assert response
+        assert response.status_code == 200, f"Response: {response.text}"
+        response_data = response.json()
+        assert "id" in response_data
+        assert response_data["id"] == str(time.id)
+
+    def test_time_exists_success_time_not_exists(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Test successful response when time does not exist in the database."""
+        # Use a datetime that likely doesn't exist in the database
+        request_data = {
+            "datetime": "3000-01-01",
+            "calendar_model": "https://www.wikidata.org/wiki/Q12138",
+            "precision": 11,
+        }
+
+        response = client.post("/times/exist", json=request_data, headers=auth_headers)
+
+        # Assert response
+        assert response.status_code == 200, f"Response: {response.text}"
+        response_data = response.json()
+        assert "id" in response_data
+        assert response_data["id"] is None
+
+    def test_time_exists_failure_no_authentication(self, client: TestClient) -> None:
+        """Test failure when no authentication is provided."""
+        request_data = {
+            "datetime": "2023-01-01",
+            "calendar_model": "https://www.wikidata.org/wiki/Q12138",
+            "precision": 11,
+        }
+
+        response = client.post("/times/exist", json=request_data)
+
+        # Assert response
+        assert response.status_code == 401, f"Response: {response.text}"
+
+    def test_time_exists_failure_invalid_request(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Test failure when request data is invalid."""
+        # Missing required fields
+        request_data = {
+            "datetime": "2023-01-01"
+            # Missing calendar_model and precision
+        }
+
+        response = client.post("/times/exist", json=request_data, headers=auth_headers)
+
+        # Assert response
+        assert response.status_code == 422, f"Response: {response.text}"
