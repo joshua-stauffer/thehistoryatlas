@@ -144,6 +144,7 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
     """
     # Remove leading '+' and any trailing parts (like the 'Z') not needed for parsing.
     raw_time = time_def.time
+    is_negative = raw_time.startswith("-")
     if raw_time.startswith(("+", "-")):
         raw_time = raw_time[1:]
 
@@ -176,7 +177,6 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
         # Fallback: return ISO formatted date
         date_str = dt.isoformat()
 
-    is_negative = raw_time.startswith("-")
     bc_suffix = " B.C.E" if is_negative else ""
     return date_str + bc_suffix
 
