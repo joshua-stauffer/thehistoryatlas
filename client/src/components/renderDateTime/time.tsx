@@ -123,7 +123,7 @@ export const buildYearMap = () => {
   const minYear = Math.floor(MIN_YEAR);
   const years = Array.from(
     { length: yearRange },
-    (_, i) => i + minYear + 1
+    (_, i) => i + minYear + 1,
   ).reverse();
 
   const optionMap = new Map<string, Date>();

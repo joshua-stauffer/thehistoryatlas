@@ -15,7 +15,7 @@ export const historyEventLoader = async ({
   const fetchEvents = async (
     storyId?: string,
     eventId?: string,
-    direction?: "next" | "prev"
+    direction?: "next" | "prev",
   ) => {
     const queryParams = new URLSearchParams();
     if (storyId) queryParams.append("storyId", storyId);
@@ -23,8 +23,8 @@ export const historyEventLoader = async ({
     if (direction) queryParams.append("direction", direction);
 
     const response = await fetch(
-      // `http://localhost:8000/api/history?${queryParams.toString()}`
-  `https://the-history-atlas-server-4ubzi.ondigitalocean.app/api/history?${queryParams.toString()}`
+      // `http://localhost:8000/api/history?${queryParams.toString()}`,
+      `https://the-history-atlas-server-4ubzi.ondigitalocean.app/api/history?${queryParams.toString()}`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch history events");
