@@ -48,9 +48,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@testing-library/react-hooks": "^8.0.1",
     "@types/leaflet": "^1.7.8",
-    "@types/react-router-dom": "^5.1.7",
-    "@types/uuid": "^10.0.0"
+    "@types/react-router-dom": "^5.1.7"
   }
 }
