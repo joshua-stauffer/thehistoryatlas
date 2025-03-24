@@ -30,6 +30,8 @@ export const EventView = ({ event }: EventViewProps) => {
         variant={"body1"}
         textAlign="left"
         mt={"20px"}
+        component="p"
+        role="paragraph"
         sx={{
           marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
