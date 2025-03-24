@@ -1,5 +1,6 @@
 import pytest
 import os
+from unittest.mock import patch, MagicMock
 
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
@@ -11,6 +12,38 @@ from wiki_service.wikidata_query_service import (
 )
 from wiki_service.types import WikiDataItem
 from wiki_service.config import WikiServiceConfig
+
+# Mock responses for our tests
+MOCK_SPARQL_RESPONSE = {
+    "head": {"vars": ["item"]},
+    "results": {
+        "bindings": [
+            {"item": {"type": "uri", "value": "http://www.wikidata.org/entity/Q1"}},
+            {"item": {"type": "uri", "value": "http://www.wikidata.org/entity/Q2"}},
+        ]
+    },
+}
+
+MOCK_PEOPLE_RESPONSE = {
+    "head": {"vars": ["item", "itemLabel"]},
+    "results": {
+        "bindings": [
+            {
+                "item": {
+                    "type": "uri",
+                    "value": f"http://www.wikidata.org/entity/Q{i}",
+                },
+                "itemLabel": {"type": "literal", "value": f"Person {i}"},
+            }
+            for i in range(1, 101)
+        ]
+    },
+}
+
+MOCK_COUNT_RESPONSE = {
+    "head": {"vars": ["count"]},
+    "results": {"bindings": [{"count": {"type": "literal", "value": "12000000"}}]},
+}
 
 
 def test_query_person(config):
@@ -52,7 +85,12 @@ def test_query_time(config):
     assert isinstance(time_detail, TimeDefinition)
 
 
-def test_make_sparql_query(config):
+@patch("wiki_service.wikidata_query_service.SPARQLWrapper.query")
+def test_make_sparql_query(mock_query, config):
+    mock_result = MagicMock()
+    mock_result.convert.return_value = MOCK_SPARQL_RESPONSE
+    mock_query.return_value = mock_result
+
     service = WikiDataQueryService(config)
     url = "https://query.wikidata.org/sparql"
     query = """
@@ -65,6 +103,9 @@ def test_make_sparql_query(config):
     """
     result = service.make_sparql_query(query=query, url=url)
     assert isinstance(result, dict)
+    assert "bindings" in result
+    assert len(result["bindings"]) == 2
+    assert all("item" in item for item in result["bindings"])
 
 
 def test_get_qid_from_uri(config):
@@ -75,7 +116,12 @@ def test_get_qid_from_uri(config):
     assert res == "Q23"
 
 
-def test_find_people(config):
+@patch("wiki_service.wikidata_query_service.SPARQLWrapper.query")
+def test_find_people(mock_query, config):
+    mock_result = MagicMock()
+    mock_result.convert.return_value = MOCK_PEOPLE_RESPONSE
+    mock_query.return_value = mock_result
+
     service = WikiDataQueryService(config)
     people = service.find_people(limit=100, offset=0)
     assert len(people) == 100
@@ -83,12 +129,16 @@ def test_find_people(config):
         assert isinstance(person, WikiDataItem)
 
 
-def test_get_wikidata_people_count(config):
-    service = WikiDataQueryService(config=config)
+@patch("wiki_service.wikidata_query_service.SPARQLWrapper.query")
+def test_get_wikidata_people_count(mock_query, config):
+    mock_result = MagicMock()
+    mock_result.convert.return_value = MOCK_COUNT_RESPONSE
+    mock_query.return_value = mock_result
 
+    service = WikiDataQueryService(config=config)
     count = service.get_wikidata_people_count()
     assert isinstance(count, int)
-    assert count > 11_000_000
+    assert count == 12000000
 
 
 def test_get_label(config):
