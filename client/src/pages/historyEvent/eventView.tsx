@@ -62,12 +62,12 @@ export const EventView = ({ event }: EventViewProps) => {
       {/*  Other stories with this event*/}
       {/*</Typography>*/}
       {event.stories.map((story) => (
-        <>
+        <div key={story.id}>
           <Link to={`/stories/${story.id}/events/${event.id}`}>
             <Button sx={{ textTransform: "none" }}>{story.name}</Button>
           </Link>
           <br />
-        </>
+        </div>
       ))}
     </>
   );
@@ -101,7 +101,7 @@ const buildTaggedText = (
         );
       const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
       return (
-        <Link to={storyUrl}>
+        <Link key={`${tag.id}-${index}`} to={storyUrl}>
           <TextButton text={tag.name} icon={icon} />
         </Link>
       );
