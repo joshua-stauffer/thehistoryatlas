@@ -1,6 +1,9 @@
 import pytest
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
+import responses
+from datetime import datetime, timedelta, timezone
+from urllib.error import HTTPError
 
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
@@ -9,6 +12,7 @@ from wiki_service.wikidata_query_service import (
     GeoshapeLocation,
     TimeDefinition,
     Property,
+    WikiDataQueryServiceError,
 )
 from wiki_service.types import WikiDataItem
 from wiki_service.config import WikiServiceConfig
@@ -218,3 +222,254 @@ def test_non_ascii_labels_unicode_escapes():
 
     # Verify that the Unicode escape sequence is properly converted to the actual character
     assert entity.labels["es"].value == "María Ruiz-Tagle"
+
+
+# Rate limiting tests
+@responses.activate
+def test_get_entity_rate_limit_retry_success(config):
+    entity_id = "Q42"
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Mock a 429 response with retry-after header
+    responses.add(
+        responses.GET,
+        url,
+        status=429,
+        headers={"retry-after": "1"},
+    )
+
+    # Mock a successful response after retry
+    mock_response = {
+        "entities": {
+            "Q42": {
+                "id": "Q42",
+                "pageid": 123,
+                "ns": 0,
+                "title": "Test",
+                "lastrevid": 456,
+                "modified": "2024-01-01T00:00:00Z",
+                "type": "item",
+                "labels": {},
+                "descriptions": {},
+                "aliases": {},
+                "claims": {},
+                "sitelinks": {},
+            }
+        }
+    }
+    responses.add(responses.GET, url, json=mock_response, status=200)
+
+    service = WikiDataQueryService(config)
+    with patch("time.sleep") as mock_sleep:
+        result = service.get_entity(entity_id)
+        assert mock_sleep.call_args[0][0] == 1  # Verify sleep was called with 1 second
+        assert result.id == "Q42"
+
+
+@responses.activate
+def test_get_entity_rate_limit_max_retries(config):
+    entity_id = "Q42"
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Add 6 rate limit responses (1 initial + 5 retries)
+    for _ in range(6):
+        responses.add(
+            responses.GET,
+            url,
+            status=429,
+            headers={"retry-after": "1"},
+        )
+
+    service = WikiDataQueryService(config)
+    with patch("time.sleep"), pytest.raises(WikiDataQueryServiceError) as exc_info:
+        service.get_entity(entity_id)
+    assert "Maximum retries exceeded" in str(exc_info.value)
+
+
+@responses.activate
+def test_get_entity_rate_limit_no_retry_after(config):
+    entity_id = "Q42"
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Mock a 429 response without retry-after header
+    responses.add(
+        responses.GET,
+        url,
+        status=429,
+    )
+
+    service = WikiDataQueryService(config)
+    with pytest.raises(WikiDataQueryServiceError) as exc_info:
+        service.get_entity(entity_id)
+    assert "Rate limit exceeded with no retry-after header" in str(exc_info.value)
+
+
+@responses.activate
+def test_get_label_rate_limit_retry_success(config):
+    entity_id = "Q42"
+    language = "en"
+    url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{entity_id}/labels/{language}"
+
+    # Mock a 429 response with retry-after header
+    responses.add(
+        responses.GET,
+        url,
+        status=429,
+        headers={"retry-after": "1"},
+    )
+
+    # Mock a successful response after retry
+    responses.add(responses.GET, url, body='"Test Label"', status=200)
+
+    service = WikiDataQueryService(config)
+    with patch("time.sleep") as mock_sleep:
+        result = service.get_label(entity_id, language)
+        assert mock_sleep.call_args[0][0] == 1
+        assert result == "Test Label"
+
+
+@responses.activate
+def test_sparql_query_rate_limit_retry_success(config):
+    query = "SELECT * WHERE { ?s ?p ?o } LIMIT 1"
+    url = "https://query.wikidata.org/sparql"
+
+    mock_response = {"results": {"bindings": [{"s": {"value": "test"}}]}}
+
+    # Mock SPARQLWrapper to simulate rate limiting
+    with patch("SPARQLWrapper.SPARQLWrapper.query") as mock_query:
+        # First call raises HTTPError with 429
+        error_response = Mock()
+        error_response.headers = {"retry-after": "1"}
+        error_response.status = 429
+        http_error = HTTPError(url, 429, "Too Many Requests", error_response, None)
+        # Add the response attribute to the HTTPError
+        http_error.response = error_response
+
+        # Second call succeeds
+        success_response = Mock()
+        success_response.convert.return_value = mock_response
+
+        mock_query.side_effect = [http_error, success_response]
+
+        service = WikiDataQueryService(config)
+        with patch("time.sleep") as mock_sleep:
+            result = service.make_sparql_query(query, url)
+            assert mock_sleep.call_args[0][0] == 1
+            assert result == mock_response["results"]
+
+
+@responses.activate
+def test_get_entity_rate_limit_retry_success_with_date(config):
+    entity_id = "Q42"
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Create a fixed test time
+    test_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
+    future_date = test_time + timedelta(seconds=2)
+    retry_after_date = future_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+    # Mock a 429 response with retry-after header as date
+    responses.add(
+        responses.GET,
+        url,
+        status=429,
+        headers={"retry-after": retry_after_date},
+    )
+
+    # Mock a successful response after retry
+    mock_response = {
+        "entities": {
+            "Q42": {
+                "id": "Q42",
+                "pageid": 123,
+                "ns": 0,
+                "title": "Test",
+                "lastrevid": 456,
+                "modified": "2024-01-01T00:00:00Z",
+                "type": "item",
+                "labels": {},
+                "descriptions": {},
+                "aliases": {},
+                "claims": {},
+                "sitelinks": {},
+            }
+        }
+    }
+    responses.add(responses.GET, url, json=mock_response, status=200)
+
+    service = WikiDataQueryService(config)
+    with patch.object(
+        WikiDataQueryService, "_get_current_time", return_value=test_time
+    ), patch("time.sleep") as mock_sleep:
+        result = service.get_entity(entity_id)
+        # Verify sleep was called with 2 seconds
+        assert mock_sleep.call_args[0][0] == 2.0
+        assert result.id == "Q42"
+
+
+@responses.activate
+def test_get_entity_rate_limit_invalid_retry_after(config):
+    entity_id = "Q42"
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Mock a 429 response with invalid retry-after header
+    responses.add(
+        responses.GET,
+        url,
+        status=429,
+        headers={"retry-after": "invalid-format"},
+    )
+
+    service = WikiDataQueryService(config)
+    with pytest.raises(WikiDataQueryServiceError) as exc_info:
+        service.get_entity(entity_id)
+    assert "Invalid retry-after format" in str(exc_info.value)
+
+
+@responses.activate
+def test_get_entity_rate_limit_past_date(config):
+    entity_id = "Q42"
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Create a fixed test time
+    test_time = datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc)
+    past_date = test_time - timedelta(seconds=60)
+    retry_after_date = past_date.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+    # Mock a 429 response with retry-after header as past date
+    responses.add(
+        responses.GET,
+        url,
+        status=429,
+        headers={"retry-after": retry_after_date},
+    )
+
+    # Mock a successful response after retry
+    mock_response = {
+        "entities": {
+            "Q42": {
+                "id": "Q42",
+                "pageid": 123,
+                "ns": 0,
+                "title": "Test",
+                "lastrevid": 456,
+                "modified": "2024-01-01T00:00:00Z",
+                "type": "item",
+                "labels": {},
+                "descriptions": {},
+                "aliases": {},
+                "claims": {},
+                "sitelinks": {},
+            }
+        }
+    }
+    responses.add(responses.GET, url, json=mock_response, status=200)
+
+    service = WikiDataQueryService(config)
+    with patch.object(
+        WikiDataQueryService, "_get_current_time", return_value=test_time
+    ), patch("time.sleep") as mock_sleep:
+        result = service.get_entity(entity_id)
+        # Verify sleep was called with 0 seconds for past dates
+        assert mock_sleep.call_args[0][0] == 0
+        assert result.id == "Q42"
