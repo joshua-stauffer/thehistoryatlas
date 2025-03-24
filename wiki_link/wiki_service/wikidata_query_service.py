@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from re import search
 from typing import List, Dict, Optional, Set
 from urllib.error import HTTPError
+import time
 
 import requests
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -9,6 +10,8 @@ from pydantic import BaseModel
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.types import WikiDataItem
+
+MAX_RETRIES = 5
 
 
 class WikiDataQueryServiceError(Exception): ...
@@ -190,6 +193,54 @@ class WikiDataQueryService:
     def __init__(self, config: WikiServiceConfig):
         self._config = config
 
+    @staticmethod
+    def _get_current_time():
+        """Get current time in UTC. Separate method to make testing easier."""
+        return datetime.now(timezone.utc)
+
+    def _parse_retry_after(self, retry_after: str) -> float:
+        """
+        Parse the retry-after header which can be either:
+        1. A number of seconds
+        2. A HTTP date format (e.g. 'Wed, 21 Oct 2015 07:28:00 GMT')
+
+        Returns the number of seconds to wait.
+        """
+        try:
+            # First try parsing as a number of seconds
+            return float(retry_after)
+        except ValueError:
+            try:
+                # Try parsing as HTTP date format
+                retry_date = datetime.strptime(
+                    retry_after, "%a, %d %b %Y %H:%M:%S GMT"
+                ).replace(tzinfo=timezone.utc)
+                now = self._get_current_time()
+                wait_seconds = (retry_date - now).total_seconds()
+                return max(0, wait_seconds)  # Don't return negative values
+            except ValueError:
+                raise WikiDataQueryServiceError(
+                    f"Invalid retry-after format: {retry_after}"
+                )
+
+    def _handle_rate_limit(self, response, retries: int = 0) -> bool:
+        """Handle rate limiting by checking retry-after header and waiting if needed."""
+        if response.status_code == 429:
+            retry_after = response.headers.get("retry-after")
+            if not retry_after:
+                raise WikiDataQueryServiceError(
+                    "Rate limit exceeded with no retry-after header"
+                )
+            if retries >= MAX_RETRIES:
+                raise WikiDataQueryServiceError(
+                    "Maximum retries exceeded for rate limited request"
+                )
+
+            wait_seconds = self._parse_retry_after(retry_after)
+            time.sleep(wait_seconds)
+            return True
+        return False
+
     def find_people(self, limit: int, offset: int) -> Set[WikiDataItem]:
 
         query = f"""
@@ -227,37 +278,61 @@ class WikiDataQueryService:
         sparql.setQuery(query=query)
         sparql.setReturnFormat(JSON)
 
-        # Run the query
-        try:
-            result = sparql.query()
-        except HTTPError as e:
-            raise WikiDataQueryServiceError(e)
-        converted_result = result.convert()
-
-        results = converted_result["results"]
-        return results
+        retries = 0
+        while True:
+            try:
+                result = sparql.query()
+                converted_result = result.convert()
+                return converted_result["results"]
+            except HTTPError as e:
+                if hasattr(e, "response") and e.response.status == 429:
+                    retry_after = e.response.headers.get("retry-after")
+                    if not retry_after:
+                        raise WikiDataQueryServiceError(
+                            "Rate limit exceeded with no retry-after header"
+                        )
+                    if retries >= MAX_RETRIES:
+                        raise WikiDataQueryServiceError(
+                            "Maximum retries exceeded for rate limited request"
+                        )
+                    time.sleep(float(retry_after))
+                    retries += 1
+                    continue
+                raise WikiDataQueryServiceError(e)
 
     def get_entity(self, id: str) -> Entity:
         """
         Query the WikiData REST API to retrieve an item by ID.
         """
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
-        result = requests.get(url)
-        json_result = result.json()
-        error = json_result.get("error", None)
-        if error is not None:
-            raise WikiDataQueryServiceError(error)
-        entity_dict = json_result["entities"][id]
-        return self.build_entity(entity_dict)
+        retries = 0
+        while True:
+            result = requests.get(url)
+            if self._handle_rate_limit(result, retries):
+                retries += 1
+                continue
+
+            json_result = result.json()
+            error = json_result.get("error", None)
+            if error is not None:
+                raise WikiDataQueryServiceError(error)
+            entity_dict = json_result["entities"][id]
+            return self.build_entity(entity_dict)
 
     def get_label(self, id: str, language: str) -> str:
         url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
-        result = requests.get(url)
-        if not result.ok:
-            raise WikiDataQueryServiceError(
-                f"Query label request failed with {result.status_code}: {result.json()}"
-            )
-        return result.text.strip('"').encode("utf-8").decode("unicode_escape")
+        retries = 0
+        while True:
+            result = requests.get(url)
+            if self._handle_rate_limit(result, retries):
+                retries += 1
+                continue
+
+            if not result.ok:
+                raise WikiDataQueryServiceError(
+                    f"Query label request failed with {result.status_code}: {result.json()}"
+                )
+            return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     def get_geo_location(self, id: str) -> GeoLocation:
         entity = self.get_entity(id)
