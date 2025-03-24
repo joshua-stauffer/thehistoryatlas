@@ -3,15 +3,10 @@ import { ThemeProvider } from "@mui/material/styles";
 
 import { GenericError } from "./pages/errorPages";
 
-
 import { theme } from "./baseStyle";
 import { HistoryEventView } from "./pages/historyEvent/historyEventView";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import {
-  LandingPage,
-  landingPageLoader,
-} from "./pages/historyEvent/landingPage";
 import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
 
 function App() {

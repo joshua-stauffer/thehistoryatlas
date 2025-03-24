@@ -18,7 +18,8 @@ interface EventViewProps {
 const cardSpacingInternal = "5px";
 
 const citationSX = {
-  fontSize: "12px", marginLeft: "20px",
+  fontSize: "12px",
+  marginLeft: "20px",
 };
 
 export const EventView = ({ event }: EventViewProps) => {
@@ -29,6 +30,8 @@ export const EventView = ({ event }: EventViewProps) => {
         variant={"body1"}
         textAlign="left"
         mt={"20px"}
+        component="p"
+        role="paragraph"
         sx={{
           marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
@@ -41,11 +44,16 @@ export const EventView = ({ event }: EventViewProps) => {
         Source: {event.source.title}
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
-        Accessed on: {renderDateTime({datetime: event.source.pubDate, precision: 11, calendar: ""})}
+        Accessed on:{" "}
+        {renderDateTime({
+          datetime: event.source.pubDate,
+          precision: 11,
+          calendar: "",
+        })}
       </Typography>
-    <Typography variant={"body1"} sx={citationSX}>
+      <Typography variant={"body1"} sx={citationSX}>
         Authors: {event.source.author}
-    </Typography>
+      </Typography>
       <Divider
         sx={{
           marginTop: "20px",
@@ -56,31 +64,31 @@ export const EventView = ({ event }: EventViewProps) => {
       {/*  Other stories with this event*/}
       {/*</Typography>*/}
       {event.stories.map((story) => (
-        <>
+        <div key={story.id}>
           <Link to={`/stories/${story.id}/events/${event.id}`}>
             <Button sx={{ textTransform: "none" }}>{story.name}</Button>
           </Link>
           <br />
-        </>
+        </div>
       ))}
     </>
   );
 };
 
 const buildTaggedText = (
-  event: HistoryEvent
+  event: HistoryEvent,
 ): (string | JSX.Element | null)[] => {
   let tagIndices: Array<number> = [];
   for (const tag of event.tags) {
     const indices = Array.from(
       { length: tag.stopChar - tag.startChar },
-      (_, i) => tag.startChar + i
+      (_, i) => tag.startChar + i,
     );
     tagIndices = [...tagIndices, ...indices];
   }
   const tagIndicesSet = new Set(tagIndices);
   const startCharMap: Map<number, Tag> = new Map(
-    event.tags.map((tag) => [tag.startChar, tag])
+    event.tags.map((tag) => [tag.startChar, tag]),
   );
   return Array.from(event.text).map((char, index) => {
     const tag = startCharMap.get(index);
@@ -95,7 +103,7 @@ const buildTaggedText = (
         );
       const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
       return (
-        <Link to={storyUrl}>
+        <Link key={`${tag.id}-${index}`} to={storyUrl}>
           <TextButton text={tag.name} icon={icon} />
         </Link>
       );
