@@ -428,7 +428,7 @@ def test_create_citation_summary_fkey(history_db):
         session.commit()
 
 
-@pytest.mark.xfail(reason="UUID provided to TrieResult.guids instead of string")
+# @pytest.mark.xfail(reason="UUID provided to TrieResult.guids instead of string")
 def test_get_name_by_fuzzy_search(history_db):
     res1 = history_db.get_name_by_fuzzy_search("A person name")
     assert isinstance(res1, list)

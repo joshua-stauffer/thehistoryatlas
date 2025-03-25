@@ -109,7 +109,7 @@ class Repository:
             return []
         return [
             FuzzySearchByName(
-                name=trie_result.name, ids=[UUID(id) for id in trie_result.guids]
+                name=trie_result.name, ids=[id for id in trie_result.guids]
             )
             for trie_result in self._entity_trie.find(name, res_count=10)
         ]
