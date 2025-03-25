@@ -141,6 +141,34 @@ class HistoryApp:
     def get_tags_by_wikidata_ids(self, ids: list[str]) -> list[TagPointer]:
         return self._repository.get_tags_by_wikidata_ids(wikidata_ids=ids)
 
+    def fuzzy_search_stories(self, search_string: str) -> list[dict[str, str]]:
+        """
+        Search for stories that match the given search string.
+        Returns a list of dictionaries containing story IDs and names.
+        """
+        # Get matching IDs from fuzzy search
+        matches = self._repository.get_name_by_fuzzy_search(search_string)
+        if not matches:
+            return []
+
+        # Extract all unique IDs from the matches
+        all_ids = set()
+        for match in matches:
+            all_ids.update(match.ids)
+
+        # Convert set to tuple for SQL query
+        story_ids = tuple(all_ids)
+
+        # Get story names for the matching IDs
+        with self._repository.Session() as session:
+            story_names = self._repository.get_story_names(story_ids, session)
+
+        # Format results as list of dicts
+        return [
+            {"id": str(story_id), "name": name}
+            for story_id, name in story_names.items()
+        ]
+
     def create_wikidata_event(
         self,
         text: str,

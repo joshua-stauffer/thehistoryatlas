@@ -57,3 +57,57 @@ class TestCheckTimeExists:
             precision=test_precision,
         )
         assert time_id is None
+
+
+class TestFuzzySearchStories:
+    def test_empty_search_string(self, history_app) -> None:
+        """Test that an empty search string returns an empty list."""
+        results = history_app.fuzzy_search_stories("")
+        assert results == []
+
+    def test_no_matches(self, history_app) -> None:
+        """Test that a search string with no matches returns an empty list."""
+        results = history_app.fuzzy_search_stories("xyzabc123nonexistent")
+        assert results == []
+
+    def test_successful_search(self, history_app, cleanup_tag) -> None:
+        """Test that searching for an existing story returns the correct results."""
+        # Create a test person that we can search for
+        person = PersonInput(
+            wikidata_id="Q123456",
+            wikidata_url="https://www.wikidata.org/wiki/Q123456",
+            name="Test Person For Search",
+        )
+        created_person = history_app.create_person(person=person)
+        cleanup_tag(created_person.id)
+
+        # Search for the person
+        results = history_app.fuzzy_search_stories("Test Person")
+
+        # Verify results
+        assert len(results) > 0
+        assert any(
+            result["name"] == "The Life of Test Person For Search" for result in results
+        )
+        assert all(
+            isinstance(result["id"], str) and isinstance(result["name"], str)
+            for result in results
+        )
+
+    def test_partial_match(self, history_app, cleanup_tag) -> None:
+        """Test that searching with partial text returns matching results."""
+        # Create a test person
+        person = PersonInput(
+            wikidata_id="Q789012",
+            wikidata_url="https://www.wikidata.org/wiki/Q789012",
+            name="Alexander von Humboldt",
+        )
+        created_person = history_app.create_person(person=person)
+        cleanup_tag(created_person.id)
+
+        # Search with partial name
+        results = history_app.fuzzy_search_stories("Humbol")
+
+        # Verify results
+        assert len(results) > 0
+        assert any("humboldt" in result["name"].lower() for result in results)

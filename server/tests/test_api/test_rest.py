@@ -1203,3 +1203,88 @@ class TestTimeExists:
 
         # Assert response
         assert response.status_code == 422, f"Response: {response.text}"
+
+
+class TestStorySearch:
+    def test_empty_search(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Test that an empty search returns an empty result list."""
+        response = client.get(
+            "/api/stories/search",
+            params={"query": ""},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["results"] == []
+
+    def test_no_matches(
+        self,
+        client: TestClient,
+    ) -> None:
+        """Test that a search with no matches returns an empty result list."""
+        response = client.get(
+            "/api/stories/search",
+            params={"query": "xyzabc123nonexistent"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["results"] == []
+
+    def test_successful_search(self, client: TestClient, auth_headers: dict) -> None:
+        """Test that searching for an existing story returns results."""
+        # Create a test person first
+        person = WikiDataPersonInput(
+            wikidata_id="Q123456",
+            wikidata_url="https://www.wikidata.org/wiki/Q123456",
+            name="Test Person For Search",
+        )
+        person_response = client.post(
+            "/wikidata/people",
+            data=person.model_dump_json(),
+            headers=auth_headers,
+        )
+        assert person_response.status_code == 200
+
+        # Search for the person
+        response = client.get(
+            "/api/stories/search",
+            params={"query": "Test Person"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["results"]) > 0
+
+        # Verify result structure
+        result = data["results"][0]
+        assert "id" in result
+        assert "name" in result
+        assert isinstance(result["id"], str)
+        assert isinstance(result["name"], str)
+        assert "test person" in result["name"].lower()
+
+    def test_partial_match(self, client: TestClient, auth_headers: dict) -> None:
+        """Test that partial text matches return results."""
+        # Create a test person
+        person = WikiDataPersonInput(
+            wikidata_id="Q789012",
+            wikidata_url="https://www.wikidata.org/wiki/Q789012",
+            name="Alexander von Humboldt",
+        )
+        person_response = client.post(
+            "/wikidata/people",
+            data=person.model_dump_json(),
+            headers=auth_headers,
+        )
+        assert person_response.status_code == 200
+
+        # Search with partial name
+        response = client.get(
+            "/api/stories/search",
+            params={"query": "Humbol"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["results"]) > 0
+        assert any("humboldt" in result["name"].lower() for result in data["results"])

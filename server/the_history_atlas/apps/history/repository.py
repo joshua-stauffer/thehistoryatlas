@@ -60,8 +60,8 @@ class Repository:
     def __init__(
         self, database_client: DatabaseClient, source_trie: Trie, entity_trie: Trie
     ):
-        self._entity_trie = source_trie
-        self._source_trie = entity_trie
+        self._entity_trie = entity_trie
+        self._source_trie = source_trie
         self._engine = database_client
 
         self.Session = sessionmaker(bind=database_client)
