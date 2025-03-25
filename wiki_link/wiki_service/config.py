@@ -12,3 +12,4 @@ class WikiServiceConfig:
         self.password = os.environ.get("WIKILINK_PASSWORD")
         self.base_url = os.environ.get("WIKILINK_BASE_URL")
         self.server_base_url = os.environ.get("SERVER_BASE_URL", "localhost:8000")
+        self.contact = os.environ.get("WIKILINK_CONTACT", "https://historyatlas.org")
