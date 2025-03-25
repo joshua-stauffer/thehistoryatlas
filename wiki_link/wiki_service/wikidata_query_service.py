@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from re import search
 from typing import List, Dict, Optional, Set
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.types import WikiDataItem
+from wiki_service.utils import get_version
 
 MAX_RETRIES = 5
 
@@ -189,9 +191,15 @@ class Property(BaseModel):
     value: str
 
 
+log = logging.getLogger(__name__)
+
+
 class WikiDataQueryService:
     def __init__(self, config: WikiServiceConfig):
         self._config = config
+
+    def _agent_identifier(self) -> str:
+        return f"TheHistoryAtlas WikiLink/{get_version()} ({self._config.contact})"
 
     @staticmethod
     def _get_current_time():
@@ -226,6 +234,7 @@ class WikiDataQueryService:
     def _handle_rate_limit(self, response, retries: int = 0) -> bool:
         """Handle rate limiting by checking retry-after header and waiting if needed."""
         if response.status_code == 429:
+            log.info("Rate limit reached. Retrying.")
             retry_after = response.headers.get("retry-after")
             if not retry_after:
                 raise WikiDataQueryServiceError(
@@ -273,8 +282,8 @@ class WikiDataQueryService:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         return int(res["bindings"][0]["count"]["value"])
 
-    def make_sparql_query(self, query: str, url: str) -> Dict:
-        sparql = SPARQLWrapper(url)
+    def make_sparql_query(self, query: str, url: str) -> dict:
+        sparql = SPARQLWrapper(endpoint=url, agent=self._agent_identifier())
         sparql.setQuery(query=query)
         sparql.setReturnFormat(JSON)
 
@@ -307,7 +316,7 @@ class WikiDataQueryService:
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
         retries = 0
         while True:
-            result = requests.get(url)
+            result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
             if self._handle_rate_limit(result, retries):
                 retries += 1
                 continue
@@ -323,7 +332,7 @@ class WikiDataQueryService:
         url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
         retries = 0
         while True:
-            result = requests.get(url)
+            result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
             if self._handle_rate_limit(result, retries):
                 retries += 1
                 continue
