@@ -34,6 +34,7 @@
     "start": "react-scripts --openssl-legacy-provider start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -49,6 +50,7 @@
   ],
   "devDependencies": {
     "@types/leaflet": "^1.7.8",
+    "@types/lodash": "^4.17.16",
     "@types/react-router-dom": "^5.1.7"
   }
 }

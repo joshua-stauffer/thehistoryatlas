@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Union
+from typing import List, Union, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -68,3 +68,16 @@ class TimeExistsRequest(BaseModel):
 
 class TimeExistsResponse(BaseModel):
     id: UUID | None = None
+
+
+class StorySearchResult(BaseModel):
+    """A story search result containing the story's ID and name."""
+
+    id: str
+    name: str
+
+
+class StorySearchResponse(BaseModel):
+    """Response model for story search results."""
+
+    results: List[StorySearchResult]

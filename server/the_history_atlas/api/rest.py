@@ -28,6 +28,7 @@ from the_history_atlas.api.types.history import (
     Point,
     TimeExistsRequest,
     TimeExistsResponse,
+    StorySearchResponse,
 )
 from the_history_atlas.api.types.tags import (
     WikiDataPersonOutput,
@@ -238,5 +239,14 @@ def register_rest_endpoints(
         user: AuthenticatedUser,
     ) -> TimeExistsResponse:
         return check_time_exists_handler(apps=apps, request=request)
+
+    @fastapi_app.get("/api/stories/search", response_model=StorySearchResponse)
+    def search_stories(
+        query: Annotated[str, Query()],
+        apps: Apps,
+    ) -> StorySearchResponse:
+        """Search for stories using fuzzy text matching."""
+        results = apps.history_app.fuzzy_search_stories(search_string=query)
+        return StorySearchResponse(results=results)
 
     return fastapi_app

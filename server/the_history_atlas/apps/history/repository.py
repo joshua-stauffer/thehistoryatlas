@@ -60,8 +60,8 @@ class Repository:
     def __init__(
         self, database_client: DatabaseClient, source_trie: Trie, entity_trie: Trie
     ):
-        self._entity_trie = source_trie
-        self._source_trie = entity_trie
+        self._entity_trie = entity_trie
+        self._source_trie = source_trie
         self._engine = database_client
 
         self.Session = sessionmaker(bind=database_client)
@@ -109,7 +109,7 @@ class Repository:
             return []
         return [
             FuzzySearchByName(
-                name=trie_result.name, ids=[UUID(id) for id in trie_result.guids]
+                name=trie_result.name, ids=[id for id in trie_result.guids]
             )
             for trie_result in self._entity_trie.find(name, res_count=10)
         ]
@@ -138,12 +138,46 @@ class Repository:
             )
 
     def get_default_event_by_story(self, story_id: UUID) -> StoryPointer:
-        # todo
-        return self.get_default_story_and_event()
+        # given a story, return the first event
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    SELECT summary_id as event_id, tag_id as story_id
+                    FROM tag_instances
+                    WHERE tag_instances.story_order = 0
+                    AND tag_instances.tag_id = :story_id
+                """
+                ),
+                {"story_id": story_id},
+            ).one()
+            return StoryPointer(
+                event_id=row.event_id,
+                story_id=row.story_id,
+            )
 
     def get_default_story_by_event(self, event_id: UUID) -> StoryPointer:
-        # todo
-        return self.get_default_story_and_event()
+        with Session(self._engine, future=True) as session:
+            # given an event, always return a person's story
+            row = session.execute(
+                text(
+                    """
+                    SELECT summary_id as event_id, tag_id as story_id
+                    FROM tag_instances
+                    JOIN tags ON tag_instances.tag_id = tags.id
+                    WHERE tag_instances.story_order = 0
+                    AND tags.type = 'PERSON'
+                    AND tag_instances.tag_id = :event_id
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+                """
+                ),
+                {"event_id": event_id},
+            ).one()
+            return StoryPointer(
+                event_id=row.event_id,
+                story_id=row.story_id,
+            )
 
     def get_story_pointers(
         self,
