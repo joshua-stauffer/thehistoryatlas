@@ -58,7 +58,7 @@ export const HistoryEventView = () => {
       const response = await debouncedSearchStories(value);
       setSearchResults(response?.results || []);
     } catch (error) {
-      console.error('Failed to search stories:', error);
+      console.error("Failed to search stories:", error);
       setSearchResults([]);
     } finally {
       setLoading(false);
@@ -89,11 +89,14 @@ export const HistoryEventView = () => {
               options={searchResults}
               loading={loading}
               onInputChange={(_, value) => handleSearch(value)}
-              getOptionLabel={(option) => 
-                typeof option === 'string' ? option : option.name
+              getOptionLabel={(option) =>
+                typeof option === "string" ? option : option.name
               }
               renderOption={(props, option) => (
-                <li {...props} onClick={() => navigate(`/stories/${option.id}`)}>
+                <li
+                  {...props}
+                  onClick={() => navigate(`/stories/${option.id}`)}
+                >
                   {option.name}
                 </li>
               )}
