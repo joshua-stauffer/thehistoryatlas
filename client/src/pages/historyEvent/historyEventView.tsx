@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import React from "react";
+import React, { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
 import { InputAdornment, TextField, Typography } from "@mui/material";
@@ -14,10 +14,14 @@ import Divider from "@mui/material/Divider";
 import { EventPointer } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
 import { useCarouselState } from "./useCarouselState";
+import { StorySearchResult } from "../../api/stories";
+import { debouncedSearchStories } from "../../api/stories";
 
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
     useLoaderData() as HistoryEventData;
+  const [searchResults, setSearchResults] = useState<StorySearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const {
     historyEvents,
@@ -44,6 +48,23 @@ export const HistoryEventView = () => {
     longitude: location.longitude,
   }));
 
+  const handleSearch = async (value: string) => {
+    if (!value) {
+      setSearchResults([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await debouncedSearchStories(value);
+      setSearchResults(response?.results || []);
+    } catch (error) {
+      console.error('Failed to search stories:', error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
       <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
@@ -65,13 +86,24 @@ export const HistoryEventView = () => {
               sx={{ fontFamily: sansSerifFont }}
               id="story-search"
               freeSolo
-              options={currentEvent.tags.map((tag) => tag.name)}
+              options={searchResults}
+              loading={loading}
+              onInputChange={(_, value) => handleSearch(value)}
+              getOptionLabel={(option) => 
+                typeof option === 'string' ? option : option.name
+              }
+              renderOption={(props, option) => (
+                <li {...props} onClick={() => navigate(`/stories/${option.id}`)}>
+                  {option.name}
+                </li>
+              )}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Search for a story"
                   variant={"outlined"}
                   InputProps={{
+                    ...params.InputProps,
                     startAdornment: (
                       <InputAdornment position="start">
                         <SearchIcon />
