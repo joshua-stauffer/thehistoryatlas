@@ -45,10 +45,11 @@ export const EventView = ({ event }: EventViewProps) => {
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
         Accessed on:{" "}
-        {renderDateTime({
-          datetime: event.source.pubDate,
-          precision: 11,
-          calendar: "",
+        {new Date(event.source.pubDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
         })}
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
