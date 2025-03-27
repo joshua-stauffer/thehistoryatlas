@@ -35,6 +35,15 @@ export const EventView = ({ event }: EventViewProps) => {
         sx={{
           marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
+          width: '100%',
+          overflowWrap: 'break-word',
+          wordWrap: 'break-word',
+          hyphens: 'auto',
+          position: 'relative',
+          left: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          padding: '0 16px'
         }}
       >
         {buildTaggedText(event)}
