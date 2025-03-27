@@ -51,24 +51,37 @@ const EmblaCarousel: React.FC<CarouselPropType> = ({
   loadNext,
   loadPrev,
 }) => {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ startIndex });
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    startIndex,
+    loop: false,
+    skipSnaps: false,
+    dragFree: false,
+    containScroll: 'keepSnaps'
+  });
   const [loadingMoreLeft, setLoadingMoreLeft] = useState(false);
   const [loadingMoreRight, setLoadingMoreRight] = useState(false);
 
   const handleScroll = useCallback(() => {
     if (!emblaApi) return;
 
-    const slidesInView = emblaApi.slidesInView();
-    setFocusedIndex(slidesInView[0]);
+    const currentIndex = emblaApi.selectedScrollSnap();
+    setFocusedIndex(currentIndex);
 
-    if (slidesInView.includes(0) && !loadingMoreLeft) {
+    const canScrollPrev = emblaApi.canScrollPrev();
+    const canScrollNext = emblaApi.canScrollNext();
+
+    if (!canScrollPrev && !loadingMoreLeft) {
       setLoadingMoreLeft(true);
-      loadPrev().finally(() => setLoadingMoreLeft(false));
+      loadPrev().finally(() => {
+        setLoadingMoreLeft(false);
+      });
     }
 
-    if (slidesInView.includes(slides.length - 1) && !loadingMoreRight) {
+    if (!canScrollNext && !loadingMoreRight) {
       setLoadingMoreRight(true);
-      loadNext().finally(() => setLoadingMoreRight(false));
+      loadNext().finally(() => {
+        setLoadingMoreRight(false);
+      });
     }
   }, [
     emblaApi,
@@ -76,25 +89,26 @@ const EmblaCarousel: React.FC<CarouselPropType> = ({
     loadNext,
     loadPrev,
     loadingMoreLeft,
-    loadingMoreRight,
+    loadingMoreRight
   ]);
 
   useEffect(() => {
     if (!emblaApi) return;
 
-    emblaApi.on("scroll", handleScroll);
+    emblaApi.on("settle", handleScroll);
 
     return () => {
-      emblaApi.off("scroll", handleScroll);
+      emblaApi.off("settle", handleScroll);
     };
   }, [emblaApi, handleScroll]);
 
-  const scrollPrev = () => {
+  const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
-  };
-  const scrollNext = () => {
+  }, [emblaApi]);
+
+  const scrollNext = useCallback(() => {
     if (emblaApi) emblaApi.scrollNext();
-  };
+  }, [emblaApi]);
 
   const slideHeight = "19rem";
   const slideSpacing = "1rem";
