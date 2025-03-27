@@ -35,15 +35,15 @@ export const EventView = ({ event }: EventViewProps) => {
         sx={{
           marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
-          width: '100%',
-          overflowWrap: 'break-word',
-          wordWrap: 'break-word',
-          hyphens: 'auto',
-          position: 'relative',
+          width: "100%",
+          overflowWrap: "break-word",
+          wordWrap: "break-word",
+          hyphens: "auto",
+          position: "relative",
           left: 0,
-          maxWidth: '100%',
-          boxSizing: 'border-box',
-          padding: '0 16px'
+          maxWidth: "100%",
+          boxSizing: "border-box",
+          padding: "0 16px",
         }}
       >
         {buildTaggedText(event)}
@@ -54,11 +54,11 @@ export const EventView = ({ event }: EventViewProps) => {
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
         Accessed on:{" "}
-        {new Date(event.source.pubDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
+        {new Date(event.source.pubDate).toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
         })}
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>

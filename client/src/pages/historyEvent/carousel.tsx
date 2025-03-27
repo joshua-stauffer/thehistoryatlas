@@ -56,7 +56,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = ({
     loop: false,
     skipSnaps: false,
     dragFree: false,
-    containScroll: 'keepSnaps'
+    containScroll: "keepSnaps",
   });
   const [loadingMoreLeft, setLoadingMoreLeft] = useState(false);
   const [loadingMoreRight, setLoadingMoreRight] = useState(false);
@@ -89,7 +89,7 @@ const EmblaCarousel: React.FC<CarouselPropType> = ({
     loadNext,
     loadPrev,
     loadingMoreLeft,
-    loadingMoreRight
+    loadingMoreRight,
   ]);
 
   useEffect(() => {
