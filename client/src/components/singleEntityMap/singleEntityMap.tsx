@@ -86,6 +86,9 @@ const MapInsides = (props: MapProps) => {
   // if new data is provided, update the map
   const { latitude, longitude } = props;
   const map = useMap();
-  map.flyTo([latitude, longitude]);
+  map.flyTo([latitude, longitude], undefined, {
+    animate: false,
+    duration: 0.5,
+  });
   return null;
 };
