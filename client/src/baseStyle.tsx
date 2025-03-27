@@ -1,7 +1,6 @@
 import { createTheme } from "@mui/material/styles";
 
 export const serifFont = "'Libre Baskerville', 'Times New Roman', serif";
-// const bookFont = "Bacasime Antique"
 export const sansSerifFont = "'Source Sans Pro', 'Helvetica Neue', sans-serif";
 export const displayFont = "'Playfair Display', serif";
 
@@ -69,36 +68,6 @@ export const theme = createTheme({
       secondary: "#5D6D7E",
     },
   },
-  // palette: {
-  //   primary: {
-  //     light: "#e1bee7",
-  //     main: "#6a1b9a",
-  //     dark: "#4a148c",
-  //   },
-  //   secondary: {
-  //     light: "#ffb74d",
-  //     main: "#ef6c00",
-  //     dark: "#e65100",
-  //   },
-  //   error: {
-  //     main: "#f44336",
-  //   },
-  //   warning: {
-  //     main: "#ffa726",
-  //   },
-  //   info: {
-  //     main: "#29b6f6",
-  //   },
-  //   success: {
-  //     main: "#66bb6a",
-  //   },
-  //   contrastThreshold: 5,
-  // },
-  // typography: {
-  //   button: {
-  //     color: "secondary",
-  //   },
-  // },
   components: {
     MuiPaper: {
       styleOverrides: {
