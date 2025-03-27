@@ -4,8 +4,6 @@ import { mapTiles } from "../map/mapTiles";
 
 type Size = "SM" | "MD" | "LG";
 
-type tyleStyle = keyof typeof mapTiles;
-
 const mapDimensions = {
   SM: {
     height: "300px",
@@ -25,7 +23,6 @@ const mapDimensions = {
 };
 
 export interface SingleEntityMapProps {
-  mapTyle: tyleStyle;
   latitude?: number;
   longitude?: number;
   coords?: {
@@ -71,8 +68,8 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
       }}
     >
       <TileLayer
-        attribution="&copy; update"
-        url="https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}"
+        attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community"
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
       />
       <MapInsides latitude={lat} longitude={long} />
       {markers}

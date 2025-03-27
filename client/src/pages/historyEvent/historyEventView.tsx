@@ -146,7 +146,6 @@ export const HistoryEventView = () => {
               {/* Inline map for mobile */}
               <SingleEntityMap
                 coords={coords}
-                mapTyle={"natGeoWorld"}
                 size={"SM"}
                 title={currentEvent.map.locations[0].name}
                 zoom={6}
@@ -161,7 +160,6 @@ export const HistoryEventView = () => {
             {/* Standalone map for desktop */}
             <SingleEntityMap
               coords={coords}
-              mapTyle={"natGeoWorld"}
               size={"MD"}
               title={currentEvent.map.locations[0].name}
               zoom={7}
