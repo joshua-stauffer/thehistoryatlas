@@ -126,12 +126,6 @@ export const HistoryEventView = () => {
             >
               {currentEvent.storyTitle}
             </Typography>
-            <Divider
-              sx={{
-                marginTop: "10px",
-                marginBottom: "10px",
-              }}
-            />
             <EmblaCarousel
               slides={historyEvents.map((event) => (
                 <EventView event={event} />

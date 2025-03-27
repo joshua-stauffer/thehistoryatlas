@@ -35,7 +35,8 @@ export const EventView = ({ event }: EventViewProps) => {
         sx={{
           marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
-          width: "100%",
+          width: "calc(100% - 48px)",
+          margin: "0 24px",
           overflowWrap: "break-word",
           wordWrap: "break-word",
           hyphens: "auto",
@@ -43,7 +44,15 @@ export const EventView = ({ event }: EventViewProps) => {
           left: 0,
           maxWidth: "100%",
           boxSizing: "border-box",
-          padding: "0 16px",
+          padding: "24px 32px",
+          fontSize: "1.25rem",
+          lineHeight: 1.8,
+          color: "#2C3E50",
+          letterSpacing: "0.01em",
+          backgroundColor: "#FAFBFC",
+          borderRadius: "8px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          border: "1px solid rgba(0,0,0,0.05)",
         }}
       >
         {buildTaggedText(event)}
@@ -64,12 +73,7 @@ export const EventView = ({ event }: EventViewProps) => {
       <Typography variant={"body1"} sx={citationSX}>
         Authors: {event.source.author}
       </Typography>
-      <Divider
-        sx={{
-          marginTop: "20px",
-          marginBottom: "20px",
-        }}
-      />
+
       {/*<Typography variant={"body2"} fontSize={"18px"} marginLeft={"20px"}>*/}
       {/*  Other stories with this event*/}
       {/*</Typography>*/}
@@ -113,8 +117,12 @@ const buildTaggedText = (
         );
       const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
       return (
-        <Link key={`${tag.id}-${index}`} to={storyUrl}>
-          <TextButton text={tag.name} icon={icon} />
+        <Link
+          key={`${tag.id}-${index}`}
+          to={storyUrl}
+          style={{ textDecoration: "none" }}
+        >
+          <TextButton text={tag.name} />
         </Link>
       );
     } else if (tagIndicesSet.has(index)) {
