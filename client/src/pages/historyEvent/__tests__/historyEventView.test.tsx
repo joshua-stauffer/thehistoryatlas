@@ -142,6 +142,39 @@ describe("HistoryEventView Integration Tests", () => {
     ).toBeInTheDocument();
   });
 
+  it("displays description when present", async () => {
+    const eventWithDescription = {
+      ...bachIsBorn,
+      description: "A pivotal moment in musical history",
+    };
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/stories/:storyId/events/:eventId",
+          element: <HistoryEventView />,
+          loader: () => ({
+            events: [eventWithDescription],
+            index: 0,
+            loadNext: () => Promise.resolve(eventWithDescription),
+            loadPrev: () => Promise.resolve(eventWithDescription),
+          }),
+        },
+      ],
+      {
+        initialEntries: ["/stories/1/events/1"],
+      },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("A pivotal moment in musical history"),
+      ).toBeInTheDocument();
+    });
+  });
+
   it("allows navigation between events using buttons", async () => {
     renderWithRouter(["/stories/1/events/1"]);
 

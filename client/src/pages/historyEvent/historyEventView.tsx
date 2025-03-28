@@ -10,7 +10,6 @@ import { EventView } from "./eventView";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
 import SearchIcon from "@mui/icons-material/Search";
-import Divider from "@mui/material/Divider";
 import { EventPointer } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
 import { useCarouselState } from "./useCarouselState";
@@ -143,6 +142,23 @@ export const HistoryEventView = () => {
             >
               {currentEvent.storyTitle}
             </Typography>
+            {currentEvent.description && (
+              <Typography
+                variant={"subtitle1"}
+                sx={{
+                  textAlign: "center",
+                  marginBottom: "3vh",
+                  maxWidth: "800px",
+                  margin: "0 auto 3vh",
+                  color: "#4A5568",
+                  fontStyle: "italic",
+                  lineHeight: 1.6,
+                  padding: "0 20px",
+                }}
+              >
+                {currentEvent.description}
+              </Typography>
+            )}
             <EmblaCarousel
               slides={historyEvents.map((event) => (
                 <EventView event={event} />
