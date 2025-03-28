@@ -66,20 +66,37 @@ export const HistoryEventView = () => {
   };
 
   return (
-    <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
-      <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
-        {/* Event Feed */}
-
-        <Grid item sm={12} md={6}>
+    <Box
+      sx={{
+        height: { xs: "auto", sm: "92vh" },
+        maxHeight: { xs: "none", sm: "1000px" },
+        overflow: "auto",
+        width: "100%",
+      }}
+    >
+      <Grid
+        container
+        spacing={{ xs: 2, sm: 3, md: 5 }}
+        direction={"row"}
+        justifyItems={"center"}
+        sx={{
+          margin: 0,
+          width: "100%",
+          padding: { xs: "0px", sm: "8px" },
+        }}
+      >
+        <Grid item xs={12} sm={12} md={6} sx={{ width: "100%" }}>
           {/* left box desktop, top box mobile */}
           <Box
             sx={{
-              marginTop: "auto",
-              marginBottom: "auto",
-              paddingTop: "1vh",
-              minHeight: "92vh",
-              maxHeight: "1200px",
-              padding: "20px",
+              marginTop: { xs: "1vh", sm: "auto" },
+              marginBottom: { xs: "1vh", sm: "auto" },
+              paddingTop: { xs: "2vh", sm: "1vh" },
+              minHeight: { xs: "auto", sm: "92vh" },
+              maxHeight: { xs: "none", sm: "1200px" },
+              padding: { xs: "8px", sm: "20px" },
+              overflow: "auto",
+              width: "100%",
             }}
           >
             <Autocomplete
@@ -126,12 +143,6 @@ export const HistoryEventView = () => {
             >
               {currentEvent.storyTitle}
             </Typography>
-            <Divider
-              sx={{
-                marginTop: "10px",
-                marginBottom: "10px",
-              }}
-            />
             <EmblaCarousel
               slides={historyEvents.map((event) => (
                 <EventView event={event} />
@@ -146,7 +157,6 @@ export const HistoryEventView = () => {
               {/* Inline map for mobile */}
               <SingleEntityMap
                 coords={coords}
-                mapTyle={"natGeoWorld"}
                 size={"SM"}
                 title={currentEvent.map.locations[0].name}
                 zoom={6}
@@ -161,7 +171,6 @@ export const HistoryEventView = () => {
             {/* Standalone map for desktop */}
             <SingleEntityMap
               coords={coords}
-              mapTyle={"natGeoWorld"}
               size={"MD"}
               title={currentEvent.map.locations[0].name}
               zoom={7}
