@@ -9,6 +9,7 @@ class WikiDataPersonInput(BaseModel):
     name: str
     wikidata_id: str
     wikidata_url: str
+    description: str | None = None
 
 
 class WikiDataPersonOutput(WikiDataPersonInput):
@@ -21,6 +22,7 @@ class WikiDataPlaceInput(BaseModel):
     wikidata_url: str
     latitude: float
     longitude: float
+    description: str | None = None
 
 
 class WikiDataPlaceOutput(WikiDataPlaceInput):
@@ -34,6 +36,7 @@ class WikiDataTimeInput(BaseModel):
     date: str
     precision: Literal[7, 8, 9, 10, 11]
     calendar_model: str
+    description: str | None = None
 
 
 class WikiDataTimeOutput(WikiDataTimeInput):

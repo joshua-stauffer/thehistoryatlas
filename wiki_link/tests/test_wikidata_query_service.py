@@ -152,6 +152,25 @@ def test_get_label(config):
     assert label == "Johann Sebastian Bach"
 
 
+def test_get_description(config):
+    """Test retrieving a description for an entity that has one"""
+    service = WikiDataQueryService(config)
+
+    # Q1339 is Johann Sebastian Bach
+    description = service.get_description(id="Q1339", language="en")
+    assert description is not None
+    assert "composer" in description.lower()
+
+
+def test_get_description_missing(config):
+    """Test retrieving a description for an entity/language combination that doesn't exist"""
+    service = WikiDataQueryService(config)
+
+    # Using a made-up ID that shouldn't exist
+    description = service.get_description(id="Q999999999", language="en")
+    assert description is None
+
+
 def test_non_ascii_labels():
     """Test that labels with non-ASCII characters are handled correctly"""
     # Create a mock entity dictionary with non-ASCII characters

@@ -8,6 +8,7 @@ export interface HistoryEvent {
   map: Map;
   focus: Focus | null;
   storyTitle: string;
+  description?: string;
   stories: Story[]; // todo: refactor to a new type StoryLink
 }
 
