@@ -73,6 +73,7 @@ def convert_event_to_api(event: HistoryEvent) -> api_types.HistoryEvent:
         map=convert_map_to_api(event.map),
         focus=event.focus if event.focus else None,
         storyTitle=event.story_title,
+        description=event.description,
         stories=event.stories,
     )
 

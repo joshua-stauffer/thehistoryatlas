@@ -127,6 +127,7 @@ class HistoryEvent(BaseModel):
     map: Map
     focus: UUID | None = None
     story_title: str
+    description: str | None = None
     stories: list[str] = []
 
 

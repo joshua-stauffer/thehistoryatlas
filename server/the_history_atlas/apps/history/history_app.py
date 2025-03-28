@@ -367,7 +367,10 @@ class HistoryApp:
         if not story_names:
             raise MissingResourceError("Story not found")
         story_names_by_event_id = {
-            story_pointer.event_id: story_names[story_pointer.story_id]["name"]
+            story_pointer.event_id: {
+                "name": story_names[story_pointer.story_id]["name"],
+                "description": story_names[story_pointer.story_id]["description"],
+            }
             for story_pointer in story_pointers
         }
 
@@ -415,7 +418,10 @@ class HistoryApp:
                     ]
                 ),
                 focus=event_id,
-                story_title=story_names_by_event_id[event_query.event_id],
+                story_title=story_names_by_event_id[event_query.event_id]["name"],
+                description=story_names_by_event_id[event_query.event_id][
+                    "description"
+                ],
                 stories=list(),  # todo
             )
             for event_query in events
@@ -424,7 +430,6 @@ class HistoryApp:
             id=story_id,
             events=history_events,
             name=story_names[story_id]["name"],
-            description=story_names[story_id]["description"],
         )
 
     def get_default_story_and_event(
