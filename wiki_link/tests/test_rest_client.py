@@ -41,9 +41,13 @@ def test_create_person_with_non_ascii_name(mock_session, config):
     name = "María Ruiz-Tagle"
     wikidata_id = "Q123"
     wikidata_url = "http://example.com/Q123"
+    description = "A famous Chilean politician"
 
     result = client.create_person(
-        name=name, wikidata_id=wikidata_id, wikidata_url=wikidata_url
+        name=name,
+        wikidata_id=wikidata_id,
+        wikidata_url=wikidata_url,
+        description=description,
     )
 
     # Verify the request was made with correct data
@@ -63,6 +67,7 @@ def test_create_person_with_non_ascii_name(mock_session, config):
     assert json_data["name"] == "María Ruiz-Tagle"
     assert json_data["wikidata_id"] == wikidata_id
     assert json_data["wikidata_url"] == wikidata_url
+    assert json_data["description"] == description
 
 
 def test_create_place_with_non_ascii_name(mock_session, config):
@@ -80,6 +85,7 @@ def test_create_place_with_non_ascii_name(mock_session, config):
     wikidata_url = "http://example.com/Q123"
     latitude = -23.5505
     longitude = -46.6333
+    description = "The largest city in Brazil"
 
     result = client.create_place(
         name=name,
@@ -87,6 +93,7 @@ def test_create_place_with_non_ascii_name(mock_session, config):
         wikidata_url=wikidata_url,
         latitude=latitude,
         longitude=longitude,
+        description=description,
     )
 
     # Verify the request was made with correct data
@@ -107,6 +114,7 @@ def test_create_place_with_non_ascii_name(mock_session, config):
     assert json_data["wikidata_url"] == wikidata_url
     assert json_data["latitude"] == latitude
     assert json_data["longitude"] == longitude
+    assert json_data["description"] == description
 
 
 def test_create_time_with_non_ascii_name(mock_session, config):
@@ -306,3 +314,50 @@ def test_check_time_exists_error_handling(mock_session, config):
             calendar_model="http://www.wikidata.org/entity/Q1985727",
             precision=11,
         )
+
+
+def test_create_time_with_description(mock_session, config):
+    """Test creating a time tag with a description"""
+    client = RestClient(config)
+
+    # Reset the mock to clear the auth call
+    mock_session.reset_mock()
+    mock_session.post.return_value.ok = True
+    mock_session.post.return_value.json.return_value = {"id": "123"}
+
+    # Create a time tag with a description
+    name = "The Renaissance"
+    wikidata_id = "Q123"
+    wikidata_url = "http://example.com/Q123"
+    date = "1400-01-01T00:00:00Z"
+    calendar_model = "http://www.wikidata.org/entity/Q1985727"
+    precision = 7
+    description = "The period of European cultural rebirth"
+
+    result = client.create_time(
+        name=name,
+        wikidata_id=wikidata_id,
+        wikidata_url=wikidata_url,
+        date=date,
+        calendar_model=calendar_model,
+        precision=precision,
+        description=description,
+    )
+
+    # Verify the request was made with correct data
+    mock_session.post.assert_called_once()
+    call_args = mock_session.post.call_args
+
+    # Check that the URL is correct
+    assert call_args[0][0] == "http://test.example.com/wikidata/times"
+
+    # Parse the JSON to verify structure
+    data = call_args[1]["data"].decode("utf-8")
+    json_data = json.loads(data)
+    assert json_data["name"] == name
+    assert json_data["wikidata_id"] == wikidata_id
+    assert json_data["wikidata_url"] == wikidata_url
+    assert json_data["date"] == date
+    assert json_data["calendar_model"] == calendar_model
+    assert json_data["precision"] == precision
+    assert json_data["description"] == description

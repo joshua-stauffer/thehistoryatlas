@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from unittest.mock import Mock, patch, ANY, create_autospec
+from unittest.mock import Mock, patch, ANY, create_autospec, call
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -825,51 +825,67 @@ class TestBuildEvents:
         # Arrange
         mock_item = Mock(wiki_id="Q123", entity_type="PERSON")
 
+        # Mock entity
+        entity_mock = Mock()
+        entity_mock.id = "Q123"
+        entity_mock.labels = {"en": Mock(value="Test Person")}
+        mock_wikidata_service.get_entity.return_value = entity_mock
+
         # Mock event factory
         mock_event_factory.entity_has_event.return_value = True
-        mock_event = Mock()
+        mock_event_factory.version = 1
+        mock_event_factory.label = "test_factory"
 
-        # Mock database calls
+        # Mock database
         mock_database.event_exists.return_value = False
 
-        # Create person tag
-        person_tag = Mock()
-        person_tag.wiki_id = "Q123"
+        # Mock event
+        mock_event = Mock()
+
+        # Set up person tag
+        person_tag = create_autospec(PersonWikiTag)
         person_tag.name = "Test Person"
+        person_tag.wiki_id = "Q123"
         person_tag.start_char = 0
         person_tag.stop_char = 10
         mock_event.people_tags = [person_tag]
 
-        # Create place tag
-        place_tag = Mock()
-        place_tag.wiki_id = "Q456"
+        # Set up place tag
+        place_tag = create_autospec(PlaceWikiTag)
         place_tag.name = "Test Place"
+        place_tag.wiki_id = "Q456"
         place_tag.start_char = 12
         place_tag.stop_char = 22
-        location = Mock()
-        coordinate_location = Mock()
+        location = create_autospec(GeoLocation)
+        coordinate_location = create_autospec(CoordinateLocation)
         coordinate_location.latitude = 37.7749
         coordinate_location.longitude = -122.4194
         location.coordinates = coordinate_location
         place_tag.location = location
         mock_event.place_tag = place_tag
 
-        # Create time tag WITH a WikiData ID
-        time_tag = Mock()
-        time_tag.wiki_id = "Q789"
+        # Set up time tag
+        time_tag = create_autospec(TimeWikiTag)
         time_tag.name = "Test Time"
+        time_tag.wiki_id = "Q789"
         time_tag.start_char = 24
         time_tag.stop_char = 33
-        time_tag.time_definition = Mock()
-        time_tag.time_definition.time = "2024-01-01"
-        time_tag.time_definition.calendarmodel = (
-            "http://www.wikidata.org/entity/Q1985727"
-        )
-        time_tag.time_definition.precision = 11
+        time_definition = create_autospec(TimeDefinition)
+        time_definition.time = "2024-01-01"
+        time_definition.calendarmodel = "http://www.wikidata.org/entity/Q1985727"
+        time_definition.precision = 11
+        time_tag.time_definition = time_definition
         mock_event.time_tag = time_tag
 
         mock_event.summary = "Test summary"
         mock_event_factory.create_wiki_event.return_value = mock_event
+
+        # Mock descriptions
+        mock_wikidata_service.get_description.side_effect = lambda id, language: {
+            "Q123": "A test person",
+            "Q456": "A test place",
+            "Q789": "A test time",
+        }.get(id)
 
         # Mock rest client
         mock_rest_client.get_tags.return_value = {"wikidata_ids": []}
@@ -893,10 +909,22 @@ class TestBuildEvents:
             mock_rest_client.get_tags.assert_called_once_with(
                 wikidata_ids=["Q123", "Q456", "Q789"]
             )
+
+            # Verify descriptions were fetched
+            mock_wikidata_service.get_description.assert_has_calls(
+                [
+                    call(id="Q123", language="en"),
+                    call(id="Q456", language="en"),
+                    call(id="Q789", language="en"),
+                ],
+                any_order=True,
+            )
+
             mock_rest_client.create_person.assert_called_once_with(
                 name="Test Person",
                 wikidata_id="Q123",
                 wikidata_url="https://www.wikidata.org/wiki/Q123",
+                description="A test person",
             )
             mock_rest_client.create_place.assert_called_once_with(
                 name="Test Place",
@@ -904,6 +932,7 @@ class TestBuildEvents:
                 wikidata_url="https://www.wikidata.org/wiki/Q456",
                 latitude=37.7749,
                 longitude=-122.4194,
+                description="A test place",
             )
             mock_rest_client.create_time.assert_called_once_with(
                 name="Test Time",
@@ -912,6 +941,7 @@ class TestBuildEvents:
                 date="2024-01-01",
                 calendar_model="http://www.wikidata.org/entity/Q1985727",
                 precision=11,
+                description="A test time",
             )
             mock_rest_client.create_event.assert_called_once()
             mock_database.upsert_created_event.assert_called_once()

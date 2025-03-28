@@ -35,12 +35,19 @@ class RestClient:
             raise RestClientError(f"Failed to get tags: {response.text}")
         return response.json()
 
-    def create_person(self, name: str, wikidata_id: str, wikidata_url: str) -> dict:
+    def create_person(
+        self,
+        name: str,
+        wikidata_id: str,
+        wikidata_url: str,
+        description: str | None = None,
+    ) -> dict:
         """Create a new person tag"""
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
             "wikidata_url": wikidata_url,
+            "description": description,
         }
         response = self._session.post(
             f"{self._base_url}/wikidata/people",
@@ -58,6 +65,7 @@ class RestClient:
         wikidata_url: str,
         latitude: float,
         longitude: float,
+        description: str | None = None,
     ) -> dict:
         """Create a new place tag"""
         data = {
@@ -66,6 +74,7 @@ class RestClient:
             "wikidata_url": wikidata_url,
             "latitude": latitude,
             "longitude": longitude,
+            "description": description,
         }
         response = self._session.post(
             f"{self._base_url}/wikidata/places",
@@ -84,6 +93,7 @@ class RestClient:
         date: str,
         calendar_model: str,
         precision: int,
+        description: str | None = None,
     ) -> dict:
         """Create a new time tag"""
         data = {
@@ -93,6 +103,7 @@ class RestClient:
             "date": date,
             "calendar_model": calendar_model,
             "precision": precision,
+            "description": description,
         }
         response = self._session.post(
             f"{self._base_url}/wikidata/times",

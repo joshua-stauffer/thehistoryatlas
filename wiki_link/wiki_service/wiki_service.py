@@ -174,22 +174,36 @@ class WikiService:
             # Create missing tags
             for person_tag in event.people_tags:
                 if not id_map.get(person_tag.wiki_id):
+                    if person_tag.wiki_id:
+                        description = self._query.get_description(
+                            id=person_tag.wiki_id, language="en"
+                        )
+                    else:
+                        description = None
                     result = self._rest_client.create_person(
                         name=person_tag.name,
                         wikidata_id=person_tag.wiki_id,
                         wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
+                        description=description,
                     )
                     id_map[person_tag.wiki_id] = result["id"]
 
             if not id_map.get(event.place_tag.wiki_id):
                 coords = event.place_tag.location.coordinates
                 if coords:
+                    if event.place_tag.wiki_id:
+                        description = self._query.get_description(
+                            id=event.place_tag.wiki_id, language="en"
+                        )
+                    else:
+                        description = None
                     result = self._rest_client.create_place(
                         name=event.place_tag.name,
                         wikidata_id=event.place_tag.wiki_id,
                         wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
                         latitude=coords.latitude,
                         longitude=coords.longitude,
+                        description=description,
                     )
                     id_map[event.place_tag.wiki_id] = result["id"]
                 # todo: handle case of geoshape, no coords
@@ -197,6 +211,9 @@ class WikiService:
             # Create time tag
             if event.time_tag.wiki_id:
                 if not id_map.get(event.time_tag.wiki_id):
+                    description = self._query.get_description(
+                        id=event.time_tag.wiki_id, language="en"
+                    )
                     result = self._rest_client.create_time(
                         name=event.time_tag.name,
                         wikidata_id=event.time_tag.wiki_id,
@@ -204,6 +221,7 @@ class WikiService:
                         date=event.time_tag.time_definition.time,
                         calendar_model=event.time_tag.time_definition.calendarmodel,
                         precision=event.time_tag.time_definition.precision,
+                        description=description,
                     )
                     time_id = result["id"]
                 else:
@@ -226,6 +244,7 @@ class WikiService:
                         date=event.time_tag.time_definition.time,
                         calendar_model=event.time_tag.time_definition.calendarmodel,
                         precision=event.time_tag.time_definition.precision,
+                        description=None,
                     )
                     time_id = result["id"]
 

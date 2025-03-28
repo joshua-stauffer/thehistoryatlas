@@ -343,6 +343,32 @@ class WikiDataQueryService:
                 )
             return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
+    def get_description(self, id: str, language: str) -> Optional[str]:
+        """Get an entity's description in the specified language.
+
+        Args:
+            id: The Wikidata entity ID (e.g. Q1339)
+            language: The language code (e.g. 'en')
+
+        Returns:
+            The description text if found, None if not found or on error
+        """
+        url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/descriptions/{language}"
+        retries = 0
+        while True:
+            result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
+            if self._handle_rate_limit(result, retries):
+                retries += 1
+                continue
+
+            if not result.ok:
+                if result.status_code == 404:
+                    return None
+                raise WikiDataQueryServiceError(
+                    f"Query description request failed with {result.status_code}: {result.json()}"
+                )
+            return result.text.strip('"').encode("utf-8").decode("unicode_escape")
+
     def get_geo_location(self, id: str) -> GeoLocation:
         entity = self.get_entity(id)
         coordinate = self.get_coordinate_location(entity)
