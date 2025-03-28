@@ -66,26 +66,26 @@ export const HistoryEventView = () => {
   };
 
   return (
-    <Box 
-      sx={{ 
-        height: { xs: "auto", sm: "92vh" }, 
+    <Box
+      sx={{
+        height: { xs: "auto", sm: "92vh" },
         maxHeight: { xs: "none", sm: "1000px" },
         overflow: "auto",
-        width: "100%"
+        width: "100%",
       }}
     >
-      <Grid 
-        container 
-        spacing={{ xs: 2, sm: 3, md: 5 }} 
-        direction={"row"} 
+      <Grid
+        container
+        spacing={{ xs: 2, sm: 3, md: 5 }}
+        direction={"row"}
         justifyItems={"center"}
         sx={{
           margin: 0,
-          width: '100%',
-          padding: { xs: '0px', sm: '8px' }
+          width: "100%",
+          padding: { xs: "0px", sm: "8px" },
         }}
       >
-        <Grid item xs={12} sm={12} md={6} sx={{ width: '100%' }}>
+        <Grid item xs={12} sm={12} md={6} sx={{ width: "100%" }}>
           {/* left box desktop, top box mobile */}
           <Box
             sx={{
@@ -96,7 +96,7 @@ export const HistoryEventView = () => {
               maxHeight: { xs: "none", sm: "1200px" },
               padding: { xs: "8px", sm: "20px" },
               overflow: "auto",
-              width: '100%'
+              width: "100%",
             }}
           >
             <Autocomplete

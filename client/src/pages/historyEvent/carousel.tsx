@@ -21,22 +21,42 @@ type EventNavBarProps = {
 
 const EventNavBar = (props: EventNavBarProps) => {
   return (
-    <ButtonGroup variant={"outlined"} sx={{ width: "100%" }}>
+    <ButtonGroup
+      variant="text"
+      sx={{
+        width: "100%",
+        "& .MuiButton-root": {
+          fontFamily: "'Source Sans Pro', 'Helvetica Neue', sans-serif",
+          fontSize: "1.1rem",
+          fontWeight: 500,
+          color: "#34495E",
+          padding: "12px 24px",
+          transition: "all 0.3s ease",
+          borderColor: "rgba(0,0,0,0.08)",
+          "&:hover": {
+            backgroundColor: "rgba(52, 73, 94, 0.04)",
+            color: "#8E44AD",
+          },
+        },
+      }}
+    >
       <Button
         sx={{
           marginLeft: "auto",
+          borderRight: "none",
         }}
-        startIcon={<ArrowBackIcon />}
+        startIcon={<ArrowBackIcon sx={{ transition: "all 0.3s ease" }} />}
         onClick={props.navigateLeft}
-        variant={"text"}
       >
         Previous Event
       </Button>
       <Button
-        sx={{ marginRight: "auto" }}
-        endIcon={<ArrowForwardIcon />}
+        sx={{
+          marginRight: "auto",
+          borderLeft: "1px solid rgba(0,0,0,0.08)",
+        }}
+        endIcon={<ArrowForwardIcon sx={{ transition: "all 0.3s ease" }} />}
         onClick={props.navigateRight}
-        variant={"text"}
       >
         Next Event
       </Button>
