@@ -50,6 +50,7 @@ class HistoryEvent(BaseModel):
     map: Map
     focus: Union[None, UUID] = None
     storyTitle: str
+    description: str | None = None
     stories: List[str] = []
 
 
