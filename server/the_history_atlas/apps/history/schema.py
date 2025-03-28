@@ -27,6 +27,7 @@ class StoryName(Base):
     tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), nullable=False)
     name = Column(VARCHAR, nullable=False)
     lang = Column(VARCHAR, nullable=False)
+    description = Column(VARCHAR, nullable=True)
 
 
 class Citation(Base):

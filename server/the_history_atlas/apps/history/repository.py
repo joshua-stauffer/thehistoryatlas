@@ -509,20 +509,24 @@ class Repository:
 
     def get_story_names(
         self, story_ids: tuple[UUID, ...], session: Session
-    ) -> dict[UUID, str]:
+    ) -> dict[UUID, dict[str, str]]:
         rows = session.execute(
             text(
                 """
                 select
                     tag_id as story_id,
-                    name as story_name
+                    name as story_name,
+                    description
                 from story_names
                 where tag_id in :story_ids;
             """
             ),
             {"story_ids": story_ids},
         ).all()
-        return {row.story_id: row.story_name for row in rows}
+        return {
+            row.story_id: {"name": row.story_name, "description": row.description}
+            for row in rows
+        }
 
     def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary"""
@@ -927,8 +931,8 @@ class Repository:
         session.execute(
             text(
                 """
-                insert into story_names (id, tag_id, name, lang)
-                values (:id, :tag_id, :name, :lang)
+                insert into story_names (id, tag_id, name, lang, description)
+                values (:id, :tag_id, :name, :lang, :description)
             """
             ),
             [
@@ -937,6 +941,7 @@ class Repository:
                     "tag_id": tag_id,
                     "name": story_name.name,
                     "lang": story_name.lang,
+                    "description": story_name.description,
                 }
                 for story_name in story_names
             ],

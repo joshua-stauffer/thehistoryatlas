@@ -76,7 +76,7 @@ class HistoryApp:
             self._repository.add_story_names(
                 tag_id=id,
                 session=session,
-                story_names=self.get_available_person_story_names(name=person.name),
+                story_names=self.get_available_person_story_names(person=person),
             )
             session.commit()
         return Person(id=id, **person.model_dump())
@@ -105,7 +105,7 @@ class HistoryApp:
             self._repository.add_story_names(
                 tag_id=id,
                 session=session,
-                story_names=self.get_available_place_story_names(name=place.name),
+                story_names=self.get_available_place_story_names(place=place),
             )
             session.commit()
         return Place(id=id, **place.model_dump())
@@ -133,7 +133,7 @@ class HistoryApp:
             self._repository.add_story_names(
                 tag_id=id,
                 session=session,
-                story_names=self.get_available_time_story_names(name=time.name),
+                story_names=self.get_available_time_story_names(time=time),
             )
             session.commit()
         return Time(id=id, **time.model_dump())
@@ -165,8 +165,12 @@ class HistoryApp:
 
         # Format results as list of dicts
         return [
-            {"id": str(story_id), "name": name}
-            for story_id, name in story_names.items()
+            {
+                "id": str(story_id),
+                "name": story_info["name"],
+                "description": story_info["description"],
+            }
+            for story_id, story_info in story_names.items()
         ]
 
     def create_wikidata_event(
@@ -363,7 +367,7 @@ class HistoryApp:
         if not story_names:
             raise MissingResourceError("Story not found")
         story_names_by_event_id = {
-            story_pointer.event_id: story_names[story_pointer.story_id]
+            story_pointer.event_id: story_names[story_pointer.story_id]["name"]
             for story_pointer in story_pointers
         }
 
@@ -419,7 +423,8 @@ class HistoryApp:
         return Story(
             id=story_id,
             events=history_events,
-            name=story_names[story_id],
+            name=story_names[story_id]["name"],
+            description=story_names[story_id]["description"],
         )
 
     def get_default_story_and_event(
@@ -437,19 +442,31 @@ class HistoryApp:
             # return random story/event
             return self._repository.get_default_story_and_event()
 
-    def get_available_person_story_names(self, name: str) -> list[StoryName]:
+    def get_available_person_story_names(self, person: PersonInput) -> list[StoryName]:
         return [
-            StoryName(lang="en", name=f"The Life of {name}"),
+            StoryName(
+                lang="en",
+                name=f"The Life of {person.name}",
+                description=person.description,
+            ),
         ]
 
-    def get_available_place_story_names(self, name: str) -> list[StoryName]:
+    def get_available_place_story_names(self, place: PlaceInput) -> list[StoryName]:
         return [
-            StoryName(lang="en", name=f"The History of {name}"),
+            StoryName(
+                lang="en",
+                name=f"The History of {place.name}",
+                description=place.description,
+            ),
         ]
 
-    def get_available_time_story_names(self, name: str) -> list[StoryName]:
+    def get_available_time_story_names(self, time: TimeInput) -> list[StoryName]:
         return [
-            StoryName(lang="en", name=f"Events of {name}"),
+            StoryName(
+                lang="en",
+                name=f"Events of {time.name}",
+                description=time.description,
+            ),
         ]
 
     def check_time_exists(

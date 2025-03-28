@@ -37,7 +37,8 @@ class WikiDataEntity(BaseModel):
     name: str
 
 
-class PersonInput(WikiDataEntity): ...
+class PersonInput(WikiDataEntity):
+    description: str | None = None
 
 
 class Person(PersonInput):
@@ -47,6 +48,7 @@ class Person(PersonInput):
 class PlaceInput(WikiDataEntity):
     longitude: float
     latitude: float
+    description: str | None = None
 
 
 class Place(PlaceInput):
@@ -60,6 +62,7 @@ class TimeInput(WikiDataEntity):
     date: str
     precision: Precision
     calendar_model: str
+    description: str | None = None
 
 
 class Time(TimeInput):
@@ -76,6 +79,7 @@ class StoryOrder(BaseModel):
 class StoryName(BaseModel):
     name: str
     lang: str
+    description: str | None = None
 
 
 class Point(BaseModel):
@@ -129,4 +133,5 @@ class HistoryEvent(BaseModel):
 class Story(BaseModel):
     id: UUID
     name: str
+    description: str | None = None
     events: list[HistoryEvent]

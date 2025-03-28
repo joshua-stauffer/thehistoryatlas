@@ -55,6 +55,7 @@ def convert_story_to_api(story: Story, index: int) -> api_types.Story:
     return api_types.Story(
         id=story.id,
         name=story.name,
+        description=story.description,
         events=[convert_event_to_api(event) for event in story.events],
         index=index,
     )

@@ -56,6 +56,7 @@ class HistoryEvent(BaseModel):
 class Story(BaseModel):
     id: UUID
     name: str
+    description: str | None = None
     events: List[HistoryEvent]
     index: int
 
