@@ -101,7 +101,9 @@ class PersonEducationBegan(EventFactory):
                     academic_major_name = academic_majors[0]
                 else:
                     # Join all but the last major with commas, then add "and" before the last one
-                    academic_major_name = ", ".join(academic_majors[:-1]) + " and " + academic_majors[-1]
+                    academic_major_name = (
+                        ", ".join(academic_majors[:-1]) + " and " + academic_majors[-1]
+                    )
 
             summary = self._summary(
                 person=person_name,
@@ -158,7 +160,9 @@ class PersonEducationBegan(EventFactory):
         # Determine pronoun based on gender
         pronoun = "their"
         if SEX_OR_GENDER in self._entity.claims:
-            gender_id = self._entity.claims[SEX_OR_GENDER][0]["mainsnak"]["datavalue"]["value"]["id"]
+            gender_id = self._entity.claims[SEX_OR_GENDER][0]["mainsnak"]["datavalue"][
+                "value"
+            ]["id"]
             if gender_id == MALE:
                 pronoun = "his"
             elif gender_id == FEMALE:

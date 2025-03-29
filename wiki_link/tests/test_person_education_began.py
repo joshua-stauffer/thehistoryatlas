@@ -237,15 +237,13 @@ def test_create_wiki_event_male_pronoun(mock_entity, mock_query):
                     "datavalue": {"value": {"id": MALE}},
                 },
             }
-        ]
+        ],
     }
     factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
-    assert (
-        event.summary == "Test Person began his studies at Test University in 1990."
-    )
+    assert event.summary == "Test Person began his studies at Test University in 1990."
 
 
 def test_create_wiki_event_female_pronoun(mock_entity, mock_query):
@@ -277,15 +275,13 @@ def test_create_wiki_event_female_pronoun(mock_entity, mock_query):
                     "datavalue": {"value": {"id": FEMALE}},
                 },
             }
-        ]
+        ],
     }
     factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
-    assert (
-        event.summary == "Test Person began her studies at Test University in 1990."
-    )
+    assert event.summary == "Test Person began her studies at Test University in 1990."
 
 
 def test_create_wiki_event_unknown_gender_pronoun(mock_entity, mock_query):
@@ -317,7 +313,7 @@ def test_create_wiki_event_unknown_gender_pronoun(mock_entity, mock_query):
                     "datavalue": {"value": {"id": "Q123"}},  # Unknown gender
                 },
             }
-        ]
+        ],
     }
     factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
     events = factory.create_wiki_event()
@@ -438,7 +434,7 @@ def test_create_wiki_event_with_two_majors(mock_entity, mock_query):
                         {
                             "property": ACADEMIC_MAJOR,
                             "datavalue": {"value": {"id": "Q790"}},
-                        }
+                        },
                     ],
                 },
             }
@@ -486,7 +482,7 @@ def test_create_wiki_event_with_three_majors(mock_entity, mock_query):
                         {
                             "property": ACADEMIC_MAJOR,
                             "datavalue": {"value": {"id": "Q791"}},
-                        }
+                        },
                     ],
                 },
             }
