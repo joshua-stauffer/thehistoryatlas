@@ -40,7 +40,9 @@ class TestPersonWasBorn:
         )
         factory = PersonWasBorn(entity=bach_entity, query=mock_query)
 
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
             == "On March 21, 1685, Johann Sebastian Bach was born to Maria Elisabeth Lämmerhirt and Johann Ambrosius Bach in Eisenach."
@@ -57,7 +59,9 @@ class TestPersonWasBorn:
             expected_geo_location_id="Q7070",
         )
         factory = PersonWasBorn(entity=bach_entity_precision_10, query=mock_query)
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
             == "Johann Sebastian Bach was born in March 1685 to Maria Elisabeth Lämmerhirt and Johann Ambrosius Bach in Eisenach."
@@ -74,7 +78,9 @@ class TestPersonWasBorn:
             expected_geo_location_id="Q7070",
         )
         factory = PersonWasBorn(entity=bach_entity_precision_9, query=mock_query)
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
             == "Johann Sebastian Bach was born in 1685 to Maria Elisabeth Lämmerhirt and Johann Ambrosius Bach in Eisenach."
@@ -85,7 +91,9 @@ class TestPersonWasBorn:
     ) -> None:
         query = WikiDataQueryService(config=config)
         factory = PersonWasBorn(entity=einstein_entity, query=query)
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
             == "On March 14, 1879, Albert Einstein was born to Pauline Koch and Hermann Einstein in Ulm.",
