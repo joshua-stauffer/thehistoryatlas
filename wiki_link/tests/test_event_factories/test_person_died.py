@@ -37,7 +37,9 @@ class TestPersonDied:
         )
         factory = PersonDied(entity=bach_entity, query=mock_query)
 
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
             == "On July 28, 1750, Johann Sebastian Bach died in Leipzig."
@@ -54,7 +56,9 @@ class TestPersonDied:
             expected_geo_location_id="Q2079",
         )
         factory = PersonDied(entity=bach_entity_death_precision_10, query=mock_query)
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary == "Johann Sebastian Bach died in July 1750 in Leipzig."
         )
@@ -70,7 +74,9 @@ class TestPersonDied:
             expected_geo_location_id="Q2079",
         )
         factory = PersonDied(entity=bach_entity_death_precision_9, query=mock_query)
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert wiki_event.summary == "Johann Sebastian Bach died in 1750 in Leipzig."
 
     def test_einstein(
@@ -78,7 +84,9 @@ class TestPersonDied:
     ) -> None:
         query = WikiDataQueryService(config=config)
         factory = PersonDied(entity=einstein_entity, query=query)
-        wiki_event = factory.create_wiki_event()
+        wiki_events = factory.create_wiki_event()
+        assert len(wiki_events) == 1
+        wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
             == "On April 18, 1955, Albert Einstein died in Princeton."

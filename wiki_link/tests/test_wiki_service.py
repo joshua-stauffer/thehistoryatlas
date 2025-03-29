@@ -784,7 +784,8 @@ def mock_event_factory():
             datetime=datetime.now(timezone.utc), calendar_model="gregorian", precision=9
         ),
     )
-    factory.create_wiki_event.return_value = event
+    event.summary = "Test summary"
+    factory.create_wiki_event.return_value = [event]
     factory.label = "test_event"
     factory.version = "1.0"
     return factory
@@ -878,7 +879,7 @@ class TestBuildEvents:
         mock_event.time_tag = time_tag
 
         mock_event.summary = "Test summary"
-        mock_event_factory.create_wiki_event.return_value = mock_event
+        mock_event_factory.create_wiki_event.return_value = [mock_event]
 
         # Mock descriptions
         mock_wikidata_service.get_description.side_effect = lambda id, language: {
@@ -1065,7 +1066,7 @@ class TestBuildEvents:
         time_tag.time_definition = time_definition
         mock_event.time_tag = time_tag
 
-        mock_event_factory.create_wiki_event.return_value = mock_event
+        mock_event_factory.create_wiki_event.return_value = [mock_event]
 
         # Create a fresh mock for RestClient that won't be affected by the fixture setup
         mock_rest_client = Mock(spec=RestClient)

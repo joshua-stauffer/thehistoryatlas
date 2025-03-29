@@ -154,131 +154,9 @@ class WikiService:
             return
 
         try:
-            event = event_factory.create_wiki_event()
+            events = event_factory.create_wiki_event()
 
-            # Collect all WikiData IDs to check
-            wikidata_ids = []
-            for person_tag in event.people_tags:
-                wikidata_ids.append(person_tag.wiki_id)
-            wikidata_ids.append(event.place_tag.wiki_id)
-            if event.time_tag.wiki_id:
-                wikidata_ids.append(event.time_tag.wiki_id)
-
-            # Check which tags already exist
-            existing_tags = self._rest_client.get_tags(wikidata_ids=wikidata_ids)
-            id_map = {
-                tag["wikidata_id"]: tag["id"]
-                for tag in existing_tags.get("wikidata_ids", [])
-            }
-
-            # Create missing tags
-            for person_tag in event.people_tags:
-                if not id_map.get(person_tag.wiki_id):
-                    if person_tag.wiki_id:
-                        description = self._query.get_description(
-                            id=person_tag.wiki_id, language="en"
-                        )
-                    else:
-                        description = None
-                    result = self._rest_client.create_person(
-                        name=person_tag.name,
-                        wikidata_id=person_tag.wiki_id,
-                        wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
-                        description=description,
-                    )
-                    id_map[person_tag.wiki_id] = result["id"]
-
-            if not id_map.get(event.place_tag.wiki_id):
-                coords = event.place_tag.location.coordinates
-                if coords:
-                    if event.place_tag.wiki_id:
-                        description = self._query.get_description(
-                            id=event.place_tag.wiki_id, language="en"
-                        )
-                    else:
-                        description = None
-                    result = self._rest_client.create_place(
-                        name=event.place_tag.name,
-                        wikidata_id=event.place_tag.wiki_id,
-                        wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
-                        latitude=coords.latitude,
-                        longitude=coords.longitude,
-                        description=description,
-                    )
-                    id_map[event.place_tag.wiki_id] = result["id"]
-                # todo: handle case of geoshape, no coords
-
-            # Create time tag
-            if event.time_tag.wiki_id:
-                if not id_map.get(event.time_tag.wiki_id):
-                    description = self._query.get_description(
-                        id=event.time_tag.wiki_id, language="en"
-                    )
-                    result = self._rest_client.create_time(
-                        name=event.time_tag.name,
-                        wikidata_id=event.time_tag.wiki_id,
-                        wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
-                        date=event.time_tag.time_definition.time,
-                        calendar_model=event.time_tag.time_definition.calendarmodel,
-                        precision=event.time_tag.time_definition.precision,
-                        description=description,
-                    )
-                    time_id = result["id"]
-                else:
-                    time_id = id_map[event.time_tag.wiki_id]
-            else:
-                # Check if the time already exists
-                time_exists = self._rest_client.check_time_exists(
-                    datetime=event.time_tag.time_definition.time,
-                    calendar_model=event.time_tag.time_definition.calendarmodel,
-                    precision=event.time_tag.time_definition.precision,
-                )
-                if time_exists:
-                    time_id = str(time_exists)
-                else:
-                    # Create time tag without WikiData ID
-                    result = self._rest_client.create_time(
-                        name=event.time_tag.name,
-                        wikidata_id=None,
-                        wikidata_url=None,
-                        date=event.time_tag.time_definition.time,
-                        calendar_model=event.time_tag.time_definition.calendarmodel,
-                        precision=event.time_tag.time_definition.precision,
-                        description=None,
-                    )
-                    time_id = result["id"]
-
-            # Create event tags
-            tags = []
-            for person_tag in event.people_tags:
-                tags.append(
-                    {
-                        "id": id_map[person_tag.wiki_id],
-                        "name": person_tag.name,
-                        "start_char": person_tag.start_char,
-                        "stop_char": person_tag.stop_char,
-                    }
-                )
-
-            tags.append(
-                {
-                    "id": id_map[event.place_tag.wiki_id],
-                    "name": event.place_tag.name,
-                    "start_char": event.place_tag.start_char,
-                    "stop_char": event.place_tag.stop_char,
-                }
-            )
-
-            tags.append(
-                {
-                    "id": time_id,
-                    "name": event.time_tag.name,
-                    "start_char": event.time_tag.start_char,
-                    "stop_char": event.time_tag.stop_char,
-                }
-            )
-
-            # Create the event
+            # Create a citation that will be used for all events
             citation = {
                 "access_date": datetime.now(timezone.utc).isoformat(),
                 "wikidata_item_url": f"https://www.wikidata.org/wiki/{wiki_id}",
@@ -286,13 +164,138 @@ class WikiService:
                 "wikidata_item_id": wiki_id,
             }
 
-            self._rest_client.create_event(
-                summary=event.summary,
-                tags=tags,
-                citation=citation,
-            )
+            # Process each event
+            for event in events:
+                # Collect all WikiData IDs to check
+                wikidata_ids = []
+                for person_tag in event.people_tags:
+                    wikidata_ids.append(person_tag.wiki_id)
+                wikidata_ids.append(event.place_tag.wiki_id)
+                if event.time_tag.wiki_id:
+                    wikidata_ids.append(event.time_tag.wiki_id)
 
-            # Record successful event creation
+                # Check which tags already exist
+                existing_tags = self._rest_client.get_tags(wikidata_ids=wikidata_ids)
+                id_map = {
+                    tag["wikidata_id"]: tag["id"]
+                    for tag in existing_tags.get("wikidata_ids", [])
+                }
+
+                # Create missing tags
+                for person_tag in event.people_tags:
+                    if not id_map.get(person_tag.wiki_id):
+                        if person_tag.wiki_id:
+                            description = self._query.get_description(
+                                id=person_tag.wiki_id, language="en"
+                            )
+                        else:
+                            description = None
+                        result = self._rest_client.create_person(
+                            name=person_tag.name,
+                            wikidata_id=person_tag.wiki_id,
+                            wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
+                            description=description,
+                        )
+                        id_map[person_tag.wiki_id] = result["id"]
+
+                if not id_map.get(event.place_tag.wiki_id):
+                    coords = event.place_tag.location.coordinates
+                    if coords:
+                        if event.place_tag.wiki_id:
+                            description = self._query.get_description(
+                                id=event.place_tag.wiki_id, language="en"
+                            )
+                        else:
+                            description = None
+                        result = self._rest_client.create_place(
+                            name=event.place_tag.name,
+                            wikidata_id=event.place_tag.wiki_id,
+                            wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
+                            latitude=coords.latitude,
+                            longitude=coords.longitude,
+                            description=description,
+                        )
+                        id_map[event.place_tag.wiki_id] = result["id"]
+                    # todo: handle case of geoshape, no coords
+
+                # Create time tag
+                if event.time_tag.wiki_id:
+                    if not id_map.get(event.time_tag.wiki_id):
+                        description = self._query.get_description(
+                            id=event.time_tag.wiki_id, language="en"
+                        )
+                        result = self._rest_client.create_time(
+                            name=event.time_tag.name,
+                            wikidata_id=event.time_tag.wiki_id,
+                            wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
+                            date=event.time_tag.time_definition.time,
+                            calendar_model=event.time_tag.time_definition.calendarmodel,
+                            precision=event.time_tag.time_definition.precision,
+                            description=description,
+                        )
+                        time_id = result["id"]
+                    else:
+                        time_id = id_map[event.time_tag.wiki_id]
+                else:
+                    # Check if the time already exists
+                    time_exists = self._rest_client.check_time_exists(
+                        datetime=event.time_tag.time_definition.time,
+                        calendar_model=event.time_tag.time_definition.calendarmodel,
+                        precision=event.time_tag.time_definition.precision,
+                    )
+                    if time_exists:
+                        time_id = str(time_exists)
+                    else:
+                        # Create time tag without WikiData ID
+                        result = self._rest_client.create_time(
+                            name=event.time_tag.name,
+                            wikidata_id=None,
+                            wikidata_url=None,
+                            date=event.time_tag.time_definition.time,
+                            calendar_model=event.time_tag.time_definition.calendarmodel,
+                            precision=event.time_tag.time_definition.precision,
+                            description=None,
+                        )
+                        time_id = result["id"]
+
+                # Create event tags
+                tags = []
+                for person_tag in event.people_tags:
+                    tags.append(
+                        {
+                            "id": id_map[person_tag.wiki_id],
+                            "name": person_tag.name,
+                            "start_char": person_tag.start_char,
+                            "stop_char": person_tag.stop_char,
+                        }
+                    )
+
+                tags.append(
+                    {
+                        "id": id_map[event.place_tag.wiki_id],
+                        "name": event.place_tag.name,
+                        "start_char": event.place_tag.start_char,
+                        "stop_char": event.place_tag.stop_char,
+                    }
+                )
+
+                tags.append(
+                    {
+                        "id": time_id,
+                        "name": event.time_tag.name,
+                        "start_char": event.time_tag.start_char,
+                        "stop_char": event.time_tag.stop_char,
+                    }
+                )
+
+                # Create the event
+                self._rest_client.create_event(
+                    summary=event.summary,
+                    tags=tags,
+                    citation=citation,
+                )
+
+            # Record successful event creation after all events are created
             self._database.upsert_created_event(
                 wiki_id=wiki_id,
                 factory_label=event_factory.label,

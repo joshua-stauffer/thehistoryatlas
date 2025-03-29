@@ -40,7 +40,7 @@ class PersonDied(EventFactory):
         logger.info(f"PersonDied has_event: {has_event}")
         return has_event
 
-    def create_wiki_event(self) -> WikiEvent:
+    def create_wiki_event(self) -> list[WikiEvent]:
         person_name = self._entity.labels["en"].value
         time_definition = self._time_definition()
         time_name = wikidata_time_to_text(time_definition)
@@ -79,12 +79,14 @@ class PersonDied(EventFactory):
             stop_char=summary.find(time_name) + len(time_name),
             time_definition=time_definition,
         )
-        return WikiEvent(
-            summary=summary,
-            people_tags=people_tags,
-            place_tag=place_tag,
-            time_tag=time_tag,
-        )
+        return [
+            WikiEvent(
+                summary=summary,
+                people_tags=people_tags,
+                place_tag=place_tag,
+                time_tag=time_tag,
+            )
+        ]
 
     def _place_of_death_id(self) -> str:
         return self._entity.claims[PLACE_OF_DEATH][0]["mainsnak"]["datavalue"]["value"][
