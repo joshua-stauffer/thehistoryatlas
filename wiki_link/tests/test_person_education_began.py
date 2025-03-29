@@ -9,6 +9,9 @@ from wiki_service.event_factories.q_numbers import (
     EDUCATED_AT,
     START_TIME,
     ACADEMIC_MAJOR,
+    SEX_OR_GENDER,
+    MALE,
+    FEMALE,
 )
 from wiki_service.wikidata_query_service import GeoLocation, CoordinateLocation
 
@@ -200,6 +203,126 @@ def test_create_wiki_event_with_major(mock_entity, mock_query):
     assert (
         event.summary
         == "Test Person began their studies in Computer Science at Test University in 1990."
+    )
+
+
+def test_create_wiki_event_male_pronoun(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    START_TIME: [
+                        {
+                            "property": START_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ]
+                },
+            }
+        ],
+        SEX_OR_GENDER: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": MALE}},
+                },
+            }
+        ]
+    }
+    factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary == "Test Person began his studies at Test University in 1990."
+    )
+
+
+def test_create_wiki_event_female_pronoun(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    START_TIME: [
+                        {
+                            "property": START_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ]
+                },
+            }
+        ],
+        SEX_OR_GENDER: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": FEMALE}},
+                },
+            }
+        ]
+    }
+    factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary == "Test Person began her studies at Test University in 1990."
+    )
+
+
+def test_create_wiki_event_unknown_gender_pronoun(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    START_TIME: [
+                        {
+                            "property": START_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ]
+                },
+            }
+        ],
+        SEX_OR_GENDER: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q123"}},  # Unknown gender
+                },
+            }
+        ]
+    }
+    factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary == "Test Person began their studies at Test University in 1990."
     )
 
 

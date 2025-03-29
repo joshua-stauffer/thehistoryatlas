@@ -13,6 +13,9 @@ from wiki_service.event_factories.q_numbers import (
     EDUCATED_AT,
     START_TIME,
     ACADEMIC_MAJOR,
+    SEX_OR_GENDER,
+    MALE,
+    FEMALE,
 )
 from wiki_service.wikidata_query_service import (
     build_time_definition_from_claim,
@@ -144,12 +147,21 @@ class PersonEducationBegan(EventFactory):
         precision: Literal[9, 10, 11],
         academic_major: str | None = None,
     ) -> str:
+        # Determine pronoun based on gender
+        pronoun = "their"
+        if SEX_OR_GENDER in self._entity.claims:
+            gender_id = self._entity.claims[SEX_OR_GENDER][0]["mainsnak"]["datavalue"]["value"]["id"]
+            if gender_id == MALE:
+                pronoun = "his"
+            elif gender_id == FEMALE:
+                pronoun = "her"
+
         if academic_major:
             match precision:
                 case 11:  # day
-                    return f"On {time}, {person} began their studies in {academic_major} at {place}."
+                    return f"On {time}, {person} began {pronoun} studies in {academic_major} at {place}."
                 case 10 | 9:  # month or year
-                    return f"{person} began their studies in {academic_major} at {place} in {time}."
+                    return f"{person} began {pronoun} studies in {academic_major} at {place} in {time}."
                 case _:
                     raise UnprocessableEventError(
                         f"Unexpected time precision: {precision}"
@@ -157,9 +169,9 @@ class PersonEducationBegan(EventFactory):
         else:
             match precision:
                 case 11:  # day
-                    return f"On {time}, {person} began their studies at {place}."
+                    return f"On {time}, {person} began {pronoun} studies at {place}."
                 case 10 | 9:  # month or year
-                    return f"{person} began their studies at {place} in {time}."
+                    return f"{person} began {pronoun} studies at {place} in {time}."
                 case _:
                     raise UnprocessableEventError(
                         f"Unexpected time precision: {precision}"
