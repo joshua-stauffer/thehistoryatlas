@@ -30,6 +30,8 @@ def mock_query():
     query.get_label.side_effect = lambda id, language: {
         "Q456": "Test University",
         "Q789": "Computer Science",
+        "Q790": "Mathematics",
+        "Q791": "Physics",
     }.get(id, "Unknown")
 
     # Create a proper GeoLocation instance
@@ -406,3 +408,95 @@ def test_create_wiki_event_invalid_precision(mock_entity, mock_query):
     factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
     with pytest.raises(UnprocessableEventError, match="Unexpected time precision: 8"):
         factory.create_wiki_event()
+
+
+def test_create_wiki_event_with_two_majors(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    START_TIME: [
+                        {
+                            "property": START_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ],
+                    ACADEMIC_MAJOR: [
+                        {
+                            "property": ACADEMIC_MAJOR,
+                            "datavalue": {"value": {"id": "Q789"}},
+                        },
+                        {
+                            "property": ACADEMIC_MAJOR,
+                            "datavalue": {"value": {"id": "Q790"}},
+                        }
+                    ],
+                },
+            }
+        ]
+    }
+    factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary
+        == "Test Person began their studies in Computer Science and Mathematics at Test University in 1990."
+    )
+
+
+def test_create_wiki_event_with_three_majors(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    START_TIME: [
+                        {
+                            "property": START_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ],
+                    ACADEMIC_MAJOR: [
+                        {
+                            "property": ACADEMIC_MAJOR,
+                            "datavalue": {"value": {"id": "Q789"}},
+                        },
+                        {
+                            "property": ACADEMIC_MAJOR,
+                            "datavalue": {"value": {"id": "Q790"}},
+                        },
+                        {
+                            "property": ACADEMIC_MAJOR,
+                            "datavalue": {"value": {"id": "Q791"}},
+                        }
+                    ],
+                },
+            }
+        ]
+    }
+    factory = PersonEducationBegan(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary
+        == "Test Person began their studies in Computer Science, Mathematics and Physics at Test University in 1990."
+    )

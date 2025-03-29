@@ -87,13 +87,21 @@ class PersonEducationBegan(EventFactory):
             )
             time_name = wikidata_time_to_text(time_definition)
 
-            # Check for academic major
-            academic_major_name = None
+            # Check for academic majors
+            academic_majors = []
             if "qualifiers" in claim and ACADEMIC_MAJOR in claim["qualifiers"]:
-                major_id = claim["qualifiers"][ACADEMIC_MAJOR][0]["datavalue"]["value"][
-                    "id"
-                ]
-                academic_major_name = self._query.get_label(id=major_id, language="en")
+                for major_qualifier in claim["qualifiers"][ACADEMIC_MAJOR]:
+                    major_id = major_qualifier["datavalue"]["value"]["id"]
+                    major_name = self._query.get_label(id=major_id, language="en")
+                    academic_majors.append(major_name)
+
+            academic_major_name = None
+            if academic_majors:
+                if len(academic_majors) == 1:
+                    academic_major_name = academic_majors[0]
+                else:
+                    # Join all but the last major with commas, then add "and" before the last one
+                    academic_major_name = ", ".join(academic_majors[:-1]) + " and " + academic_majors[-1]
 
             summary = self._summary(
                 person=person_name,
