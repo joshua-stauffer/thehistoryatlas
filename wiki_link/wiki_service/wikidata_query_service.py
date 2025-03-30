@@ -158,7 +158,7 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
 
     if time_def.precision == 11:
         # Full date: e.g. "December 31, 1980"
-        date_str = dt.strftime("%B %d, %Y")
+        date_str = f"{dt.strftime('%B')} {dt.day}, {dt.year}"
     elif time_def.precision == 10:
         # Month precision: e.g. "December 1980"
         date_str = dt.strftime("%B %Y")
