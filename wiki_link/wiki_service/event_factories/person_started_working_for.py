@@ -142,6 +142,41 @@ class PersonStartedWorkingFor(EventFactory):
 
         return events
 
+    def _format_employer_name(self, employer: str) -> str:
+        # Don't add 'the' if it already starts with it
+        if employer.lower().startswith("the "):
+            return employer
+
+        # List of words that typically indicate 'the' should be added
+        the_indicators = [
+            "institute",
+            "university",
+            "college",
+            "academy",
+            "school",
+            "museum",
+            "library",
+            "society",
+            "organization",
+            "foundation",
+            "association",
+            "department",
+            "ministry",
+            "agency",
+            "orchestra",
+            "theatre",
+            "center",
+            "laboratory",
+            "hospital",
+        ]
+
+        # Check if any of the indicator words are in the employer name (case-insensitive)
+        employer_words = employer.lower().split()
+        if any(indicator in employer_words for indicator in the_indicators):
+            return f"the {employer}"
+
+        return employer
+
     def _summary(
         self,
         person: str,
@@ -151,11 +186,12 @@ class PersonStartedWorkingFor(EventFactory):
         precision: Literal[9, 10, 11],
     ) -> str:
         role_text = f" as {role}" if role else ""
+        formatted_employer = self._format_employer_name(employer)
 
         match precision:
             case 11:  # day
-                return f"On {time}, {person} started working for {employer}{role_text}."
+                return f"On {time}, {person} started working for {formatted_employer}{role_text}."
             case 10 | 9:  # month or year
-                return f"{person} started working for {employer}{role_text} in {time}."
+                return f"{person} started working for {formatted_employer}{role_text} in {time}."
             case _:
                 raise UnprocessableEventError(f"Unexpected time precision: {precision}")
