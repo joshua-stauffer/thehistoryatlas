@@ -12,6 +12,11 @@ from pydantic import BaseModel
 from wiki_service.config import WikiServiceConfig
 from wiki_service.types import WikiDataItem
 from wiki_service.utils import get_version
+from wiki_service.event_factories.q_numbers import (
+    COORDINATE_LOCATION,
+    LOCATION,
+    COUNTRY,
+)
 
 MAX_RETRIES = 5
 
@@ -402,15 +407,60 @@ class WikiDataQueryService:
 
     def get_geo_location(self, id: str) -> GeoLocation:
         entity = self.get_entity(id)
+        return self.get_hierarchical_location(entity=entity)
+
+    def get_hierarchical_location(self, entity: Entity) -> Optional[GeoLocation]:
+        """
+        Get an entity's location by trying different location properties in order:
+        1. Coordinate location (P625)
+        2. Location (P276)
+        3. Country (P17)
+
+        For location and country properties, it will attempt to get the coordinates
+        of the referenced entity.
+
+        Args:
+            entity: The entity to get location for
+
+        Returns:
+            GeoLocation if any location is found, None otherwise
+        """
+        # Try coordinate location first
         coordinate = self.get_coordinate_location(entity)
-        geoshape = self.get_geoshape_location(entity)
-        return GeoLocation(coordinates=coordinate, geoshape=geoshape)
+        if coordinate is not None:
+            return GeoLocation(coordinates=coordinate, geoshape=None)
+
+        # Try location property
+        location_claims = entity.claims.get(LOCATION, [])
+        if location_claims:
+            location_id = location_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
+            try:
+                location_entity = self.get_entity(location_id)
+                location = self.get_hierarchical_location(location_entity)
+                if location is not None:
+                    return location
+            except Exception:
+                pass  # Continue to next method if location lookup fails
+
+        # Try country property
+        country_claims = entity.claims.get(COUNTRY, [])
+        if country_claims:
+            country_id = country_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
+            try:
+                country_entity = self.get_entity(country_id)
+                country = self.get_hierarchical_location(country_entity)
+                if country is not None:
+                    return country
+            except Exception:
+                pass  # Continue if country lookup fails
+
+        return GeoLocation(coordinates=None, geoshape=None)
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """
         Get an entity's location properties or None.
         """
-        geo_claim = entity.claims.get("P625", None)
+        geo_claim = entity.claims.get(COORDINATE_LOCATION, None)
         if geo_claim is None:
             return None
         coordinate_location = self.build_coordinate_location(geo_claim[0])
