@@ -3,3 +3,4 @@ from .person_died import PersonDied
 from .person_education_began import PersonEducationBegan
 from .person_education_ended import PersonEducationEnded
 from .person_started_working_for import PersonStartedWorkingFor
+from .person_stopped_working_for import PersonStoppedWorkingFor
