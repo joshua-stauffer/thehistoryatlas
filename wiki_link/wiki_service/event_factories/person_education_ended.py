@@ -1,14 +1,19 @@
 import logging
-from typing import Literal
+from typing import List, Literal
 from dataclasses import dataclass
+from datetime import datetime
 
 from wiki_service.event_factories.event_factory import (
-    register_event_factory,
     EventFactory,
     UnprocessableEventError,
+    register_event_factory,
+)
+from wiki_service.types import Entity, GeoLocation, Query, TimeDefinition
+from wiki_service.types import (
     WikiEvent,
-    PlaceWikiTag,
+    WikiTag,
     PersonWikiTag,
+    PlaceWikiTag,
     TimeWikiTag,
 )
 from wiki_service.event_factories.q_numbers import (
@@ -20,11 +25,10 @@ from wiki_service.event_factories.q_numbers import (
     MALE,
     FEMALE,
 )
-from wiki_service.wikidata_query_service import (
+from wiki_service.event_factories.utils import (
     build_time_definition_from_claim,
     wikidata_time_to_text,
 )
-from wiki_service.wikidata_query_service import TimeDefinition
 
 logger = logging.getLogger(__name__)
 

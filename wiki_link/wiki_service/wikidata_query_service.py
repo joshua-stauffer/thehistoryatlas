@@ -1,104 +1,36 @@
 import logging
 from datetime import datetime, timezone
 from re import search
-from typing import List, Dict, Optional, Set
+from typing import Dict, Optional, Set
 from urllib.error import HTTPError
 import time
 
 import requests
 from SPARQLWrapper import SPARQLWrapper, JSON
-from pydantic import BaseModel
 
 from wiki_service.config import WikiServiceConfig
-from wiki_service.types import WikiDataItem
+from wiki_service.types import (
+    CoordinateLocation,
+    Entity,
+    GeoLocation,
+    GeoshapeLocation,
+    Property,
+    Query,
+    TimeDefinition,
+    WikiDataItem,
+)
 from wiki_service.utils import get_version
+from wiki_service.event_factories.q_numbers import (
+    COORDINATE_LOCATION,
+    LOCATION,
+    COUNTRY,
+)
+
 
 MAX_RETRIES = 5
 
 
 class WikiDataQueryServiceError(Exception): ...
-
-
-class Entity(BaseModel):
-    """Expected fields on a wikidata entity"""
-
-    id: str
-    pageid: int
-    ns: int
-    title: str
-    lastrevid: int
-    modified: str
-    type: str
-    labels: Dict[str, "Property"]
-    descriptions: Dict[str, "Property"]
-    aliases: Dict[str, List["Property"]]
-    claims: Dict[str, List[Dict]]
-    sitelinks: Dict[str, Dict]
-
-
-class CoordinateLocation(BaseModel):
-    id: str
-    rank: str
-    type: str
-    snaktype: str
-    property: str
-    hash: str
-    latitude: float
-    longitude: float
-    altitude: Optional[int]
-    precision: Optional[float]
-    globe: str
-
-
-class GeoshapeLocation(BaseModel):
-    id: str
-    rank: str
-    type: str
-    snaktype: str
-    property: str
-    hash: str
-    url: str
-    zoom: int
-    latitude: float
-    longitude: float
-    data: Dict
-
-
-class GeoLocation(BaseModel):
-    coordinates: CoordinateLocation | None
-    geoshape: GeoshapeLocation | None
-
-
-class TimeDefinition(BaseModel):
-    id: str
-    rank: str
-    type: str
-    snaktype: str
-    property: str
-    hash: str
-    time: str
-    timezone: int
-    before: int
-    after: int
-    precision: int
-    calendarmodel: str
-
-
-def build_time_definition_from_claim(time_claim: Dict) -> TimeDefinition:
-    return TimeDefinition(
-        id=time_claim["id"],
-        type=time_claim["type"],
-        rank=time_claim["rank"],
-        hash=time_claim["mainsnak"]["hash"],
-        snaktype=time_claim["mainsnak"]["snaktype"],
-        property=time_claim["mainsnak"]["property"],
-        time=time_claim["mainsnak"]["datavalue"]["value"]["time"],
-        timezone=time_claim["mainsnak"]["datavalue"]["value"]["timezone"],
-        before=time_claim["mainsnak"]["datavalue"]["value"]["before"],
-        after=time_claim["mainsnak"]["datavalue"]["value"]["after"],
-        precision=time_claim["mainsnak"]["datavalue"]["value"]["precision"],
-        calendarmodel=time_claim["mainsnak"]["datavalue"]["value"]["calendarmodel"],
-    )
 
 
 def build_coordinate_location(geoclaim: Dict) -> CoordinateLocation:
@@ -134,61 +66,6 @@ def build_geoshape_location(
         zoom=geoshape["zoom"],
         url=geoshape_url,
     )
-
-
-def wikidata_time_to_text(time_def: TimeDefinition) -> str:
-    """
-    Convert a Wikidata time definition to a human-readable date string.
-
-    Precision mapping:
-      - 11: full date (day precision) → "December 31, 1980"
-      - 10: month precision → "December 1980"
-      - 9: year precision → "1980"
-      - 8: decade precision → "1980s"
-      - 7: century precision → "20th century"
-    """
-    # Remove leading '+' and any trailing parts (like the 'Z') not needed for parsing.
-    raw_time = time_def.time
-    is_negative = raw_time.startswith("-")
-    if raw_time.startswith(("+", "-")):
-        raw_time = raw_time[1:]
-
-    # Parse only the date and time part (first 19 characters: "YYYY-MM-DDTHH:MM:SS")
-    dt = datetime.strptime(raw_time[:19], "%Y-%m-%dT%H:%M:%S")
-
-    if time_def.precision == 11:
-        # Full date: e.g. "December 31, 1980"
-        date_str = dt.strftime("%B %d, %Y")
-    elif time_def.precision == 10:
-        # Month precision: e.g. "December 1980"
-        date_str = dt.strftime("%B %Y")
-    elif time_def.precision == 9:
-        # Year precision: e.g. "1980"
-        date_str = dt.strftime("%Y")
-    elif time_def.precision == 8:
-        # Decade precision: e.g. "1980s"
-        decade = (dt.year // 10) * 10
-        date_str = f"{decade}s"
-    elif time_def.precision == 7:
-        # Century precision: e.g. "20th century"
-        century = (dt.year - 1) // 100 + 1
-        # Determine the ordinal suffix (handles 11-13 as well)
-        if 10 <= century % 100 <= 20:
-            suffix = "th"
-        else:
-            suffix = {1: "st", 2: "nd", 3: "rd"}.get(century % 10, "th")
-        date_str = f"{century}{suffix} century"
-    else:
-        # Fallback: return ISO formatted date
-        date_str = dt.isoformat()
-
-    bc_suffix = " B.C.E" if is_negative else ""
-    return date_str + bc_suffix
-
-
-class Property(BaseModel):
-    language: str
-    value: str
 
 
 log = logging.getLogger(__name__)
@@ -371,15 +248,60 @@ class WikiDataQueryService:
 
     def get_geo_location(self, id: str) -> GeoLocation:
         entity = self.get_entity(id)
+        return self.get_hierarchical_location(entity=entity)
+
+    def get_hierarchical_location(self, entity: Entity) -> Optional[GeoLocation]:
+        """
+        Get an entity's location by trying different location properties in order:
+        1. Coordinate location (P625)
+        2. Location (P276)
+        3. Country (P17)
+
+        For location and country properties, it will attempt to get the coordinates
+        of the referenced entity.
+
+        Args:
+            entity: The entity to get location for
+
+        Returns:
+            GeoLocation if any location is found, None otherwise
+        """
+        # Try coordinate location first
         coordinate = self.get_coordinate_location(entity)
-        geoshape = self.get_geoshape_location(entity)
-        return GeoLocation(coordinates=coordinate, geoshape=geoshape)
+        if coordinate is not None:
+            return GeoLocation(coordinates=coordinate, geoshape=None)
+
+        # Try location property
+        location_claims = entity.claims.get(LOCATION, [])
+        if location_claims:
+            location_id = location_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
+            try:
+                location_entity = self.get_entity(location_id)
+                location = self.get_hierarchical_location(location_entity)
+                if location is not None:
+                    return location
+            except Exception:
+                pass  # Continue to next method if location lookup fails
+
+        # Try country property
+        country_claims = entity.claims.get(COUNTRY, [])
+        if country_claims:
+            country_id = country_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
+            try:
+                country_entity = self.get_entity(country_id)
+                country = self.get_hierarchical_location(country_entity)
+                if country is not None:
+                    return country
+            except Exception:
+                pass  # Continue if country lookup fails
+
+        return GeoLocation(coordinates=None, geoshape=None)
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """
         Get an entity's location properties or None.
         """
-        geo_claim = entity.claims.get("P625", None)
+        geo_claim = entity.claims.get(COORDINATE_LOCATION, None)
         if geo_claim is None:
             return None
         coordinate_location = self.build_coordinate_location(geo_claim[0])

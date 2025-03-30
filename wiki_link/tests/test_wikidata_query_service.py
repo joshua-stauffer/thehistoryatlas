@@ -7,15 +7,23 @@ from urllib.error import HTTPError
 
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
-    Entity,
-    CoordinateLocation,
-    GeoshapeLocation,
-    TimeDefinition,
-    Property,
     WikiDataQueryServiceError,
+)
+from wiki_service.types import (
+    CoordinateLocation,
+    Entity,
+    GeoLocation,
+    GeoshapeLocation,
+    Property,
+    TimeDefinition,
 )
 from wiki_service.types import WikiDataItem
 from wiki_service.config import WikiServiceConfig
+from wiki_service.event_factories.q_numbers import (
+    COORDINATE_LOCATION,
+    LOCATION,
+    COUNTRY,
+)
 
 # Mock responses for our tests
 MOCK_SPARQL_RESPONSE = {
@@ -492,3 +500,231 @@ def test_get_entity_rate_limit_past_date(config):
         # Verify sleep was called with 0 seconds for past dates
         assert mock_sleep.call_args[0][0] == 0
         assert result.id == "Q42"
+
+
+@pytest.fixture
+def mock_config():
+    config = Mock()
+    config.contact = "test@example.com"
+    return config
+
+
+@pytest.fixture
+def service(mock_config):
+    return WikiDataQueryService(config=mock_config)
+
+
+@pytest.fixture
+def entity_with_coordinate():
+    return Entity(
+        id="Q123",
+        pageid=1,
+        ns=0,
+        title="Test Entity",
+        lastrevid=1,
+        modified="2024-03-21T00:00:00Z",
+        type="item",
+        labels={"en": Property(language="en", value="Test Entity")},
+        descriptions={},
+        aliases={},
+        claims={
+            COORDINATE_LOCATION: [
+                {
+                    "mainsnak": {
+                        "snaktype": "value",
+                        "property": COORDINATE_LOCATION,
+                        "hash": "test_hash",
+                        "datavalue": {
+                            "value": {
+                                "latitude": 51.5074,
+                                "longitude": -0.1278,
+                                "altitude": None,
+                                "precision": 0.0001,
+                                "globe": "http://www.wikidata.org/entity/Q2",
+                            },
+                            "type": "globecoordinate",
+                        },
+                    },
+                    "type": "statement",
+                    "id": "Q123$test",
+                    "rank": "normal",
+                }
+            ]
+        },
+        sitelinks={},
+    )
+
+
+@pytest.fixture
+def entity_with_location():
+    return Entity(
+        id="Q456",
+        pageid=1,
+        ns=0,
+        title="Test Entity",
+        lastrevid=1,
+        modified="2024-03-21T00:00:00Z",
+        type="item",
+        labels={"en": Property(language="en", value="Test Entity")},
+        descriptions={},
+        aliases={},
+        claims={LOCATION: [{"mainsnak": {"datavalue": {"value": {"id": "Q789"}}}}]},
+        sitelinks={},
+    )
+
+
+@pytest.fixture
+def entity_with_country():
+    return Entity(
+        id="Q456",
+        pageid=1,
+        ns=0,
+        title="Test Entity",
+        lastrevid=1,
+        modified="2024-03-21T00:00:00Z",
+        type="item",
+        labels={"en": Property(language="en", value="Test Entity")},
+        descriptions={},
+        aliases={},
+        claims={COUNTRY: [{"mainsnak": {"datavalue": {"value": {"id": "Q789"}}}}]},
+        sitelinks={},
+    )
+
+
+@pytest.fixture
+def entity_without_location():
+    return Entity(
+        id="Q456",
+        pageid=1,
+        ns=0,
+        title="Test Entity",
+        lastrevid=1,
+        modified="2024-03-21T00:00:00Z",
+        type="item",
+        labels={"en": Property(language="en", value="Test Entity")},
+        descriptions={},
+        aliases={},
+        claims={},
+        sitelinks={},
+    )
+
+
+def test_get_hierarchical_location_with_coordinate(service, entity_with_coordinate):
+    """Test that coordinate location is returned when available"""
+    location = service.get_hierarchical_location(entity_with_coordinate)
+    assert location is not None
+    assert location.coordinates is not None
+    assert location.coordinates.latitude == 51.5074
+    assert location.coordinates.longitude == -0.1278
+
+
+def test_get_hierarchical_location_with_location(
+    service, entity_with_location, mock_location_entity
+):
+    """Test that location property is resolved to coordinates when available"""
+    service.get_entity = Mock(return_value=mock_location_entity)
+    location = service.get_hierarchical_location(entity_with_location)
+    assert location is not None
+    assert location.coordinates is not None
+    service.get_entity.assert_called_with("Q789")
+
+
+def test_get_hierarchical_location_with_country(
+    service, entity_with_country, mock_country_entity
+):
+    """Test that country property is resolved to coordinates when available"""
+    service.get_entity = Mock(return_value=mock_country_entity)
+    location = service.get_hierarchical_location(entity_with_country)
+    assert location is not None
+    assert location.coordinates is not None
+    service.get_entity.assert_called_with("Q789")
+
+
+def test_get_hierarchical_location_without_location(service, entity_without_location):
+    """Test that None is returned when no location information is available"""
+    location = service.get_hierarchical_location(entity_without_location)
+    assert location.coordinates is None
+
+
+@pytest.fixture
+def mock_location_entity():
+    """Mock entity returned when looking up a location reference"""
+    return Entity(
+        id="Q789",
+        pageid=1,
+        ns=0,
+        title="Test Location",
+        lastrevid=1,
+        modified="2024-03-21T00:00:00Z",
+        type="item",
+        labels={"en": Property(language="en", value="Test Location")},
+        descriptions={},
+        aliases={},
+        claims={
+            COORDINATE_LOCATION: [
+                {
+                    "mainsnak": {
+                        "snaktype": "value",
+                        "property": COORDINATE_LOCATION,
+                        "hash": "test_hash",
+                        "datavalue": {
+                            "value": {
+                                "latitude": 51.5074,
+                                "longitude": -0.1278,
+                                "altitude": None,
+                                "precision": 0.0001,
+                                "globe": "http://www.wikidata.org/entity/Q2",
+                            },
+                            "type": "globecoordinate",
+                        },
+                    },
+                    "type": "statement",
+                    "id": "Q789$test",
+                    "rank": "normal",
+                }
+            ]
+        },
+        sitelinks={},
+    )
+
+
+@pytest.fixture
+def mock_country_entity():
+    """Mock entity returned when looking up a country reference"""
+    return Entity(
+        id="Q789",
+        pageid=1,
+        ns=0,
+        title="Test Country",
+        lastrevid=1,
+        modified="2024-03-21T00:00:00Z",
+        type="item",
+        labels={"en": Property(language="en", value="Test Country")},
+        descriptions={},
+        aliases={},
+        claims={
+            COORDINATE_LOCATION: [
+                {
+                    "mainsnak": {
+                        "snaktype": "value",
+                        "property": COORDINATE_LOCATION,
+                        "hash": "test_hash",
+                        "datavalue": {
+                            "value": {
+                                "latitude": 51.5074,
+                                "longitude": -0.1278,
+                                "altitude": None,
+                                "precision": 0.0001,
+                                "globe": "http://www.wikidata.org/entity/Q2",
+                            },
+                            "type": "globecoordinate",
+                        },
+                    },
+                    "type": "statement",
+                    "id": "Q789$test",
+                    "rank": "normal",
+                }
+            ]
+        },
+        sitelinks={},
+    )

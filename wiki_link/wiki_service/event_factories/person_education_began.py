@@ -1,12 +1,15 @@
 from typing import Literal
 
 from wiki_service.event_factories.event_factory import (
-    register_event_factory,
     EventFactory,
     UnprocessableEventError,
+    register_event_factory,
+)
+from wiki_service.types import TimeDefinition
+from wiki_service.types import (
     WikiEvent,
-    PlaceWikiTag,
     PersonWikiTag,
+    PlaceWikiTag,
     TimeWikiTag,
 )
 from wiki_service.event_factories.q_numbers import (
@@ -17,11 +20,9 @@ from wiki_service.event_factories.q_numbers import (
     MALE,
     FEMALE,
 )
-from wiki_service.wikidata_query_service import (
-    build_time_definition_from_claim,
+from wiki_service.event_factories.utils import (
     wikidata_time_to_text,
 )
-from wiki_service.wikidata_query_service import TimeDefinition
 
 
 @register_event_factory
