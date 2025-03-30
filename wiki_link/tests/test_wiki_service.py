@@ -4,9 +4,18 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 import pytest
+import os
+import responses
+from urllib.error import HTTPError
 
 from wiki_service.database import Database, Item
-from wiki_service.types import WikiDataItem
+from wiki_service.types import (
+    WikiDataItem,
+    WikiEvent,
+    PersonWikiTag,
+    PlaceWikiTag,
+    TimeWikiTag,
+)
 from wiki_service.wiki_service import WikiService
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
@@ -18,14 +27,14 @@ from wiki_service.wikidata_query_service import (
     CoordinateLocation,
 )
 from wiki_service.config import WikiServiceConfig
-from wiki_service.event_factories.event_factory import (
-    EventFactory,
-    WikiEvent,
-    PersonWikiTag,
-    PlaceWikiTag,
-    TimeWikiTag,
-)
+from wiki_service.event_factories.event_factory import EventFactory
 from wiki_service.rest_client import RestClient, RestClientError
+from wiki_service.event_factories.q_numbers import (
+    COORDINATE_LOCATION,
+    LOCATION,
+    COUNTRY,
+)
+from wiki_service.event_factories.utils import build_time_definition_from_claim
 
 
 @dataclass

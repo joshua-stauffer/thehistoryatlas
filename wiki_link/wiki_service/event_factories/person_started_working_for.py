@@ -2,12 +2,14 @@ import logging
 from typing import Literal
 
 from wiki_service.event_factories.event_factory import (
-    register_event_factory,
     EventFactory,
     UnprocessableEventError,
+    register_event_factory,
+)
+from wiki_service.types import (
     WikiEvent,
-    PlaceWikiTag,
     PersonWikiTag,
+    PlaceWikiTag,
     TimeWikiTag,
 )
 from wiki_service.event_factories.q_numbers import (
@@ -16,7 +18,7 @@ from wiki_service.event_factories.q_numbers import (
     SUBJECT_HAS_ROLE,
     POSITION_HELD,
 )
-from wiki_service.wikidata_query_service import (
+from wiki_service.event_factories.utils import (
     build_time_definition_from_claim,
     wikidata_time_to_text,
 )
@@ -35,23 +37,23 @@ class PersonStartedWorkingFor(EventFactory):
         return "Person started working for"
 
     def entity_has_event(self) -> bool:
-        if EMPLOYER not in self._entity.claims:
+        if EMPLOYER not in self.entity.claims:
             return False
 
         # Check if any employer claim has a start time
-        for claim in self._entity.claims[EMPLOYER]:
+        for claim in self.entity.claims[EMPLOYER]:
             if "qualifiers" in claim and START_TIME in claim["qualifiers"]:
                 return True
         return False
 
     def create_wiki_event(self) -> list[WikiEvent]:
         events = []
-        person_name = self._entity.labels["en"].value
+        person_name = self.entity.labels["en"].value
 
-        if EMPLOYER not in self._entity.claims:
+        if EMPLOYER not in self.entity.claims:
             raise UnprocessableEventError("No employer claims found")
 
-        for employer_claim in self._entity.claims[EMPLOYER]:
+        for employer_claim in self.entity.claims[EMPLOYER]:
             if (
                 "qualifiers" not in employer_claim
                 or START_TIME not in employer_claim["qualifiers"]
@@ -59,7 +61,7 @@ class PersonStartedWorkingFor(EventFactory):
                 continue
 
             employer_id = employer_claim["mainsnak"]["datavalue"]["value"]["id"]
-            employer_name = self._query.get_label(id=employer_id, language="en")
+            employer_name = self.query.get_label(id=employer_id, language="en")
 
             # Get role or position if available
             role = None
@@ -68,12 +70,12 @@ class PersonStartedWorkingFor(EventFactory):
                     role_id = employer_claim["qualifiers"][SUBJECT_HAS_ROLE][0][
                         "datavalue"
                     ]["value"]["id"]
-                    role = self._query.get_label(id=role_id, language="en")
+                    role = self.query.get_label(id=role_id, language="en")
                 elif POSITION_HELD in employer_claim["qualifiers"]:
                     position_id = employer_claim["qualifiers"][POSITION_HELD][0][
                         "datavalue"
                     ]["value"]["id"]
-                    role = self._query.get_label(id=position_id, language="en")
+                    role = self.query.get_label(id=position_id, language="en")
 
             time_definition = build_time_definition_from_claim(
                 time_claim=employer_claim["qualifiers"][START_TIME][0]
@@ -82,7 +84,7 @@ class PersonStartedWorkingFor(EventFactory):
 
             # Get employer location
             try:
-                geo_location = self._query.get_geo_location(id=employer_id)
+                geo_location = self.query.get_geo_location(id=employer_id)
             except Exception as e:
                 logger.warning(
                     f"Could not get location for employer {employer_id}: {e}"
@@ -106,7 +108,7 @@ class PersonStartedWorkingFor(EventFactory):
             people_tags = [
                 PersonWikiTag(
                     name=person_name,
-                    wiki_id=self._entity.id,
+                    wiki_id=self.entity.id,
                     start_char=summary.find(person_name),
                     stop_char=summary.find(person_name) + len(person_name),
                 )

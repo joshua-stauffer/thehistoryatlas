@@ -1,79 +1,62 @@
+"""Base class for event factories."""
+
 from abc import ABC, abstractmethod
-from typing import List, Protocol
+from datetime import datetime
+from typing import List, Optional, Type
 
 from pydantic import BaseModel
 
-from wiki_service.wikidata_query_service import (
-    Entity,
-    TimeDefinition,
-    GeoLocation,
-)
+from wiki_service.models import Entity, GeoLocation, Query, TimeDefinition
+from wiki_service.types import WikiEvent
 
 
-class WikiTag(BaseModel):
-    name: str
-    wiki_id: str
-    start_char: int
-    stop_char: int
+class UnprocessableEventError(Exception):
+    """Raised when an event cannot be processed."""
 
-
-class PersonWikiTag(WikiTag): ...
-
-
-class PlaceWikiTag(WikiTag):
-    location: GeoLocation
-
-
-class TimeWikiTag(WikiTag):
-    wiki_id: str | None
-    time_definition: TimeDefinition
-
-
-class WikiEvent(BaseModel):
-    summary: str
-    people_tags: List[PersonWikiTag]
-    place_tag: PlaceWikiTag
-    time_tag: TimeWikiTag
-
-
-class UnprocessableEventError(Exception): ...
-
-
-class Query(Protocol):
-    def get_label(self, id: str, language: str) -> str: ...
-
-    def get_geo_location(self, id: str) -> GeoLocation: ...
+    pass
 
 
 class EventFactory(ABC):
-    def __init__(self, entity: Entity, query: Query) -> None:
-        self._entity = entity
-        self._query = query
+    """Base class for event factories."""
+
+    def __init__(self, entity: Entity, query: Query):
+        self.entity = entity
+        self.query = query
 
     @property
     @abstractmethod
-    def version(self) -> int: ...
+    def version(self) -> int:
+        """Get the version of the event factory."""
+        pass
 
     @property
     @abstractmethod
-    def label(self) -> str: ...
+    def label(self) -> str:
+        """Get the label of the event factory."""
+        pass
 
     @abstractmethod
-    def entity_has_event(self) -> bool: ...
+    def entity_has_event(self) -> bool:
+        """Check if the entity has this type of event."""
+        pass
 
     @abstractmethod
-    def create_wiki_event(self) -> list[WikiEvent]: ...
+    def create_wiki_event(self) -> List[WikiEvent]:
+        """Create a wiki event from the entity."""
+        pass
 
 
-_event_factories = []
+_event_factories: List[Type[EventFactory]] = []
 
 
-def register_event_factory(cls: type[EventFactory]) -> type[EventFactory]:
+def register_event_factory(cls: Type[EventFactory]) -> Type[EventFactory]:
+    """Register an event factory."""
     _event_factories.append(cls)
     return cls
 
 
-def get_event_factories(entity: Entity, query: Query) -> list[EventFactory]:
+def get_event_factories(entity: Entity, query: Query) -> List[EventFactory]:
+    """Get all registered event factories."""
     return [
         factory_class(entity=entity, query=query) for factory_class in _event_factories
     ]

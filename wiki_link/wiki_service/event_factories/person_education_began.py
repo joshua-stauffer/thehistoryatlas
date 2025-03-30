@@ -1,12 +1,15 @@
 from typing import Literal
 
 from wiki_service.event_factories.event_factory import (
-    register_event_factory,
     EventFactory,
     UnprocessableEventError,
+    register_event_factory,
+)
+from wiki_service.models import TimeDefinition
+from wiki_service.types import (
     WikiEvent,
-    PlaceWikiTag,
     PersonWikiTag,
+    PlaceWikiTag,
     TimeWikiTag,
 )
 from wiki_service.event_factories.q_numbers import (
@@ -17,11 +20,9 @@ from wiki_service.event_factories.q_numbers import (
     MALE,
     FEMALE,
 )
-from wiki_service.wikidata_query_service import (
-    build_time_definition_from_claim,
+from wiki_service.event_factories.utils import (
     wikidata_time_to_text,
 )
-from wiki_service.wikidata_query_service import TimeDefinition
 
 
 @register_event_factory
@@ -35,26 +36,26 @@ class PersonEducationBegan(EventFactory):
         return "Person education began"
 
     def entity_has_event(self) -> bool:
-        if EDUCATED_AT not in self._entity.claims:
+        if EDUCATED_AT not in self.entity.claims:
             return False
 
         # Check if any EDUCATED_AT claim has a START_TIME qualifier
-        for claim in self._entity.claims[EDUCATED_AT]:
+        for claim in self.entity.claims[EDUCATED_AT]:
             if "qualifiers" in claim and START_TIME in claim["qualifiers"]:
                 return True
         return False
 
     def create_wiki_event(self) -> list[WikiEvent]:
-        person_name = self._entity.labels["en"].value
+        person_name = self.entity.labels["en"].value
         events = []
 
-        for claim in self._entity.claims[EDUCATED_AT]:
+        for claim in self.entity.claims[EDUCATED_AT]:
             if "qualifiers" not in claim or START_TIME not in claim["qualifiers"]:
                 continue
 
             institution_id = claim["mainsnak"]["datavalue"]["value"]["id"]
-            place_name = self._query.get_label(id=institution_id, language="en")
-            geo_location = self._query.get_geo_location(id=institution_id)
+            place_name = self.query.get_label(id=institution_id, language="en")
+            geo_location = self.query.get_geo_location(id=institution_id)
 
             if not geo_location.coordinates and not geo_location.geoshape:
                 continue  # Skip if no location found
@@ -92,7 +93,7 @@ class PersonEducationBegan(EventFactory):
             if "qualifiers" in claim and ACADEMIC_MAJOR in claim["qualifiers"]:
                 for major_qualifier in claim["qualifiers"][ACADEMIC_MAJOR]:
                     major_id = major_qualifier["datavalue"]["value"]["id"]
-                    major_name = self._query.get_label(id=major_id, language="en")
+                    major_name = self.query.get_label(id=major_id, language="en")
                     academic_majors.append(major_name)
 
             academic_major_name = None
@@ -116,7 +117,7 @@ class PersonEducationBegan(EventFactory):
             people_tags = [
                 PersonWikiTag(
                     name=person_name,
-                    wiki_id=self._entity.id,
+                    wiki_id=self.entity.id,
                     start_char=summary.find(person_name),
                     stop_char=summary.find(person_name) + len(person_name),
                 )
@@ -159,8 +160,8 @@ class PersonEducationBegan(EventFactory):
     ) -> str:
         # Determine pronoun based on gender
         pronoun = "their"
-        if SEX_OR_GENDER in self._entity.claims:
-            gender_id = self._entity.claims[SEX_OR_GENDER][0]["mainsnak"]["datavalue"][
+        if SEX_OR_GENDER in self.entity.claims:
+            gender_id = self.entity.claims[SEX_OR_GENDER][0]["mainsnak"]["datavalue"][
                 "value"
             ]["id"]
             if gender_id == MALE:

@@ -7,12 +7,14 @@ from urllib.error import HTTPError
 
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
+    WikiDataQueryServiceError,
+)
+from wiki_service.models import (
     Entity,
+    Property,
     CoordinateLocation,
     GeoshapeLocation,
     TimeDefinition,
-    Property,
-    WikiDataQueryServiceError,
 )
 from wiki_service.types import WikiDataItem
 from wiki_service.config import WikiServiceConfig
