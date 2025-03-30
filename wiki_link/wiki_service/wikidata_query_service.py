@@ -85,6 +85,30 @@ class TimeDefinition(BaseModel):
 
 
 def build_time_definition_from_claim(time_claim: Dict) -> TimeDefinition:
+    """
+    Build a TimeDefinition from a time claim.
+    The claim can be either a qualifier (from qualifiers) or a mainsnak (from claims).
+    """
+    # For qualifiers, the structure is flatter
+    if "mainsnak" not in time_claim:
+        return TimeDefinition(
+            id=time_claim.get(
+                "id", f"Q{hash(str(time_claim))}"
+            ),  # Generate a stable ID if none exists
+            type=time_claim.get("type", "statement"),
+            rank=time_claim.get("rank", "normal"),
+            hash=time_claim["hash"],
+            snaktype=time_claim["snaktype"],
+            property=time_claim["property"],
+            time=time_claim["datavalue"]["value"]["time"],
+            timezone=time_claim["datavalue"]["value"]["timezone"],
+            before=time_claim["datavalue"]["value"]["before"],
+            after=time_claim["datavalue"]["value"]["after"],
+            precision=time_claim["datavalue"]["value"]["precision"],
+            calendarmodel=time_claim["datavalue"]["value"]["calendarmodel"],
+        )
+
+    # For mainsnaks, use the original structure
     return TimeDefinition(
         id=time_claim["id"],
         type=time_claim["type"],
@@ -153,8 +177,15 @@ def wikidata_time_to_text(time_def: TimeDefinition) -> str:
     if raw_time.startswith(("+", "-")):
         raw_time = raw_time[1:]
 
-    # Parse only the date and time part (first 19 characters: "YYYY-MM-DDTHH:MM:SS")
-    dt = datetime.strptime(raw_time[:19], "%Y-%m-%dT%H:%M:%S")
+    # Extract year, month, and day from the raw time string
+    year = int(raw_time[:4])
+    month_str = raw_time[5:7]
+    day_str = raw_time[8:10]
+    month = int(month_str) if month_str != "00" else 1
+    day = int(day_str) if day_str != "00" else 1
+
+    # Create a valid datetime object
+    dt = datetime(year=year, month=month, day=day)
 
     if time_def.precision == 11:
         # Full date: e.g. "December 31, 1980"

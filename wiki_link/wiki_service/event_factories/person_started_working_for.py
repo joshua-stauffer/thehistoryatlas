@@ -89,7 +89,9 @@ class PersonStartedWorkingFor(EventFactory):
                 )
                 continue
 
-            if not geo_location.coordinates and not geo_location.geoshape:
+            if not geo_location or (
+                not geo_location.coordinates and not geo_location.geoshape
+            ):
                 logger.warning(f"No location found for employer {employer_id}")
                 continue
 
