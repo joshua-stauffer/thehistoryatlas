@@ -9,20 +9,21 @@ import requests
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 from wiki_service.config import WikiServiceConfig
-from wiki_service.types import WikiDataItem
+from wiki_service.types import (
+    CoordinateLocation,
+    Entity,
+    GeoLocation,
+    GeoshapeLocation,
+    Property,
+    Query,
+    TimeDefinition,
+    WikiDataItem,
+)
 from wiki_service.utils import get_version
 from wiki_service.event_factories.q_numbers import (
     COORDINATE_LOCATION,
     LOCATION,
     COUNTRY,
-)
-from wiki_service.models import (
-    Entity,
-    Property,
-    CoordinateLocation,
-    GeoshapeLocation,
-    GeoLocation,
-    TimeDefinition,
 )
 
 

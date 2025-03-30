@@ -8,7 +8,7 @@ from wiki_service.event_factories.event_factory import (
     UnprocessableEventError,
     register_event_factory,
 )
-from wiki_service.models import Entity, GeoLocation, Query, TimeDefinition
+from wiki_service.types import Entity, GeoLocation, Query, TimeDefinition
 from wiki_service.types import (
     WikiEvent,
     WikiTag,

@@ -6,7 +6,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel
 
-from wiki_service.models import Entity, GeoLocation, Query, TimeDefinition
+from wiki_service.types import Entity, GeoLocation, Query, TimeDefinition
 from wiki_service.types import WikiEvent
 
 

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Dict
 
-from wiki_service.models import TimeDefinition
+from wiki_service.types import TimeDefinition
 
 
 def build_time_definition_from_claim(time_claim: Dict) -> TimeDefinition:

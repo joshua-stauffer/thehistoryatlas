@@ -9,11 +9,12 @@ from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     WikiDataQueryServiceError,
 )
-from wiki_service.models import (
-    Entity,
-    Property,
+from wiki_service.types import (
     CoordinateLocation,
+    Entity,
+    GeoLocation,
     GeoshapeLocation,
+    Property,
     TimeDefinition,
 )
 from wiki_service.types import WikiDataItem
