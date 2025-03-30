@@ -31,19 +31,20 @@ class PersonWasBorn(EventFactory):
 
     def entity_has_event(self) -> bool:
         return (
-            PLACE_OF_BIRTH in self.entity.claims and DATE_OF_BIRTH in self.entity.claims
+            PLACE_OF_BIRTH in self._entity.claims
+            and DATE_OF_BIRTH in self._entity.claims
         )
 
     def create_wiki_event(self) -> list[WikiEvent]:
-        person_name = self.entity.labels["en"].value
+        person_name = self._entity.labels["en"].value
         time_definition = self._time_definition()
         time_name = wikidata_time_to_text(time_definition)
-        place_name = self.query.get_label(id=self._place_of_birth_id(), language="en")
-        geo_location = self.query.get_geo_location(id=self._place_of_birth_id())
+        place_name = self._query.get_label(id=self._place_of_birth_id(), language="en")
+        geo_location = self._query.get_geo_location(id=self._place_of_birth_id())
         if not geo_location.coordinates and not geo_location.geoshape:
             raise UnprocessableEventError("Location not found")
         parent_tuples: list[tuple[str, str]] = [
-            (id, self.query.get_label(id=id, language="en"))
+            (id, self._query.get_label(id=id, language="en"))
             for id in [self._mother_id(), self._father_id()]
             if id is not None
         ]
@@ -57,7 +58,7 @@ class PersonWasBorn(EventFactory):
         people_tags: list[PersonWikiTag] = [
             PersonWikiTag(
                 name=person_name,
-                wiki_id=self.entity.id,
+                wiki_id=self._entity.id,
                 start_char=summary.find(person_name),
                 stop_char=summary.find(person_name) + len(person_name),
             )
@@ -96,19 +97,19 @@ class PersonWasBorn(EventFactory):
         ]
 
     def _place_of_birth_id(self) -> str:
-        return self.entity.claims[PLACE_OF_BIRTH][0]["mainsnak"]["datavalue"]["value"][
+        return self._entity.claims[PLACE_OF_BIRTH][0]["mainsnak"]["datavalue"]["value"][
             "id"
         ]
 
     def _mother_id(self) -> str | None:
-        mother_claim = self.entity.claims.get(MOTHER)
+        mother_claim = self._entity.claims.get(MOTHER)
         if mother_claim:
             return mother_claim[0]["mainsnak"]["datavalue"]["value"]["id"]
         else:
             return None
 
     def _father_id(self) -> str | None:
-        father_claim = self.entity.claims.get(FATHER)
+        father_claim = self._entity.claims.get(FATHER)
         if father_claim:
             return father_claim[0]["mainsnak"]["datavalue"]["value"]["id"]
         else:
@@ -120,7 +121,7 @@ class PersonWasBorn(EventFactory):
         return build_time_definition_from_claim(
             time_claim=next(
                 claim
-                for claim in self.entity.claims[DATE_OF_BIRTH]
+                for claim in self._entity.claims[DATE_OF_BIRTH]
                 if claim["mainsnak"]["property"] == DATE_OF_BIRTH
             )
         )

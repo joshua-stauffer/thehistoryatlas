@@ -1,10 +1,8 @@
 """Base class for event factories."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import List, Optional, Type
+from typing import List, Type
 
-from pydantic import BaseModel
 
 from wiki_service.types import Entity, GeoLocation, Query, TimeDefinition
 from wiki_service.types import WikiEvent
@@ -20,8 +18,8 @@ class EventFactory(ABC):
     """Base class for event factories."""
 
     def __init__(self, entity: Entity, query: Query):
-        self.entity = entity
-        self.query = query
+        self._entity = entity
+        self._query = query
 
     @property
     @abstractmethod
