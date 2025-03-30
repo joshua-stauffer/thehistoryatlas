@@ -34,6 +34,8 @@ def mock_query():
         "Q790": "Master of Science",
         "Q791": "Bachelor of Arts",
         "Q888": "Professor Einstein",
+        "Q889": "Professor Bohr",
+        "Q890": "Professor Planck",
     }.get(id, "Unknown")
 
     # Create a proper GeoLocation instance
@@ -456,3 +458,158 @@ def test_create_wiki_event_invalid_precision(mock_entity, mock_query):
     with pytest.raises(UnprocessableEventError) as exc_info:
         factory.create_wiki_event()
     assert "Unexpected time precision: 8" in str(exc_info.value)
+
+
+def test_create_wiki_event_with_two_advisors(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    END_TIME: [
+                        {
+                            "property": END_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ],
+                    DOCTORAL_ADVISOR: [
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q888"}},
+                        },
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q889"}},
+                        },
+                    ],
+                },
+            }
+        ]
+    }
+    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary
+        == "Test Person ended their studies at Test University, under the supervision of Professor Einstein and Professor Bohr in 1990."
+    )
+    assert len(event.people_tags) == 3
+    assert event.people_tags[0].name == "Test Person"
+    assert event.people_tags[1].name == "Professor Einstein"
+    assert event.people_tags[2].name == "Professor Bohr"
+
+
+def test_create_wiki_event_with_three_advisors(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    END_TIME: [
+                        {
+                            "property": END_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ],
+                    DOCTORAL_ADVISOR: [
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q888"}},
+                        },
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q889"}},
+                        },
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q890"}},
+                        },
+                    ],
+                },
+            }
+        ]
+    }
+    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary
+        == "Test Person ended their studies at Test University, under the supervision of Professor Einstein, Professor Bohr and Professor Planck in 1990."
+    )
+    assert len(event.people_tags) == 4
+    assert event.people_tags[0].name == "Test Person"
+    assert event.people_tags[1].name == "Professor Einstein"
+    assert event.people_tags[2].name == "Professor Bohr"
+    assert event.people_tags[3].name == "Professor Planck"
+
+
+def test_create_wiki_event_with_multiple_advisors_and_degree(mock_entity, mock_query):
+    mock_entity.claims = {
+        EDUCATED_AT: [
+            {
+                "mainsnak": {
+                    "datavalue": {"value": {"id": "Q456"}},
+                },
+                "qualifiers": {
+                    END_TIME: [
+                        {
+                            "property": END_TIME,
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1990-01-01T00:00:00Z",
+                                    "precision": 9,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                }
+                            },
+                        }
+                    ],
+                    ACADEMIC_DEGREE: [
+                        {
+                            "property": ACADEMIC_DEGREE,
+                            "datavalue": {"value": {"id": "Q789"}},
+                        }
+                    ],
+                    DOCTORAL_ADVISOR: [
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q888"}},
+                        },
+                        {
+                            "property": DOCTORAL_ADVISOR,
+                            "datavalue": {"value": {"id": "Q889"}},
+                        },
+                    ],
+                },
+            }
+        ]
+    }
+    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    events = factory.create_wiki_event()
+    assert len(events) == 1
+    event = events[0]
+    assert (
+        event.summary
+        == "Test Person graduated from Test University with a degree of Doctor of Philosophy, under the supervision of Professor Einstein and Professor Bohr in 1990."
+    )
+    assert len(event.people_tags) == 3
+    assert event.people_tags[0].name == "Test Person"
+    assert event.people_tags[1].name == "Professor Einstein"
+    assert event.people_tags[2].name == "Professor Bohr"

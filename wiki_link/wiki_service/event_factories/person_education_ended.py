@@ -1,5 +1,6 @@
 import logging
 from typing import Literal
+from dataclasses import dataclass
 
 from wiki_service.event_factories.event_factory import (
     register_event_factory,
@@ -26,6 +27,14 @@ from wiki_service.wikidata_query_service import (
 from wiki_service.wikidata_query_service import TimeDefinition
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AdvisorInfo:
+    """Intermediate storage for advisor information before creating PersonWikiTag."""
+
+    name: str
+    wiki_id: str
 
 
 @register_event_factory
@@ -102,19 +111,14 @@ class PersonEducationEnded(EventFactory):
                     degree_name = self._query.get_label(id=degree_id, language="en")
                     academic_degrees.append(degree_name)
 
-            # Check for doctoral advisor
-            advisor_tags = []
+            # Check for doctoral advisors
+            advisor_infos = []
             if "qualifiers" in claim and DOCTORAL_ADVISOR in claim["qualifiers"]:
                 for advisor_qualifier in claim["qualifiers"][DOCTORAL_ADVISOR]:
                     advisor_id = advisor_qualifier["datavalue"]["value"]["id"]
                     advisor_name = self._query.get_label(id=advisor_id, language="en")
-                    advisor_tags.append(
-                        PersonWikiTag(
-                            name=advisor_name,
-                            wiki_id=advisor_id,
-                            start_char=None,  # Will be set after summary is created
-                            stop_char=None,  # Will be set after summary is created
-                        )
+                    advisor_infos.append(
+                        AdvisorInfo(name=advisor_name, wiki_id=advisor_id)
                     )
 
             academic_degree_name = None
@@ -129,13 +133,26 @@ class PersonEducationEnded(EventFactory):
                         + academic_degrees[-1]
                     )
 
+            # Format advisor names if present
+            advisor_names = None
+            if advisor_infos:
+                if len(advisor_infos) == 1:
+                    advisor_names = advisor_infos[0].name
+                else:
+                    # Join all but the last advisor with commas, then add "and" before the last one
+                    advisor_names = (
+                        ", ".join(adv.name for adv in advisor_infos[:-1])
+                        + " and "
+                        + advisor_infos[-1].name
+                    )
+
             summary = self._summary(
                 person=person_name,
                 place=place_name,
                 time=time_name,
                 precision=time_definition.precision,
                 academic_degree=academic_degree_name,
-                advisor_name=advisor_tags[0].name if advisor_tags else None,
+                advisor_names=advisor_names,
             )
 
             people_tags = [
@@ -147,13 +164,19 @@ class PersonEducationEnded(EventFactory):
                 )
             ]
 
-            # Update advisor tag positions if present
-            if advisor_tags:
-                advisor_name = advisor_tags[0].name
-                advisor_pos = summary.find(advisor_name)
-                advisor_tags[0].start_char = advisor_pos
-                advisor_tags[0].stop_char = advisor_pos + len(advisor_name)
-                people_tags.extend(advisor_tags)
+            # Create advisor tags if present, now that we have the summary
+            if advisor_infos:
+                for advisor_info in advisor_infos:
+                    advisor_pos = summary.find(advisor_info.name)
+                    if advisor_pos != -1:  # Only add if found in summary
+                        people_tags.append(
+                            PersonWikiTag(
+                                name=advisor_info.name,
+                                wiki_id=advisor_info.wiki_id,
+                                start_char=advisor_pos,
+                                stop_char=advisor_pos + len(advisor_info.name),
+                            )
+                        )
 
             place_tag = PlaceWikiTag(
                 name=place_name,
@@ -189,7 +212,7 @@ class PersonEducationEnded(EventFactory):
         time: str,
         precision: Literal[9, 10, 11],
         academic_degree: str | None = None,
-        advisor_name: str | None = None,
+        advisor_names: str | None = None,
     ) -> str:
         # Determine pronoun based on gender
         pronoun = "their"
@@ -209,8 +232,8 @@ class PersonEducationEnded(EventFactory):
             base = f"{person} ended {pronoun} studies at {place}"
 
         # Add advisor information if present
-        if advisor_name:
-            base += f", under the supervision of {advisor_name}"
+        if advisor_names:
+            base += f", under the supervision of {advisor_names}"
 
         # Add time information based on precision
         match precision:
