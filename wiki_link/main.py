@@ -29,15 +29,16 @@ def create_wiki_service() -> WikiService:
     )
 
 
-def main(num_people: Optional[int] = None) -> None:
+def main(num_people: Optional[int] = None, num_works: Optional[int] = None) -> None:
     """
     Main entry point for the WikiService application.
 
     Args:
         num_people: Optional number of people to process. If None, processes all available.
+        num_works: Optional number of works of art to process. If None, processes none.
     """
     service = create_wiki_service()
-    service.run(num_people=num_people)
+    service.run(num_people=num_people, num_works=num_works)
 
 
 if __name__ == "__main__":
@@ -50,6 +51,13 @@ if __name__ == "__main__":
         help="Number of people to process. If not specified, processes all available.",
         required=False,
     )
+    parser.add_argument(
+        "--works-of-art",
+        type=int,
+        help="Number of works of art to process. If not specified, processes none.",
+        required=False,
+        dest="num_works",
+    )
 
     args = parser.parse_args()
-    main(num_people=args.num_people)
+    main(num_people=args.num_people, num_works=args.num_works)

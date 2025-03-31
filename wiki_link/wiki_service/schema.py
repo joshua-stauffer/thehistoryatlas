@@ -53,3 +53,4 @@ class Config(Base):
 
     id = Column(INTEGER, primary_key=True, default=1)
     last_person_search_offset = Column(INTEGER, default=0)
+    last_works_of_art_search_offset = Column(INTEGER, default=0)
