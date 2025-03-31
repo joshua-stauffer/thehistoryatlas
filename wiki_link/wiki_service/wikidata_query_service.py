@@ -137,6 +137,25 @@ class WikiDataQueryService:
         }}
         LIMIT {limit} OFFSET {offset}
         """
+        return self._sparql_query(query)
+
+    def find_works_of_art(self, limit: int, offset: int) -> Set[WikiDataItem]:
+        INSTANCE_OF = "P31"
+        WORK_OF_ART = "Q838948"
+        query = f"""
+        SELECT DISTINCT ?item WHERE {{
+          {{
+            SELECT DISTINCT ?item WHERE {{
+              ?item p:{INSTANCE_OF} ?statement0.
+              ?statement0 (ps:P31) wd:{WORK_OF_ART}.
+            }}
+            LIMIT {limit} OFFSET {offset}
+          }}
+        }}
+        """
+        return self._sparql_query(query)
+
+    def _sparql_query(self, query: str) -> Set[WikiDataItem]:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         items = res.get("bindings", [])
         items = {
@@ -155,6 +174,21 @@ class WikiDataQueryService:
         WHERE {
           ?item wdt:P31 wd:Q5 .
         }
+        """
+        res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
+        return int(res["bindings"][0]["count"]["value"])
+
+    def get_wikidata_works_of_art_count(self) -> int:
+        query = """
+            SELECT ?count WHERE {
+              {
+             SELECT (COUNT(*) AS ?count)
+             WHERE {
+                  ?item p:P31 ?statement0.
+                  ?statement0 (ps:P31) wd:Q838948.
+                }
+              }
+            }
         """
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         return int(res["bindings"][0]["count"]["value"])
