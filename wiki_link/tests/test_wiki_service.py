@@ -817,7 +817,7 @@ class TestBuildEvents:
         mock_item = Mock(wiki_id="Q123", entity_type="PLACE")
 
         # Act
-        wiki_service.build_events_from_person(item=mock_item)
+        wiki_service.build_events(item=mock_item)
 
         # Assert
         mock_database.report_queue_error.assert_called_once_with(
@@ -910,7 +910,7 @@ class TestBuildEvents:
             mock_get_factories.return_value = [mock_event_factory]
 
             # Act
-            wiki_service.build_events_from_person(item=mock_item)
+            wiki_service.build_events(item=mock_item)
 
             # Assert
             mock_wikidata_service.get_entity.assert_called_once_with(id="Q123")
@@ -977,7 +977,7 @@ class TestBuildEvents:
             mock_rest_client.get_tags.side_effect = RestClientError("Test error")
 
             # Act
-            wiki_service.build_events_from_person(item=mock_item)
+            wiki_service.build_events(item=mock_item)
 
             # Assert
             mock_wikidata_service.get_entity.assert_called_once_with(id="Q123")
@@ -1002,7 +1002,7 @@ class TestBuildEvents:
         )
 
         # Act
-        wiki_service.build_events_from_person(item=mock_item)
+        wiki_service.build_events(item=mock_item)
 
         # Assert
         mock_database.report_queue_error.assert_called_once_with(
@@ -1111,7 +1111,7 @@ class TestBuildEvents:
             mock_rest_client.create_event.return_value = {"id": "event-uuid"}
 
             # Act
-            wiki_service.build_events_from_person(item=item_mock)
+            wiki_service.build_events(item=item_mock)
 
             # Assert
             # Verify check_time_exists was called with the right parameters
@@ -1252,3 +1252,120 @@ def test_run_continues_on_error(
     mock_database.add_items_to_queue.assert_called_once()
     assert mock_database.get_oldest_item_from_queue.call_count == 3
     assert mock_database.remove_item_from_queue.call_count == 2
+
+
+@patch("wiki_service.wiki_service.WikiDataQueryService")
+def test_search_for_works_of_art(mock_query_service, config):
+    # Create a new instance of WikiDataQueryService
+    mock_query_instance = create_autospec(WikiDataQueryService)
+    mock_query_instance.find_works_of_art.return_value = {
+        WikiDataItem(
+            url="http://www.wikidata.org/entity/Q12345",
+            qid="Q12345",
+        ),
+        WikiDataItem(
+            url="http://www.wikidata.org/entity/Q67890",
+            qid="Q67890",
+        ),
+    }
+    mock_query_service.return_value = mock_query_instance
+
+    database = Mock()
+    database.is_wiki_id_in_queue.return_value = False
+    database.wiki_id_exists.return_value = False
+    database.get_last_works_of_art_offset.return_value = 0
+
+    mock_rest_client = Mock(spec=RestClient)
+    service = WikiService(
+        wikidata_query_service=mock_query_service(),
+        database=database,
+        config=config,
+        rest_client=mock_rest_client,
+    )
+
+    # Act
+    service.search_for_works_of_art(num_works=2)
+
+    # Assert
+    # Check that add_items_to_queue was called once with the correct items, regardless of order
+    assert database.add_items_to_queue.call_count == 1
+    call_args = database.add_items_to_queue.call_args
+    assert call_args.kwargs["entity_type"] == "WORK_OF_ART"
+    assert len(call_args.kwargs["items"]) == 2
+    assert set(item.qid for item in call_args.kwargs["items"]) == {"Q12345", "Q67890"}
+    assert all(isinstance(item, WikiDataItem) for item in call_args.kwargs["items"])
+    database.save_last_works_of_art_offset.assert_called_once_with(offset=2)
+
+
+def test_build_events_handles_any_entity_type(config):
+    mock_query = Mock()
+    mock_query.get_entity.return_value = Mock(labels={"en": Mock(value="Test Label")})
+    mock_query.get_event_factories.return_value = []
+
+    database = Mock()
+    mock_rest_client = Mock(spec=RestClient)
+    service = WikiService(
+        wikidata_query_service=mock_query,
+        database=database,
+        config=config,
+        rest_client=mock_rest_client,
+    )
+
+    # Test with PERSON entity type
+    person_item = Mock(wiki_id="Q1", entity_type="PERSON")
+    service.build_events(item=person_item)
+
+    # Test with WORK_OF_ART entity type
+    art_item = Mock(wiki_id="Q2", entity_type="WORK_OF_ART")
+    service.build_events(item=art_item)
+
+
+@patch("wiki_service.wiki_service.WikiDataQueryService")
+def test_run_with_works_of_art(mock_query_service, config):
+    # Create a new instance of WikiDataQueryService
+    mock_query_instance = create_autospec(WikiDataQueryService)
+    mock_query_instance.find_works_of_art.return_value = {
+        WikiDataItem(
+            url="http://www.wikidata.org/entity/Q12345",
+            qid="Q12345",
+        ),
+    }
+    mock_query_instance.find_people.return_value = set()
+    mock_query_service.return_value = mock_query_instance
+
+    database = Mock()
+    database.is_wiki_id_in_queue.return_value = False
+    database.wiki_id_exists.return_value = False
+    database.get_last_works_of_art_offset.return_value = 0
+    database.get_last_person_offset.return_value = 0
+    database.get_oldest_item_from_queue.side_effect = [
+        Item(wiki_id="Q12345", entity_type="WORK_OF_ART"),
+        None,
+    ]
+
+    mock_rest_client = Mock(spec=RestClient)
+    service = WikiService(
+        wikidata_query_service=mock_query_service(),
+        database=database,
+        config=config,
+        rest_client=mock_rest_client,
+    )
+
+    # Act
+    service.run(num_works=1)
+
+    # Assert
+    assert mock_query_instance.find_works_of_art.call_count == 1
+    database.add_items_to_queue.assert_has_calls(
+        [
+            call(entity_type="PERSON", items=[]),
+            call(
+                items=[
+                    WikiDataItem(
+                        url="http://www.wikidata.org/entity/Q12345", qid="Q12345"
+                    )
+                ],
+                entity_type="WORK_OF_ART",
+            ),
+        ]
+    )

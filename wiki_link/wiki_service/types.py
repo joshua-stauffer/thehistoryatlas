@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Protocol, Literal
 from pydantic import BaseModel
 
-EntityType = Literal["PERSON", "PLACE", "TIME"]
+EntityType = Literal["PERSON", "PLACE", "TIME", "WORK_OF_ART"]
 
 
 class Property(BaseModel):

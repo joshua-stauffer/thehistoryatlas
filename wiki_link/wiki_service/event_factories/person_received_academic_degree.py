@@ -22,6 +22,7 @@ from wiki_service.event_factories.q_numbers import (
     SEX_OR_GENDER,
     MALE,
     FEMALE,
+    POINT_IN_TIME,
 )
 from wiki_service.event_factories.utils import (
     wikidata_time_to_text,
@@ -47,9 +48,17 @@ class PersonReceivedAcademicDegree(EventFactory):
         return "Person received academic degree"
 
     def entity_has_event(self) -> bool:
+        if self._entity_type != "PERSON":
+            return False
+
         if ACADEMIC_DEGREE not in self._entity.claims:
             return False
-        return True
+
+        # Check if any ACADEMIC_DEGREE claim has a POINT_IN_TIME qualifier
+        for claim in self._entity.claims[ACADEMIC_DEGREE]:
+            if "qualifiers" in claim and POINT_IN_TIME in claim["qualifiers"]:
+                return True
+        return False
 
     def create_wiki_event(self) -> list[WikiEvent]:
         person_name = self._entity.labels["en"].value
@@ -78,17 +87,15 @@ class PersonReceivedAcademicDegree(EventFactory):
 
             # Get time information
             time_definition = None
-            if (
-                "qualifiers" in claim and "P585" in claim["qualifiers"]
-            ):  # P585 is point in time
-                time_qualifier = claim["qualifiers"]["P585"][0]
+            if "qualifiers" in claim and POINT_IN_TIME in claim["qualifiers"]:
+                time_qualifier = claim["qualifiers"][POINT_IN_TIME][0]
                 time_definition = TimeDefinition(
                     id="",
                     type="statement",
                     rank="normal",
                     hash="",
                     snaktype="value",
-                    property="P585",
+                    property=POINT_IN_TIME,
                     time=time_qualifier["datavalue"]["value"]["time"],
                     timezone=0,
                     before=0,

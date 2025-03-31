@@ -59,24 +59,81 @@ class WikiService:
         self._database.save_last_person_offset(offset=limit + offset)
         return len(people)
 
-    def run(self, num_people: int | None = None) -> None:
+    def search_for_works_of_art(self, num_works: int | None = None):
         """
-        Run the WikiService pipeline to search for people and build events.
+        Query WikiData for all instances of works of art, and add each entry
+        to the WikiQueue, if it doesn't yet exist in the system.
+
+        Args:
+            num_works: Optional number of works to search for. If None, uses config limit.
+        """
+        offset = self._database.get_last_works_of_art_offset()
+        limit = (
+            min(num_works, self._config.WIKIDATA_SEARCH_LIMIT)
+            if num_works
+            else self._config.WIKIDATA_SEARCH_LIMIT
+        )
+        try:
+            works = self._query.find_works_of_art(limit=limit, offset=offset)
+            log.info(f"Found works: {works}")
+            if not works:
+                log.info("No works of art found")
+                return 0
+        except WikiDataQueryServiceError as e:
+            log.warning(f"WikiData Query Service encountered error and failed: {e}")
+            return 0
+
+        # Convert set to list for filtering
+        works_list = list(works)
+        log.info(f"Works list: {works_list}")
+        filtered_works = [
+            work
+            for work in works_list
+            if not self._database.is_wiki_id_in_queue(wiki_id=work.qid)
+            and not self._database.wiki_id_exists(wiki_id=work.qid)
+        ]
+        log.info(f"Filtered works: {filtered_works}")
+
+        if filtered_works:
+            self._database.add_items_to_queue(
+                entity_type="WORK_OF_ART", items=filtered_works
+            )
+            self._database.save_last_works_of_art_offset(offset=limit + offset)
+            return len(filtered_works)
+
+        log.info("No new works of art to add to queue")
+        return 0
+
+    def run(self, num_people: int | None = None, num_works: int | None = None) -> None:
+        """
+        Run the WikiService pipeline to search for people and works of art, and build events.
 
         Args:
             num_people: Optional number of people to process. If None, processes all available.
+            num_works: Optional number of works of art to process. If None, processes none.
         """
         # First search for people
         people_added = self.search_for_people(num_people=num_people)
         if people_added == 0:
             log.info("No new people found to process")
+
+        # Then search for works of art if requested
+        works_added = 0
+        if num_works is not None:
+            works_added = self.search_for_works_of_art(num_works=num_works)
+            if works_added == 0:
+                log.info("No new works of art found to process")
+
+        if people_added == 0 and works_added == 0:
             return
 
         # Process events until queue is empty or we've hit our limit
         processed = 0
         while True:
-            if num_people and processed >= num_people:
-                log.info(f"Reached processing limit of {num_people} people")
+            if num_people and processed >= num_people + works_added:
+                log.info(
+                    f"Reached processing limit of {num_people + works_added} items"
+                )
                 break
 
             item = self._database.get_oldest_item_from_queue()
@@ -85,27 +142,30 @@ class WikiService:
                 break
 
             try:
-                self.build_events_from_person(item=item)
+                self.build_events(item=item)
                 self._database.remove_item_from_queue(wiki_id=item.wiki_id)
                 processed += 1
             except Exception as e:
-                log.error(f"Error processing person: {e}")
+                log.error(f"Error processing item: {e}")
                 continue
 
-        log.info(f"Processed {processed} people successfully")
+        log.info(f"Processed {processed} items successfully")
 
-    def build_events_from_person(self, item: Item) -> None:
+    def build_events(self, item: Item) -> None:
         log.info(f"Processing entity: {item}")
         try:
-            entity = self._query.get_entity(id=item.wiki_id)
-            if item.entity_type != "PERSON":
+            if item.entity_type not in ["PERSON", "WORK_OF_ART"]:
                 self._database.report_queue_error(
                     wiki_id=item.wiki_id,
                     error_time=get_current_time(),
                     errors=f"Unknown entity type field: {item.entity_type}",
                 )
                 return
-            event_factories = get_event_factories(entity=entity, query=self._query)
+
+            entity = self._query.get_entity(id=item.wiki_id)
+            event_factories = get_event_factories(
+                entity=entity, query=self._query, entity_type=item.entity_type
+            )
             english_label = entity.labels.get("en")
             if english_label:
                 label = english_label.value

@@ -37,10 +37,13 @@ class PersonStartedWorkingFor(EventFactory):
         return "Person started working for"
 
     def entity_has_event(self) -> bool:
+        if self._entity_type != "PERSON":
+            return False
+
         if EMPLOYER not in self._entity.claims:
             return False
 
-        # Check if any employer claim has a start time
+        # Check if any EMPLOYER claim has a START_TIME qualifier
         for claim in self._entity.claims[EMPLOYER]:
             if "qualifiers" in claim and START_TIME in claim["qualifiers"]:
                 return True

@@ -137,8 +137,27 @@ class WikiDataQueryService:
         }}
         LIMIT {limit} OFFSET {offset}
         """
+        return self._sparql_query(query)
+
+    def find_works_of_art(self, limit: int, offset: int) -> Set[WikiDataItem]:
+        INSTANCE_OF = "P31"
+        WORK_OF_ART = "Q838948"
+        query = f"""
+        SELECT DISTINCT ?item WHERE {{
+          {{
+            SELECT DISTINCT ?item WHERE {{
+              ?item p:{INSTANCE_OF} ?statement0.
+              ?statement0 (ps:P31) wd:{WORK_OF_ART}.
+            }}
+            LIMIT {limit} OFFSET {offset}
+          }}
+        }}
+        """
+        return self._sparql_query(query)
+
+    def _sparql_query(self, query: str) -> Set[WikiDataItem]:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
-        items = res.get("bindings", [])
+        items = res.get("results", {}).get("bindings", [])
         items = {
             WikiDataItem(
                 url=item["item"]["value"],
@@ -157,34 +176,50 @@ class WikiDataQueryService:
         }
         """
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
-        return int(res["bindings"][0]["count"]["value"])
+        return int(res["results"]["bindings"][0]["count"]["value"])
+
+    def get_wikidata_works_of_art_count(self) -> int:
+        query = """
+            SELECT ?count WHERE {
+              {
+             SELECT (COUNT(*) AS ?count)
+             WHERE {
+                  ?item p:P31 ?statement0.
+                  ?statement0 (ps:P31) wd:Q838948.
+                }
+              }
+            }
+        """
+        res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
+        return int(res["results"]["bindings"][0]["count"]["value"])
 
     def make_sparql_query(self, query: str, url: str) -> dict:
-        sparql = SPARQLWrapper(endpoint=url, agent=self._agent_identifier())
-        sparql.setQuery(query=query)
-        sparql.setReturnFormat(JSON)
+        """
+        Make a SPARQL query to the specified URL.
 
+        Args:
+            query: The SPARQL query to execute
+            url: The URL to query
+
+        Returns:
+            The query results as a dictionary
+        """
+        sparql = SPARQLWrapper(url)
+        sparql.setQuery(query)
+        sparql.setReturnFormat(JSON)
         retries = 0
         while True:
             try:
                 result = sparql.query()
-                converted_result = result.convert()
-                return converted_result["results"]
+                return result.convert()
             except HTTPError as e:
-                if hasattr(e, "response") and e.response.status == 429:
-                    retry_after = e.response.headers.get("retry-after")
-                    if not retry_after:
-                        raise WikiDataQueryServiceError(
-                            "Rate limit exceeded with no retry-after header"
-                        )
-                    if retries >= MAX_RETRIES:
-                        raise WikiDataQueryServiceError(
-                            "Maximum retries exceeded for rate limited request"
-                        )
-                    time.sleep(float(retry_after))
-                    retries += 1
-                    continue
-                raise WikiDataQueryServiceError(e)
+                if hasattr(e, "response") and e.response.status_code == 429:
+                    if self._handle_rate_limit(e.response, retries):
+                        retries += 1
+                        continue
+                raise WikiDataQueryServiceError(f"SPARQL query failed: {e}")
+            except Exception as e:
+                raise WikiDataQueryServiceError(f"SPARQL query failed: {e}")
 
     def get_entity(self, id: str) -> Entity:
         """
@@ -413,7 +448,7 @@ class WikiDataQueryService:
     @staticmethod
     def get_qid_from_uri(uri: str) -> Optional[str]:
         # 'http://www.wikidata.org/entity/Q23'
-        pattern = "(Q[1-9]+)"
+        pattern = r"(Q\d+)"
         res = search(pattern=pattern, string=uri)
         if res is None:
             return None

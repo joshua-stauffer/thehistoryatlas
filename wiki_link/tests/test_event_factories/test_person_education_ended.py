@@ -59,7 +59,9 @@ def mock_query():
 
 def test_entity_has_event_no_educated_at(mock_entity, mock_query):
     mock_entity.claims = {}
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     assert not factory.entity_has_event()
 
 
@@ -73,7 +75,9 @@ def test_entity_has_event_no_end_time(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     assert not factory.entity_has_event()
 
 
@@ -102,7 +106,9 @@ def test_create_wiki_event_no_location(mock_entity, mock_query):
         ]
     }
     mock_query.get_geo_location.return_value = Mock(coordinates=None, geoshape=None)
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 0
 
@@ -131,7 +137,9 @@ def test_create_wiki_event_basic(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -174,7 +182,9 @@ def test_create_wiki_event_with_degree(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -218,7 +228,9 @@ def test_create_wiki_event_with_multiple_degrees(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -258,7 +270,9 @@ def test_create_wiki_event_with_advisor(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -307,7 +321,9 @@ def test_create_wiki_event_with_degree_and_advisor(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -351,7 +367,9 @@ def test_create_wiki_event_male_pronoun(mock_entity, mock_query):
             }
         ],
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -389,7 +407,9 @@ def test_create_wiki_event_female_pronoun(mock_entity, mock_query):
             }
         ],
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -420,7 +440,9 @@ def test_create_wiki_event_day_precision(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -454,7 +476,9 @@ def test_create_wiki_event_invalid_precision(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     with pytest.raises(UnprocessableEventError) as exc_info:
         factory.create_wiki_event()
     assert "Unexpected time precision: 8" in str(exc_info.value)
@@ -494,7 +518,9 @@ def test_create_wiki_event_with_two_advisors(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -546,7 +572,9 @@ def test_create_wiki_event_with_three_advisors(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -601,7 +629,9 @@ def test_create_wiki_event_with_multiple_advisors_and_degree(mock_entity, mock_q
             }
         ]
     }
-    factory = PersonEducationEnded(entity=mock_entity, query=mock_query)
+    factory = PersonEducationEnded(
+        entity=mock_entity, query=mock_query, entity_type="PERSON"
+    )
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]

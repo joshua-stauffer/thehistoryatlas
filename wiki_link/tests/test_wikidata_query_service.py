@@ -115,9 +115,10 @@ def test_make_sparql_query(mock_query, config):
     """
     result = service.make_sparql_query(query=query, url=url)
     assert isinstance(result, dict)
-    assert "bindings" in result
-    assert len(result["bindings"]) == 2
-    assert all("item" in item for item in result["bindings"])
+    assert "results" in result
+    assert "bindings" in result["results"]
+    assert len(result["results"]["bindings"]) == 2
+    assert all("item" in item for item in result["results"]["bindings"])
 
 
 def test_get_qid_from_uri(config):
@@ -363,13 +364,12 @@ def test_sparql_query_rate_limit_retry_success(config):
     mock_response = {"results": {"bindings": [{"s": {"value": "test"}}]}}
 
     # Mock SPARQLWrapper to simulate rate limiting
-    with patch("SPARQLWrapper.SPARQLWrapper.query") as mock_query:
+    with patch("wiki_service.wikidata_query_service.SPARQLWrapper.query") as mock_query:
         # First call raises HTTPError with 429
         error_response = Mock()
         error_response.headers = {"retry-after": "1"}
-        error_response.status = 429
-        http_error = HTTPError(url, 429, "Too Many Requests", error_response, None)
-        # Add the response attribute to the HTTPError
+        error_response.status_code = 429
+        http_error = HTTPError(url, 429, "Too Many Requests", {}, None)
         http_error.response = error_response
 
         # Second call succeeds
@@ -381,8 +381,12 @@ def test_sparql_query_rate_limit_retry_success(config):
         service = WikiDataQueryService(config)
         with patch("time.sleep") as mock_sleep:
             result = service.make_sparql_query(query, url)
-            assert mock_sleep.call_args[0][0] == 1
-            assert result == mock_response["results"]
+
+        # Verify retry behavior
+        assert mock_query.call_count == 2
+        assert mock_sleep.call_count == 1
+        assert mock_sleep.call_args[0][0] == 1.0
+        assert result == mock_response
 
 
 @responses.activate
@@ -728,3 +732,35 @@ def mock_country_entity():
         },
         sitelinks={},
     )
+
+
+@patch("wiki_service.wikidata_query_service.SPARQLWrapper.query")
+def test_find_works_of_art(mock_query, config):
+    mock_result = MagicMock()
+    mock_result.convert.return_value = {
+        "results": {
+            "bindings": [
+                {
+                    "item": {
+                        "value": "http://www.wikidata.org/entity/Q12345",
+                    }
+                },
+                {
+                    "item": {
+                        "value": "http://www.wikidata.org/entity/Q67890",
+                    }
+                },
+            ]
+        }
+    }
+    mock_query.return_value = mock_result
+
+    service = WikiDataQueryService(config)
+    works = service.find_works_of_art(limit=100, offset=0)
+
+    assert len(works) == 2
+    expected_works = {
+        WikiDataItem(url="http://www.wikidata.org/entity/Q12345", qid="Q12345"),
+        WikiDataItem(url="http://www.wikidata.org/entity/Q67890", qid="Q67890"),
+    }
+    assert works == expected_works
