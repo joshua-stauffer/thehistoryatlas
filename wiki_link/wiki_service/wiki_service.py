@@ -159,7 +159,7 @@ class WikiService:
                 return
 
             entity = self._query.get_entity(id=item.wiki_id)
-            event_factories = get_event_factories(entity=entity, query=self._query)
+            event_factories = get_event_factories(entity=entity, query=self._query, entity_type=item.entity_type)
             english_label = entity.labels.get("en")
             if english_label:
                 label = english_label.value

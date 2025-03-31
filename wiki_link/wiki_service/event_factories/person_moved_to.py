@@ -33,6 +33,9 @@ class PersonMovedTo(EventFactory):
         return "Person moved to"
 
     def entity_has_event(self) -> bool:
+        if self._entity_type != "PERSON":
+            return False
+            
         if RESIDENCE not in self._entity.claims:
             return False
 

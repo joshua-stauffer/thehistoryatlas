@@ -36,6 +36,9 @@ class PersonEducationBegan(EventFactory):
         return "Person education began"
 
     def entity_has_event(self) -> bool:
+        if self._entity_type != "PERSON":
+            return False
+            
         if EDUCATED_AT not in self._entity.claims:
             return False
 

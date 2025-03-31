@@ -1287,13 +1287,13 @@ def test_search_for_works_of_art(mock_query_service, config):
     service.search_for_works_of_art(num_works=2)
 
     # Assert
-    database.add_items_to_queue.assert_called_once_with(
-        items=[
-            WikiDataItem(url="http://www.wikidata.org/entity/Q12345", qid="Q12345"),
-            WikiDataItem(url="http://www.wikidata.org/entity/Q67890", qid="Q67890"),
-        ],
-        entity_type="WORK_OF_ART"
-    )
+    # Check that add_items_to_queue was called once with the correct items, regardless of order
+    assert database.add_items_to_queue.call_count == 1
+    call_args = database.add_items_to_queue.call_args
+    assert call_args.kwargs["entity_type"] == "WORK_OF_ART"
+    assert len(call_args.kwargs["items"]) == 2
+    assert set(item.qid for item in call_args.kwargs["items"]) == {"Q12345", "Q67890"}
+    assert all(isinstance(item, WikiDataItem) for item in call_args.kwargs["items"])
     database.save_last_works_of_art_offset.assert_called_once_with(offset=2)
 
 

@@ -17,9 +17,10 @@ class UnprocessableEventError(Exception):
 class EventFactory(ABC):
     """Base class for event factories."""
 
-    def __init__(self, entity: Entity, query: Query):
+    def __init__(self, entity: Entity, query: Query, entity_type: str):
         self._entity = entity
         self._query = query
+        self._entity_type = entity_type
 
     @property
     @abstractmethod
@@ -53,8 +54,8 @@ def register_event_factory(cls: Type[EventFactory]) -> Type[EventFactory]:
     return cls
 
 
-def get_event_factories(entity: Entity, query: Query) -> List[EventFactory]:
+def get_event_factories(entity: Entity, query: Query, entity_type: str) -> List[EventFactory]:
     """Get all registered event factories."""
     return [
-        factory_class(entity=entity, query=query) for factory_class in _event_factories
+        factory_class(entity=entity, query=query, entity_type=entity_type) for factory_class in _event_factories
     ]

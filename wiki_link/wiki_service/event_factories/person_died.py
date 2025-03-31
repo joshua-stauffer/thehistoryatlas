@@ -37,12 +37,12 @@ class PersonDied(EventFactory):
         return "Person died"
 
     def entity_has_event(self) -> bool:
-        has_event = (
+        if self._entity_type != "PERSON":
+            return False
+        return (
             PLACE_OF_DEATH in self._entity.claims
             and DATE_OF_DEATH in self._entity.claims
         )
-        logger.info(f"PersonDied has_event: {has_event}")
-        return has_event
 
     def create_wiki_event(self) -> list[WikiEvent]:
         person_name = self._entity.labels["en"].value

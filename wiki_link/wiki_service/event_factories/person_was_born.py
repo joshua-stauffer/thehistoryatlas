@@ -30,6 +30,8 @@ class PersonWasBorn(EventFactory):
         return "Person was born"
 
     def entity_has_event(self) -> bool:
+        if self._entity_type != "PERSON":
+            return False
         return (
             PLACE_OF_BIRTH in self._entity.claims
             and DATE_OF_BIRTH in self._entity.claims
