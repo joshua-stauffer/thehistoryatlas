@@ -191,15 +191,11 @@ class WorkOfArtCreated(EventFactory):
                     f", commissioned by {' and '.join(commissioner_names)}"
                 )
 
-        # For day precision, extract just the year
-        if precision == 11:
-            time = time.split(",")[-1].strip()
-
         # Build summary based on time precision
         match precision:
             case 11:  # day
-                return f"{creator} created {artwork} in {place} in {time}{commissioner_str}."
+                return f"On {time}, {creator} created the work of art {artwork} in {place}{commissioner_str}."
             case 10 | 9:  # month or year
-                return f"{creator} created {artwork} in {place} in {time}{commissioner_str}."
+                return f"{creator} created the work of art {artwork} in {place} in {time}{commissioner_str}."
             case _:
                 raise UnprocessableEventError(f"Unexpected time precision: {precision}")

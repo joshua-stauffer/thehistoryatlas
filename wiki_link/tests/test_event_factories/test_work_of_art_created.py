@@ -76,7 +76,7 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Leonardo da Vinci created Mona Lisa in Paris in 1503, commissioned by Francesco del Giocondo."
+            == "On January 1, 1503, Leonardo da Vinci created the work of art Mona Lisa in Paris, commissioned by Francesco del Giocondo."
         )
 
     def test_summary_precision_10(
@@ -99,7 +99,7 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Leonardo da Vinci created Mona Lisa in Paris in January 1503, commissioned by Francesco del Giocondo."
+            == "Leonardo da Vinci created the work of art Mona Lisa in Paris in January 1503, commissioned by Francesco del Giocondo."
         )
 
     def test_summary_precision_9(
@@ -122,7 +122,7 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Leonardo da Vinci created Mona Lisa in Paris in 1503, commissioned by Francesco del Giocondo."
+            == "Leonardo da Vinci created the work of art Mona Lisa in Paris in 1503, commissioned by Francesco del Giocondo."
         )
 
     def test_summary_no_commissioner(
@@ -148,7 +148,7 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Leonardo da Vinci created Mona Lisa in Paris in 1503."
+            == "On January 1, 1503, Leonardo da Vinci created the work of art Mona Lisa in Paris."
         )
 
     def test_summary_multiple_commissioners(
@@ -176,7 +176,7 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Leonardo da Vinci created Mona Lisa in Paris in 1503, commissioned by Francesco del Giocondo and Isabella d'Este."
+            == "On January 1, 1503, Leonardo da Vinci created the work of art Mona Lisa in Paris, commissioned by Francesco del Giocondo and Isabella d'Este."
         )
 
     def test_country_of_origin_fallback(
@@ -202,7 +202,7 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Leonardo da Vinci created Mona Lisa in France in 1503."
+            == "On January 1, 1503, Leonardo da Vinci created the work of art Mona Lisa in France."
         )
 
     def test_starry_night(self, starry_night_entity: Entity) -> None:
@@ -237,5 +237,5 @@ class TestWorkOfArtCreated:
         wiki_event = wiki_events[0]
         assert (
             wiki_event.summary
-            == "Vincent van Gogh created The Starry Night in Saint-Rémy-de-Provence in June 1889."
+            == "Vincent van Gogh created the work of art The Starry Night in Saint-Rémy-de-Provence in June 1889."
         )
