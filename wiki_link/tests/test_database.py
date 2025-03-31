@@ -28,6 +28,14 @@ def local_id() -> str:
 @pytest.fixture
 def seed_id_lookup(engine, wiki_id: str, local_id: UUID):
     with Session(engine, future=True) as session:
+        session.execute(
+            text(
+                """
+                delete from id_lookup where wiki_id = :wiki_id;
+            """
+            ),
+            {"wiki_id": wiki_id},
+        )
         session.add(
             IDLookup(
                 wiki_id=wiki_id,
