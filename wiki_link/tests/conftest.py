@@ -6,7 +6,15 @@ import pytest
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.event_factories.event_factory import Query
-from wiki_service.event_factories.q_numbers import DATE_OF_BIRTH, DATE_OF_DEATH
+from wiki_service.event_factories.q_numbers import (
+    DATE_OF_BIRTH,
+    DATE_OF_DEATH,
+    INCEPTION,
+    CREATOR,
+    LOCATION_OF_CREATION,
+    COUNTRY_OF_ORIGIN,
+    COMMISSIONED_BY,
+)
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     Entity,
@@ -174,6 +182,146 @@ def einstein_place_of_death_json_result(root_dir):
 def einstein_place_of_death(einstein_place_of_death_json_result) -> Entity:
     return WikiDataQueryService.build_entity(
         einstein_place_of_death_json_result["entities"]["Q1345"]
+    )
+
+
+@pytest.fixture
+def mona_lisa_json_result(root_dir):
+    with open(root_dir / "data/mona_lisa_query.json", "r") as f:
+        return json.loads(f.read())
+
+
+@pytest.fixture
+def mona_lisa_entity(mona_lisa_json_result) -> Entity:
+    return WikiDataQueryService.build_entity(
+        mona_lisa_json_result["entities"]["Q12418"]
+    )
+
+
+@pytest.fixture
+def mona_lisa_entity_precision_10(mona_lisa_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(
+        mona_lisa_json_result["entities"]["Q12418"]
+    )
+    time_claim = next(
+        claim
+        for claim in entity.claims[INCEPTION]
+        if claim["mainsnak"]["property"] == INCEPTION
+    )
+    time_claim["mainsnak"]["datavalue"]["value"]["precision"] = 10
+    return entity
+
+
+@pytest.fixture
+def mona_lisa_entity_precision_9(mona_lisa_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(
+        mona_lisa_json_result["entities"]["Q12418"]
+    )
+    time_claim = next(
+        claim
+        for claim in entity.claims[INCEPTION]
+        if claim["mainsnak"]["property"] == INCEPTION
+    )
+    time_claim["mainsnak"]["datavalue"]["value"]["precision"] = 9
+    return entity
+
+
+@pytest.fixture
+def mona_lisa_entity_no_commissioner(mona_lisa_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(
+        mona_lisa_json_result["entities"]["Q12418"]
+    )
+    entity.claims.pop(COMMISSIONED_BY, None)
+    return entity
+
+
+@pytest.fixture
+def mona_lisa_entity_multiple_commissioners(mona_lisa_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(
+        mona_lisa_json_result["entities"]["Q12418"]
+    )
+    # Add a second commissioner
+    entity.claims[COMMISSIONED_BY].append(
+        {
+            "mainsnak": {
+                "snaktype": "value",
+                "property": COMMISSIONED_BY,
+                "datavalue": {"value": {"id": "Q123456"}, "type": "wikibase-entityid"},
+            }
+        }
+    )
+    return entity
+
+
+@pytest.fixture
+def mona_lisa_entity_country_only(mona_lisa_json_result) -> Entity:
+    entity = WikiDataQueryService.build_entity(
+        mona_lisa_json_result["entities"]["Q12418"]
+    )
+    entity.claims.pop(LOCATION_OF_CREATION, None)
+    entity.claims.pop(COMMISSIONED_BY, None)
+    entity.claims[COUNTRY_OF_ORIGIN] = [
+        {
+            "mainsnak": {
+                "snaktype": "value",
+                "property": COUNTRY_OF_ORIGIN,
+                "datavalue": {"value": {"id": "Q142"}, "type": "wikibase-entityid"},
+            }
+        }
+    ]
+    return entity
+
+
+@pytest.fixture
+def paris_geo_location() -> GeoLocation:
+    return GeoLocation(
+        coordinates=CoordinateLocation(
+            id="Q90$COORDINATE_ID",
+            rank="normal",
+            type="statement",
+            snaktype="value",
+            property="P625",
+            hash="some_hash",
+            latitude=48.8566,
+            longitude=2.3522,
+            altitude=None,
+            precision=0.0001,
+            globe="http://www.wikidata.org/entity/Q2",
+        ),
+        geoshape=None,
+    )
+
+
+@pytest.fixture
+def france_geo_location() -> GeoLocation:
+    return GeoLocation(
+        coordinates=CoordinateLocation(
+            id="Q142$COORDINATE_ID",
+            rank="normal",
+            type="statement",
+            snaktype="value",
+            property="P625",
+            hash="some_hash",
+            latitude=46.2276,
+            longitude=2.2137,
+            altitude=None,
+            precision=0.0001,
+            globe="http://www.wikidata.org/entity/Q2",
+        ),
+        geoshape=None,
+    )
+
+
+@pytest.fixture
+def starry_night_json_result(root_dir):
+    with open(root_dir / "data/starry_night_query.json", "r") as f:
+        return json.loads(f.read())
+
+
+@pytest.fixture
+def starry_night_entity(starry_night_json_result) -> Entity:
+    return WikiDataQueryService.build_entity(
+        starry_night_json_result["entities"]["Q45585"]
     )
 
 

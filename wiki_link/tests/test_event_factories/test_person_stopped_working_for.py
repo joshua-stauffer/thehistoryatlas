@@ -263,7 +263,9 @@ class TestPersonStoppedWorkingFor:
 
     def test_entity_has_event_success(self, mock_entity_with_employer: Entity) -> None:
         query = create_autospec(Query)
-        factory = PersonStoppedWorkingFor(entity=mock_entity_with_employer, query=query, entity_type="PERSON")
+        factory = PersonStoppedWorkingFor(
+            entity=mock_entity_with_employer, query=query, entity_type="PERSON"
+        )
         assert factory.entity_has_event()
 
     def test_entity_has_event_no_employer(
@@ -280,7 +282,9 @@ class TestPersonStoppedWorkingFor:
     ) -> None:
         query = create_autospec(Query)
         factory = PersonStoppedWorkingFor(
-            entity=mock_entity_with_employer_no_end_time, query=query, entity_type="PERSON"
+            entity=mock_entity_with_employer_no_end_time,
+            query=query,
+            entity_type="PERSON",
         )
         assert not factory.entity_has_event()
 
@@ -317,7 +321,9 @@ class TestPersonStoppedWorkingFor:
             expected_geo_location_id="Q12345",
         )
         factory = PersonStoppedWorkingFor(
-            entity=mock_entity_with_employer_and_role, query=mock_query, entity_type="PERSON"
+            entity=mock_entity_with_employer_and_role,
+            query=mock_query,
+            entity_type="PERSON",
         )
 
         wiki_events = factory.create_wiki_event()
@@ -339,7 +345,9 @@ class TestPersonStoppedWorkingFor:
             expected_geo_location_id="Q12345",
         )
         factory = PersonStoppedWorkingFor(
-            entity=mock_entity_with_employer_and_position, query=mock_query, entity_type="PERSON"
+            entity=mock_entity_with_employer_and_position,
+            query=mock_query,
+            entity_type="PERSON",
         )
 
         wiki_events = factory.create_wiki_event()

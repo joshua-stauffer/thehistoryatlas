@@ -39,7 +39,7 @@ class PersonStartedWorkingFor(EventFactory):
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
-            
+
         if EMPLOYER not in self._entity.claims:
             return False
 

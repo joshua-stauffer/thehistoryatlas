@@ -1,0 +1,106 @@
+{
+    "entities": {
+        "Q12418": {
+            "pageid": 12418,
+            "ns": 0,
+            "title": "Q12418",
+            "lastrevid": 1234567890,
+            "modified": "2024-03-31T00:00:00Z",
+            "type": "item",
+            "id": "Q12418",
+            "labels": {
+                "en": {
+                    "language": "en",
+                    "value": "Mona Lisa"
+                }
+            },
+            "descriptions": {
+                "en": {
+                    "language": "en",
+                    "value": "Portrait painting by Leonardo da Vinci"
+                }
+            },
+            "aliases": {},
+            "claims": {
+                "P170": [
+                    {
+                        "id": "Q12418$P170-1",
+                        "type": "statement",
+                        "rank": "normal",
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P170",
+                            "hash": "some_hash",
+                            "datavalue": {
+                                "value": {
+                                    "id": "Q762"
+                                },
+                                "type": "wikibase-entityid"
+                            }
+                        }
+                    }
+                ],
+                "P571": [
+                    {
+                        "id": "Q12418$P571-1",
+                        "type": "statement",
+                        "rank": "normal",
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P571",
+                            "hash": "some_hash",
+                            "datavalue": {
+                                "value": {
+                                    "time": "+1503-01-01T00:00:00Z",
+                                    "timezone": 0,
+                                    "before": 0,
+                                    "after": 0,
+                                    "precision": 11,
+                                    "calendarmodel": "http://www.wikidata.org/entity/Q1985727"
+                                },
+                                "type": "time"
+                            }
+                        }
+                    }
+                ],
+                "P1071": [
+                    {
+                        "id": "Q12418$P1071-1",
+                        "type": "statement",
+                        "rank": "normal",
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P1071",
+                            "hash": "some_hash",
+                            "datavalue": {
+                                "value": {
+                                    "id": "Q90"
+                                },
+                                "type": "wikibase-entityid"
+                            }
+                        }
+                    }
+                ],
+                "P88": [
+                    {
+                        "id": "Q12418$P88-1",
+                        "type": "statement",
+                        "rank": "normal",
+                        "mainsnak": {
+                            "snaktype": "value",
+                            "property": "P88",
+                            "hash": "some_hash",
+                            "datavalue": {
+                                "value": {
+                                    "id": "Q1128785"
+                                },
+                                "type": "wikibase-entityid"
+                            }
+                        }
+                    }
+                ]
+            },
+            "sitelinks": {}
+        }
+    }
+} 

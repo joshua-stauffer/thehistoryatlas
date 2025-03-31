@@ -9,3 +9,4 @@ from .person_received_academic_degree import PersonReceivedAcademicDegree
 from .person_started_working_for import PersonStartedWorkingFor
 from .person_stopped_working_for import PersonStoppedWorkingFor
 from .person_was_born import PersonWasBorn
+from .work_of_art_created import WorkOfArtCreated

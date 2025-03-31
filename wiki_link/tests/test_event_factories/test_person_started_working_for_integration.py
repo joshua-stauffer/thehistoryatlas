@@ -27,7 +27,9 @@ def test_einstein_employment_events(service):
     """
     EINSTEIN_ID = "Q937"
     entity = service.get_entity(id=EINSTEIN_ID)
-    factory = PersonStartedWorkingFor(entity=entity, query=service, entity_type="PERSON")
+    factory = PersonStartedWorkingFor(
+        entity=entity, query=service, entity_type="PERSON"
+    )
 
     # Verify that Einstein has employment events
     assert factory.entity_has_event()

@@ -213,7 +213,7 @@ class WikiDataQueryService:
                 result = sparql.query()
                 return result.convert()
             except HTTPError as e:
-                if hasattr(e, 'response') and e.response.status_code == 429:
+                if hasattr(e, "response") and e.response.status_code == 429:
                     if self._handle_rate_limit(e.response, retries):
                         retries += 1
                         continue

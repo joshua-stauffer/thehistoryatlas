@@ -749,7 +749,7 @@ def test_find_works_of_art(mock_query, config):
                     "item": {
                         "value": "http://www.wikidata.org/entity/Q67890",
                     }
-                }
+                },
             ]
         }
     }

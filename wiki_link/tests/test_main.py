@@ -33,4 +33,4 @@ def test_main_with_works_of_art(mock_create_service):
 
     # Test with no arguments
     main()
-    mock_service.run.assert_called_once_with(num_people=None, num_works=None) 
+    mock_service.run.assert_called_once_with(num_people=None, num_works=None)

@@ -95,10 +95,12 @@ class WikiService:
         log.info(f"Filtered works: {filtered_works}")
 
         if filtered_works:
-            self._database.add_items_to_queue(entity_type="WORK_OF_ART", items=filtered_works)
+            self._database.add_items_to_queue(
+                entity_type="WORK_OF_ART", items=filtered_works
+            )
             self._database.save_last_works_of_art_offset(offset=limit + offset)
             return len(filtered_works)
-        
+
         log.info("No new works of art to add to queue")
         return 0
 
@@ -129,7 +131,9 @@ class WikiService:
         processed = 0
         while True:
             if num_people and processed >= num_people + works_added:
-                log.info(f"Reached processing limit of {num_people + works_added} items")
+                log.info(
+                    f"Reached processing limit of {num_people + works_added} items"
+                )
                 break
 
             item = self._database.get_oldest_item_from_queue()
@@ -159,7 +163,9 @@ class WikiService:
                 return
 
             entity = self._query.get_entity(id=item.wiki_id)
-            event_factories = get_event_factories(entity=entity, query=self._query, entity_type=item.entity_type)
+            event_factories = get_event_factories(
+                entity=entity, query=self._query, entity_type=item.entity_type
+            )
             english_label = entity.labels.get("en")
             if english_label:
                 label = english_label.value

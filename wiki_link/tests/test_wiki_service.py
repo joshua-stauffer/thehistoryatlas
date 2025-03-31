@@ -1356,10 +1356,16 @@ def test_run_with_works_of_art(mock_query_service, config):
 
     # Assert
     assert mock_query_instance.find_works_of_art.call_count == 1
-    database.add_items_to_queue.assert_has_calls([
-        call(entity_type="PERSON", items=[]),
-        call(
-            items=[WikiDataItem(url="http://www.wikidata.org/entity/Q12345", qid="Q12345")],
-            entity_type="WORK_OF_ART"
-        ),
-    ])
+    database.add_items_to_queue.assert_has_calls(
+        [
+            call(entity_type="PERSON", items=[]),
+            call(
+                items=[
+                    WikiDataItem(
+                        url="http://www.wikidata.org/entity/Q12345", qid="Q12345"
+                    )
+                ],
+                entity_type="WORK_OF_ART",
+            ),
+        ]
+    )

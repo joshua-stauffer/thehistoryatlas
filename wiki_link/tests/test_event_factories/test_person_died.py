@@ -55,7 +55,11 @@ class TestPersonDied:
             geo_location=leipzig_geo_location,
             expected_geo_location_id="Q2079",
         )
-        factory = PersonDied(entity=bach_entity_death_precision_10, query=mock_query, entity_type="PERSON")
+        factory = PersonDied(
+            entity=bach_entity_death_precision_10,
+            query=mock_query,
+            entity_type="PERSON",
+        )
         wiki_events = factory.create_wiki_event()
         assert len(wiki_events) == 1
         wiki_event = wiki_events[0]
@@ -73,7 +77,9 @@ class TestPersonDied:
             geo_location=leipzig_geo_location,
             expected_geo_location_id="Q2079",
         )
-        factory = PersonDied(entity=bach_entity_death_precision_9, query=mock_query, entity_type="PERSON")
+        factory = PersonDied(
+            entity=bach_entity_death_precision_9, query=mock_query, entity_type="PERSON"
+        )
         wiki_events = factory.create_wiki_event()
         assert len(wiki_events) == 1
         wiki_event = wiki_events[0]
