@@ -49,7 +49,7 @@ def mock_query():
 
 def test_entity_has_event_no_claims(mock_entity, mock_query):
     mock_entity.claims = {}
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     assert not factory.entity_has_event()
 
 
@@ -63,7 +63,7 @@ def test_entity_has_event_no_end_time(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     assert not factory.entity_has_event()
 
 
@@ -93,7 +93,7 @@ def test_entity_has_event_with_end_time(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     assert factory.entity_has_event()
 
 
@@ -123,7 +123,7 @@ def test_create_wiki_event_basic(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -160,7 +160,7 @@ def test_create_wiki_event_day_precision(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -196,7 +196,7 @@ def test_create_wiki_event_no_location_data(mock_entity, mock_query):
     mock_query.get_geo_location.return_value = GeoLocation(
         coordinates=None, geoshape=None
     )
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 0
 
@@ -227,6 +227,6 @@ def test_create_wiki_event_invalid_precision(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query)
+    factory = PersonMovedAwayFrom(entity=mock_entity, query=mock_query, entity_type="PERSON")
     with pytest.raises(UnprocessableEventError, match="Unexpected time precision: 8"):
         factory.create_wiki_event()

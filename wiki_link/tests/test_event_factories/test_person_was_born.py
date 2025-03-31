@@ -20,12 +20,12 @@ class TestPersonWasBorn:
 
     def test_entity_has_event_success(self, bach_entity: Entity) -> None:
         query = create_autospec(Query)
-        factory = PersonWasBorn(entity=bach_entity, query=query)
+        factory = PersonWasBorn(entity=bach_entity, query=query, entity_type="PERSON")
         assert factory.entity_has_event()
 
     def test_entity_has_event_failure(self, eisenach_entity: Entity) -> None:
         query = create_autospec(Query)
-        factory = PersonWasBorn(entity=eisenach_entity, query=query)
+        factory = PersonWasBorn(entity=eisenach_entity, query=query, entity_type="PERSON")
         assert not factory.entity_has_event()
 
     def test_summary_precision_11(
@@ -38,7 +38,7 @@ class TestPersonWasBorn:
             geo_location=eisenach_geo_location,
             expected_geo_location_id="Q7070",
         )
-        factory = PersonWasBorn(entity=bach_entity, query=mock_query)
+        factory = PersonWasBorn(entity=bach_entity, query=mock_query, entity_type="PERSON")
 
         wiki_events = factory.create_wiki_event()
         assert len(wiki_events) == 1
@@ -58,7 +58,7 @@ class TestPersonWasBorn:
             geo_location=eisenach_geo_location,
             expected_geo_location_id="Q7070",
         )
-        factory = PersonWasBorn(entity=bach_entity_precision_10, query=mock_query)
+        factory = PersonWasBorn(entity=bach_entity_precision_10, query=mock_query, entity_type="PERSON")
         wiki_events = factory.create_wiki_event()
         assert len(wiki_events) == 1
         wiki_event = wiki_events[0]
@@ -77,7 +77,7 @@ class TestPersonWasBorn:
             geo_location=eisenach_geo_location,
             expected_geo_location_id="Q7070",
         )
-        factory = PersonWasBorn(entity=bach_entity_precision_9, query=mock_query)
+        factory = PersonWasBorn(entity=bach_entity_precision_9, query=mock_query, entity_type="PERSON")
         wiki_events = factory.create_wiki_event()
         assert len(wiki_events) == 1
         wiki_event = wiki_events[0]
@@ -90,7 +90,7 @@ class TestPersonWasBorn:
         self, einstein_entity: Entity, einstein_place_of_birth: Entity, config
     ) -> None:
         query = WikiDataQueryService(config=config)
-        factory = PersonWasBorn(entity=einstein_entity, query=query)
+        factory = PersonWasBorn(entity=einstein_entity, query=query, entity_type="PERSON")
         wiki_events = factory.create_wiki_event()
         assert len(wiki_events) == 1
         wiki_event = wiki_events[0]

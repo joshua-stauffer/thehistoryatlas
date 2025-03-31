@@ -63,7 +63,7 @@ def mock_query():
 
 def test_entity_has_event_no_academic_degree(mock_entity, mock_query):
     mock_entity.claims = {}
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     assert not factory.entity_has_event()
 
 
@@ -96,7 +96,7 @@ def test_create_wiki_event_no_location(mock_entity, mock_query):
         ]
     }
     mock_query.get_geo_location.return_value = Mock(coordinates=None, geoshape=None)
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 0
 
@@ -129,7 +129,7 @@ def test_create_wiki_event_basic(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -175,7 +175,7 @@ def test_create_wiki_event_with_major(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -218,7 +218,7 @@ def test_create_wiki_event_with_advisor(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -266,7 +266,7 @@ def test_create_wiki_event_male_pronoun(mock_entity, mock_query):
             }
         ],
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -308,7 +308,7 @@ def test_create_wiki_event_female_pronoun(mock_entity, mock_query):
             }
         ],
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -366,7 +366,7 @@ def test_create_wiki_event_multiple_degrees(mock_entity, mock_query):
             },
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 2
     assert (
@@ -407,7 +407,7 @@ def test_create_wiki_event_invalid_precision(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     with pytest.raises(UnprocessableEventError):
         factory.create_wiki_event()
 
@@ -448,7 +448,7 @@ def test_create_wiki_event_with_multiple_majors(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -491,7 +491,7 @@ def test_create_wiki_event_with_minor(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -539,7 +539,7 @@ def test_create_wiki_event_with_major_and_minor(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -585,7 +585,7 @@ def test_create_wiki_event_with_multiple_minors(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 1
     event = events[0]
@@ -612,6 +612,6 @@ def test_create_wiki_event_no_time(mock_entity, mock_query):
             }
         ]
     }
-    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query)
+    factory = PersonReceivedAcademicDegree(entity=mock_entity, query=mock_query, entity_type="PERSON")
     events = factory.create_wiki_event()
     assert len(events) == 0
