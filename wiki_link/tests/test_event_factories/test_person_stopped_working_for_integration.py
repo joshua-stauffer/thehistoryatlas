@@ -10,8 +10,7 @@ from wiki_service.wikidata_query_service import WikiDataQueryService
 
 
 @pytest.fixture
-def config(monkeypatch):
-    monkeypatch.setenv("WIKILINK_CONTACT", "test@example.com")
+def config():
     return WikiServiceConfig()
 
 
