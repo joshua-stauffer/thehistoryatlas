@@ -204,7 +204,7 @@ class WikiDataQueryService:
         Returns:
             The query results as a dictionary
         """
-        sparql = SPARQLWrapper(url)
+        sparql = SPARQLWrapper(url, agent=self._agent_identifier())
         sparql.setQuery(query)
         sparql.setReturnFormat(JSON)
         retries = 0
