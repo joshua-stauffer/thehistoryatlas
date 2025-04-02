@@ -32,6 +32,7 @@ def create_wiki_service() -> WikiService:
 def main(
     num_people: Optional[int] = None,
     num_works: Optional[int] = None,
+    num_books: Optional[int] = None,
     wikidata_id: Optional[str] = None,
     entity_type: Optional[str] = None,
 ) -> None:
@@ -41,6 +42,7 @@ def main(
     Args:
         num_people: Optional number of people to process. If None, processes all available.
         num_works: Optional number of works of art to process. If None, processes none.
+        num_books: Optional number of books to process. If None, processes none.
         wikidata_id: Optional WikiData ID to process directly.
         entity_type: Optional entity type for the WikiData ID. Defaults to "PERSON".
     """
@@ -53,7 +55,7 @@ def main(
         service.process_wikidata_item(wiki_id=wikidata_id, entity_type=entity_type)
     else:
         # Run the normal pipeline
-        service.run(num_people=num_people, num_works=num_works)
+        service.run(num_people=num_people, num_works=num_works, num_books=num_books)
 
 
 if __name__ == "__main__":
@@ -82,8 +84,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--entity-type",
         type=str,
-        choices=["PERSON", "WORK_OF_ART"],
+        choices=["PERSON", "WORK_OF_ART", "BOOK"],
         help="Entity type for the WikiData ID. Defaults to 'PERSON'.",
+        required=False,
+    )
+    parser.add_argument(
+        "--num-books",
+        type=int,
+        help="Number of books to process. If not specified, processes none.",
         required=False,
     )
 
@@ -91,6 +99,7 @@ if __name__ == "__main__":
     main(
         num_people=args.num_people,
         num_works=args.num_works,
+        num_books=args.num_books,
         wikidata_id=args.wikidata_id,
         entity_type=args.entity_type,
     )

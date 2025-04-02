@@ -12,3 +12,4 @@ from .person_stopped_working_for import PersonStoppedWorkingFor
 from .person_took_position import PersonTookPosition
 from .person_was_born import PersonWasBorn
 from .work_of_art_created import WorkOfArtCreated
+from .book_was_published import BookWasPublished
