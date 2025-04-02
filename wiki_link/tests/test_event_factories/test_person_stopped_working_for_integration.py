@@ -33,12 +33,6 @@ def test_einstein_employment_events(service):
     # Verify that Einstein has employment events
     assert factory.entity_has_event()
 
-    # Debug: Print the first employer claim's time qualifier
-    employer_claim = entity.claims["P108"][0]
-    time_claim = employer_claim["qualifiers"]["P582"][0]  # P582 is END_TIME
-    print("\nTime claim structure:")
-    print(json.dumps(time_claim, indent=2))
-
     # Get the events
     wiki_events = factory.create_wiki_event()
 
