@@ -173,6 +173,7 @@ class PersonLeftPosition(EventFactory):
                 location=location_name,
                 time=time_name,
                 replaced_by_person=replaced_by_person_label,
+                replaced_by_person_id=replaced_by_person_id,
                 precision=time_definition.precision,
                 is_work_location=is_work_location,
             )
@@ -186,7 +187,11 @@ class PersonLeftPosition(EventFactory):
                 )
             ]
 
-            if replaced_by_person_label and replaced_by_person_id:
+            if (
+                replaced_by_person_label
+                and replaced_by_person_id
+                and replaced_by_person_id != self._entity.id
+            ):
                 replaced_by_idx = summary.find(replaced_by_person_label)
                 if replaced_by_idx != -1:
                     people_tags.append(
@@ -235,6 +240,7 @@ class PersonLeftPosition(EventFactory):
         location: str,
         time: str,
         replaced_by_person: Optional[str],
+        replaced_by_person_id: Optional[str],
         precision: Literal[9, 10, 11],
         is_work_location: bool,
     ) -> str:
@@ -248,9 +254,10 @@ class PersonLeftPosition(EventFactory):
         else:
             location_text = ""
 
-        replaced_by_text = (
-            f", being replaced by {replaced_by_person}" if replaced_by_person else ""
-        )
+        # Only add replaced by text if the replaced by person is not the same as the primary entity
+        replaced_by_text = ""
+        if replaced_by_person and replaced_by_person_id != self._entity.id:
+            replaced_by_text = f", being replaced by {replaced_by_person}"
 
         match precision:
             case 11:  # day
