@@ -29,16 +29,31 @@ def create_wiki_service() -> WikiService:
     )
 
 
-def main(num_people: Optional[int] = None, num_works: Optional[int] = None) -> None:
+def main(
+    num_people: Optional[int] = None,
+    num_works: Optional[int] = None,
+    wikidata_id: Optional[str] = None,
+    entity_type: Optional[str] = None,
+) -> None:
     """
     Main entry point for the WikiService application.
 
     Args:
         num_people: Optional number of people to process. If None, processes all available.
         num_works: Optional number of works of art to process. If None, processes none.
+        wikidata_id: Optional WikiData ID to process directly.
+        entity_type: Optional entity type for the WikiData ID. Defaults to "PERSON".
     """
     service = create_wiki_service()
-    service.run(num_people=num_people, num_works=num_works)
+
+    if wikidata_id:
+        # Process a single WikiData item
+        if not entity_type:
+            entity_type = "PERSON"
+        service.process_wikidata_item(wiki_id=wikidata_id, entity_type=entity_type)
+    else:
+        # Run the normal pipeline
+        service.run(num_people=num_people, num_works=num_works)
 
 
 if __name__ == "__main__":
@@ -58,6 +73,24 @@ if __name__ == "__main__":
         required=False,
         dest="num_works",
     )
+    parser.add_argument(
+        "--wikidata-id",
+        type=str,
+        help="Process a specific WikiData ID directly (e.g., 'Q12345').",
+        required=False,
+    )
+    parser.add_argument(
+        "--entity-type",
+        type=str,
+        choices=["PERSON", "WORK_OF_ART"],
+        help="Entity type for the WikiData ID. Defaults to 'PERSON'.",
+        required=False,
+    )
 
     args = parser.parse_args()
-    main(num_people=args.num_people, num_works=args.num_works)
+    main(
+        num_people=args.num_people,
+        num_works=args.num_works,
+        wikidata_id=args.wikidata_id,
+        entity_type=args.entity_type,
+    )

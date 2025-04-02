@@ -151,6 +151,38 @@ class WikiService:
 
         log.info(f"Processed {processed} items successfully")
 
+    def process_wikidata_item(self, wiki_id: str, entity_type: str) -> None:
+        """
+        Process a specific WikiData item by its ID.
+
+        Args:
+            wiki_id: The WikiData ID to process (e.g., "Q12345")
+            entity_type: The entity type, one of "PERSON" or "WORK_OF_ART"
+
+        Raises:
+            WikiServiceError: If the entity type is invalid or there's an error processing the item
+        """
+        log.info(f"Processing WikiData item {wiki_id} of type {entity_type}")
+
+        if entity_type not in ["PERSON", "WORK_OF_ART"]:
+            raise WikiServiceError(
+                f"Invalid entity type: {entity_type}. Must be one of: PERSON, WORK_OF_ART"
+            )
+
+        # Check if item already exists
+        if self._database.wiki_id_exists(wiki_id=wiki_id):
+            log.info(f"WikiData item {wiki_id} already exists in the database")
+
+        # Create an Item object for processing
+        item = Item(wiki_id=wiki_id, entity_type=entity_type)
+
+        try:
+            self.build_events(item=item)
+            log.info(f"Successfully processed WikiData item {wiki_id}")
+        except Exception as e:
+            log.error(f"Error processing WikiData item {wiki_id}: {e}")
+            raise WikiServiceError(f"Failed to process WikiData item {wiki_id}: {e}")
+
     def build_events(self, item: Item) -> None:
         log.info(f"Processing entity: {item}")
         try:
