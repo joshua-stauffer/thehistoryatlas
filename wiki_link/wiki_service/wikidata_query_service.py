@@ -24,6 +24,7 @@ from wiki_service.event_factories.q_numbers import (
     COORDINATE_LOCATION,
     LOCATION,
     COUNTRY,
+    BOOK,
 )
 
 
@@ -155,6 +156,21 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
+    def find_books(self, limit: int, offset: int) -> Set[WikiDataItem]:
+        INSTANCE_OF = "P31"
+        query = f"""
+        SELECT DISTINCT ?item WHERE {{
+          {{
+            SELECT DISTINCT ?item WHERE {{
+              ?item p:{INSTANCE_OF} ?statement0.
+              ?statement0 (ps:P31) wd:{BOOK}.
+            }}
+            LIMIT {limit} OFFSET {offset}
+          }}
+        }}
+        """
+        return self._sparql_query(query)
+
     def _sparql_query(self, query: str) -> Set[WikiDataItem]:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         items = res.get("results", {}).get("bindings", [])
@@ -186,6 +202,21 @@ class WikiDataQueryService:
              WHERE {
                   ?item p:P31 ?statement0.
                   ?statement0 (ps:P31) wd:Q838948.
+                }
+              }
+            }
+        """
+        res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
+        return int(res["results"]["bindings"][0]["count"]["value"])
+
+    def get_wikidata_books_count(self) -> int:
+        query = """
+            SELECT ?count WHERE {
+              {
+             SELECT (COUNT(*) AS ?count)
+             WHERE {
+                  ?item p:P31 ?statement0.
+                  ?statement0 (ps:P31) wd:Q7725634.
                 }
               }
             }
