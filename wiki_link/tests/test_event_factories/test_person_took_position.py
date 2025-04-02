@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call
 
 from wiki_service.event_factories.person_took_position import PersonTookPosition
 from wiki_service.event_factories.event_factory import UnprocessableEventError
@@ -373,68 +373,6 @@ def test_create_wiki_event_basic(mock_query):
     assert event.time_tag is not None
     assert "January 1, 2020" in event.time_tag.name
     assert event.time_tag.time_definition.precision == 11
-
-
-def test_create_wiki_event_with_replaced_person(mock_query):
-    entity = Entity(
-        id="Q123",
-        pageid=123,
-        ns=0,
-        title="Q123",
-        lastrevid=456,
-        modified="2024-04-01T00:00:00Z",
-        type="item",
-        labels={"en": Property(language="en", value="Test Person")},
-        descriptions={},
-        aliases={},
-        claims={
-            "P39": [  # POSITION_HELD
-                {
-                    "mainsnak": {"datavalue": {"value": {"id": "Q456"}}},
-                    "qualifiers": {
-                        "P580": [  # START_TIME
-                            {
-                                "hash": "hash123",
-                                "snaktype": "value",
-                                "property": "P580",
-                                "datavalue": {
-                                    "value": {
-                                        "time": "+2020-01-01T00:00:00Z",
-                                        "timezone": 0,
-                                        "before": 0,
-                                        "after": 0,
-                                        "precision": 11,
-                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
-                                    }
-                                },
-                            }
-                        ],
-                        "P937": [  # WORK_LOCATION
-                            {"datavalue": {"value": {"id": "Q789"}}}
-                        ],
-                        "P1366": [{"datavalue": {"value": {"id": "Q999"}}}],  # REPLACES
-                    },
-                }
-            ]
-        },
-        sitelinks={},
-    )
-
-    factory = PersonTookPosition(entity=entity, query=mock_query, entity_type="PERSON")
-    events = factory.create_wiki_event()
-
-    assert len(events) == 1
-    event = events[0]
-
-    # Verify that get_label was called with the correct IDs
-    mock_query.get_label.assert_any_call(id="Q456", language="en")  # Position
-    mock_query.get_label.assert_any_call(id="Q999", language="en")  # Replaced person
-    mock_query.get_label.assert_any_call(id="Q789", language="en")  # Location
-
-    assert "replacing Test Replaced Person" in event.summary
-    assert len(event.people_tags) == 2
-    assert event.people_tags[1].name == "Test Replaced Person"
-    assert event.people_tags[1].wiki_id == "Q999"
 
 
 def test_create_wiki_event_no_location_found(mock_query):

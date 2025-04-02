@@ -251,6 +251,6 @@ class PersonTookPosition(EventFactory):
             case 11:  # day
                 return f"On {time}, {person} took the position of {position}{location_text}{replaced_text}."
             case 10 | 9:  # month or year
-                return f" In {time}, {person} took the position of {position}{location_text}{replaced_text}."
+                return f"In {time}, {person} took the position of {position}{location_text}{replaced_text}."
             case _:
                 raise UnprocessableEventError(f"Unexpected time precision: {precision}")
