@@ -764,3 +764,268 @@ def test_find_works_of_art(mock_query, config):
         WikiDataItem(url="http://www.wikidata.org/entity/Q67890", qid="Q67890"),
     }
     assert works == expected_works
+
+
+@pytest.fixture
+def mock_entity_with_time_qualifiers():
+    """Create a mock entity with time data in qualifiers"""
+    return Entity(
+        id="Q57125",
+        pageid=57125,
+        ns=0,
+        title="Q57125",
+        lastrevid=123,
+        modified="2024-04-03T00:00:00Z",
+        type="item",
+        labels={},
+        descriptions={},
+        aliases={},
+        sitelinks={},
+        claims={
+            "P1344": [
+                {
+                    "mainsnak": {
+                        "datatype": "wikibase-item",
+                        "hash": "abc123",
+                        "snaktype": "value",
+                        "property": "P1344",
+                        "datavalue": {
+                            "value": {"id": "Q456", "entity-type": "item"},
+                            "type": "wikibase-entityid",
+                        },
+                    },
+                    "type": "statement",
+                    "id": "Q57125$123",
+                    "rank": "normal",
+                    "qualifiers": {
+                        "P585": [
+                            {
+                                "hash": "def456",
+                                "snaktype": "value",
+                                "property": "P585",
+                                "datatype": "time",
+                                "datavalue": {
+                                    "value": {
+                                        "time": "+1920-01-01T00:00:00Z",
+                                        "timezone": 0,
+                                        "before": 0,
+                                        "after": 0,
+                                        "precision": 11,
+                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                    },
+                                    "type": "time",
+                                },
+                            }
+                        ],
+                        "P580": [
+                            {
+                                "hash": "ghi789",
+                                "snaktype": "value",
+                                "property": "P580",
+                                "datatype": "time",
+                                "datavalue": {
+                                    "value": {
+                                        "time": "+1919-01-01T00:00:00Z",
+                                        "timezone": 0,
+                                        "before": 0,
+                                        "after": 0,
+                                        "precision": 11,
+                                        "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                                    },
+                                    "type": "time",
+                                },
+                            }
+                        ],
+                    },
+                }
+            ]
+        },
+    )
+
+
+@pytest.fixture
+def mock_entity_with_reference():
+    """Create a mock entity with a reference to another entity"""
+    return Entity(
+        id="Q57125",
+        pageid=57125,
+        ns=0,
+        title="Q57125",
+        lastrevid=123,
+        modified="2024-04-03T00:00:00Z",
+        type="item",
+        labels={},
+        descriptions={},
+        aliases={},
+        sitelinks={},
+        claims={
+            "P1344": [
+                {
+                    "mainsnak": {
+                        "datatype": "wikibase-item",
+                        "hash": "abc123",
+                        "snaktype": "value",
+                        "property": "P1344",
+                        "datavalue": {
+                            "value": {"id": "Q789", "entity-type": "item"},
+                            "type": "wikibase-entityid",
+                        },
+                    },
+                    "type": "statement",
+                    "id": "Q57125$123",
+                    "rank": "normal",
+                    "qualifiers": {},  # No time qualifiers here
+                }
+            ]
+        },
+    )
+
+
+@pytest.fixture
+def mock_referenced_entity():
+    """Create a mock referenced entity with time data"""
+    return Entity(
+        id="Q789",
+        pageid=789,
+        ns=0,
+        title="Q789",
+        lastrevid=123,
+        modified="2024-04-03T00:00:00Z",
+        type="item",
+        labels={},
+        descriptions={},
+        aliases={},
+        sitelinks={},
+        claims={
+            "P585": [
+                {
+                    "mainsnak": {
+                        "datatype": "time",
+                        "hash": "def456",
+                        "snaktype": "value",
+                        "property": "P585",
+                        "datavalue": {
+                            "value": {
+                                "time": "+1920-01-01T00:00:00Z",
+                                "timezone": 0,
+                                "before": 0,
+                                "after": 0,
+                                "precision": 11,
+                                "calendarmodel": "http://www.wikidata.org/entity/Q1985727",
+                            },
+                            "type": "time",
+                        },
+                    },
+                    "type": "statement",
+                    "id": "Q789$456",
+                    "rank": "normal",
+                }
+            ]
+        },
+    )
+
+
+def test_get_hierarchical_time_with_qualifiers(mock_entity_with_time_qualifiers):
+    """Test getting time from qualifiers with priority order"""
+    service = WikiDataQueryService(WikiServiceConfig())
+
+    # Test getting P585 first (default)
+    time_def = service.get_hierarchical_time(
+        mock_entity_with_time_qualifiers, claim="P1344", time_props=["P585", "P580"]
+    )
+    assert time_def is not None
+    assert time_def.time == "+1920-01-01T00:00:00Z"
+
+    # Test getting P580 first when specified
+    time_def = service.get_hierarchical_time(
+        mock_entity_with_time_qualifiers, claim="P1344", time_props=["P580", "P585"]
+    )
+    assert time_def is not None
+    assert time_def.time == "+1919-01-01T00:00:00Z"
+
+
+def test_get_hierarchical_time_with_reference(
+    mock_entity_with_reference, mock_referenced_entity
+):
+    """Test getting time from a referenced entity"""
+    service = WikiDataQueryService(WikiServiceConfig())
+
+    # Mock the get_entity call to return our referenced entity
+    service.get_entity = Mock(return_value=mock_referenced_entity)
+
+    time_def = service.get_hierarchical_time(
+        mock_entity_with_reference, claim="P1344", time_props=["P585"]
+    )
+
+    # Verify the time was found in the referenced entity
+    assert time_def is not None
+    assert time_def.time == "+1920-01-01T00:00:00Z"
+
+    # Verify get_entity was called with the correct ID
+    service.get_entity.assert_called_once_with("Q789")
+
+
+def test_get_hierarchical_time_reference_not_found(mock_entity_with_reference):
+    """Test handling when referenced entity lookup fails"""
+    service = WikiDataQueryService(WikiServiceConfig())
+
+    # Mock get_entity to raise an exception
+    service.get_entity = Mock(side_effect=Exception("Entity not found"))
+
+    time_def = service.get_hierarchical_time(
+        mock_entity_with_reference, claim="P1344", time_props=["P585"]
+    )
+
+    # Should return None when reference lookup fails
+    assert time_def is None
+
+    # Verify get_entity was called
+    service.get_entity.assert_called_once_with("Q789")
+
+
+def test_get_hierarchical_time_no_time():
+    """Test when no time data is found"""
+    service = WikiDataQueryService(WikiServiceConfig())
+
+    # Create entity with no time data
+    entity = Entity(
+        id="Q123",
+        pageid=123,
+        ns=0,
+        title="Q123",
+        lastrevid=123,
+        modified="2024-04-03T00:00:00Z",
+        type="item",
+        labels={},
+        descriptions={},
+        aliases={},
+        sitelinks={},
+        claims={},
+    )
+
+    time_def = service.get_hierarchical_time(entity, claim="P1344")
+    assert time_def is None
+
+
+def test_get_hierarchical_time_invalid_claim():
+    """Test with invalid/nonexistent claim"""
+    service = WikiDataQueryService(WikiServiceConfig())
+
+    # Create entity with some claims but not the one we're looking for
+    entity = Entity(
+        id="Q123",
+        pageid=123,
+        ns=0,
+        title="Q123",
+        lastrevid=123,
+        modified="2024-04-03T00:00:00Z",
+        type="item",
+        labels={},
+        descriptions={},
+        aliases={},
+        sitelinks={},
+        claims={"P123": []},
+    )
+
+    time_def = service.get_hierarchical_time(entity, claim="P999")
+    assert time_def is None
