@@ -1003,7 +1003,7 @@ def test_get_hierarchical_time_no_time():
         claims={},
     )
 
-    time_def = service.get_hierarchical_time(entity, claim="P1344")
+    time_def = service.get_hierarchical_time(entity, claim="P1344", time_props=["P585"])
     assert time_def is None
 
 
@@ -1027,5 +1027,5 @@ def test_get_hierarchical_time_invalid_claim():
         claims={"P123": []},
     )
 
-    time_def = service.get_hierarchical_time(entity, claim="P999")
+    time_def = service.get_hierarchical_time(entity, claim="P999", time_props=["P585"])
     assert time_def is None

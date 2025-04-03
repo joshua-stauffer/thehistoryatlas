@@ -138,3 +138,11 @@ class Query(Protocol):
     def get_geo_location(self, id: str) -> GeoLocation:
         """Get an entity's location."""
         ...
+
+    def get_hierarchical_time(
+        self, entity: Entity, claim: str, time_props: list[str]
+    ) -> Optional[TimeDefinition]: ...
+
+    def get_hierarchical_location(
+        self, entity: Entity, properties: list[str] | None = None
+    ) -> GeoLocation: ...

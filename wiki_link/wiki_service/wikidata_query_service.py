@@ -361,7 +361,7 @@ class WikiDataQueryService:
         return GeoLocation(coordinates=None, geoshape=None)
 
     def get_hierarchical_time(
-        self, entity: Entity, claim: str, time_props: list[str] = ["P585"]
+        self, entity: Entity, claim: str, time_props: list[str]
     ) -> Optional[TimeDefinition]:
         """
         Get a time definition by searching through a hierarchy of time properties within a claim.

@@ -121,9 +121,7 @@ class PersonParticipatedIn(EventFactory):
                                 "datavalue"
                             ]["value"]
                             geo_location = GeoLocation(
-                                coordinates=CoordinateLocation(
-                                    **coords
-                                ),
+                                coordinates=CoordinateLocation(**coords),
                                 geoshape=None,
                             )
                             return event_name, event_id, geo_location
@@ -208,9 +206,7 @@ class PersonParticipatedIn(EventFactory):
             raise UnprocessableEventError("No participation claims found")
 
         for participation_claim in self._entity.claims[PARTICIPANT_IN]:
-            if (
-                "qualifiers" not in participation_claim
-            ):
+            if "qualifiers" not in participation_claim:
                 continue
 
             event_id = participation_claim["mainsnak"]["datavalue"]["value"]["id"]
@@ -221,8 +217,6 @@ class PersonParticipatedIn(EventFactory):
                     time_claim=participation_claim["qualifiers"][POINT_IN_TIME][0]
                 )
                 time_name = wikidata_time_to_text(time_definition)
-            else:
-
 
             # Get location
             location_info = self._get_location_from_claim(participation_claim)
