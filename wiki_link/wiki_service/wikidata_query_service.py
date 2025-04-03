@@ -30,6 +30,8 @@ from wiki_service.event_factories.q_numbers import (
 
 MAX_RETRIES = 5
 
+logger = logging.getLogger(__name__)
+
 
 class WikiDataQueryServiceError(Exception): ...
 
@@ -316,9 +318,11 @@ class WikiDataQueryService:
         entity = self.get_entity(id)
         return self.get_hierarchical_location(entity=entity)
 
-    def get_hierarchical_location(self, entity: Entity) -> Optional[GeoLocation]:
+    def get_hierarchical_location(
+        self, entity: Entity, properties: list[str] | None = None
+    ) -> GeoLocation:
         """
-        Get an entity's location by trying different location properties in order:
+        Get an entity's location by trying different location properties in order. By default:
         1. Coordinate location (P625)
         2. Location (P276)
         3. Country (P17)
@@ -332,34 +336,27 @@ class WikiDataQueryService:
         Returns:
             GeoLocation if any location is found, None otherwise
         """
+        if not properties:
+            properties = [LOCATION, COUNTRY]
         # Try coordinate location first
         coordinate = self.get_coordinate_location(entity)
         if coordinate is not None:
             return GeoLocation(coordinates=coordinate, geoshape=None)
 
-        # Try location property
-        location_claims = entity.claims.get(LOCATION, [])
-        if location_claims:
-            location_id = location_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
-            try:
-                location_entity = self.get_entity(location_id)
-                location = self.get_hierarchical_location(location_entity)
-                if location is not None:
-                    return location
-            except Exception:
-                pass  # Continue to next method if location lookup fails
-
-        # Try country property
-        country_claims = entity.claims.get(COUNTRY, [])
-        if country_claims:
-            country_id = country_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
-            try:
-                country_entity = self.get_entity(country_id)
-                country = self.get_hierarchical_location(country_entity)
-                if country is not None:
-                    return country
-            except Exception:
-                pass  # Continue if country lookup fails
+        for prop in properties:
+            prop_claim = entity.claims.get(prop, [])
+            if prop_claim:
+                location_id = prop_claim[0]["mainsnak"]["datavalue"]["value"]["id"]
+                try:
+                    prop_entity = self.get_entity(location_id)
+                    location = self.get_hierarchical_location(
+                        prop_entity, properties=[]
+                    )
+                    if location is not None:
+                        return location
+                except Exception as exc:
+                    logger.info(f"Failed to get location from {location_id}: {exc}")
+                    pass  # Continue to next method if location lookup fails
 
         return GeoLocation(coordinates=None, geoshape=None)
 

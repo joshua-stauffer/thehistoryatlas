@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Protocol, Literal
 from pydantic import BaseModel
 
+from wiki_service.wikidata_query_service import WikiDataQueryService
+
 EntityType = Literal["PERSON", "PLACE", "TIME", "WORK_OF_ART", "BOOK"]
 
 
@@ -120,21 +122,4 @@ class WikiEvent(BaseModel):
     time_tag: TimeWikiTag
 
 
-class Query(Protocol):
-    """Protocol for querying Wikidata."""
-
-    def get_entity(self, id: str) -> Entity:
-        """Get an entity by ID."""
-        ...
-
-    def get_label(self, id: str, language: str) -> str:
-        """Get an entity's label in the specified language."""
-        ...
-
-    def get_description(self, id: str, language: str) -> Optional[str]:
-        """Get an entity's description in the specified language."""
-        ...
-
-    def get_geo_location(self, id: str) -> GeoLocation:
-        """Get an entity's location."""
-        ...
+Query = WikiDataQueryService
