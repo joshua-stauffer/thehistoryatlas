@@ -24,6 +24,7 @@ from wiki_service.event_factories.q_numbers import (
     LOCATED_IN_THE_ADMINISTRATIVE_TERRITORIAL_ENTITY,
     COUNTRY,
     ORGANIZER,
+    START_TIME,
 )
 from wiki_service.event_factories.utils import (
     build_time_definition_from_claim,
@@ -212,11 +213,14 @@ class PersonParticipatedIn(EventFactory):
             event_id = participation_claim["mainsnak"]["datavalue"]["value"]["id"]
             event_name = self._query.get_label(id=event_id, language="en")
 
-            if POINT_IN_TIME in participation_claim["qualifiers"]:
-                time_definition = build_time_definition_from_claim(
-                    time_claim=participation_claim["qualifiers"][POINT_IN_TIME][0]
-                )
-                time_name = wikidata_time_to_text(time_definition)
+            time_definition = self._query.get_hierarchical_time(
+                entity=self._entity,
+                claim=PARTICIPANT_IN,
+                time_props=[POINT_IN_TIME, START_TIME],
+            )
+            if time_definition is None:
+                continue
+            time_name = wikidata_time_to_text(time_definition)
 
             # Get location
             location_info = self._get_location_from_claim(participation_claim)
