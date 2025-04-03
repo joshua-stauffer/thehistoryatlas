@@ -207,8 +207,6 @@ class PersonParticipatedIn(EventFactory):
             raise UnprocessableEventError("No participation claims found")
 
         for participation_claim in self._entity.claims[PARTICIPANT_IN]:
-            if "qualifiers" not in participation_claim:
-                continue
 
             event_id = participation_claim["mainsnak"]["datavalue"]["value"]["id"]
             event_name = self._query.get_label(id=event_id, language="en")
