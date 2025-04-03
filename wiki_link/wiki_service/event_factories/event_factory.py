@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Type
 
 
-from wiki_service.types import Entity, GeoLocation, Query, TimeDefinition
+from wiki_service.types import Entity, Query
 from wiki_service.types import WikiEvent
 
 

@@ -30,6 +30,8 @@ from wiki_service.event_factories.q_numbers import (
 
 MAX_RETRIES = 5
 
+logger = logging.getLogger(__name__)
+
 
 class WikiDataQueryServiceError(Exception): ...
 
@@ -316,9 +318,11 @@ class WikiDataQueryService:
         entity = self.get_entity(id)
         return self.get_hierarchical_location(entity=entity)
 
-    def get_hierarchical_location(self, entity: Entity) -> Optional[GeoLocation]:
+    def get_hierarchical_location(
+        self, entity: Entity, properties: list[str] | None = None
+    ) -> GeoLocation:
         """
-        Get an entity's location by trying different location properties in order:
+        Get an entity's location by trying different location properties in order. By default:
         1. Coordinate location (P625)
         2. Location (P276)
         3. Country (P17)
@@ -332,36 +336,72 @@ class WikiDataQueryService:
         Returns:
             GeoLocation if any location is found, None otherwise
         """
+        if not properties:
+            properties = [LOCATION, COUNTRY]
         # Try coordinate location first
         coordinate = self.get_coordinate_location(entity)
         if coordinate is not None:
             return GeoLocation(coordinates=coordinate, geoshape=None)
 
-        # Try location property
-        location_claims = entity.claims.get(LOCATION, [])
-        if location_claims:
-            location_id = location_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
-            try:
-                location_entity = self.get_entity(location_id)
-                location = self.get_hierarchical_location(location_entity)
-                if location is not None:
-                    return location
-            except Exception:
-                pass  # Continue to next method if location lookup fails
-
-        # Try country property
-        country_claims = entity.claims.get(COUNTRY, [])
-        if country_claims:
-            country_id = country_claims[0]["mainsnak"]["datavalue"]["value"]["id"]
-            try:
-                country_entity = self.get_entity(country_id)
-                country = self.get_hierarchical_location(country_entity)
-                if country is not None:
-                    return country
-            except Exception:
-                pass  # Continue if country lookup fails
+        for prop in properties:
+            prop_claim = entity.claims.get(prop, [])
+            if prop_claim:
+                location_id = prop_claim[0]["mainsnak"]["datavalue"]["value"]["id"]
+                try:
+                    prop_entity = self.get_entity(location_id)
+                    location = self.get_hierarchical_location(
+                        prop_entity, properties=[]
+                    )
+                    if location is not None:
+                        return location
+                except Exception as exc:
+                    logger.info(f"Failed to get location from {location_id}: {exc}")
+                    pass  # Continue to next method if location lookup fails
 
         return GeoLocation(coordinates=None, geoshape=None)
+
+    def get_hierarchical_time(
+        self, entity: Entity, claim: str, time_props: list[str] = ["P585"]
+    ) -> Optional[TimeDefinition]:
+        """
+        Get a time definition by searching through a hierarchy of time properties within a claim.
+
+        Args:
+            entity: The entity to search within
+            claim: The claim ID to search within (e.g. "P1344")
+            time_props: List of time property IDs to search for in priority order (e.g. ["P585", "P580"])
+
+        Returns:
+            TimeDefinition if any time property is found, None otherwise
+        """
+        claim_values = entity.claims.get(claim, [])
+        if not claim_values:
+            return None
+
+        # For each claim value, try each time property in order
+        for claim_value in claim_values:
+            qualifiers = claim_value.get("qualifiers", {})
+            for time_prop in time_props:
+                if time_prop in qualifiers:
+                    time_qualifier = qualifiers[time_prop][0]  # Take first qualifier
+                    return self.build_time_definition(time_qualifier)
+
+            # If no time found in qualifiers, try to get time from referenced entity
+            mainsnak = claim_value.get("mainsnak", {})
+            if mainsnak.get("datatype") == "wikibase-item":
+                try:
+                    referenced_id = mainsnak["datavalue"]["value"]["id"]
+                    referenced_entity = self.get_entity(referenced_id)
+                    # Search for time properties in the referenced entity
+                    for time_prop in time_props:
+                        if time_prop in referenced_entity.claims:
+                            time_claim = referenced_entity.claims[time_prop][0]
+                            return self.build_time_definition(time_claim)
+                except Exception as exc:
+                    logger.info(f"Failed to get time from {referenced_id}: {exc}")
+                    continue  # Try next claim value if this one fails
+
+        return None
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """
@@ -461,6 +501,24 @@ class WikiDataQueryService:
 
     @staticmethod
     def build_time_definition(time_claim: Dict) -> TimeDefinition:
+        """Build a TimeDefinition from either a full claim or a qualifier."""
+        # Check if this is a qualifier (has datavalue directly)
+        if "datavalue" in time_claim:
+            return TimeDefinition(
+                id=time_claim.get("hash", ""),  # Use hash as ID for qualifiers
+                type="statement",
+                rank="normal",
+                hash=time_claim["hash"],
+                snaktype=time_claim["snaktype"],
+                property=time_claim["property"],
+                time=time_claim["datavalue"]["value"]["time"],
+                timezone=time_claim["datavalue"]["value"]["timezone"],
+                before=time_claim["datavalue"]["value"]["before"],
+                after=time_claim["datavalue"]["value"]["after"],
+                precision=time_claim["datavalue"]["value"]["precision"],
+                calendarmodel=time_claim["datavalue"]["value"]["calendarmodel"],
+            )
+        # Otherwise it's a full claim
         return TimeDefinition(
             id=time_claim["id"],
             type=time_claim["type"],
