@@ -47,13 +47,8 @@ class PersonParticipatedIn(EventFactory):
         if self._entity_type != "PERSON":
             return False
 
-        if PARTICIPANT_IN not in self._entity.claims:
-            return False
-
-        # Check if any PARTICIPANT_IN claim has a POINT_IN_TIME qualifier
-        for claim in self._entity.claims[PARTICIPANT_IN]:
-            if "qualifiers" in claim and POINT_IN_TIME in claim["qualifiers"]:
-                return True
+        if PARTICIPANT_IN in self._entity.claims:
+            return True
         return False
 
     def _get_location_from_claim(self, claim) -> Optional[tuple[str, str, GeoLocation]]:
@@ -125,12 +120,9 @@ class PersonParticipatedIn(EventFactory):
                             coords = event_entity.claims[prop][0]["mainsnak"][
                                 "datavalue"
                             ]["value"]
-                            latitude = coords["latitude"]
-                            longitude = coords["longitude"]
                             geo_location = GeoLocation(
                                 coordinates=CoordinateLocation(
-                                    latitude=latitude,
-                                    longitude=longitude,
+                                    **coords
                                 ),
                                 geoshape=None,
                             )
@@ -218,17 +210,19 @@ class PersonParticipatedIn(EventFactory):
         for participation_claim in self._entity.claims[PARTICIPANT_IN]:
             if (
                 "qualifiers" not in participation_claim
-                or POINT_IN_TIME not in participation_claim["qualifiers"]
             ):
                 continue
 
             event_id = participation_claim["mainsnak"]["datavalue"]["value"]["id"]
             event_name = self._query.get_label(id=event_id, language="en")
 
-            time_definition = build_time_definition_from_claim(
-                time_claim=participation_claim["qualifiers"][POINT_IN_TIME][0]
-            )
-            time_name = wikidata_time_to_text(time_definition)
+            if POINT_IN_TIME in participation_claim["qualifiers"]:
+                time_definition = build_time_definition_from_claim(
+                    time_claim=participation_claim["qualifiers"][POINT_IN_TIME][0]
+                )
+                time_name = wikidata_time_to_text(time_definition)
+            else:
+
 
             # Get location
             location_info = self._get_location_from_claim(participation_claim)
