@@ -6,6 +6,7 @@ from .person_education_ended import PersonEducationEnded
 from .person_left_position import PersonLeftPosition
 from .person_moved_away_from import PersonMovedAwayFrom
 from .person_moved_to import PersonMovedTo
+from .person_participated_in import PersonParticipatedIn
 from .person_received_academic_degree import PersonReceivedAcademicDegree
 from .person_started_working_for import PersonStartedWorkingFor
 from .person_stopped_working_for import PersonStoppedWorkingFor
