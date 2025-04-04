@@ -435,7 +435,7 @@ class WikiDataQueryService:
                         )
         return None
 
-    def get_time_definition_in_entity(
+    def get_time_definition_from_entity(
         self, entity: Entity, claim: str, time_props: list[str]
     ) -> TimeDefinition | None:
         """
@@ -453,13 +453,13 @@ class WikiDataQueryService:
         if not claim_values:
             return None
         for claim_value in claim_values:
-            if time_definition := self.get_time_definition_in_claim(
+            if time_definition := self.get_time_definition_from_claim(
                 claim_value, time_props
             ):
                 return time_definition
         return None
 
-    def get_time_definition_in_claim(
+    def get_time_definition_from_claim(
         self, claim: dict, time_props: list[str]
     ) -> TimeDefinition | None:
         qualifiers = claim.get("qualifiers", {})

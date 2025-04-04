@@ -145,17 +145,13 @@ class Query(Protocol):
         """Get an entity's location."""
         ...
 
-    def get_time_definition_in_entity(
+    def get_time_definition_from_entity(
         self, entity: Entity, claim: str, time_props: list[str]
     ) -> Optional[TimeDefinition]: ...
 
-    def get_time_definition_in_claim(
+    def get_time_definition_from_claim(
         self, claim: dict, time_props: list[str]
     ) -> TimeDefinition | None: ...
-
-    def get_hierarchical_location(
-        self, entity: Entity, properties: list[str] | None = None
-    ) -> GeoLocation: ...
 
     def get_location_from_claim(
         self, claim: dict, location_props: list[str]

@@ -930,14 +930,14 @@ def test_get_hierarchical_time_with_qualifiers(mock_entity_with_time_qualifiers)
     service = WikiDataQueryService(WikiServiceConfig())
 
     # Test getting P585 first (default)
-    time_def = service.get_time_definition_in_entity(
+    time_def = service.get_time_definition_from_entity(
         mock_entity_with_time_qualifiers, claim="P1344", time_props=["P585", "P580"]
     )
     assert time_def is not None
     assert time_def.time == "+1920-01-01T00:00:00Z"
 
     # Test getting P580 first when specified
-    time_def = service.get_time_definition_in_entity(
+    time_def = service.get_time_definition_from_entity(
         mock_entity_with_time_qualifiers, claim="P1344", time_props=["P580", "P585"]
     )
     assert time_def is not None
@@ -953,7 +953,7 @@ def test_get_hierarchical_time_with_reference(
     # Mock the get_entity call to return our referenced entity
     service.get_entity = Mock(return_value=mock_referenced_entity)
 
-    time_def = service.get_time_definition_in_entity(
+    time_def = service.get_time_definition_from_entity(
         mock_entity_with_reference, claim="P1344", time_props=["P585"]
     )
 
@@ -972,7 +972,7 @@ def test_get_hierarchical_time_reference_not_found(mock_entity_with_reference):
     # Mock get_entity to raise an exception
     service.get_entity = Mock(side_effect=Exception("Entity not found"))
 
-    time_def = service.get_time_definition_in_entity(
+    time_def = service.get_time_definition_from_entity(
         mock_entity_with_reference, claim="P1344", time_props=["P585"]
     )
 
@@ -1003,7 +1003,7 @@ def test_get_hierarchical_time_no_time():
         claims={},
     )
 
-    time_def = service.get_time_definition_in_entity(
+    time_def = service.get_time_definition_from_entity(
         entity, claim="P1344", time_props=["P585"]
     )
     assert time_def is None
@@ -1029,7 +1029,7 @@ def test_get_hierarchical_time_invalid_claim():
         claims={"P123": []},
     )
 
-    time_def = service.get_time_definition_in_entity(
+    time_def = service.get_time_definition_from_entity(
         entity, claim="P999", time_props=["P585"]
     )
     assert time_def is None

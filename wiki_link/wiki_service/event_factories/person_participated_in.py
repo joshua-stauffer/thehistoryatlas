@@ -113,7 +113,7 @@ class PersonParticipatedIn(EventFactory):
             try:
                 time_definition = build_time_definition_from_claim(participation_claim)
             except Exception as e:  # todo: narrow exception
-                time_definition = self._query.get_time_definition_in_claim(
+                time_definition = self._query.get_time_definition_from_claim(
                     claim=participation_claim,
                     time_props=[POINT_IN_TIME, START_TIME],
                 )
