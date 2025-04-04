@@ -15,6 +15,7 @@ from wiki_service.types import (
     TimeWikiTag,
     GeoLocation,
     CoordinateLocation,
+    LocationResult,
 )
 from wiki_service.event_factories.q_numbers import (
     PARTICIPANT_IN,
@@ -52,7 +53,7 @@ class PersonParticipatedIn(EventFactory):
             return True
         return False
 
-    def _get_location_from_claim(self, claim) -> Optional[tuple[str, str, GeoLocation]]:
+    def _get_location_from_claim(self, claim) -> LocationResult | None:
         """
         Try to get location from various properties on the claim.
         Returns tuple of (location_name, location_id, geo_location) if found, None otherwise.
@@ -70,132 +71,30 @@ class PersonParticipatedIn(EventFactory):
         ]
 
         # PASS 1: Try to get location from claim qualifiers
-        if "qualifiers" in claim:
-            for prop in location_properties:
-                if prop in claim["qualifiers"]:
-                    try:
-                        # Special handling for coordinate location which has a different structure
-                        if prop == COORDINATE_LOCATION:
-                            coords = claim["qualifiers"][prop][0]["datavalue"]["value"]
-                            latitude = coords["latitude"]
-                            longitude = coords["longitude"]
-
-                            # Get the event entity to use as location name
-                            event_id = claim["mainsnak"]["datavalue"]["value"]["id"]
-                            location_name = self._query.get_label(
-                                id=event_id, language="en"
-                            )
-
-                            geo_location = GeoLocation(
-                                coordinates=CoordinateLocation(
-                                    latitude=latitude,
-                                    longitude=longitude,
-                                ),
-                                geoshape=None,
-                            )
-                            return location_name, event_id, geo_location
-                        else:
-                            location_id = claim["qualifiers"][prop][0]["datavalue"][
-                                "value"
-                            ]["id"]
-                            geo_location = self._query.get_geo_location(id=location_id)
-                            location_name = self._query.get_label(
-                                id=location_id, language="en"
-                            )
-                            return location_name, location_id, geo_location
-                    except Exception as e:
-                        logger.warning(
-                            f"Could not get location for qualifier {prop}: {e}"
-                        )
+        if location_result := self._query.get_location_from_claim(
+            claim, location_properties
+        ):
+            return location_result
 
         # PASS 2: Try the event entity itself
         event_id = claim["mainsnak"]["datavalue"]["value"]["id"]
         event_entity = self._query.get_entity(id=event_id)
-        event_name = self._query.get_label(id=event_id, language="en")
 
-        if event_entity is not None and hasattr(event_entity, "claims"):
-            for prop in location_properties:
-                if prop in event_entity.claims:
-                    try:
-                        if prop == COORDINATE_LOCATION:
-                            coords = event_entity.claims[prop][0]["mainsnak"][
-                                "datavalue"
-                            ]["value"]
-                            geo_location = GeoLocation(
-                                coordinates=CoordinateLocation(**coords),
-                                geoshape=None,
-                            )
-                            return event_name, event_id, geo_location
-                        else:
-                            location_id = event_entity.claims[prop][0]["mainsnak"][
-                                "datavalue"
-                            ]["value"]["id"]
-                            geo_location = self._query.get_geo_location(id=location_id)
-                            location_name = self._query.get_label(
-                                id=location_id, language="en"
-                            )
-                            return location_name, location_id, geo_location
-                    except Exception as e:
-                        logger.warning(
-                            f"Could not get location for event property {prop}: {e}"
-                        )
+        if location_result := self._query.get_location_from_entity(
+            event_entity, location_properties
+        ):
+            return location_result
 
-            # PASS 3: Try the organizer entity of the event
-            if ORGANIZER in event_entity.claims:
-                try:
-                    organizer_id = event_entity.claims[ORGANIZER][0]["mainsnak"][
-                        "datavalue"
-                    ]["value"]["id"]
-                    organizer_entity = self._query.get_entity(id=organizer_id)
-                    organizer_name = self._query.get_label(
-                        id=organizer_id, language="en"
-                    )
-
-                    if organizer_entity is not None and hasattr(
-                        organizer_entity, "claims"
-                    ):
-                        for prop in location_properties:
-                            if prop in organizer_entity.claims:
-                                try:
-                                    if prop == COORDINATE_LOCATION:
-                                        coords = organizer_entity.claims[prop][0][
-                                            "mainsnak"
-                                        ]["datavalue"]["value"]
-                                        latitude = coords["latitude"]
-                                        longitude = coords["longitude"]
-                                        geo_location = GeoLocation(
-                                            coordinates=CoordinateLocation(
-                                                latitude=latitude,
-                                                longitude=longitude,
-                                            ),
-                                            geoshape=None,
-                                        )
-                                        return (
-                                            organizer_name,
-                                            organizer_id,
-                                            geo_location,
-                                        )
-                                    else:
-                                        location_id = organizer_entity.claims[prop][0][
-                                            "mainsnak"
-                                        ]["datavalue"]["value"]["id"]
-                                        geo_location = self._query.get_geo_location(
-                                            id=location_id
-                                        )
-                                        location_name = self._query.get_label(
-                                            id=location_id, language="en"
-                                        )
-                                        return (
-                                            location_name,
-                                            location_id,
-                                            geo_location,
-                                        )
-                                except Exception as e:
-                                    logger.warning(
-                                        f"Could not get location for organizer property {prop}: {e}"
-                                    )
-                except Exception as e:
-                    logger.warning(f"Could not get organizer entity: {e}")
+        # PASS 3: Try the organizer entity of the event
+        if ORGANIZER in event_entity.claims:
+            organizer_id = event_entity.claims[ORGANIZER][0]["mainsnak"]["datavalue"][
+                "value"
+            ]["id"]
+            organizer_entity = self._query.get_entity(id=organizer_id)
+            if location_result := self._query.get_location_from_entity(
+                organizer_entity, location_properties
+            ):
+                return location_result
 
         return None
 
@@ -211,26 +110,26 @@ class PersonParticipatedIn(EventFactory):
             event_id = participation_claim["mainsnak"]["datavalue"]["value"]["id"]
             event_name = self._query.get_label(id=event_id, language="en")
 
-            time_definition = self._query.get_hierarchical_time(
-                entity=self._entity,
-                claim=PARTICIPANT_IN,
-                time_props=[POINT_IN_TIME, START_TIME],
-            )
+            try:
+                time_definition = build_time_definition_from_claim(participation_claim)
+            except Exception as e:  # todo: narrow exception
+                time_definition = self._query.get_time_definition_in_claim(
+                    claim=participation_claim,
+                    time_props=[POINT_IN_TIME, START_TIME],
+                )
             if time_definition is None:
                 continue
             time_name = wikidata_time_to_text(time_definition)
 
             # Get location
-            location_info = self._get_location_from_claim(participation_claim)
-            if not location_info:
+            location = self._get_location_from_claim(participation_claim)
+            if not location:
                 continue
-            else:
-                location_name, location_id, geo_location = location_info
 
             summary = self._summary(
                 person=person_name,
                 event=event_name,
-                location=location_name,
+                location=location.name,
                 time=time_name,
                 precision=time_definition.precision,
             )
@@ -245,11 +144,11 @@ class PersonParticipatedIn(EventFactory):
             ]
 
             place_tag = PlaceWikiTag(
-                name=location_name,
-                wiki_id=location_id,
-                start_char=summary.find(location_name),
-                stop_char=summary.find(location_name) + len(location_name),
-                location=geo_location,
+                name=location.name,
+                wiki_id=location.id,
+                start_char=summary.find(location.name),
+                stop_char=summary.find(location.name) + len(location.name),
+                location=location.geo_location,
             )
 
             time_tag = TimeWikiTag(

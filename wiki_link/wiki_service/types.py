@@ -62,6 +62,12 @@ class GeoLocation(BaseModel):
     geoshape: GeoshapeLocation | None
 
 
+class LocationResult(BaseModel):
+    name: str
+    id: str
+    geo_location: GeoLocation
+
+
 class TimeDefinition(BaseModel):
     id: str
     rank: str
@@ -139,10 +145,22 @@ class Query(Protocol):
         """Get an entity's location."""
         ...
 
-    def get_hierarchical_time(
+    def get_time_definition_in_entity(
         self, entity: Entity, claim: str, time_props: list[str]
     ) -> Optional[TimeDefinition]: ...
+
+    def get_time_definition_in_claim(
+        self, claim: dict, time_props: list[str]
+    ) -> TimeDefinition | None: ...
 
     def get_hierarchical_location(
         self, entity: Entity, properties: list[str] | None = None
     ) -> GeoLocation: ...
+
+    def get_location_from_claim(
+        self, claim: dict, location_props: list[str]
+    ) -> LocationResult | None: ...
+
+    def get_location_from_entity(
+        self, entity: Entity, claim_props: list[str]
+    ) -> LocationResult | None: ...
