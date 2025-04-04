@@ -18,6 +18,7 @@ from wiki_service.types import (
     Query,
     TimeDefinition,
     WikiDataItem,
+    LocationResult,
 )
 from wiki_service.utils import get_version
 from wiki_service.event_factories.q_numbers import (
@@ -25,6 +26,7 @@ from wiki_service.event_factories.q_numbers import (
     LOCATION,
     COUNTRY,
     BOOK,
+    POINT_IN_TIME,
 )
 
 
@@ -360,9 +362,82 @@ class WikiDataQueryService:
 
         return GeoLocation(coordinates=None, geoshape=None)
 
-    def get_hierarchical_time(
-        self, entity: Entity, claim: str, time_props: list[str] = ["P585"]
-    ) -> Optional[TimeDefinition]:
+    def get_location_from_entity(
+        self, entity: Entity, claim_props: list[str]
+    ) -> LocationResult | None:
+        # Try coordinate location first
+        coordinate = self.get_coordinate_location(entity)
+        if coordinate is not None:
+            location_name = self.get_label(id=entity.id, language="en")
+            return LocationResult(
+                id=entity.id,
+                name=location_name,
+                geo_location=GeoLocation(coordinates=coordinate, geoshape=None),
+            )
+
+        for prop in claim_props:
+            prop_claim = entity.claims.get(prop, [])
+            if prop_claim:
+                location_id = prop_claim[0]["mainsnak"]["datavalue"]["value"]["id"]
+                try:
+                    prop_entity = self.get_entity(location_id)
+                    location = self.get_location_from_entity(
+                        prop_entity, claim_props=claim_props
+                    )
+                    if location is not None:
+                        return location
+                except Exception as exc:
+                    logger.info(f"Failed to get location from {location_id}: {exc}")
+                    pass
+
+        return None
+
+    def get_location_from_claim(
+        self, claim: dict, location_props: list[str]
+    ) -> LocationResult | None:
+        if "qualifiers" in claim:
+            for prop in location_props:
+                if prop in claim["qualifiers"]:
+                    try:
+                        # Special handling for coordinate location which has a different structure
+                        if prop == COORDINATE_LOCATION:
+                            coords = claim["qualifiers"][prop][0]["datavalue"]["value"]
+
+                            # Get the event entity to use as location name
+                            event_id = claim["mainsnak"]["datavalue"]["value"]["id"]
+                            location_name = self.get_label(id=event_id, language="en")
+
+                            geo_location = GeoLocation(
+                                coordinates=CoordinateLocation(**coords),
+                                geoshape=None,
+                            )
+                            return LocationResult(
+                                name=location_name,
+                                id=event_id,
+                                geo_location=geo_location,
+                            )
+                        else:
+                            location_id = claim["qualifiers"][prop][0]["datavalue"][
+                                "value"
+                            ]["id"]
+                            geo_location = self._query.get_geo_location(id=location_id)
+                            location_name = self._query.get_label(
+                                id=location_id, language="en"
+                            )
+                            return LocationResult(
+                                name=location_name,
+                                id=event_id,
+                                geo_location=geo_location,
+                            )
+                    except Exception as e:
+                        logger.warning(
+                            f"Could not get location for qualifier {prop}: {e}"
+                        )
+        return None
+
+    def get_time_definition_from_entity(
+        self, entity: Entity, claim: str, time_props: list[str]
+    ) -> TimeDefinition | None:
         """
         Get a time definition by searching through a hierarchy of time properties within a claim.
 
@@ -377,31 +452,37 @@ class WikiDataQueryService:
         claim_values = entity.claims.get(claim, [])
         if not claim_values:
             return None
-
-        # For each claim value, try each time property in order
         for claim_value in claim_values:
-            qualifiers = claim_value.get("qualifiers", {})
-            for time_prop in time_props:
-                if time_prop in qualifiers:
-                    time_qualifier = qualifiers[time_prop][0]  # Take first qualifier
-                    return self.build_time_definition(time_qualifier)
-
-            # If no time found in qualifiers, try to get time from referenced entity
-            mainsnak = claim_value.get("mainsnak", {})
-            if mainsnak.get("datatype") == "wikibase-item":
-                try:
-                    referenced_id = mainsnak["datavalue"]["value"]["id"]
-                    referenced_entity = self.get_entity(referenced_id)
-                    # Search for time properties in the referenced entity
-                    for time_prop in time_props:
-                        if time_prop in referenced_entity.claims:
-                            time_claim = referenced_entity.claims[time_prop][0]
-                            return self.build_time_definition(time_claim)
-                except Exception as exc:
-                    logger.info(f"Failed to get time from {referenced_id}: {exc}")
-                    continue  # Try next claim value if this one fails
-
+            if time_definition := self.get_time_definition_from_claim(
+                claim_value, time_props
+            ):
+                return time_definition
         return None
+
+    def get_time_definition_from_claim(
+        self, claim: dict, time_props: list[str]
+    ) -> TimeDefinition | None:
+        qualifiers = claim.get("qualifiers", {})
+        for time_prop in time_props:
+            if time_prop in qualifiers:
+                time_qualifier = qualifiers[time_prop][0]  # Take first qualifier
+                return self.build_time_definition(time_qualifier)
+
+        # If no time found in qualifiers, try to get time from referenced entity
+        mainsnak = claim.get("mainsnak", {})
+        referenced_id = "MISSING"  # provide a clearer error message
+        if mainsnak.get("datatype") == "wikibase-item":
+            try:
+                referenced_id = mainsnak["datavalue"]["value"]["id"]
+                referenced_entity = self.get_entity(referenced_id)
+                # Search for time properties in the referenced entity
+                for time_prop in time_props:
+                    if time_prop in referenced_entity.claims:
+                        time_claim = referenced_entity.claims[time_prop][0]
+                        return self.build_time_definition(time_claim)
+            except Exception as exc:
+                logger.info(f"Failed to get time from {referenced_id}: {exc}")
+                return None
 
     def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
         """
@@ -429,12 +510,13 @@ class WikiDataQueryService:
             geoclaim=geoclaim, geoshape=geoshape, geoshape_url=geoshape_url
         )
 
-    def get_time(self, entity: Entity) -> Optional[TimeDefinition]:
+    def get_time(
+        self, entity: Entity, time_prop: str = POINT_IN_TIME
+    ) -> Optional[TimeDefinition]:
         """
         Get an Entity's point in time property or None.
         """
-        point_in_time_claim = "P585"
-        claims = entity.claims.get(point_in_time_claim)
+        claims = entity.claims.get(time_prop)
         if len(claims) == 0:
             return None
         time_claim = claims[0]

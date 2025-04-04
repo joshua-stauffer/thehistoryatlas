@@ -5,6 +5,7 @@ from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database, Item
 from wiki_service.event_factories.event_factory import get_event_factories, EventFactory
 from wiki_service.rest_client import RestClient, RestClientError
+from wiki_service.types import WikiDataItem
 from wiki_service.utils import get_current_time
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
@@ -231,12 +232,24 @@ class WikiService:
 
         # Create an Item object for processing
         item = Item(wiki_id=wiki_id, entity_type=entity_type)
+        self._database.add_items_to_queue(
+            entity_type=entity_type,
+            items=[
+                WikiDataItem(
+                    qid=wiki_id, url=f"https://www.wikidata.org/wiki/{wiki_id}"
+                )
+            ],
+        )
 
         try:
             self.build_events(item=item)
+            self._database.remove_item_from_queue(wiki_id=wiki_id)
             log.info(f"Successfully processed WikiData item {wiki_id}")
         except Exception as e:
             log.error(f"Error processing WikiData item {wiki_id}: {e}")
+            self._database.report_queue_error(
+                wiki_id=wiki_id, error_time=datetime.now(tz=timezone.utc), errors=str(e)
+            )
             raise WikiServiceError(f"Failed to process WikiData item {wiki_id}: {e}")
 
     def build_events(self, item: Item) -> None:
