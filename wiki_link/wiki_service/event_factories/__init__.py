@@ -14,3 +14,4 @@ from .person_took_position import PersonTookPosition
 from .person_was_born import PersonWasBorn
 from .work_of_art_created import WorkOfArtCreated
 from .book_was_published import BookWasPublished
+from wiki_service.event_factories.person_received_award import PersonReceivedAward
