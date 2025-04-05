@@ -1,7 +1,7 @@
-"""Person received award event factory."""
+"""Person nominated for award event factory."""
 
 import logging
-from typing import Literal, Optional
+from typing import Literal
 
 from wiki_service.event_factories.event_factory import (
     EventFactory,
@@ -13,12 +13,10 @@ from wiki_service.types import (
     PersonWikiTag,
     PlaceWikiTag,
     TimeWikiTag,
-    GeoLocation,
-    CoordinateLocation,
     LocationResult,
 )
 from wiki_service.event_factories.q_numbers import (
-    AWARD_RECEIVED,
+    NOMINATED_FOR,
     POINT_IN_TIME,
     COORDINATE_LOCATION,
     LOCATION,
@@ -27,7 +25,6 @@ from wiki_service.event_factories.q_numbers import (
     HEADQUARTERS_LOCATION,
     START_TIME,
     CONFERRED_BY,
-    AWARD_RATIONAL,
 )
 from wiki_service.event_factories.utils import (
     build_time_definition_from_claim,
@@ -38,20 +35,20 @@ logger = logging.getLogger(__name__)
 
 
 @register_event_factory
-class PersonReceivedAward(EventFactory):
+class PersonNominatedFor(EventFactory):
     @property
     def version(self):
         return 0
 
     @property
     def label(self):
-        return "Person received award"
+        return "Person nominated for award"
 
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
 
-        if AWARD_RECEIVED in self._entity.claims:
+        if NOMINATED_FOR in self._entity.claims:
             return True
         return False
 
@@ -151,19 +148,19 @@ class PersonReceivedAward(EventFactory):
         events = []
         person_name = self._entity.labels["en"].value
 
-        if AWARD_RECEIVED not in self._entity.claims:
-            raise UnprocessableEventError("No award claims found")
+        if NOMINATED_FOR not in self._entity.claims:
+            raise UnprocessableEventError("No nomination claims found")
 
-        for award_claim in self._entity.claims[AWARD_RECEIVED]:
-            award_id = award_claim["mainsnak"]["datavalue"]["value"]["id"]
+        for nomination_claim in self._entity.claims[NOMINATED_FOR]:
+            award_id = nomination_claim["mainsnak"]["datavalue"]["value"]["id"]
             award_name = self._query.get_label(id=award_id, language="en")
             award_entity = self._query.get_entity(id=award_id)
 
             try:
-                time_definition = build_time_definition_from_claim(award_claim)
+                time_definition = build_time_definition_from_claim(nomination_claim)
             except Exception:  # todo: narrow exception
                 time_definition = self._query.get_time_definition_from_claim(
-                    claim=award_claim,
+                    claim=nomination_claim,
                     time_props=[POINT_IN_TIME, START_TIME],
                 )
             if time_definition is None:
@@ -172,19 +169,12 @@ class PersonReceivedAward(EventFactory):
             time_name = wikidata_time_to_text(time_definition)
 
             # Get location
-            location = self._get_location_from_claim(award_claim)
+            location = self._get_location_from_claim(nomination_claim)
             if not location:
                 continue
 
             # Get optional attributes
-            rationale = None
-            if AWARD_RATIONAL in award_claim.get("qualifiers", {}):
-                for rational_claim in award_claim["qualifiers"][AWARD_RATIONAL]:
-                    if rational_claim["datavalue"]["value"]["language"] == "en":
-                        rationale = rational_claim["datavalue"]["value"]["text"]
-                        break
-
-            conferrer_name = self._get_conferrer_name(award_claim, award_entity)
+            conferrer_name = self._get_conferrer_name(nomination_claim, award_entity)
             include_conferrer = (
                 conferrer_name
                 and location.name
@@ -197,7 +187,6 @@ class PersonReceivedAward(EventFactory):
                 location=location.name,
                 time=time_name,
                 precision=time_definition.precision,
-                rationale=rationale,
                 conferrer=conferrer_name if include_conferrer else None,
             )
 
@@ -236,7 +225,7 @@ class PersonReceivedAward(EventFactory):
             )
 
         if not events:
-            raise UnprocessableEventError("No valid award events found")
+            raise UnprocessableEventError("No valid nomination events found")
 
         return events
 
@@ -247,19 +236,14 @@ class PersonReceivedAward(EventFactory):
         location: str,
         time: str,
         precision: Literal[9, 10, 11],
-        rationale: Optional[str] = None,
-        conferrer: Optional[str] = None,
+        conferrer: str | None = None,
     ) -> str:
         """Generate the summary text for the event."""
         # Build the award phrase with optional conferrer
-        award_phrase = f"received the {award}"
+        award_phrase = f"was nominated for the {award}"
 
         if conferrer:
-            award_phrase += f" from {conferrer}"
-
-        # rationale is too likely to not be formatted correctly
-        # if rationale:
-        #     award_phrase += f" for {rationale}"
+            award_phrase += f" by {conferrer}"
 
         # Build the location phrase
         if location.lower() not in award_phrase.lower():
