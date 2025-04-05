@@ -77,6 +77,7 @@ class PersonReceivedAward(EventFactory):
             COORDINATE_LOCATION,
             LOCATION,
             HEADQUARTERS_LOCATION,
+            COUNTRY,
         ]
 
         # PASS 1: Try to get location from claim qualifiers
