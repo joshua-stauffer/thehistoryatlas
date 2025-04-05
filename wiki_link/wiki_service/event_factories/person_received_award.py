@@ -96,7 +96,9 @@ class PersonReceivedAward(EventFactory):
 
         # PASS 3: Try the conferred_by entity from claim
         if CONFERRED_BY in claim["qualifiers"]:
-            conferrer_id = claim["qualifiers"][CONFERRED_BY][0]["datavalue"]["value"]["id"]
+            conferrer_id = claim["qualifiers"][CONFERRED_BY][0]["datavalue"]["value"][
+                "id"
+            ]
             conferrer_entity = self._query.get_entity(id=conferrer_id)
             if location_result := self._query.get_location_from_entity(
                 conferrer_entity, award_location_properties
@@ -105,7 +107,9 @@ class PersonReceivedAward(EventFactory):
 
         # PASS 4: Try the conferred_by entity from award
         if CONFERRED_BY in award_entity.claims:
-            award_conferrer_id = award_entity.claims[CONFERRED_BY][0]["mainsnak"]["datavalue"]["value"]["id"]
+            award_conferrer_id = award_entity.claims[CONFERRED_BY][0]["mainsnak"][
+                "datavalue"
+            ]["value"]["id"]
             award_conferrer_entity = self._query.get_entity(id=award_conferrer_id)
             if location_result := self._query.get_location_from_entity(
                 award_conferrer_entity, award_location_properties
@@ -128,12 +132,16 @@ class PersonReceivedAward(EventFactory):
         """Get the name of the conferring organization, if available."""
         # Try claim qualifiers first
         if CONFERRED_BY in claim.get("qualifiers", {}):
-            conferrer_id = claim["qualifiers"][CONFERRED_BY][0]["datavalue"]["value"]["id"]
+            conferrer_id = claim["qualifiers"][CONFERRED_BY][0]["datavalue"]["value"][
+                "id"
+            ]
             return self._query.get_label(id=conferrer_id, language="en")
 
         # Try award entity claims
         if CONFERRED_BY in award_entity.claims:
-            conferrer_id = award_entity.claims[CONFERRED_BY][0]["mainsnak"]["datavalue"]["value"]["id"]
+            conferrer_id = award_entity.claims[CONFERRED_BY][0]["mainsnak"][
+                "datavalue"
+            ]["value"]["id"]
             return self._query.get_label(id=conferrer_id, language="en")
 
         return None
@@ -264,4 +272,4 @@ class PersonReceivedAward(EventFactory):
             case 10 | 9:  # month or year
                 return f"{person} {award_phrase}{location_text} in {time}."
             case _:
-                raise UnprocessableEventError(f"Unexpected time precision: {precision}") 
+                raise UnprocessableEventError(f"Unexpected time precision: {precision}")
