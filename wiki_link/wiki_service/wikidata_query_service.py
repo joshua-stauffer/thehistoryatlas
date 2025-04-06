@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timezone
 from re import search
-from typing import Dict, Optional, Set
 from urllib.error import HTTPError
 import time
 
@@ -15,7 +14,6 @@ from wiki_service.types import (
     GeoLocation,
     GeoshapeLocation,
     Property,
-    Query,
     TimeDefinition,
     WikiDataItem,
     LocationResult,
@@ -38,7 +36,7 @@ logger = logging.getLogger(__name__)
 class WikiDataQueryServiceError(Exception): ...
 
 
-def build_coordinate_location(geoclaim: Dict) -> CoordinateLocation:
+def build_coordinate_location(geoclaim: dict) -> CoordinateLocation:
     """build CoordinateLocation from a P625 claim"""
     return CoordinateLocation(
         id=geoclaim["id"],
@@ -56,7 +54,7 @@ def build_coordinate_location(geoclaim: Dict) -> CoordinateLocation:
 
 
 def build_geoshape_location(
-    geoclaim: Dict, geoshape: Dict, geoshape_url: str
+    geoclaim: dict, geoshape: dict, geoshape_url: str
 ) -> GeoshapeLocation:
     return GeoshapeLocation(
         id=geoclaim["id"],
@@ -132,8 +130,8 @@ class WikiDataQueryService:
             return True
         return False
 
-    def find_people(self, limit: int, offset: int) -> Set[WikiDataItem]:
-
+    def find_people(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
+        """Find people from WikiData."""
         query = f"""
         SELECT DISTINCT ?item
         WHERE 
@@ -144,7 +142,7 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
-    def find_works_of_art(self, limit: int, offset: int) -> Set[WikiDataItem]:
+    def find_works_of_art(self, limit: int, offset: int) -> set[WikiDataItem]:
         INSTANCE_OF = "P31"
         WORK_OF_ART = "Q838948"
         query = f"""
@@ -160,7 +158,7 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
-    def find_books(self, limit: int, offset: int) -> Set[WikiDataItem]:
+    def find_books(self, limit: int, offset: int) -> set[WikiDataItem]:
         INSTANCE_OF = "P31"
         query = f"""
         SELECT DISTINCT ?item WHERE {{
@@ -175,7 +173,22 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
-    def _sparql_query(self, query: str) -> Set[WikiDataItem]:
+    def find_orations(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
+        """Find orations from WikiData."""
+        query = f"""
+        SELECT DISTINCT ?item WHERE {{
+          {{
+            SELECT DISTINCT ?item WHERE {{
+              ?item p:P31 ?statement0.
+              ?statement0 (ps:P31) wd:Q861911.
+            }}
+            LIMIT {limit} OFFSET {offset}
+          }}
+        }}
+        """
+        return self._sparql_query(query)
+
+    def _sparql_query(self, query: str) -> set[WikiDataItem]:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         items = res.get("results", {}).get("bindings", [])
         items = {
@@ -290,7 +303,7 @@ class WikiDataQueryService:
                 )
             return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
-    def get_description(self, id: str, language: str) -> Optional[str]:
+    def get_description(self, id: str, language: str) -> str | None:
         """Get an entity's description in the specified language.
 
         Args:
@@ -462,6 +475,11 @@ class WikiDataQueryService:
     def get_time_definition_from_claim(
         self, claim: dict, time_props: list[str]
     ) -> TimeDefinition | None:
+        try:
+            return self.build_time_definition(claim)
+        except KeyError as exc:
+            pass
+
         qualifiers = claim.get("qualifiers", {})
         for time_prop in time_props:
             if time_prop in qualifiers:
@@ -484,7 +502,7 @@ class WikiDataQueryService:
                 logger.info(f"Failed to get time from {referenced_id}: {exc}")
                 return None
 
-    def get_coordinate_location(self, entity: Entity) -> Optional[CoordinateLocation]:
+    def get_coordinate_location(self, entity: Entity) -> CoordinateLocation | None:
         """
         Get an entity's location properties or None.
         """
@@ -494,7 +512,7 @@ class WikiDataQueryService:
         coordinate_location = self.build_coordinate_location(geo_claim[0])
         return coordinate_location
 
-    def get_geoshape_location(self, entity: Entity) -> Optional[GeoshapeLocation]:
+    def get_geoshape_location(self, entity: Entity) -> GeoshapeLocation | None:
         """
         Get an Entity's geoshape property or None.
         """
@@ -512,7 +530,7 @@ class WikiDataQueryService:
 
     def get_time(
         self, entity: Entity, time_prop: str = POINT_IN_TIME
-    ) -> Optional[TimeDefinition]:
+    ) -> TimeDefinition | None:
         """
         Get an Entity's point in time property or None.
         """
@@ -523,7 +541,7 @@ class WikiDataQueryService:
         return self.build_time_definition(time_claim=time_claim)
 
     @staticmethod
-    def build_entity(entity_dict: Dict) -> Entity:
+    def build_entity(entity_dict: dict) -> Entity:
         return Entity(
             id=entity_dict["id"],
             pageid=entity_dict["pageid"],
@@ -548,7 +566,7 @@ class WikiDataQueryService:
         )
 
     @staticmethod
-    def build_coordinate_location(geoclaim: Dict) -> CoordinateLocation:
+    def build_coordinate_location(geoclaim: dict) -> CoordinateLocation:
         return CoordinateLocation(
             id=geoclaim["id"],
             type=geoclaim["type"],
@@ -565,7 +583,7 @@ class WikiDataQueryService:
 
     @staticmethod
     def build_geoshape_location(
-        geoclaim: Dict, geoshape: Dict, geoshape_url: str
+        geoclaim: dict, geoshape: dict, geoshape_url: str
     ) -> GeoshapeLocation:
         return GeoshapeLocation(
             id=geoclaim["id"],
@@ -582,7 +600,7 @@ class WikiDataQueryService:
         )
 
     @staticmethod
-    def build_time_definition(time_claim: Dict) -> TimeDefinition:
+    def build_time_definition(time_claim: dict) -> TimeDefinition:
         """Build a TimeDefinition from either a full claim or a qualifier."""
         # Check if this is a qualifier (has datavalue directly)
         if "datavalue" in time_claim:
@@ -617,7 +635,7 @@ class WikiDataQueryService:
         )
 
     @staticmethod
-    def get_qid_from_uri(uri: str) -> Optional[str]:
+    def get_qid_from_uri(uri: str) -> str | None:
         # 'http://www.wikidata.org/entity/Q23'
         pattern = r"(Q\d+)"
         res = search(pattern=pattern, string=uri)

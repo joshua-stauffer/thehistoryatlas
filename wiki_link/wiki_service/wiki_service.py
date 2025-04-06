@@ -1,5 +1,6 @@
 from logging import getLogger
 from datetime import datetime, timezone
+from typing import Optional
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database, Item
@@ -148,51 +149,64 @@ class WikiService:
         log.info("No new books to add to queue")
         return 0
 
-    def run(
+    def search_for_orations(self, num_orations: int | None = None) -> int:
+        offset = self._database.get_last_orations_offset()
+        limit = (
+            min(num_orations, self._config.WIKIDATA_SEARCH_LIMIT)
+            if num_orations
+            else self._config.WIKIDATA_SEARCH_LIMIT
+        )
+        try:
+            orations = self._query.find_orations(limit=limit, offset=offset)
+            log.info(f"Found orations: {orations}")
+            if not orations:
+                log.info("No orations found")
+                return 0
+        except WikiDataQueryServiceError as e:
+            log.warning(f"WikiData Query Service encountered error and failed: {e}")
+            return 0
+
+        # Convert set to list for filtering
+        orations_list = list(orations)
+        log.info(f"orations list: {orations_list}")
+        filtered_orations = [
+            book
+            for book in orations_list
+            if not self._database.is_wiki_id_in_queue(wiki_id=book.qid)
+            and not self._database.wiki_id_exists(wiki_id=book.qid)
+        ]
+        log.info(f"Filtered orations: {filtered_orations}")
+
+        if filtered_orations:
+            self._database.add_items_to_queue(
+                entity_type="ORATION", items=filtered_orations
+            )
+            self._database.save_last_orations_offset(offset=limit + offset)
+            return len(filtered_orations)
+
+        log.info("No new books to add to queue")
+        return 0
+
+    def build(
         self,
-        num_people: int | None = None,
-        num_works: int | None = None,
-        num_books: int | None = None,
+        num_people: Optional[int] = None,
+        num_works: Optional[int] = None,
+        num_books: Optional[int] = None,
+        num_orations: Optional[int] = None,
     ) -> None:
-        """
-        Run the WikiService pipeline to search for people, works of art, and books, and build events.
-
-        Args:
-            num_people: Optional number of people to process. If None, processes all available.
-            num_works: Optional number of works of art to process. If None, processes none.
-            num_books: Optional number of books to process. If None, processes none.
-        """
-        # First search for people
-        people_added = self.search_for_people(num_people=num_people)
-        if people_added == 0:
-            log.info("No new people found to process")
-
-        # Then search for works of art if requested
-        works_added = 0
+        """Run the wiki service pipeline."""
+        if num_people is not None:
+            self.search_for_people(num_people)
         if num_works is not None:
-            works_added = self.search_for_works_of_art(num_works=num_works)
-            if works_added == 0:
-                log.info("No new works of art found to process")
-
-        # Then search for books if requested
-        books_added = 0
+            self.search_for_works_of_art(num_works)
         if num_books is not None:
-            books_added = self.search_for_books(num_books=num_books)
-            if books_added == 0:
-                log.info("No new books found to process")
+            self.search_for_books(num_books)
+        if num_orations is not None:
+            self.search_for_orations(num_orations)
 
-        if people_added == 0 and works_added == 0 and books_added == 0:
-            return
-
-        # Process events until queue is empty or we've hit our limit
+    def run(self) -> None:
         processed = 0
         while True:
-            if num_people and processed >= num_people + works_added + books_added:
-                log.info(
-                    f"Reached processing limit of {num_people + works_added + books_added} items"
-                )
-                break
-
             item = self._database.get_oldest_item_from_queue()
             if item is None:
                 log.info("Queue is empty, processing complete")
@@ -221,9 +235,9 @@ class WikiService:
         """
         log.info(f"Processing WikiData item {wiki_id} of type {entity_type}")
 
-        if entity_type not in ["PERSON", "WORK_OF_ART", "BOOK"]:
+        if entity_type not in ["PERSON", "WORK_OF_ART", "BOOK", "ORATION"]:
             raise WikiServiceError(
-                f"Invalid entity type: {entity_type}. Must be one of: PERSON, WORK_OF_ART, BOOK"
+                f"Invalid entity type: {entity_type}. Must be one of: PERSON, WORK_OF_ART, BOOK, ORATION"
             )
 
         # Check if item already exists
@@ -243,7 +257,7 @@ class WikiService:
 
         try:
             self.build_events(item=item)
-            self._database.remove_item_from_queue(wiki_id=wiki_id)
+            self._database.remove_item_from_queue(wiki_id=item.wiki_id)
             log.info(f"Successfully processed WikiData item {wiki_id}")
         except Exception as e:
             log.error(f"Error processing WikiData item {wiki_id}: {e}")
@@ -255,7 +269,7 @@ class WikiService:
     def build_events(self, item: Item) -> None:
         log.info(f"Processing entity: {item}")
         try:
-            if item.entity_type not in ["PERSON", "WORK_OF_ART", "BOOK"]:
+            if item.entity_type not in ["PERSON", "WORK_OF_ART", "BOOK", "ORATION"]:
                 self._database.report_queue_error(
                     wiki_id=item.wiki_id,
                     error_time=get_current_time(),

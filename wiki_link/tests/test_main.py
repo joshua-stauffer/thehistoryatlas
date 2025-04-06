@@ -4,48 +4,77 @@ import pytest
 from wiki_service.wiki_service import WikiService
 from main import main
 
+NUM_PEOPLE = 5
+NUM_WORKS = 3
+NUM_BOOKS = 2
+NUM_ORATIONS = 4
 
-@patch("main.create_wiki_service")
-def test_main_with_works_of_art(mock_create_service):
-    mock_service = Mock(spec=WikiService)
-    mock_create_service.return_value = mock_service
 
-    # Test with num_people, num_works, and num_books
-    main(num_people=5, num_works=3, num_books=2)
-    mock_service.run.assert_called_once_with(num_people=5, num_works=3, num_books=2)
+class TestMain:
+    @patch("main.create_wiki_service")
+    def test_build_options(self, mock_create_service):
+        mock_service = Mock(spec=WikiService)
+        mock_create_service.return_value = mock_service
 
-    # Reset mocks
-    mock_service.reset_mock()
+        main(
+            num_people=NUM_PEOPLE,
+            num_works=NUM_WORKS,
+            num_books=NUM_BOOKS,
+            num_orations=NUM_ORATIONS,
+        )
+        mock_service.build.assert_called_once_with(
+            num_people=NUM_PEOPLE,
+            num_works=NUM_WORKS,
+            num_books=NUM_BOOKS,
+            num_orations=NUM_ORATIONS,
+        )
 
-    # Test with only num_people
-    main(num_people=5)
-    mock_service.run.assert_called_once_with(
-        num_people=5, num_works=None, num_books=None
-    )
+    @patch("main.create_wiki_service")
+    def test_people(self, mock_create_service):
+        mock_service = Mock(spec=WikiService)
+        mock_create_service.return_value = mock_service
 
-    # Reset mocks
-    mock_service.reset_mock()
+        main(num_people=NUM_PEOPLE)
+        mock_service.build.assert_called_once_with(
+            num_people=NUM_PEOPLE, num_works=None, num_books=None, num_orations=None
+        )
 
-    # Test with only num_works
-    main(num_works=3)
-    mock_service.run.assert_called_once_with(
-        num_people=None, num_works=3, num_books=None
-    )
+    @patch("main.create_wiki_service")
+    def test_works(self, mock_create_service):
+        mock_service = Mock(spec=WikiService)
+        mock_create_service.return_value = mock_service
 
-    # Reset mocks
-    mock_service.reset_mock()
+        main(num_works=NUM_WORKS)
+        mock_service.build.assert_called_once_with(
+            num_people=None, num_works=NUM_WORKS, num_books=None, num_orations=None
+        )
 
-    # Test with only num_books
-    main(num_books=2)
-    mock_service.run.assert_called_once_with(
-        num_people=None, num_works=None, num_books=2
-    )
+    @patch("main.create_wiki_service")
+    def test_books(self, mock_create_service):
+        mock_service = Mock(spec=WikiService)
+        mock_create_service.return_value = mock_service
 
-    # Reset mocks
-    mock_service.reset_mock()
+        main(num_books=NUM_BOOKS)
+        mock_service.build.assert_called_once_with(
+            num_people=None, num_works=None, num_books=NUM_BOOKS, num_orations=None
+        )
 
-    # Test with no arguments
-    main()
-    mock_service.run.assert_called_once_with(
-        num_people=None, num_works=None, num_books=None
-    )
+    @patch("main.create_wiki_service")
+    def test_orations(self, mock_create_service):
+        mock_service = Mock(spec=WikiService)
+        mock_create_service.return_value = mock_service
+
+        # Test with only num_orations
+        main(num_orations=NUM_ORATIONS)
+        mock_service.build.assert_called_once_with(
+            num_people=None, num_works=None, num_books=None, num_orations=NUM_ORATIONS
+        )
+
+    @patch("main.create_wiki_service")
+    def test_run(self, mock_create_service):
+        mock_service = Mock(spec=WikiService)
+        mock_create_service.return_value = mock_service
+
+        # Test with no arguments
+        main(run=True)
+        mock_service.run.assert_called_once_with()
