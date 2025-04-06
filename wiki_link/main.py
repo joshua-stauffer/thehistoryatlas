@@ -112,9 +112,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--run",
-        type=bool,
-        choices=[True, False],
-        help="Whether to build events. Defaults to False.",
+        action="store_true",
+        help="Whether to build events.",
         required=False,
     )
 
