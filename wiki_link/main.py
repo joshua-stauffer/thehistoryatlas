@@ -33,8 +33,10 @@ def main(
     num_people: Optional[int] = None,
     num_works: Optional[int] = None,
     num_books: Optional[int] = None,
+    num_orations: Optional[int] = None,
     wikidata_id: Optional[str] = None,
     entity_type: Optional[str] = None,
+    run: bool | None = False,
 ) -> None:
     """
     Main entry point for the WikiService application.
@@ -43,6 +45,7 @@ def main(
         num_people: Optional number of people to process. If None, processes all available.
         num_works: Optional number of works of art to process. If None, processes none.
         num_books: Optional number of books to process. If None, processes none.
+        num_orations: Optional number of orations to process. If None, processes none.
         wikidata_id: Optional WikiData ID to process directly.
         entity_type: Optional entity type for the WikiData ID. Defaults to "PERSON".
     """
@@ -55,7 +58,14 @@ def main(
         service.process_wikidata_item(wiki_id=wikidata_id, entity_type=entity_type)
     else:
         # Run the normal pipeline
-        service.run(num_people=num_people, num_works=num_works, num_books=num_books)
+        service.build(
+            num_people=num_people,
+            num_works=num_works,
+            num_books=num_books,
+            num_orations=num_orations,
+        )
+    if run:
+        service.run()
 
 
 if __name__ == "__main__":
@@ -76,6 +86,18 @@ if __name__ == "__main__":
         dest="num_works",
     )
     parser.add_argument(
+        "--num-books",
+        type=int,
+        help="Number of books to process. If not specified, processes none.",
+        required=False,
+    )
+    parser.add_argument(
+        "--num-orations",
+        type=int,
+        help="Number of orations to process. If not specified, processes none.",
+        required=False,
+    )
+    parser.add_argument(
         "--wikidata-id",
         type=str,
         help="Process a specific WikiData ID directly (e.g., 'Q12345').",
@@ -84,14 +106,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--entity-type",
         type=str,
-        choices=["PERSON", "WORK_OF_ART", "BOOK"],
+        choices=["PERSON", "WORK_OF_ART", "BOOK", "ORATION"],
         help="Entity type for the WikiData ID. Defaults to 'PERSON'.",
         required=False,
     )
     parser.add_argument(
-        "--num-books",
-        type=int,
-        help="Number of books to process. If not specified, processes none.",
+        "--run",
+        type=bool,
+        choices=[True, False],
+        help="Whether to build events. Defaults to False.",
         required=False,
     )
 
@@ -100,6 +123,8 @@ if __name__ == "__main__":
         num_people=args.num_people,
         num_works=args.num_works,
         num_books=args.num_books,
+        num_orations=args.num_orations,
         wikidata_id=args.wikidata_id,
         entity_type=args.entity_type,
+        run=args.run,
     )

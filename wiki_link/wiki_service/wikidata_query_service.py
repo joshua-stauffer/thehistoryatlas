@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from re import search
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, List
 from urllib.error import HTTPError
 import time
 
@@ -132,8 +132,8 @@ class WikiDataQueryService:
             return True
         return False
 
-    def find_people(self, limit: int, offset: int) -> Set[WikiDataItem]:
-
+    def find_people(self, limit: int = 100, offset: int = 0) -> List[WikiDataItem]:
+        """Find people from WikiData."""
         query = f"""
         SELECT DISTINCT ?item
         WHERE 
@@ -168,6 +168,21 @@ class WikiDataQueryService:
             SELECT DISTINCT ?item WHERE {{
               ?item p:{INSTANCE_OF} ?statement0.
               ?statement0 (ps:P31) wd:{BOOK}.
+            }}
+            LIMIT {limit} OFFSET {offset}
+          }}
+        }}
+        """
+        return self._sparql_query(query)
+
+    def find_orations(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
+        """Find orations from WikiData."""
+        query = f"""
+        SELECT DISTINCT ?item WHERE {{
+          {{
+            SELECT DISTINCT ?item WHERE {{
+              ?item p:P31 ?statement0.
+              ?statement0 (ps:P31) wd:Q861911.
             }}
             LIMIT {limit} OFFSET {offset}
           }}
@@ -462,6 +477,11 @@ class WikiDataQueryService:
     def get_time_definition_from_claim(
         self, claim: dict, time_props: list[str]
     ) -> TimeDefinition | None:
+        try:
+            return self.build_time_definition(claim)
+        except KeyError as exc:
+            pass
+
         qualifiers = claim.get("qualifiers", {})
         for time_prop in time_props:
             if time_prop in qualifiers:

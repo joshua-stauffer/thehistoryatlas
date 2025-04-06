@@ -16,3 +16,4 @@ from .work_of_art_created import WorkOfArtCreated
 from .book_was_published import BookWasPublished
 from wiki_service.event_factories.person_received_award import PersonReceivedAward
 from .person_nominated_for import PersonNominatedFor
+from wiki_service.event_factories.oration_delivered import OrationDelivered

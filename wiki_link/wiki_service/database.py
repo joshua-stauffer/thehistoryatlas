@@ -211,9 +211,30 @@ class Database:
                 return 0
             return row.last_books_search_offset
 
+    def save_last_orations_offset(self, offset: int) -> None:
+        with Session(self._engine, future=True) as session:
+            row = session.query(ConfigModel).one()
+            row.last_orations_search_offset = offset
+            session.commit()
+
+    def get_last_orations_offset(self) -> int:
+        with Session(self._engine, future=True) as session:
+            row = session.query(ConfigModel).one_or_none()
+            if row is None:
+                session.add(self._get_default_config())
+                session.commit()
+                return 0
+            return row.last_orations_search_offset
+
     @staticmethod
     def _get_default_config() -> ConfigModel:
-        return ConfigModel(id=1, last_person_search_offset=0)
+        return ConfigModel(
+            id=1,
+            last_person_search_offset=0,
+            last_works_of_art_search_offset=0,
+            last_books_search_offset=0,
+            last_orations_search_offset=0,
+        )
 
     def upsert_created_event(
         self,

@@ -55,3 +55,4 @@ class Config(Base):
     last_person_search_offset = Column(INTEGER, default=0)
     last_works_of_art_search_offset = Column(INTEGER, default=0)
     last_books_search_offset = Column(INTEGER, default=0)
+    last_orations_search_offset = Column(INTEGER, default=0)
