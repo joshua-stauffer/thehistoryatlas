@@ -1033,3 +1033,150 @@ def test_get_hierarchical_time_invalid_claim():
         entity, claim="P999", time_props=["P585"]
     )
     assert time_def is None
+
+
+@responses.activate
+def test_get_entity_caching(config):
+    """Test that get_entity caches results and reuses them for subsequent calls"""
+    service = WikiDataQueryService(config)
+    entity_id = "Q1339"  # Bach
+    url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+
+    # Mock response data
+    mock_data = {
+        "entities": {
+            entity_id: {
+                "id": entity_id,
+                "pageid": 123,
+                "ns": 0,
+                "title": "Test",
+                "lastrevid": 1234,
+                "modified": "2024-03-20T00:00:00Z",
+                "type": "item",
+                "labels": {},
+                "descriptions": {},
+                "aliases": {},
+                "claims": {},
+                "sitelinks": {},
+            }
+        }
+    }
+
+    # Add mock response
+    responses.add(responses.GET, url, json=mock_data, status=200)
+
+    # First call should make the request
+    entity1 = service.get_entity(entity_id)
+    assert len(responses.calls) == 1
+
+    # Second call should use cache
+    entity2 = service.get_entity(entity_id)
+    assert len(responses.calls) == 1  # No new request made
+    assert entity1 is entity2  # Same object returned from cache
+
+
+@responses.activate
+def test_get_label_caching(config):
+    """Test that get_label caches results and reuses them for subsequent calls"""
+    service = WikiDataQueryService(config)
+    entity_id = "Q1339"
+    language = "en"
+    url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{entity_id}/labels/{language}"
+
+    # Add mock response
+    responses.add(responses.GET, url, body='"Johann Sebastian Bach"', status=200)
+
+    # First call should make the request
+    label1 = service.get_label(entity_id, language)
+    assert len(responses.calls) == 1
+
+    # Second call should use cache
+    label2 = service.get_label(entity_id, language)
+    assert len(responses.calls) == 1  # No new request made
+    assert label1 == label2
+    assert label1 == "Johann Sebastian Bach"
+
+
+@responses.activate
+def test_get_description_caching(config):
+    """Test that get_description caches results and reuses them for subsequent calls"""
+    service = WikiDataQueryService(config)
+    entity_id = "Q1339"
+    language = "en"
+    url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{entity_id}/descriptions/{language}"
+
+    # Add mock response
+    responses.add(
+        responses.GET,
+        url,
+        body='"German composer and musician of the Baroque era"',
+        status=200,
+    )
+
+    # First call should make the request
+    desc1 = service.get_description(entity_id, language)
+    assert len(responses.calls) == 1
+
+    # Second call should use cache
+    desc2 = service.get_description(entity_id, language)
+    assert len(responses.calls) == 1  # No new request made
+    assert desc1 == desc2
+    assert "German composer" in desc1
+
+
+@responses.activate
+def test_cache_sizes(config):
+    """Test that caches respect their configured sizes"""
+    # Set small cache sizes for testing
+    config.ENTITY_CACHE_SIZE = 2
+    config.LABEL_CACHE_SIZE = 2
+    config.DESCRIPTION_CACHE_SIZE = 2
+
+    service = WikiDataQueryService(config)
+
+    # Mock responses for entities
+    def mock_entity_response(entity_id):
+        url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={entity_id}&format=json"
+        responses.add(
+            responses.GET,
+            url,
+            json={
+                "entities": {
+                    entity_id: {
+                        "id": entity_id,
+                        "pageid": 123,
+                        "ns": 0,
+                        "title": f"Test {entity_id}",
+                        "lastrevid": 1234,
+                        "modified": "2024-03-20T00:00:00Z",
+                        "type": "item",
+                        "labels": {},
+                        "descriptions": {},
+                        "aliases": {},
+                        "claims": {},
+                        "sitelinks": {},
+                    }
+                }
+            },
+            status=200,
+        )
+
+    # Add mock responses for 3 different entities
+    for i in range(3):
+        entity_id = f"Q{i+1}"
+        mock_entity_response(entity_id)
+
+    # Request 3 different entities (cache size is 2)
+    entity1 = service.get_entity("Q1")
+    assert len(responses.calls) == 1
+
+    entity2 = service.get_entity("Q2")
+    assert len(responses.calls) == 2
+
+    entity3 = service.get_entity("Q3")
+    assert len(responses.calls) == 3
+
+    # Request first entity again - should require new request since it was evicted
+    entity1_again = service.get_entity("Q1")
+    assert len(responses.calls) == 4  # New request needed
+    assert entity1_again is not entity1  # Different object since it was reloaded

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from re import search
 from urllib.error import HTTPError
 import time
+from functools import lru_cache
 
 import requests
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -77,6 +78,16 @@ log = logging.getLogger(__name__)
 class WikiDataQueryService:
     def __init__(self, config: WikiServiceConfig):
         self._config = config
+        # Initialize cache functions with configured sizes
+        self._get_entity_cached = lru_cache(maxsize=self._config.ENTITY_CACHE_SIZE)(
+            self._get_entity_impl
+        )
+        self._get_label_cached = lru_cache(maxsize=self._config.LABEL_CACHE_SIZE)(
+            self._get_label_impl
+        )
+        self._get_description_cached = lru_cache(
+            maxsize=self._config.DESCRIPTION_CACHE_SIZE
+        )(self._get_description_impl)
 
     def _agent_identifier(self) -> str:
         return f"TheHistoryAtlas WikiLink/{get_version()} ({self._config.contact})"
@@ -272,7 +283,12 @@ class WikiDataQueryService:
     def get_entity(self, id: str) -> Entity:
         """
         Query the WikiData REST API to retrieve an item by ID.
+        Uses caching to avoid repeated API calls for the same ID.
         """
+        return self._get_entity_cached(id)
+
+    def _get_entity_impl(self, id: str) -> Entity:
+        """Implementation of get_entity without caching"""
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
         retries = 0
         while True:
@@ -289,6 +305,14 @@ class WikiDataQueryService:
             return self.build_entity(entity_dict)
 
     def get_label(self, id: str, language: str) -> str:
+        """
+        Get an entity's label in the specified language.
+        Uses caching to avoid repeated API calls for the same ID/language pair.
+        """
+        return self._get_label_cached(id, language)
+
+    def _get_label_impl(self, id: str, language: str) -> str:
+        """Implementation of get_label without caching"""
         url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
         retries = 0
         while True:
@@ -304,7 +328,9 @@ class WikiDataQueryService:
             return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     def get_description(self, id: str, language: str) -> str | None:
-        """Get an entity's description in the specified language.
+        """
+        Get an entity's description in the specified language.
+        Uses caching to avoid repeated API calls for the same ID/language pair.
 
         Args:
             id: The Wikidata entity ID (e.g. Q1339)
@@ -313,6 +339,10 @@ class WikiDataQueryService:
         Returns:
             The description text if found, None if not found or on error
         """
+        return self._get_description_cached(id, language)
+
+    def _get_description_impl(self, id: str, language: str) -> str | None:
+        """Implementation of get_description without caching"""
         url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/descriptions/{language}"
         retries = 0
         while True:

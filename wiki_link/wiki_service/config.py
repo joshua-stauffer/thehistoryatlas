@@ -13,3 +13,10 @@ class WikiServiceConfig:
         self.base_url = os.environ.get("WIKILINK_BASE_URL")
         self.server_base_url = os.environ.get("SERVER_BASE_URL", "localhost:8000")
         self.contact = os.environ.get("WIKILINK_CONTACT", "https://historyatlas.org")
+
+        # Cache configuration
+        self.ENTITY_CACHE_SIZE = int(os.environ.get("THA_ENTITY_CACHE_SIZE", "1000"))
+        self.LABEL_CACHE_SIZE = int(os.environ.get("THA_LABEL_CACHE_SIZE", "5000"))
+        self.DESCRIPTION_CACHE_SIZE = int(
+            os.environ.get("THA_DESCRIPTION_CACHE_SIZE", "5000")
+        )
