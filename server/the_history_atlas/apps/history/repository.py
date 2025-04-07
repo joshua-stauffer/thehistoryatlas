@@ -806,15 +806,18 @@ class Repository:
         ).all()
         story_order_map = {row.summary_id: row.story_order for row in story_order_rows}
 
-        story_order = [
-            StoryOrder(
-                summary_id=summary_id,
-                story_order=story_order_map[summary_id],
-                datetime=row.datetime,
-                precision=row.precision,
-            )
-            for summary_id, row in summary_map.items()
-        ]
+        story_order = sorted(
+            [
+                StoryOrder(
+                    summary_id=summary_id,
+                    story_order=story_order_map[summary_id],
+                    datetime=row.datetime,
+                    precision=row.precision,
+                )
+                for summary_id, row in summary_map.items()
+            ],
+            key=lambda row: row.story_order,
+        )
         if not story_order:
             return 0
         for row in story_order:
