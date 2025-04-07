@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER, TIMESTAMP
 
@@ -34,8 +34,8 @@ class WikiQueue(Base):
     time_added = Column(TIMESTAMP(timezone=True), nullable=False)
 
 
-class CreatedEvents(Base):
-    __tablename__ = "created_events"
+class FactoryResult(Base):
+    __tablename__ = "factory_results"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     wiki_id = Column(VARCHAR, nullable=False)
     factory_label = Column(VARCHAR, nullable=False)
@@ -44,6 +44,15 @@ class CreatedEvents(Base):
     updated_at = Column(
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc)
     )
+
+
+class CreatedEvent(Base):
+    __tablename__ = "created_events"
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    factory_result_id = Column(
+        UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False
+    )
+    entity_id = Column(VARCHAR, nullable=False)
 
 
 class Config(Base):

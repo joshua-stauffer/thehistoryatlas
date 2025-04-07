@@ -14,7 +14,7 @@ from wiki_service.config import WikiServiceConfig
 from wiki_service.schema import Base, WikiQueue
 from wiki_service.schema import IDLookup
 from wiki_service.schema import Config as ConfigModel
-from wiki_service.schema import CreatedEvents
+from wiki_service.schema import FactoryResult
 from wiki_service.types import EntityType, WikiDataItem
 
 log = logging.getLogger(__name__)
@@ -258,7 +258,7 @@ class Database:
             row = session.execute(
                 text(
                     """
-                        select factory_version, errors from created_events
+                        select factory_version, errors from factory_results
                         where wiki_id = :wiki_id
                         and factory_label = :factory_label
                     """
@@ -266,7 +266,7 @@ class Database:
                 {"wiki_id": wiki_id, "factory_label": factory_label},
             ).one_or_none()
             if row is None:
-                row = CreatedEvents(
+                row = FactoryResult(
                     wiki_id=wiki_id,
                     factory_label=factory_label,
                     factory_version=factory_version,
@@ -277,7 +277,7 @@ class Database:
                 session.execute(
                     text(
                         """
-                        update created_events
+                        update factory_results
                         set factory_version = :factory_version,
                             errors = :errors,
                             updated_at = :updated_at
@@ -314,7 +314,7 @@ class Database:
             row = session.execute(
                 text(
                     """
-                        select 1 from created_events
+                        select 1 from factory_results
                         where wiki_id = :wiki_id
                         and factory_label = :factory_label
                         and factory_version = :factory_version;

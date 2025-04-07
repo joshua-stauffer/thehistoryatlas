@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 import pytest
 from wiki_service.database import Database, Item
-from wiki_service.schema import IDLookup, WikiQueue, Config, CreatedEvents
+from wiki_service.schema import IDLookup, WikiQueue, Config, FactoryResult
 from wiki_service.types import EntityType, WikiDataItem
 from sqlalchemy import create_engine, text
 
@@ -237,7 +237,7 @@ def test_upsert_created_event_new_row(config):
     # Verify row was created correctly
     with Session(db._engine, future=True) as session:
         row = (
-            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+            session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
@@ -276,7 +276,7 @@ def test_upsert_created_event_update_row(config):
     # Verify row was updated correctly
     with Session(db._engine, future=True) as session:
         row = (
-            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+            session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
@@ -303,7 +303,7 @@ def test_upsert_created_event_no_errors(config):
     # Verify row was created correctly
     with Session(db._engine, future=True) as session:
         row = (
-            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+            session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
@@ -342,7 +342,7 @@ def test_event_exists_matching_row(config):
     # Clean up
     with Session(db._engine, future=True) as session:
         row = (
-            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+            session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
         session.delete(row)
         session.commit()
@@ -394,7 +394,7 @@ def test_event_exists_different_version(config):
     # Clean up
     with Session(db._engine, future=True) as session:
         row = (
-            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+            session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
         session.delete(row)
         session.commit()
@@ -428,7 +428,7 @@ def test_event_exists_different_factory(config):
     # Clean up
     with Session(db._engine, future=True) as session:
         row = (
-            session.query(CreatedEvents).filter(CreatedEvents.wiki_id == wiki_id).one()
+            session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
         session.delete(row)
         session.commit()
