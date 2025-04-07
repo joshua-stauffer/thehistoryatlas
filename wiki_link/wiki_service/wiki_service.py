@@ -468,6 +468,7 @@ class WikiService:
                     summary=event.summary,
                     tags=tags,
                     citation=citation,
+                    after=[],
                 )
 
             # Record successful event creation after all events are created
