@@ -178,6 +178,7 @@ class HistoryApp:
         text: str,
         tags: list[TagInstance],
         citation: CitationInput,
+        after: list[UUID],
     ):
         source = self._repository.get_source_by_title(title="Wikidata")
         if source:
@@ -231,6 +232,7 @@ class HistoryApp:
                     tag_id=tag.id,
                     tag_instance_time=tag_instance_time,
                     time_precision=precision,
+                    after=after,
                     session=session,
                 )
             session.commit()

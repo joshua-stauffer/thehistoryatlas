@@ -5,7 +5,6 @@ from the_history_atlas.api.types.tags import (
     WikiDataPlaceOutput,
     WikiDataTimeInput,
     WikiDataTimeOutput,
-    WikiDataTagsInput,
     WikiDataTagsOutput,
     WikiDataTagPointer,
     WikiDataEventInput,
@@ -55,5 +54,6 @@ def create_event_handler(
         text=event.summary,
         tags=event.tags,
         citation=event.citation,
+        after=event.after,
     )
     return WikiDataEventOutput(id=id)

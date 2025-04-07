@@ -720,6 +720,7 @@ class Repository:
         tag_id: UUID,
         tag_instance_time: str,
         time_precision: TimePrecision,
+        after: list[UUID],
         session: Session,
     ) -> TagInstanceModel:
         story_order = self.get_story_order(
@@ -727,6 +728,7 @@ class Repository:
             tag_id=tag_id,
             tag_instance_time=tag_instance_time,
             time_precision=time_precision,
+            after=after,
         )
         self.update_story_orders(
             session=session,
@@ -757,6 +759,7 @@ class Repository:
         tag_id: UUID,
         tag_instance_time: str,
         time_precision: TimePrecision,
+        after: list[UUID],
     ) -> int:
         """Given a tag, find the order belonging to a given time."""
         summary_rows = session.execute(
@@ -818,6 +821,10 @@ class Repository:
             if row.datetime < tag_instance_time:
                 continue
             elif row.datetime == tag_instance_time and row.precision < time_precision:
+                continue
+            elif row.summary_id in after:
+                # make a best effort to put this summary after the given IDs,
+                # but only if the time matches
                 continue
             else:
                 return row.story_order

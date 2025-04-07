@@ -169,7 +169,9 @@ def _generate_fake_event(
         wikidata_item_url=person.wikidata_url,
     )
 
-    return WikiDataEventInput(summary=summary_text, tags=tags, citation=citation)
+    return WikiDataEventInput(
+        summary=summary_text, tags=tags, citation=citation, after=[]
+    )
 
 
 def create_event(
@@ -378,6 +380,7 @@ def test_create_event(client: TestClient, auth_headers: dict):
                 stop_char=summary_text.find(created_time.name) + len(created_time.name),
             ),
         ],
+        after=[],
     )
     response = client.post(
         "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
