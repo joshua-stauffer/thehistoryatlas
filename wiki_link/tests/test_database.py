@@ -495,3 +495,110 @@ def test_event_exists_different_factory(config):
         )
         session.delete(row)
         session.commit()
+
+
+def test_get_server_id_by_event_label_no_matches(config):
+    """Test when no matches are found"""
+    db = Database(config=config)
+    result = db.get_server_id_by_event_label(
+        event_label=["nonexistent_label"],
+        primary_entity_id="Q12345",
+    )
+    assert result == []
+
+
+def test_get_server_id_by_event_label_with_matches(config):
+    """Test when matches are found with various combinations"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    secondary_id = "Q67890"
+    factory_label = "test_factory"
+    factory_version = 1
+    server_id = UUID("4e42b20e-838c-4808-9353-b20ec80e6e54")
+
+    # Create test data
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+        server_id=server_id,
+    )
+
+    # Test with matching primary entity only
+    result = db.get_server_id_by_event_label(
+        event_label=[factory_label],
+        primary_entity_id=wiki_id,
+    )
+    assert result == [server_id]
+
+    # Create another event with secondary entity
+    server_id2 = UUID("5f53c31f-949d-5919-a464-c31fc91f7f65")
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+        server_id=server_id2,
+        secondary_wiki_id=secondary_id,
+    )
+
+    # Test with both primary and secondary entity
+    result = db.get_server_id_by_event_label(
+        event_label=[factory_label],
+        primary_entity_id=wiki_id,
+        secondary_entity_id=secondary_id,
+    )
+    assert result == [server_id2]
+
+    # Test with multiple event labels
+    result = db.get_server_id_by_event_label(
+        event_label=[factory_label, "another_label"],
+        primary_entity_id=wiki_id,
+    )
+    assert sorted(result) == sorted([server_id, server_id2])
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        session.execute(
+            text(
+                """
+                DELETE FROM created_events WHERE primary_entity_id = :wiki_id;
+                DELETE FROM factory_results WHERE wiki_id = :wiki_id;
+                """
+            ),
+            {"wiki_id": wiki_id},
+        )
+        session.commit()
+
+
+def test_get_server_id_by_event_label_null_server_ids(config):
+    """Test that null server_ids are not included in results"""
+    db = Database(config=config)
+    wiki_id = "Q12345"
+    factory_label = "test_factory"
+    factory_version = 1
+
+    # Create event without server_id
+    db.upsert_created_event(
+        wiki_id=wiki_id,
+        factory_label=factory_label,
+        factory_version=factory_version,
+    )
+
+    result = db.get_server_id_by_event_label(
+        event_label=[factory_label],
+        primary_entity_id=wiki_id,
+    )
+    assert result == []
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        session.execute(
+            text(
+                """
+                DELETE FROM created_events WHERE primary_entity_id = :wiki_id;
+                DELETE FROM factory_results WHERE wiki_id = :wiki_id;
+                """
+            ),
+            {"wiki_id": wiki_id},
+        )
+        session.commit()

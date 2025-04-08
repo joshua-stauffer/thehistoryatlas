@@ -370,3 +370,47 @@ class Database:
         """
         database = cls(config=WikiServiceConfig())
         return database
+
+    def get_server_id_by_event_label(
+        self,
+        event_label: list[str],
+        primary_entity_id: str,
+        secondary_entity_id: str | None = None,
+    ) -> list[UUID]:
+        """
+        Query server_ids from created_events based on event labels and entity IDs.
+
+        Args:
+            event_label: List of factory labels to filter by
+            primary_entity_id: Primary entity ID to filter by
+            secondary_entity_id: Optional secondary entity ID to filter by
+
+        Returns:
+            list[UUID]: List of server IDs found in matching rows
+        """
+        with Session(self._engine, future=True) as session:
+            query = text(
+                """
+                SELECT DISTINCT ce.server_id
+                FROM created_events ce
+                JOIN factory_results fr ON fr.id = ce.factory_result_id
+                WHERE fr.factory_label = ANY(:event_label)
+                AND ce.primary_entity_id = :primary_entity_id
+                AND (
+                    :secondary_entity_id IS NULL 
+                    OR ce.secondary_entity_id = :secondary_entity_id
+                )
+                AND ce.server_id IS NOT NULL
+            """
+            )
+
+            result = session.execute(
+                query,
+                {
+                    "event_label": event_label,
+                    "primary_entity_id": primary_entity_id,
+                    "secondary_entity_id": secondary_entity_id,
+                },
+            )
+
+            return [row[0] for row in result]
