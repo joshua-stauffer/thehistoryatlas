@@ -124,6 +124,8 @@ class WikiEvent(BaseModel):
     people_tags: List[PersonWikiTag]
     place_tag: PlaceWikiTag
     time_tag: TimeWikiTag
+    entity_id: str  # entity consumed by the event factory
+    secondary_entity_id: str | None = None  # property object, if used to create event
 
 
 class Query(Protocol):

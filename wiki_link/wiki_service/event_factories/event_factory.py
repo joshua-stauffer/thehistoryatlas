@@ -21,6 +21,7 @@ class EventFactory(ABC):
         self._entity = entity
         self._query = query
         self._entity_type = entity_type
+        self._entity_id = entity.id  # Store the entity ID for use in WikiEvent creation
 
     @property
     @abstractmethod
