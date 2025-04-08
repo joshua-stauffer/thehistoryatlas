@@ -1,6 +1,7 @@
 from logging import getLogger
 from datetime import datetime, timezone
 from typing import Optional
+from uuid import UUID
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database, Item
@@ -462,21 +463,30 @@ class WikiService:
                         "stop_char": event.time_tag.stop_char,
                     }
                 )
+                after = self._database.get_server_id_by_event_label(
+                    event_labels=event_factory.after_labels,
+                    primary_entity_id=event.entity_id,
+                    secondary_entity_id=event.secondary_entity_id,
+                )
 
                 # Create the event
-                self._rest_client.create_event(
+                result = self._rest_client.create_event(
                     summary=event.summary,
                     tags=tags,
                     citation=citation,
+                    after=after,
                 )
+                result_id = UUID(result["id"])
 
-            # Record successful event creation after all events are created
-            self._database.upsert_created_event(
-                wiki_id=wiki_id,
-                factory_label=event_factory.label,
-                factory_version=event_factory.version,
-                errors=None,
-            )
+                # Record successful event creation for each event
+                self._database.upsert_created_event(
+                    wiki_id=wiki_id,
+                    factory_label=event_factory.label,
+                    factory_version=event_factory.version,
+                    errors=None,
+                    server_id=result_id,
+                    secondary_wiki_id=event.secondary_entity_id,
+                )
 
         except (RestClientError, Exception) as e:
             # Record error

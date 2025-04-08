@@ -180,6 +180,7 @@ def test_create_tag_instance(history_db):
             session=session,
             tag_instance_time=datetime.now(timezone.utc),
             time_precision=9,
+            after=[],
         )
         session.commit()
 

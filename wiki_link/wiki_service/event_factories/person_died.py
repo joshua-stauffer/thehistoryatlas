@@ -89,6 +89,8 @@ class PersonDied(EventFactory):
                 people_tags=people_tags,
                 place_tag=place_tag,
                 time_tag=time_tag,
+                entity_id=self._entity_id,
+                secondary_entity_id=None,
             )
         ]
 

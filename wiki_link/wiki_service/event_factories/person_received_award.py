@@ -47,6 +47,10 @@ class PersonReceivedAward(EventFactory):
     def label(self):
         return "Person received award"
 
+    @property
+    def after_labels(self) -> list[str]:
+        return ["Person nominated for"]
+
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
@@ -164,7 +168,7 @@ class PersonReceivedAward(EventFactory):
             except Exception:  # todo: narrow exception
                 time_definition = self._query.get_time_definition_from_claim(
                     claim=award_claim,
-                    time_props=[POINT_IN_TIME, START_TIME],
+                    time_props=[POINT_IN_TIME],
                 )
             if time_definition is None:
                 continue
@@ -232,6 +236,8 @@ class PersonReceivedAward(EventFactory):
                     people_tags=people_tags,
                     place_tag=place_tag,
                     time_tag=time_tag,
+                    entity_id=self._entity_id,
+                    secondary_entity_id=award_id,
                 )
             )
 

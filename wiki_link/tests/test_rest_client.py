@@ -184,7 +184,9 @@ def test_create_event_with_non_ascii_text(mock_session, config):
         "source": "Historia de América",
     }
 
-    result = client.create_event(summary=summary, tags=tags, citation=citation)
+    result = client.create_event(
+        summary=summary, tags=tags, citation=citation, after=[]
+    )
 
     # Verify the request was made with correct data
     mock_session.post.assert_called_once()

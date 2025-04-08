@@ -169,7 +169,9 @@ def _generate_fake_event(
         wikidata_item_url=person.wikidata_url,
     )
 
-    return WikiDataEventInput(summary=summary_text, tags=tags, citation=citation)
+    return WikiDataEventInput(
+        summary=summary_text, tags=tags, citation=citation, after=[]
+    )
 
 
 def create_event(
@@ -308,81 +310,175 @@ def test_get_tags_by_wikidata_ids_missing_tags(
     assert response.json() == {"wikidata_ids": expected_response}
 
 
-def test_create_event(client: TestClient, auth_headers: dict):
-    person_input = WikiDataPersonInput(
-        wikidata_id="Q1339",
-        wikidata_url="https://www.wikidata.org/wiki/Q1339",
-        name="Johann Sebastian Bach",
-    )
+class TestCreateEvent:
+    def _event(self, client: TestClient, auth_headers: dict) -> WikiDataEventInput:
+        person_input = WikiDataPersonInput(
+            wikidata_id="Q1339",
+            wikidata_url="https://www.wikidata.org/wiki/Q1339",
+            name="Johann Sebastian Bach",
+        )
 
-    created_person_output = client.post(
-        "/wikidata/people", data=person_input.model_dump_json(), headers=auth_headers
-    )
-    created_person = WikiDataPersonOutput.model_validate(created_person_output.json())
+        created_person_output = client.post(
+            "/wikidata/people",
+            data=person_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        created_person = WikiDataPersonOutput.model_validate(
+            created_person_output.json()
+        )
 
-    place_input = WikiDataPlaceInput(
-        wikidata_id="Q7070",
-        wikidata_url="https://www.wikidata.org/wiki/Q7070",
-        name="Eisenach",
-        latitude=50.974722,
-        longitude=10.324444,
-    )
+        place_input = WikiDataPlaceInput(
+            wikidata_id="Q7070",
+            wikidata_url="https://www.wikidata.org/wiki/Q7070",
+            name="Eisenach",
+            latitude=50.974722,
+            longitude=10.324444,
+        )
 
-    created_place_output = client.post(
-        "/wikidata/places", data=place_input.model_dump_json(), headers=auth_headers
-    )
-    created_place = WikiDataPlaceOutput.model_validate(created_place_output.json())
+        created_place_output = client.post(
+            "/wikidata/places", data=place_input.model_dump_json(), headers=auth_headers
+        )
+        created_place = WikiDataPlaceOutput.model_validate(created_place_output.json())
 
-    time_input = WikiDataTimeInput(
-        wikidata_id="Q69125241",
-        wikidata_url="https://www.wikidata.org/wiki/Q69125241",
-        name="March 31st, 1685",
-        date="+1685-03-21T00:00:00Z",
-        calendar_model="https://www.wikidata.org/wiki/Q12138",
-        precision=11,
-    )
+        time_input = WikiDataTimeInput(
+            wikidata_id="Q69125241",
+            wikidata_url="https://www.wikidata.org/wiki/Q69125241",
+            name="March 31st, 1685",
+            date="+1685-03-21T00:00:00Z",
+            calendar_model="https://www.wikidata.org/wiki/Q12138",
+            precision=11,
+        )
 
-    created_time_output = client.post(
-        "/wikidata/times", data=time_input.model_dump_json(), headers=auth_headers
-    )
-    created_time = WikiDataTimeOutput.model_validate(created_time_output.json())
+        created_time_output = client.post(
+            "/wikidata/times", data=time_input.model_dump_json(), headers=auth_headers
+        )
+        created_time = WikiDataTimeOutput.model_validate(created_time_output.json())
 
-    summary_text = "Johann Sebastian Bach was born on March 31st, 1685 in Eisenach."
-    event_input = WikiDataEventInput(
-        summary=summary_text,
-        citation=WikiDataCitationInput(
-            access_date=datetime.now(timezone.utc),
-            wikidata_item_id="Q1339",
-            wikidata_item_title="Johann Sebastian Bach",
-            wikidata_item_url="https://www.wikidata.org/wiki/Q1339",
-        ),
-        tags=[
-            TagInput(
-                id=created_person.id,
-                name=created_person.name,
-                start_char=summary_text.find(created_person.name),
-                stop_char=summary_text.find(created_person.name)
-                + len(created_person.name),
+        summary_text = "Johann Sebastian Bach was born on March 31st, 1685 in Eisenach."
+        event_input = WikiDataEventInput(
+            summary=summary_text,
+            citation=WikiDataCitationInput(
+                access_date=datetime.now(timezone.utc),
+                wikidata_item_id="Q1339",
+                wikidata_item_title="Johann Sebastian Bach",
+                wikidata_item_url="https://www.wikidata.org/wiki/Q1339",
             ),
-            TagInput(
-                id=created_place.id,
-                name=created_place.name,
-                start_char=summary_text.find(created_place.name),
-                stop_char=summary_text.find(created_place.name)
-                + len(created_place.name),
-            ),
-            TagInput(
-                id=created_time.id,
-                name=created_time.name,
-                start_char=summary_text.find(created_time.name),
-                stop_char=summary_text.find(created_time.name) + len(created_time.name),
-            ),
-        ],
-    )
-    response = client.post(
-        "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
-    )
-    assert response.status_code == 200, response.text
+            tags=[
+                TagInput(
+                    id=created_person.id,
+                    name=created_person.name,
+                    start_char=summary_text.find(created_person.name),
+                    stop_char=summary_text.find(created_person.name)
+                    + len(created_person.name),
+                ),
+                TagInput(
+                    id=created_place.id,
+                    name=created_place.name,
+                    start_char=summary_text.find(created_place.name),
+                    stop_char=summary_text.find(created_place.name)
+                    + len(created_place.name),
+                ),
+                TagInput(
+                    id=created_time.id,
+                    name=created_time.name,
+                    start_char=summary_text.find(created_time.name),
+                    stop_char=summary_text.find(created_time.name)
+                    + len(created_time.name),
+                ),
+            ],
+            after=[],
+        )
+        return event_input
+
+    def test_create_event(self, client: TestClient, auth_headers: dict):
+        event_input = self._event(client, auth_headers)
+        response = client.post(
+            "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+        )
+        assert response.status_code == 200, response.text
+
+    def test_without_after(self, client: TestClient, auth_headers: dict) -> None:
+        FIRST_SUMMARY = "summary one"
+        SECOND_SUMMARY = "summary two"
+        event_input = self._event(client, auth_headers)
+        event_input.summary = FIRST_SUMMARY
+        response = client.post(
+            "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+        )
+        assert response.status_code == 200, response.text
+
+        event_input.summary = SECOND_SUMMARY
+        event_input.after = []
+        response = client.post(
+            "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+        )
+        assert response.status_code == 200, response.text
+
+        history_json = client.get("/api/history")
+        assert history_json.status_code == 200, history_json.text
+        story = Story.model_validate(history_json.json())
+
+        # expect the second event to be inserted first
+        assert story.events[0].text == SECOND_SUMMARY
+        assert story.events[1].text == FIRST_SUMMARY
+
+    def test_with_single_after_id(self, client: TestClient, auth_headers: dict) -> None:
+        FIRST_SUMMARY = "summary one"
+        SECOND_SUMMARY = "summary two"
+        event_input = self._event(client, auth_headers)
+        event_input.summary = FIRST_SUMMARY
+        response = client.post(
+            "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+        )
+        assert response.status_code == 200, response.text
+
+        # add the ID of our first created event to the after field
+        after = [UUID(response.json()["id"])]
+        event_input.summary = SECOND_SUMMARY
+        event_input.after = after
+        response = client.post(
+            "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+        )
+        assert response.status_code == 200, response.text
+
+        history_json = client.get("/api/history")
+        assert history_json.status_code == 200, history_json.text
+        story = Story.model_validate(history_json.json())
+
+        assert story.events[0].text == FIRST_SUMMARY
+        assert story.events[1].text == SECOND_SUMMARY
+
+    def test_with_multiple_after_ids(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        summary_base = "seed summary"
+        sentinal_summary = "our totally original summary text to mark the event we're inserting _after_ everything else."
+        event_input = self._event(client, auth_headers)
+        after = []
+        for i in range(3):
+            event_input.summary = f"{summary_base} {i}"
+            response = client.post(
+                "/wikidata/events",
+                data=event_input.model_dump_json(),
+                headers=auth_headers,
+            )
+            assert response.status_code == 200, response.text
+            after.append(UUID(response.json()["id"]))
+
+        event_input.summary = sentinal_summary
+        event_input.after = after
+        response = client.post(
+            "/wikidata/events", data=event_input.model_dump_json(), headers=auth_headers
+        )
+        assert response.status_code == 200, response.text
+
+        history_json = client.get("/api/history")
+        assert history_json.status_code == 200, history_json.text
+        story = Story.model_validate(history_json.json())
+
+        for i in range(3):
+            assert summary_base in story.events[i].text
+        assert story.events[-1].text == sentinal_summary
 
 
 @pytest.fixture

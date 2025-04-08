@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional, List
+from uuid import UUID, uuid4
 
 from sqlalchemy import create_engine
 from sqlalchemy import text
@@ -11,10 +12,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from wiki_service.config import WikiServiceConfig
-from wiki_service.schema import Base, WikiQueue
+from wiki_service.schema import Base, WikiQueue, CreatedEvent
 from wiki_service.schema import IDLookup
 from wiki_service.schema import Config as ConfigModel
-from wiki_service.schema import CreatedEvents
+from wiki_service.schema import FactoryResult
 from wiki_service.types import EntityType, WikiDataItem
 
 log = logging.getLogger(__name__)
@@ -242,6 +243,8 @@ class Database:
         factory_label: str,
         factory_version: int,
         errors: Optional[dict] = None,
+        server_id: Optional[UUID] = None,
+        secondary_wiki_id: str | None = None,
     ) -> None:
         """
         Create or update a CreatedEvents row.
@@ -253,46 +256,78 @@ class Database:
             factory_label: The label of the factory that created the event
             factory_version: The version of the factory
             errors: Optional dictionary of errors encountered during creation
+            server_id: Optional UUID of the server that created the event
+            secondary_wiki_id: Optional secondary wiki ID for events involving two entities
         """
         with Session(self._engine, future=True) as session:
-            row = session.execute(
+            # First find or create the factory result
+            factory_result = session.execute(
                 text(
                     """
-                        select factory_version, errors from created_events
-                        where wiki_id = :wiki_id
-                        and factory_label = :factory_label
+                    select id, factory_version, errors from factory_results
+                    where wiki_id = :wiki_id
+                    and factory_label = :factory_label
                     """
                 ),
                 {"wiki_id": wiki_id, "factory_label": factory_label},
             ).one_or_none()
-            if row is None:
-                row = CreatedEvents(
-                    wiki_id=wiki_id,
-                    factory_label=factory_label,
-                    factory_version=factory_version,
-                    errors=errors or {},
-                )
-                session.add(row)
-            else:
+
+            if factory_result is None:
+                # Create new factory result
+                factory_result_id = uuid4()
                 session.execute(
                     text(
                         """
-                        update created_events
-                        set factory_version = :factory_version,
-                            errors = :errors,
-                            updated_at = :updated_at
-                        where wiki_id = :wiki_id
-                        and factory_label = :factory_label;
+                        insert into factory_results (id, wiki_id, factory_label, factory_version, errors, updated_at)
+                        values (:id, :wiki_id, :factory_label, :factory_version, :errors, :updated_at)
                         """
                     ),
                     {
+                        "id": factory_result_id,
                         "wiki_id": wiki_id,
                         "factory_label": factory_label,
                         "factory_version": factory_version,
-                        "errors": json.dumps(errors) if errors else json.dumps({}),
+                        "errors": json.dumps(errors if errors is not None else {}),
                         "updated_at": datetime.now(timezone.utc),
                     },
                 )
+            else:
+                factory_result_id = factory_result[0]
+                # Update existing factory result
+                session.execute(
+                    text(
+                        """
+                        update factory_results
+                        set factory_version = :factory_version,
+                            errors = :errors,
+                            updated_at = :updated_at
+                        where id = :id
+                        """
+                    ),
+                    {
+                        "id": factory_result_id,
+                        "factory_version": factory_version,
+                        "errors": json.dumps(errors if errors is not None else {}),
+                        "updated_at": datetime.now(timezone.utc),
+                    },
+                )
+
+            # Now create the created event
+            session.execute(
+                text(
+                    """
+                    insert into created_events (id, factory_result_id, primary_entity_id, secondary_entity_id, server_id)
+                    values (:id, :factory_result_id, :primary_entity_id, :secondary_entity_id, :server_id)
+                    """
+                ),
+                {
+                    "id": uuid4(),
+                    "factory_result_id": factory_result_id,
+                    "primary_entity_id": wiki_id,
+                    "secondary_entity_id": secondary_wiki_id,
+                    "server_id": server_id,
+                },
+            )
 
             session.commit()
 
@@ -311,13 +346,13 @@ class Database:
             bool: True if a matching row exists, False otherwise
         """
         with Session(self._engine, future=True) as session:
-            row = session.execute(
+            result = session.execute(
                 text(
                     """
-                        select 1 from created_events
-                        where wiki_id = :wiki_id
-                        and factory_label = :factory_label
-                        and factory_version = :factory_version;
+                    select 1 from factory_results
+                    where wiki_id = :wiki_id
+                    and factory_label = :factory_label
+                    and factory_version = :factory_version;
                     """
                 ),
                 {
@@ -326,7 +361,7 @@ class Database:
                     "factory_version": factory_version,
                 },
             ).one_or_none()
-            return row is not None
+            return result is not None
 
     @classmethod
     def factory(cls) -> "Database":
@@ -335,3 +370,47 @@ class Database:
         """
         database = cls(config=WikiServiceConfig())
         return database
+
+    def get_server_id_by_event_label(
+        self,
+        event_labels: list[str],
+        primary_entity_id: str,
+        secondary_entity_id: str | None = None,
+    ) -> list[UUID]:
+        """
+        Query server_ids from created_events based on event labels and entity IDs.
+
+        Args:
+            event_labels: List of factory labels to filter by
+            primary_entity_id: Primary entity ID to filter by
+            secondary_entity_id: Optional secondary entity ID to filter by
+
+        Returns:
+            list[UUID]: List of server IDs found in matching rows
+        """
+        with Session(self._engine, future=True) as session:
+            query = text(
+                """
+                SELECT DISTINCT ce.server_id
+                FROM created_events ce
+                JOIN factory_results fr ON fr.id = ce.factory_result_id
+                WHERE fr.factory_label = ANY(:event_label)
+                AND ce.primary_entity_id = :primary_entity_id
+                AND (
+                    :secondary_entity_id IS NULL 
+                    OR ce.secondary_entity_id = :secondary_entity_id
+                )
+                AND ce.server_id IS NOT NULL
+            """
+            )
+
+            result = session.execute(
+                query,
+                {
+                    "event_label": event_labels,
+                    "primary_entity_id": primary_entity_id,
+                    "secondary_entity_id": secondary_entity_id,
+                },
+            )
+
+            return [row[0] for row in result]

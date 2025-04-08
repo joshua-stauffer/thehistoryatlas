@@ -122,14 +122,18 @@ class BookWasPublished(EventFactory):
             time_definition=time_definition,
         )
 
-        return [
+        events = [
             WikiEvent(
                 summary=summary,
                 people_tags=people_tags,
                 place_tag=place_tag,
                 time_tag=time_tag,
+                entity_id=self._entity_id,
+                secondary_entity_id=None,
             )
         ]
+
+        return events
 
     def _country_of_origin_id(self) -> str:
         return self._entity.claims[COUNTRY_OF_ORIGIN][0]["mainsnak"]["datavalue"][

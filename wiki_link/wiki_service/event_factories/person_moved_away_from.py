@@ -32,6 +32,10 @@ class PersonMovedAwayFrom(EventFactory):
     def label(self):
         return "Person moved away from"
 
+    @property
+    def after_labels(self) -> list[str]:
+        return ["Person moved to"]
+
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
@@ -126,6 +130,8 @@ class PersonMovedAwayFrom(EventFactory):
                     people_tags=people_tags,
                     place_tag=place_tag,
                     time_tag=time_tag,
+                    entity_id=self._entity_id,
+                    secondary_entity_id=residence_id,
                 )
             )
 

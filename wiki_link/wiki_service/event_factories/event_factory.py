@@ -21,6 +21,7 @@ class EventFactory(ABC):
         self._entity = entity
         self._query = query
         self._entity_type = entity_type
+        self._entity_id = entity.id  # Store the entity ID for use in WikiEvent creation
 
     @property
     @abstractmethod
@@ -33,6 +34,12 @@ class EventFactory(ABC):
     def label(self) -> str:
         """Get the label of the event factory."""
         pass
+
+    @property
+    def after_labels(self) -> list[str]:
+        """Represent logical relationships between types of events, in the
+        case that they share a date."""
+        return []
 
     @abstractmethod
     def entity_has_event(self) -> bool:

@@ -74,6 +74,7 @@ class WikiDataEventInput(BaseModel):
     summary: str
     tags: list[TagInput]
     citation: WikiDataCitationInput
+    after: list[UUID]
 
 
 class WikiDataEventOutput(BaseModel):

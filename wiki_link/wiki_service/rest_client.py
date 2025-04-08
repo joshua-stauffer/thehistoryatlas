@@ -149,9 +149,16 @@ class RestClient:
         result = response.json()
         return UUID(result["id"]) if result["id"] else None
 
-    def create_event(self, summary: str, tags: List[dict], citation: dict) -> dict:
+    def create_event(
+        self, summary: str, tags: List[dict], citation: dict, after: list[UUID]
+    ) -> dict:
         """Create a new event"""
-        data = {"summary": summary, "tags": tags, "citation": citation}
+        data = {
+            "summary": summary,
+            "tags": tags,
+            "citation": citation,
+            "after": [str(id) for id in after],
+        }
         response = self._session.post(
             f"{self._base_url}/wikidata/events",
             data=json.dumps(data, ensure_ascii=False).encode("utf-8"),
