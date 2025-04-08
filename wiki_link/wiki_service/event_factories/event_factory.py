@@ -35,6 +35,12 @@ class EventFactory(ABC):
         """Get the label of the event factory."""
         pass
 
+    @property
+    def after_labels(self) -> set[str]:
+        """Represent logical relationships between types of events, in the
+        case that they share a date."""
+        return set()
+
     @abstractmethod
     def entity_has_event(self) -> bool:
         """Check if the entity has this type of event."""

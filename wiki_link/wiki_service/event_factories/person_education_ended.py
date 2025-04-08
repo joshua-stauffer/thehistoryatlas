@@ -51,6 +51,10 @@ class PersonEducationEnded(EventFactory):
     def label(self):
         return "Person education ended"
 
+    @property
+    def after_labels(self) -> set[str]:
+        return {"Person education began"}
+
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
