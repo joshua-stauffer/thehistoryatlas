@@ -373,7 +373,7 @@ class Database:
 
     def get_server_id_by_event_label(
         self,
-        event_label: list[str],
+        event_labels: list[str],
         primary_entity_id: str,
         secondary_entity_id: str | None = None,
     ) -> list[UUID]:
@@ -381,7 +381,7 @@ class Database:
         Query server_ids from created_events based on event labels and entity IDs.
 
         Args:
-            event_label: List of factory labels to filter by
+            event_labels: List of factory labels to filter by
             primary_entity_id: Primary entity ID to filter by
             secondary_entity_id: Optional secondary entity ID to filter by
 
@@ -407,7 +407,7 @@ class Database:
             result = session.execute(
                 query,
                 {
-                    "event_label": event_label,
+                    "event_label": event_labels,
                     "primary_entity_id": primary_entity_id,
                     "secondary_entity_id": secondary_entity_id,
                 },

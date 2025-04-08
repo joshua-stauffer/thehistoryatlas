@@ -501,7 +501,7 @@ def test_get_server_id_by_event_label_no_matches(config):
     """Test when no matches are found"""
     db = Database(config=config)
     result = db.get_server_id_by_event_label(
-        event_label=["nonexistent_label"],
+        event_labels=["nonexistent_label"],
         primary_entity_id="Q12345",
     )
     assert result == []
@@ -526,7 +526,7 @@ def test_get_server_id_by_event_label_with_matches(config):
 
     # Test with matching primary entity only
     result = db.get_server_id_by_event_label(
-        event_label=[factory_label],
+        event_labels=[factory_label],
         primary_entity_id=wiki_id,
     )
     assert result == [server_id]
@@ -543,7 +543,7 @@ def test_get_server_id_by_event_label_with_matches(config):
 
     # Test with both primary and secondary entity
     result = db.get_server_id_by_event_label(
-        event_label=[factory_label],
+        event_labels=[factory_label],
         primary_entity_id=wiki_id,
         secondary_entity_id=secondary_id,
     )
@@ -551,7 +551,7 @@ def test_get_server_id_by_event_label_with_matches(config):
 
     # Test with multiple event labels
     result = db.get_server_id_by_event_label(
-        event_label=[factory_label, "another_label"],
+        event_labels=[factory_label, "another_label"],
         primary_entity_id=wiki_id,
     )
     assert sorted(result) == sorted([server_id, server_id2])
@@ -585,7 +585,7 @@ def test_get_server_id_by_event_label_null_server_ids(config):
     )
 
     result = db.get_server_id_by_event_label(
-        event_label=[factory_label],
+        event_labels=[factory_label],
         primary_entity_id=wiki_id,
     )
     assert result == []

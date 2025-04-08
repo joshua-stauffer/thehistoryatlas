@@ -463,13 +463,18 @@ class WikiService:
                         "stop_char": event.time_tag.stop_char,
                     }
                 )
+                after = self._database.get_server_id_by_event_label(
+                    event_labels=event_factory.after_labels,
+                    primary_entity_id=event.entity_id,
+                    secondary_entity_id=event.secondary_entity_id,
+                )
 
                 # Create the event
                 result = self._rest_client.create_event(
                     summary=event.summary,
                     tags=tags,
                     citation=citation,
-                    after=[],
+                    after=after,
                 )
                 result_id = UUID(result["id"])
 

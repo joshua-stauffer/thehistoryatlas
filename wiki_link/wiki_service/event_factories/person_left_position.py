@@ -44,8 +44,8 @@ class PersonLeftPosition(EventFactory):
         return "Person left position"
 
     @property
-    def after_labels(self) -> set[str]:
-        return {"Person took position"}
+    def after_labels(self) -> list[str]:
+        return ["Person took position"]
 
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":

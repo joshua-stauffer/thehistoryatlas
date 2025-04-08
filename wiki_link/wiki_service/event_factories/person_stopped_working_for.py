@@ -37,8 +37,8 @@ class PersonStoppedWorkingFor(EventFactory):
         return "Person stopped working for"
 
     @property
-    def after_labels(self) -> set[str]:
-        return {"Person started working for"}
+    def after_labels(self) -> list[str]:
+        return ["Person started working for"]
 
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":

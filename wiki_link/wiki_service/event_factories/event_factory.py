@@ -36,10 +36,10 @@ class EventFactory(ABC):
         pass
 
     @property
-    def after_labels(self) -> set[str]:
+    def after_labels(self) -> list[str]:
         """Represent logical relationships between types of events, in the
         case that they share a date."""
-        return set()
+        return []
 
     @abstractmethod
     def entity_has_event(self) -> bool:

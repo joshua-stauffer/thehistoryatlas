@@ -48,8 +48,8 @@ class PersonReceivedAward(EventFactory):
         return "Person received award"
 
     @property
-    def after_labels(self):
-        return {"Person nominated for"}
+    def after_labels(self) -> list[str]:
+        return ["Person nominated for"]
 
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
