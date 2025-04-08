@@ -242,7 +242,18 @@ def test_upsert_created_event_new_row(config):
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
         assert row.factory_version == factory_version
-        assert row.errors == {'Q12345': {'error1': 'test error'}}
+        assert row.errors == errors
+
+        # Clean up - delete created_events first due to foreign key constraint
+        session.execute(
+            text(
+                """
+                delete from created_events
+                where factory_result_id = :factory_result_id
+                """
+            ),
+            {"factory_result_id": row.id},
+        )
         session.delete(row)
         session.commit()
 
@@ -282,6 +293,17 @@ def test_upsert_created_event_update_row(config):
         assert row.factory_label == factory_label
         assert row.factory_version == updated_version
         assert row.errors == updated_errors
+
+        # Clean up - delete created_events first due to foreign key constraint
+        session.execute(
+            text(
+                """
+                delete from created_events
+                where factory_result_id = :factory_result_id
+                """
+            ),
+            {"factory_result_id": row.id},
+        )
         session.delete(row)
         session.commit()
 
@@ -309,6 +331,17 @@ def test_upsert_created_event_no_errors(config):
         assert row.factory_label == factory_label
         assert row.factory_version == factory_version
         assert row.errors == {}
+
+        # Clean up - delete created_events first due to foreign key constraint
+        session.execute(
+            text(
+                """
+                delete from created_events
+                where factory_result_id = :factory_result_id
+                """
+            ),
+            {"factory_result_id": row.id},
+        )
         session.delete(row)
         session.commit()
 
@@ -343,6 +376,16 @@ def test_event_exists_matching_row(config):
     with Session(db._engine, future=True) as session:
         row = (
             session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
+        )
+        # Clean up - delete created_events first due to foreign key constraint
+        session.execute(
+            text(
+                """
+                delete from created_events
+                where factory_result_id = :factory_result_id
+                """
+            ),
+            {"factory_result_id": row.id},
         )
         session.delete(row)
         session.commit()
@@ -396,6 +439,16 @@ def test_event_exists_different_version(config):
         row = (
             session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
         )
+        # Clean up - delete created_events first due to foreign key constraint
+        session.execute(
+            text(
+                """
+                delete from created_events
+                where factory_result_id = :factory_result_id
+                """
+            ),
+            {"factory_result_id": row.id},
+        )
         session.delete(row)
         session.commit()
 
@@ -429,6 +482,16 @@ def test_event_exists_different_factory(config):
     with Session(db._engine, future=True) as session:
         row = (
             session.query(FactoryResult).filter(FactoryResult.wiki_id == wiki_id).one()
+        )
+        # Clean up - delete created_events first due to foreign key constraint
+        session.execute(
+            text(
+                """
+                delete from created_events
+                where factory_result_id = :factory_result_id
+                """
+            ),
+            {"factory_result_id": row.id},
         )
         session.delete(row)
         session.commit()
