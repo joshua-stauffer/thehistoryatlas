@@ -242,7 +242,7 @@ def test_upsert_created_event_new_row(config):
         assert row.wiki_id == wiki_id
         assert row.factory_label == factory_label
         assert row.factory_version == factory_version
-        assert row.errors == errors
+        assert row.errors == {'Q12345': {'error1': 'test error'}}
         session.delete(row)
         session.commit()
 

@@ -48,11 +48,13 @@ class FactoryResult(Base):
 
 class CreatedEvent(Base):
     __tablename__ = "created_events"
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     factory_result_id = Column(
         UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False
     )
-    entity_id = Column(VARCHAR, nullable=False)
+    primary_entity_id = Column(VARCHAR, nullable=False)
+    secondary_entity_id = Column(VARCHAR, nullable=True)
+    server_id = Column(UUID(as_uuid=True), nullable=True)
 
 
 class Config(Base):
