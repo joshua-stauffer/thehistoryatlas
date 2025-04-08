@@ -1074,6 +1074,8 @@ class TestBuildEvents:
         time_definition.precision = 11
         time_tag.time_definition = time_definition
         mock_event.time_tag = time_tag
+        mock_event.entity_id = "Q1"
+        mock_event.secondary_entity_id = "Q2"
 
         mock_event_factory.create_wiki_event.return_value = [mock_event]
 
@@ -1108,7 +1110,9 @@ class TestBuildEvents:
             mock_rest_client.create_place.return_value = {"id": "place-uuid"}
 
             # Mock successful event creation
-            mock_rest_client.create_event.return_value = {"id": "event-uuid"}
+            mock_rest_client.create_event.return_value = {
+                "id": "4bf4d9ed-e912-4f28-b366-81c4e41a500b"
+            }
 
             # Act
             wiki_service.build_events(item=item_mock)
