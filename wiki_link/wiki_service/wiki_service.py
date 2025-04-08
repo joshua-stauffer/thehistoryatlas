@@ -473,14 +473,15 @@ class WikiService:
                 )
                 result_id = UUID(result["id"])
 
-            # Record successful event creation after all events are created
-            self._database.upsert_created_event(
-                wiki_id=wiki_id,
-                factory_label=event_factory.label,
-                factory_version=event_factory.version,
-                errors=None,
-                server_id=result_id,
-            )
+                # Record successful event creation for each event
+                self._database.upsert_created_event(
+                    wiki_id=wiki_id,
+                    factory_label=event_factory.label,
+                    factory_version=event_factory.version,
+                    errors=None,
+                    server_id=result_id,
+                    secondary_wiki_id=event.secondary_entity_id,
+                )
 
         except (RestClientError, Exception) as e:
             # Record error
