@@ -168,7 +168,7 @@ class PersonReceivedAward(EventFactory):
             except Exception:  # todo: narrow exception
                 time_definition = self._query.get_time_definition_from_claim(
                     claim=award_claim,
-                    time_props=[POINT_IN_TIME, START_TIME],
+                    time_props=[POINT_IN_TIME],
                 )
             if time_definition is None:
                 continue
