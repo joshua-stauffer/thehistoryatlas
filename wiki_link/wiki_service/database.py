@@ -417,3 +417,25 @@ class Database:
             )
 
             return [row[0] for row in result]
+
+    def get_wiki_ids_in_queue(self, wiki_ids: List[str]) -> set[str]:
+        """
+        Check which wiki IDs from the provided list exist in the queue.
+        This is a more efficient version of checking multiple IDs compared to calling is_wiki_id_in_queue multiple times.
+
+        Args:
+            wiki_ids: List of wiki IDs to check
+
+        Returns:
+            set[str]: Set of wiki IDs that exist in the queue
+        """
+        if not wiki_ids:
+            return set()
+
+        with Session(self._engine, future=True) as session:
+            rows = (
+                session.query(WikiQueue.wiki_id)
+                .filter(WikiQueue.wiki_id.in_(wiki_ids))
+                .all()
+            )
+            return {row[0] for row in rows}

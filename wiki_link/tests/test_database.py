@@ -602,3 +602,62 @@ def test_get_server_id_by_event_label_null_server_ids(config):
             {"wiki_id": wiki_id},
         )
         session.commit()
+
+
+def test_get_wiki_ids_in_queue_empty_input(config):
+    db = Database(config=config)
+    assert db.get_wiki_ids_in_queue([]) == set()
+
+
+def test_get_wiki_ids_in_queue_no_matches(config):
+    db = Database(config=config)
+    wiki_ids = ["Q1", "Q2", "Q3"]
+    assert db.get_wiki_ids_in_queue(wiki_ids) == set()
+
+
+def test_get_wiki_ids_in_queue_some_matches(config):
+    db = Database(config=config)
+    entity_type: EntityType = "PERSON"
+    time_added = "2023-01-19 22:26:35"
+
+    # Add some items to the queue
+    with Session(db._engine, future=True) as session:
+        session.add_all([
+            WikiQueue(wiki_id="Q1", entity_type=entity_type, time_added=time_added),
+            WikiQueue(wiki_id="Q3", entity_type=entity_type, time_added=time_added),
+        ])
+        session.commit()
+
+    # Test with a mix of existing and non-existing IDs
+    wiki_ids = ["Q1", "Q2", "Q3", "Q4"]
+    result = db.get_wiki_ids_in_queue(wiki_ids)
+    assert result == {"Q1", "Q3"}
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        session.query(WikiQueue).filter(WikiQueue.wiki_id.in_(["Q1", "Q3"])).delete()
+        session.commit()
+
+
+def test_get_wiki_ids_in_queue_all_matches(config):
+    db = Database(config=config)
+    entity_type: EntityType = "PERSON"
+    time_added = "2023-01-19 22:26:35"
+
+    # Add items to the queue
+    wiki_ids = ["Q1", "Q2", "Q3"]
+    with Session(db._engine, future=True) as session:
+        session.add_all([
+            WikiQueue(wiki_id=id, entity_type=entity_type, time_added=time_added)
+            for id in wiki_ids
+        ])
+        session.commit()
+
+    # Test that all IDs are found
+    result = db.get_wiki_ids_in_queue(wiki_ids)
+    assert result == set(wiki_ids)
+
+    # Clean up
+    with Session(db._engine, future=True) as session:
+        session.query(WikiQueue).filter(WikiQueue.wiki_id.in_(wiki_ids)).delete()
+        session.commit()
