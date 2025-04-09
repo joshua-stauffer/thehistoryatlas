@@ -133,23 +133,23 @@ class PersonReceivedAward(EventFactory):
 
         return None
 
-    def _get_conferrer_name(self, claim, award_entity) -> str | None:
-        """Get the name of the conferring organization, if available."""
+    def _get_conferrer_name(self, claim, award_entity) -> tuple[str | None, str | None]:
+        """Get the name and ID of the conferring organization, if available."""
         # Try claim qualifiers first
         if CONFERRED_BY in claim.get("qualifiers", {}):
             conferrer_id = claim["qualifiers"][CONFERRED_BY][0]["datavalue"]["value"][
                 "id"
             ]
-            return self._query.get_label(id=conferrer_id, language="en")
+            return self._query.get_label(id=conferrer_id, language="en"), conferrer_id
 
         # Try award entity claims
         if CONFERRED_BY in award_entity.claims:
             conferrer_id = award_entity.claims[CONFERRED_BY][0]["mainsnak"][
                 "datavalue"
             ]["value"]["id"]
-            return self._query.get_label(id=conferrer_id, language="en")
+            return self._query.get_label(id=conferrer_id, language="en"), conferrer_id
 
-        return None
+        return None, None
 
     def create_wiki_event(self) -> list[WikiEvent]:
         events = []
@@ -188,7 +188,9 @@ class PersonReceivedAward(EventFactory):
                         rationale = rational_claim["datavalue"]["value"]["text"]
                         break
 
-            conferrer_name = self._get_conferrer_name(award_claim, award_entity)
+            conferrer_name, conferrer_id = self._get_conferrer_name(
+                award_claim, award_entity
+            )
             include_conferrer = (
                 conferrer_name
                 and location.name
@@ -238,6 +240,20 @@ class PersonReceivedAward(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=award_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "award": {"id": award_id, "name": award_name},
+                        "location": {"id": location.id, "name": location.name},
+                        "conferrer": (
+                            {"id": conferrer_id, "name": conferrer_name}
+                            if conferrer_name
+                            else None
+                        ),
+                        "rationale": rationale,
+                        "award_date": time_definition.model_dump(),
+                        "award_claim": award_claim,
+                    },
                 )
             )
 

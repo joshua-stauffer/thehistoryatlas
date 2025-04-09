@@ -1,7 +1,7 @@
 """Base class for event factories."""
 
 from abc import ABC, abstractmethod
-from typing import List, Type
+from typing import List, Type, Dict, Any
 
 
 from wiki_service.types import Entity, Query
@@ -50,6 +50,16 @@ class EventFactory(ABC):
     def create_wiki_event(self) -> List[WikiEvent]:
         """Create a wiki event from the entity."""
         pass
+
+    def _create_base_context(self) -> Dict[str, Any]:
+        """Create base context dictionary with entity information."""
+        context = {
+            "entity_type": self._entity_type,
+            "entity_id": self._entity_id,
+            "entity_labels": self._entity.labels.get("en"),
+            "entity_descriptions": self._entity.descriptions.get("en"),
+        }
+        return context
 
 
 _event_factories: List[Type[EventFactory]] = []

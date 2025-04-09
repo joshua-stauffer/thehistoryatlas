@@ -223,6 +223,17 @@ class PersonNominatedFor(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=award_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "award": {"id": award_id, "name": award_name},
+                        "location": {"id": location.id, "name": location.name},
+                        "nomination_date": time_definition.model_dump(),
+                        "nomination_claim": nomination_claim,
+                        "conferrer": (
+                            {"name": conferrer_name} if include_conferrer else None
+                        ),
+                    },
                 )
             )
 

@@ -231,6 +231,26 @@ class PersonLeftPosition(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=position_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "position": {"id": position_id, "name": position_name},
+                        "location": (
+                            {"id": location_id, "name": location_name}
+                            if location_id
+                            else None
+                        ),
+                        "replaced_by": (
+                            {
+                                "id": replaced_by_person_id,
+                                "name": replaced_by_person_label,
+                            }
+                            if replaced_by_person_id
+                            else None
+                        ),
+                        "end_date": time_definition.model_dump(),
+                        "position_claim": position_claim,
+                    },
                 )
             )
 

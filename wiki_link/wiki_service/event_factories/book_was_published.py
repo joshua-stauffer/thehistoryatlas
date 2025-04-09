@@ -130,6 +130,18 @@ class BookWasPublished(EventFactory):
                 time_tag=time_tag,
                 entity_id=self._entity_id,
                 secondary_entity_id=None,
+                context={
+                    **self._create_base_context(),
+                    "book_name": book_name,
+                    "authors": [{"id": id, "name": name} for id, name in author_tags],
+                    "publisher": (
+                        {"id": publisher_id, "name": publisher_name}
+                        if publisher_id
+                        else None
+                    ),
+                    "country": {"id": country_id, "name": country_name},
+                    "publication_date": time_definition.model_dump(),
+                },
             )
         ]
 

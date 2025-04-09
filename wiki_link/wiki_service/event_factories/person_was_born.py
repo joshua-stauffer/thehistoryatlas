@@ -32,10 +32,14 @@ class PersonWasBorn(EventFactory):
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
-        return (
-            PLACE_OF_BIRTH in self._entity.claims
-            and DATE_OF_BIRTH in self._entity.claims
-        )
+
+        if DATE_OF_BIRTH not in self._entity.claims:
+            return False
+
+        if PLACE_OF_BIRTH not in self._entity.claims:
+            return False
+
+        return True
 
     def create_wiki_event(self) -> list[WikiEvent]:
         person_name = self._entity.labels["en"].value
@@ -97,6 +101,21 @@ class PersonWasBorn(EventFactory):
                 time_tag=time_tag,
                 entity_id=self._entity_id,
                 secondary_entity_id=None,
+                context={
+                    **self._create_base_context(),
+                    "person_name": person_name,
+                    "birth_place": {
+                        "id": self._place_of_birth_id(),
+                        "name": place_name,
+                    },
+                    "birth_date": time_definition.model_dump(),
+                    "parents": [{"id": id, "name": name} for id, name in parent_tuples],
+                    "birth_claim": next(
+                        claim
+                        for claim in self._entity.claims[DATE_OF_BIRTH]
+                        if claim["mainsnak"]["property"] == DATE_OF_BIRTH
+                    ),
+                },
             )
         ]
 
@@ -119,7 +138,15 @@ class PersonWasBorn(EventFactory):
         else:
             return None
 
-    def _parent_ids(self) -> list[str] | None: ...
+    def _parent_ids(self) -> list[str] | None:
+        parent_ids = []
+        mother_id = self._mother_id()
+        if mother_id:
+            parent_ids.append(mother_id)
+        father_id = self._father_id()
+        if father_id:
+            parent_ids.append(father_id)
+        return parent_ids if parent_ids else None
 
     def _time_definition(self):
         return build_time_definition_from_claim(

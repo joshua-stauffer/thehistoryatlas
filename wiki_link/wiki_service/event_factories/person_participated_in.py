@@ -167,6 +167,14 @@ class PersonParticipatedIn(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=event_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "event": {"id": event_id, "name": event_name},
+                        "location": {"id": location.id, "name": location.name},
+                        "participation_date": time_definition.model_dump(),
+                        "participation_claim": participation_claim,
+                    },
                 )
             )
 

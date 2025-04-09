@@ -91,6 +91,20 @@ class PersonDied(EventFactory):
                 time_tag=time_tag,
                 entity_id=self._entity_id,
                 secondary_entity_id=None,
+                context={
+                    **self._create_base_context(),
+                    "person_name": person_name,
+                    "death_place": {
+                        "id": self._place_of_death_id(),
+                        "name": place_name,
+                    },
+                    "death_date": time_definition.model_dump(),
+                    "death_claim": next(
+                        claim
+                        for claim in self._entity.claims[DATE_OF_DEATH]
+                        if claim["mainsnak"]["property"] == DATE_OF_DEATH
+                    ),
+                },
             )
         ]
 
