@@ -55,6 +55,7 @@ class CreatedEvent(Base):
     primary_entity_id = Column(VARCHAR, nullable=False)
     secondary_entity_id = Column(VARCHAR, nullable=True)
     server_id = Column(UUID(as_uuid=True), nullable=True)
+    event = Column(JSONB, nullable=True)
 
 
 class Config(Base):

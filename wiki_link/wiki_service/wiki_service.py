@@ -486,6 +486,7 @@ class WikiService:
                     errors=None,
                     server_id=result_id,
                     secondary_wiki_id=event.secondary_entity_id,
+                    event=event.model_dump(mode="json"),
                 )
 
         except (RestClientError, Exception) as e:
@@ -495,5 +496,6 @@ class WikiService:
                 factory_label=event_factory.label,
                 factory_version=event_factory.version,
                 errors={"error": str(e)},
+                event=None,
             )
             raise  # Re-raise the error to be handled by the caller

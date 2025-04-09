@@ -989,6 +989,7 @@ class TestBuildEvents:
                 factory_label=mock_event_factory.label,
                 factory_version=mock_event_factory.version,
                 errors={"error": "Test error"},
+                event=None,
             )
             mock_database.remove_item_from_queue.assert_not_called()
 
