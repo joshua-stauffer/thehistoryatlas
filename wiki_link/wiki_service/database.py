@@ -96,23 +96,31 @@ class Database:
             session.commit()
 
     def add_items_to_queue(self, entity_type: EntityType, items: List[WikiDataItem]):
+        if not items:
+            return
+
         with Session(self._engine, future=True) as session:
-            now = str(datetime.utcnow())
-            for item in items:
-                try:
-                    session.add(
-                        WikiQueue(
-                            wiki_id=item.qid,
-                            wiki_url=item.url,
-                            entity_type=entity_type,
-                            time_added=now,
-                        )
-                    )
-                    session.commit()
-                except Exception as e:
-                    # this qid is still in the queue
-                    log.debug(f"Encountered exception: {e}")
-                    session.rollback()
+            now = datetime.now(timezone.utc)
+            # Create WikiQueue objects for bulk insert
+            queue_items = [
+                WikiQueue(
+                    wiki_id=item.qid,
+                    wiki_url=item.url,
+                    entity_type=entity_type,
+                    time_added=now,
+                    errors={},
+                )
+                for item in items
+            ]
+
+            try:
+                # Use bulk_save_objects for efficient bulk insert
+                session.bulk_save_objects(queue_items)
+                session.commit()
+
+            except Exception as e:
+                log.debug(f"Bulk insert failed: {e}")
+                session.rollback()
 
     def get_oldest_item_from_queue(self) -> Optional[Item]:
         with Session(self._engine, future=True) as session:

@@ -127,6 +127,12 @@ def test_add_ids_to_queue(config):
 
 def test_get_oldest_item_from_queue(config):
     db = Database(config=config)
+
+    # Clean up any existing items in the queue
+    with Session(db._engine, future=True) as session:
+        session.query(WikiQueue).delete()
+        session.commit()
+
     id_times = [
         ("Q5", "2023-01-19 22:10:42"),
         ("Q4", "2022-01-19 22:10:42"),
