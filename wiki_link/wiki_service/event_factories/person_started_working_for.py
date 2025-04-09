@@ -68,6 +68,7 @@ class PersonStartedWorkingFor(EventFactory):
 
             # Get role or position if available
             role = None
+            role_id = None
             if "qualifiers" in employer_claim:
                 if SUBJECT_HAS_ROLE in employer_claim["qualifiers"]:
                     role_id = employer_claim["qualifiers"][SUBJECT_HAS_ROLE][0][
@@ -75,10 +76,10 @@ class PersonStartedWorkingFor(EventFactory):
                     ]["value"]["id"]
                     role = self._query.get_label(id=role_id, language="en")
                 elif POSITION_HELD in employer_claim["qualifiers"]:
-                    position_id = employer_claim["qualifiers"][POSITION_HELD][0][
+                    role_id = employer_claim["qualifiers"][POSITION_HELD][0][
                         "datavalue"
                     ]["value"]["id"]
-                    role = self._query.get_label(id=position_id, language="en")
+                    role = self._query.get_label(id=role_id, language="en")
 
             time_definition = build_time_definition_from_claim(
                 time_claim=employer_claim["qualifiers"][START_TIME][0]
@@ -141,6 +142,14 @@ class PersonStartedWorkingFor(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=employer_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "employer": {"id": employer_id, "name": employer_name},
+                        "position": {"id": role_id, "name": role} if role else None,
+                        "start_date": time_definition.model_dump(),
+                        "employment_claim": employer_claim,
+                    },
                 )
             )
 

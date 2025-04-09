@@ -245,6 +245,7 @@ class Database:
         errors: Optional[dict] = None,
         server_id: Optional[UUID] = None,
         secondary_wiki_id: str | None = None,
+        event: Optional[dict] = None,
     ) -> None:
         """
         Create or update a CreatedEvents row.
@@ -258,6 +259,7 @@ class Database:
             errors: Optional dictionary of errors encountered during creation
             server_id: Optional UUID of the server that created the event
             secondary_wiki_id: Optional secondary wiki ID for events involving two entities
+            event: Optional dictionary containing the serialized event data
         """
         with Session(self._engine, future=True) as session:
             # First find or create the factory result
@@ -316,8 +318,8 @@ class Database:
             session.execute(
                 text(
                     """
-                    insert into created_events (id, factory_result_id, primary_entity_id, secondary_entity_id, server_id)
-                    values (:id, :factory_result_id, :primary_entity_id, :secondary_entity_id, :server_id)
+                    insert into created_events (id, factory_result_id, primary_entity_id, secondary_entity_id, server_id, event)
+                    values (:id, :factory_result_id, :primary_entity_id, :secondary_entity_id, :server_id, :event)
                     """
                 ),
                 {
@@ -326,6 +328,7 @@ class Database:
                     "primary_entity_id": wiki_id,
                     "secondary_entity_id": secondary_wiki_id,
                     "server_id": server_id,
+                    "event": json.dumps(event) if event is not None else None,
                 },
             )
 

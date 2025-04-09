@@ -232,6 +232,30 @@ class PersonReceivedAcademicDegree(EventFactory):
                         time_tag=time_tag,
                         entity_id=self._entity_id,
                         secondary_entity_id=degree_id,
+                        context={
+                            **self._create_base_context(),
+                            "person_name": person_name,
+                            "degree": {"id": degree_id, "name": degree_name},
+                            "institution": (
+                                {"id": institution_id, "name": place_name}
+                                if institution_id
+                                else None
+                            ),
+                            "advisors": (
+                                [
+                                    {"id": info.wiki_id, "name": info.name}
+                                    for info in advisor_infos
+                                ]
+                                if advisor_infos
+                                else None
+                            ),
+                            "graduation_date": (
+                                time_definition.model_dump()
+                                if time_definition
+                                else None
+                            ),
+                            "degree_claim": claim,
+                        },
                     )
                 )
 

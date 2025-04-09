@@ -204,6 +204,15 @@ class OrationDelivered(EventFactory):
                 time_tag=time_tag,
                 entity_id=person_id,
                 secondary_entity_id=self._entity_id,
+                context={
+                    **self._create_base_context(),
+                    "person_name": person_name,
+                    "oration": {"id": self._entity_id, "name": oration_name},
+                    "location": {"id": location.id, "name": location.name},
+                    "delivery_date": time_definition.model_dump(),
+                    "is_speaker": SPEAKER in self._entity.claims,
+                    "is_author": AUTHOR in self._entity.claims,
+                },
             )
         )
 

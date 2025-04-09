@@ -150,6 +150,30 @@ class PersonEducationBegan(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=institution_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "institution": {"id": institution_id, "name": place_name},
+                        "academic_majors": (
+                            [
+                                {
+                                    "id": major_qualifier["datavalue"]["value"]["id"],
+                                    "name": self._query.get_label(
+                                        id=major_qualifier["datavalue"]["value"]["id"],
+                                        language="en",
+                                    ),
+                                }
+                                for major_qualifier in claim["qualifiers"].get(
+                                    ACADEMIC_MAJOR, []
+                                )
+                            ]
+                            if "qualifiers" in claim
+                            and ACADEMIC_MAJOR in claim["qualifiers"]
+                            else None
+                        ),
+                        "start_date": time_definition.model_dump(),
+                        "education_claim": claim,
+                    },
                 )
             )
 

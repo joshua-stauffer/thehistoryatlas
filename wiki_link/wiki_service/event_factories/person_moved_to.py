@@ -128,6 +128,13 @@ class PersonMovedTo(EventFactory):
                     time_tag=time_tag,
                     entity_id=self._entity_id,
                     secondary_entity_id=residence_id,
+                    context={
+                        **self._create_base_context(),
+                        "person_name": person_name,
+                        "residence": {"id": residence_id, "name": place_name},
+                        "start_date": time_definition.model_dump(),
+                        "residence_claim": claim,
+                    },
                 )
             )
 

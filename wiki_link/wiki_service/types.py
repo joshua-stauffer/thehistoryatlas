@@ -126,6 +126,7 @@ class WikiEvent(BaseModel):
     time_tag: TimeWikiTag
     entity_id: str  # entity consumed by the event factory
     secondary_entity_id: str | None = None  # property object, if used to create event
+    context: dict
 
 
 class Query(Protocol):

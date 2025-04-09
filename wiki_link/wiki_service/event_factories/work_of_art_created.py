@@ -148,6 +148,20 @@ class WorkOfArtCreated(EventFactory):
                 time_tag=time_tag,
                 entity_id=self._entity_id,
                 secondary_entity_id=None,
+                context={
+                    **self._create_base_context(),
+                    "artwork_name": artwork_name,
+                    "creator": {"id": creator_id, "name": creator_name},
+                    "location": {"id": location_id, "name": place_name},
+                    "commissioners": (
+                        [{"id": id, "name": name} for id, name in commissioner_tuples]
+                        if commissioner_tuples
+                        else None
+                    ),
+                    "creation_date": time_definition.model_dump(),
+                    "is_location_of_creation": LOCATION_OF_CREATION
+                    in self._entity.claims,
+                },
             )
         ]
 
