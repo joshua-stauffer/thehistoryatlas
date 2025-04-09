@@ -52,14 +52,17 @@ class WikiService:
         except WikiDataQueryServiceError as e:
             log.warning(f"WikiData Query Service encountered error and failed: {e}")
             return 0
+        log.info("Filtering people")
         people = [
             person
             for person in people
             if self._database.is_wiki_id_in_queue(wiki_id=person.qid) is False
-            and self._database.wiki_id_exists(wiki_id=person.qid) is False
         ]
+        log.info(f"found {len(people)} people. Now adding items to queue")
         self._database.add_items_to_queue(entity_type="PERSON", items=people)
+        log.info("updating offset")
         self._database.save_last_person_offset(offset=limit + offset)
+        log.info("finished searching for people")
         return len(people)
 
     def search_for_works_of_art(self, num_works: int | None = None):
@@ -213,8 +216,11 @@ class WikiService:
             self.search_for_books,
         ]:
             log.info(f"Starting {query_method.__name__}")
-            while query_method():
-                continue
+            while True:
+                result = query_method()
+                log.info(f"Result: {result}")
+                if not result:
+                    break
             log.info(f"Completed {query_method.__name__}")
 
     def run(self) -> None:
