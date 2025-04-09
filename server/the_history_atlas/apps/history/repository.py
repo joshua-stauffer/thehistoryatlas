@@ -1046,13 +1046,17 @@ class Repository:
                 raise Exception(
                     f"Update_trie was provided with new_string {new_string} but not a new_string_guid."
                 )
-            self._entity_trie.insert(string=new_string, guid=new_string_guid)
+            sub_strings = self._entity_trie.phrase_parts(new_string)
+            for sub_string in sub_strings:
+                self._entity_trie.insert(string=sub_string, guid=new_string_guid)
         if old_string:
             if not new_string_guid:
                 raise Exception(
                     f"Update_trie was provided with old_string {old_string} but not a new_string_guid."
                 )
-            self._entity_trie.delete(string=old_string, guid=old_string_guid)
+            sub_strings = self._entity_trie.phrase_parts(old_string)
+            for sub_string in sub_strings:
+                self._entity_trie.delete(string=sub_string, guid=old_string_guid)
 
     def time_exists(
         self,
