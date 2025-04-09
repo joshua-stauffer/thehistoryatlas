@@ -600,8 +600,7 @@ def test_search_for_people_success(config, people):
     wdqs.find_people.return_value = people
 
     database = Mock(spec=Database)
-    database.is_wiki_id_in_queue.return_value = False
-    database.wiki_id_exists.return_value = False
+    database.get_wiki_ids_in_queue.return_value = set()  # No IDs in queue
     database.get_last_person_offset.return_value = offset
 
     mock_client = Mock(spec=RestClient)
@@ -615,10 +614,12 @@ def test_search_for_people_success(config, people):
 
     wiki_service.search_for_people()
 
+    # Verify the database calls
+    database.get_wiki_ids_in_queue.assert_called_once()
     database.add_items_to_queue.assert_called_once_with(
         entity_type="PERSON", items=list(people)
     )
-    database.save_last_person_offset.assert_called_once_with(offset=offset + limit)
+    database.save_last_person_offset.assert_called_once_with(offset=limit + offset)
 
 
 def test_search_for_people_ignores_ids_that_already_exist(config, people):
@@ -639,8 +640,8 @@ def test_search_for_people_ignores_ids_that_already_exist(config, people):
     wdqs.find_people.return_value = people
 
     database = Mock(spec=Database)
-    database.is_wiki_id_in_queue.return_value = False
-    database.wiki_id_exists.return_value = True
+    # Return all IDs as existing in queue
+    database.get_wiki_ids_in_queue.return_value = {person.qid for person in people}
     database.get_last_person_offset.return_value = offset
 
     mock_client = Mock(spec=RestClient)
@@ -654,8 +655,10 @@ def test_search_for_people_ignores_ids_that_already_exist(config, people):
 
     wiki_service.search_for_people()
 
-    database.add_items_to_queue.assert_called_once_with(entity_type="PERSON", items=[])
-    database.save_last_person_offset.assert_called_once_with(offset=offset + limit)
+    # Verify the database calls
+    database.get_wiki_ids_in_queue.assert_called_once()
+    database.add_items_to_queue.assert_not_called()
+    database.save_last_person_offset.assert_called_once_with(offset=limit + offset)
 
 
 def test_search_for_people_ignores_id_already_in_queue(config, people):
@@ -676,8 +679,8 @@ def test_search_for_people_ignores_id_already_in_queue(config, people):
     wdqs.find_people.return_value = people
 
     database = Mock(spec=Database)
-    database.is_wiki_id_in_queue.return_value = True
-    database.wiki_id_exists.return_value = False
+    # Return all IDs as existing in queue
+    database.get_wiki_ids_in_queue.return_value = {person.qid for person in people}
     database.get_last_person_offset.return_value = offset
 
     mock_client = Mock(spec=RestClient)
@@ -691,8 +694,10 @@ def test_search_for_people_ignores_id_already_in_queue(config, people):
 
     wiki_service.search_for_people()
 
-    database.add_items_to_queue.assert_called_once_with(entity_type="PERSON", items=[])
-    database.save_last_person_offset.assert_called_once_with(offset=offset + limit)
+    # Verify the database calls
+    database.get_wiki_ids_in_queue.assert_called_once()
+    database.add_items_to_queue.assert_not_called()
+    database.save_last_person_offset.assert_called_once_with(offset=limit + offset)
 
 
 def test_search_for_people_handles_wiki_service_error(config):
