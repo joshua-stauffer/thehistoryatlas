@@ -622,10 +622,12 @@ def test_get_wiki_ids_in_queue_some_matches(config):
 
     # Add some items to the queue
     with Session(db._engine, future=True) as session:
-        session.add_all([
-            WikiQueue(wiki_id="Q1", entity_type=entity_type, time_added=time_added),
-            WikiQueue(wiki_id="Q3", entity_type=entity_type, time_added=time_added),
-        ])
+        session.add_all(
+            [
+                WikiQueue(wiki_id="Q1", entity_type=entity_type, time_added=time_added),
+                WikiQueue(wiki_id="Q3", entity_type=entity_type, time_added=time_added),
+            ]
+        )
         session.commit()
 
     # Test with a mix of existing and non-existing IDs
@@ -647,10 +649,12 @@ def test_get_wiki_ids_in_queue_all_matches(config):
     # Add items to the queue
     wiki_ids = ["Q1", "Q2", "Q3"]
     with Session(db._engine, future=True) as session:
-        session.add_all([
-            WikiQueue(wiki_id=id, entity_type=entity_type, time_added=time_added)
-            for id in wiki_ids
-        ])
+        session.add_all(
+            [
+                WikiQueue(wiki_id=id, entity_type=entity_type, time_added=time_added)
+                for id in wiki_ids
+            ]
+        )
         session.commit()
 
     # Test that all IDs are found
