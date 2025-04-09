@@ -37,6 +37,7 @@ def main(
     wikidata_id: Optional[str] = None,
     entity_type: Optional[str] = None,
     run: bool | None = False,
+    build_all: bool = False,
 ) -> None:
     """
     Main entry point for the WikiService application.
@@ -51,7 +52,9 @@ def main(
     """
     service = create_wiki_service()
 
-    if wikidata_id:
+    if build_all:
+        service.build_all()
+    elif wikidata_id:
         # Process a single WikiData item
         if not entity_type:
             entity_type = "PERSON"
@@ -116,6 +119,12 @@ if __name__ == "__main__":
         help="Whether to build events.",
         required=False,
     )
+    parser.add_argument(
+        "--build-all",
+        action="store_true",
+        help="Fill queue with all available entities.",
+        required=False,
+    )
 
     args = parser.parse_args()
     main(
@@ -126,4 +135,5 @@ if __name__ == "__main__":
         wikidata_id=args.wikidata_id,
         entity_type=args.entity_type,
         run=args.run,
+        build_all=args.build_all,
     )

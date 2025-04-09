@@ -205,6 +205,18 @@ class WikiService:
         if num_orations is not None:
             self.search_for_orations(num_orations)
 
+    def build_all(self):
+        for query_method in [
+            self.search_for_people,
+            self.search_for_orations,
+            self.search_for_works_of_art,
+            self.search_for_books,
+        ]:
+            log.info(f"Starting {query_method.__name__}")
+            while query_method():
+                continue
+            log.info(f"Completed {query_method.__name__}")
+
     def run(self) -> None:
         processed = 0
         while True:
