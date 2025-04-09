@@ -46,7 +46,19 @@ class Trie:
         """Initializes the data structure"""
 
         for name, guid in entity_tuples:
-            self.insert(name, guid)
+            sub_strings = self.phrase_parts(name)
+            for sub_string in sub_strings:
+                self.insert(sub_string, guid)
+
+    def phrase_parts(self, phrase: str) -> list[str]:
+        # individual words
+        result = []
+        parts = phrase.split(" ")
+        result.extend(parts)
+        # sub phrases
+        for i, _ in enumerate(parts):
+            result.append(" ".join(parts[i:]))
+        return result
 
     def insert(self, string: str, guid: str):
         log.debug(f"trie: add string {string}")
