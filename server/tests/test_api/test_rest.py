@@ -414,7 +414,7 @@ class TestCreateEvent:
         )
         assert response.status_code == 200, response.text
 
-        history_json = client.get("/api/history")
+        history_json = client.get("/history")
         assert history_json.status_code == 200, history_json.text
         story = Story.model_validate(history_json.json())
 
@@ -441,7 +441,7 @@ class TestCreateEvent:
         )
         assert response.status_code == 200, response.text
 
-        history_json = client.get("/api/history")
+        history_json = client.get("/history")
         assert history_json.status_code == 200, history_json.text
         story = Story.model_validate(history_json.json())
 
@@ -472,7 +472,7 @@ class TestCreateEvent:
         )
         assert response.status_code == 200, response.text
 
-        history_json = client.get("/api/history")
+        history_json = client.get("/history")
         assert history_json.status_code == 200, history_json.text
         story = Story.model_validate(history_json.json())
 
@@ -518,7 +518,7 @@ def test_create_stories_order(
     ]
 
     # act
-    response = client.get("/api/history")
+    response = client.get("/history")
     assert response.status_code == 200
     story = Story.model_validate(response.json())
 
@@ -635,7 +635,7 @@ class TestGetHistory:
         ]
 
         # act
-        response = client.get("/api/history")
+        response = client.get("/history")
 
         # assert
         assert response.status_code == 200
@@ -675,7 +675,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id,
                 eventId=start_event.summary_id,
@@ -721,7 +721,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id, eventId=start_event.summary_id, direction="next"
             ),
@@ -808,7 +808,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id, eventId=start_event.summary_id, direction="next"
             ),
@@ -861,7 +861,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id, eventId=start_event.summary_id, direction="prev"
             ),
@@ -949,7 +949,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id, eventId=start_event.summary_id, direction="prev"
             ),
@@ -993,7 +993,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id, eventId=events[0].id, direction=direction
             ),
@@ -1023,7 +1023,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=person.id,
                 eventId=events[0].id,
@@ -1056,7 +1056,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=uuid4(),  # random ID
                 eventId=uuid4(),
@@ -1087,7 +1087,7 @@ class TestGetHistory:
 
         # act
         response = client.get(
-            "/api/history",
+            "/history",
             params=QueryParams(
                 storyId=events[0].id,
                 eventId=uuid4(),
@@ -1308,7 +1308,7 @@ class TestStorySearch:
     ) -> None:
         """Test that an empty search returns an empty result list."""
         response = client.get(
-            "/api/stories/search",
+            "/stories/search",
             params={"query": ""},
         )
         assert response.status_code == 200
@@ -1321,7 +1321,7 @@ class TestStorySearch:
     ) -> None:
         """Test that a search with no matches returns an empty result list."""
         response = client.get(
-            "/api/stories/search",
+            "/stories/search",
             params={"query": "xyzabc123nonexistent"},
         )
         assert response.status_code == 200
@@ -1345,7 +1345,7 @@ class TestStorySearch:
 
         # Search for the person
         response = client.get(
-            "/api/stories/search",
+            "/stories/search",
             params={"query": "Test Person"},
         )
         assert response.status_code == 200
@@ -1377,7 +1377,7 @@ class TestStorySearch:
 
         # Search with partial name
         response = client.get(
-            "/api/stories/search",
+            "/stories/search",
             params={"query": "Humbol"},
         )
         assert response.status_code == 200
