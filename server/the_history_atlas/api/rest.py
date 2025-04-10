@@ -181,7 +181,7 @@ def register_rest_endpoints(
     AuthenticatedUser = Annotated[GetUserResponsePayload, Depends(auth_required)]
 
     # API Endpoints
-    @fastapi_app.get("/api/history", response_model=Story)
+    @fastapi_app.get("/history", response_model=Story)
     def get_history(
         apps: Apps,
         eventId: Annotated[UUID, Query()] | None = None,
@@ -240,7 +240,7 @@ def register_rest_endpoints(
     ) -> TimeExistsResponse:
         return check_time_exists_handler(apps=apps, request=request)
 
-    @fastapi_app.get("/api/stories/search", response_model=StorySearchResponse)
+    @fastapi_app.get("/stories/search", response_model=StorySearchResponse)
     def search_stories(
         query: Annotated[str, Query()],
         apps: Apps,
