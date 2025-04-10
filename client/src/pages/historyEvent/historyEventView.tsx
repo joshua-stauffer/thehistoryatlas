@@ -108,11 +108,13 @@ export const HistoryEventView = () => {
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.name
               }
+              onChange={(_, value) => {
+                if (value && typeof value !== 'string') {
+                  navigate(`/stories/${value.id}`);
+                }
+              }}
               renderOption={(props, option) => (
-                <li
-                  {...props}
-                  onClick={() => navigate(`/stories/${option.id}`)}
-                >
+                <li {...props}>
                   {option.name}
                 </li>
               )}
