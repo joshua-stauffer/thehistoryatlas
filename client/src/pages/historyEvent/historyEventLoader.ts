@@ -1,4 +1,5 @@
 import { HistoryEvent } from "../../graphql/events";
+import { API_BASE_URL } from '../../config';
 
 export interface HistoryEventData {
   events: HistoryEvent[];
@@ -23,8 +24,7 @@ export const historyEventLoader = async ({
     if (direction) queryParams.append("direction", direction);
 
     const response = await fetch(
-      // `http://localhost:8000/api/history?${queryParams.toString()}`,
-      `https://the-history-atlas-server-4ubzi.ondigitalocean.app/api/history?${queryParams.toString()}`
+      `${API_BASE_URL}/history?${queryParams.toString()}`
     );
     if (!response.ok) {
       throw new Error("Failed to fetch history events");

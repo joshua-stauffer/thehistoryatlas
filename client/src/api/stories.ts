@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../config';
+
 export interface StorySearchResult {
   name: string;
   id: string;
@@ -9,7 +11,7 @@ export interface StorySearchResponse {
 
 const searchStories = async (query: string): Promise<StorySearchResponse> => {
   const response = await fetch(
-    `http://localhost:8000/api/stories/search?query=${encodeURIComponent(query)}`,
+    `${API_BASE_URL}/stories/search?query=${encodeURIComponent(query)}`,
   );
   if (!response.ok) {
     throw new Error("Failed to search stories");
