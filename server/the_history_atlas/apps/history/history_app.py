@@ -51,7 +51,8 @@ class HistoryApp:
             entity_tuples=repository.get_all_source_titles_and_authors()
         )
         self._entity_trie = entity_trie.build(
-            entity_tuples=repository.get_all_entity_names()
+            entity_tuples=[]
+            # entity_tuples=repository.get_all_entity_names()
         )
 
     def create_person(self, person: PersonInput) -> Person:

@@ -22,7 +22,7 @@ def mock_session():
 @pytest.fixture
 def config():
     config = WikiServiceConfig()
-    config.server_base_url = "test.example.com"
+    config.server_base_url = "http://test.example.com"
     config.username = "test_user"
     config.password = "test_pass"
     return config

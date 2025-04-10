@@ -52,15 +52,24 @@ class WikiService:
         except WikiDataQueryServiceError as e:
             log.warning(f"WikiData Query Service encountered error and failed: {e}")
             return 0
-        people = [
-            person
-            for person in people
-            if self._database.is_wiki_id_in_queue(wiki_id=person.qid) is False
-            and self._database.wiki_id_exists(wiki_id=person.qid) is False
+        log.info("Filtering people")
+        # Get list of wiki IDs to check
+        wiki_ids = [person.qid for person in people]
+        # Get set of wiki IDs that are already in queue
+        existing_ids = self._database.get_wiki_ids_in_queue(wiki_ids=wiki_ids)
+        # Filter out people that are already in queue
+        filtered_people = [
+            person for person in people if person.qid not in existing_ids
         ]
-        self._database.add_items_to_queue(entity_type="PERSON", items=people)
+        log.info(f"found {len(filtered_people)} people. Now adding items to queue")
+        if filtered_people:
+            self._database.add_items_to_queue(
+                entity_type="PERSON", items=filtered_people
+            )
+        log.info("updating offset")
         self._database.save_last_person_offset(offset=limit + offset)
-        return len(people)
+        log.info("finished searching for people")
+        return len(filtered_people)
 
     def search_for_works_of_art(self, num_works: int | None = None):
         """
@@ -89,12 +98,12 @@ class WikiService:
         # Convert set to list for filtering
         works_list = list(works)
         log.info(f"Works list: {works_list}")
-        filtered_works = [
-            work
-            for work in works_list
-            if not self._database.is_wiki_id_in_queue(wiki_id=work.qid)
-            and not self._database.wiki_id_exists(wiki_id=work.qid)
-        ]
+        # Get list of wiki IDs to check
+        wiki_ids = [work.qid for work in works_list]
+        # Get set of wiki IDs that are already in queue
+        existing_ids = self._database.get_wiki_ids_in_queue(wiki_ids=wiki_ids)
+        # Filter out works that are already in queue
+        filtered_works = [work for work in works_list if work.qid not in existing_ids]
         log.info(f"Filtered works: {filtered_works}")
 
         if filtered_works:
@@ -105,6 +114,7 @@ class WikiService:
             return len(filtered_works)
 
         log.info("No new works of art to add to queue")
+        self._database.save_last_works_of_art_offset(offset=limit + offset)
         return 0
 
     def search_for_books(self, num_books: int | None = None):
@@ -134,12 +144,12 @@ class WikiService:
         # Convert set to list for filtering
         books_list = list(books)
         log.info(f"Books list: {books_list}")
-        filtered_books = [
-            book
-            for book in books_list
-            if not self._database.is_wiki_id_in_queue(wiki_id=book.qid)
-            and not self._database.wiki_id_exists(wiki_id=book.qid)
-        ]
+        # Get list of wiki IDs to check
+        wiki_ids = [book.qid for book in books_list]
+        # Get set of wiki IDs that are already in queue
+        existing_ids = self._database.get_wiki_ids_in_queue(wiki_ids=wiki_ids)
+        # Filter out books that are already in queue
+        filtered_books = [book for book in books_list if book.qid not in existing_ids]
         log.info(f"Filtered books: {filtered_books}")
 
         if filtered_books:
@@ -148,6 +158,7 @@ class WikiService:
             return len(filtered_books)
 
         log.info("No new books to add to queue")
+        self._database.save_last_books_offset(offset=limit + offset)
         return 0
 
     def search_for_orations(self, num_orations: int | None = None) -> int:
@@ -170,11 +181,13 @@ class WikiService:
         # Convert set to list for filtering
         orations_list = list(orations)
         log.info(f"orations list: {orations_list}")
+        # Get list of wiki IDs to check
+        wiki_ids = [oration.qid for oration in orations_list]
+        # Get set of wiki IDs that are already in queue
+        existing_ids = self._database.get_wiki_ids_in_queue(wiki_ids=wiki_ids)
+        # Filter out orations that are already in queue
         filtered_orations = [
-            book
-            for book in orations_list
-            if not self._database.is_wiki_id_in_queue(wiki_id=book.qid)
-            and not self._database.wiki_id_exists(wiki_id=book.qid)
+            oration for oration in orations_list if oration.qid not in existing_ids
         ]
         log.info(f"Filtered orations: {filtered_orations}")
 
@@ -185,7 +198,8 @@ class WikiService:
             self._database.save_last_orations_offset(offset=limit + offset)
             return len(filtered_orations)
 
-        log.info("No new books to add to queue")
+        log.info("No new orations to add to queue")
+        self._database.save_last_orations_offset(offset=limit + offset)
         return 0
 
     def build(
@@ -213,8 +227,11 @@ class WikiService:
             self.search_for_books,
         ]:
             log.info(f"Starting {query_method.__name__}")
-            while query_method():
-                continue
+            while True:
+                result = query_method()
+                log.info(f"Result: {result}")
+                if not result:
+                    break
             log.info(f"Completed {query_method.__name__}")
 
     def run(self) -> None:
@@ -252,10 +269,6 @@ class WikiService:
             raise WikiServiceError(
                 f"Invalid entity type: {entity_type}. Must be one of: PERSON, WORK_OF_ART, BOOK, ORATION"
             )
-
-        # Check if item already exists
-        if self._database.wiki_id_exists(wiki_id=wiki_id):
-            log.info(f"WikiData item {wiki_id} already exists in the database")
 
         # Create an Item object for processing
         item = Item(wiki_id=wiki_id, entity_type=entity_type)

@@ -13,7 +13,7 @@ class RestClientError(Exception):
 
 class RestClient:
     def __init__(self, config: WikiServiceConfig):
-        self._base_url = f"http://{config.server_base_url}"
+        self._base_url = config.server_base_url
         self._session = requests.Session()
         # Get auth token
         response = self._session.post(
