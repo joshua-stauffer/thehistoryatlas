@@ -56,12 +56,13 @@ export const dayMap = new Map([
 
 export const renderDateTime = (date: CalendarDate) => {
   const isBCE = date.datetime.startsWith("-");
-  const match = date.datetime.match(/^[+-](\d{4})-(\d{2})-(\d{2})/);
+  // Try to match both formats: +YYYY-MM-DDT00:00:00Z and YYYY-MM-DD
+  const match = date.datetime.match(/^[+-]?(\d{4})-(\d{2})-(\d{2})/);
   if (!match) {
     throw new Error("Invalid date format");
   }
   const [_, yearStr, monthStr, dayStr] = match;
-  const year = parseInt(yearStr);
+  const year = parseInt(yearStr) * (isBCE ? -1 : 1);
   const month = parseInt(monthStr) - 1;
   const day = parseInt(dayStr);
   
@@ -70,12 +71,10 @@ export const renderDateTime = (date: CalendarDate) => {
     return renderWithYear(dateObject, 0, date.precision);
   }
   
-  const dateObject = new Date(Math.abs(year), month, day);
-  if (isBCE) {
-    dateObject.setFullYear(-Math.abs(year));
-  }
+  // Create date in UTC to avoid timezone issues
+  const dateObject = new Date(Date.UTC(Math.abs(year), month, day));
   
-  return renderWithYear(dateObject, dateObject.getFullYear(), date.precision);
+  return renderWithYear(dateObject, year, date.precision);
 };
 
 const renderWithYear = (date: Date, year: number, precision: number) => {
@@ -87,19 +86,19 @@ const renderWithYear = (date: Date, year: number, precision: number) => {
       return renderDecade(date, isBCE);
     case 9:
       if (year === 0) return "0";
-      return renderYear(date, isBCE);
+      return renderYear(date, isBCE, year);
     case 10:
-      return renderMonth(date, isBCE);
+      return renderMonth(date, isBCE, year);
     case 11:
-      return renderDay(date, isBCE);
+      return renderDay(date, isBCE, year);
     default:
       if (year === 0) return "0";
-      return renderYear(date, isBCE);
+      return renderYear(date, isBCE, year);
   }
 };
 
 export const renderCentury = (date: Date, isBCE: boolean) => {
-  const year = date.getFullYear();
+  const year = date.getUTCFullYear();
   const century = Math.floor(Math.abs(year) / 100) * 100;
   if (!isBCE) {
     return `${century}s`;
@@ -109,7 +108,7 @@ export const renderCentury = (date: Date, isBCE: boolean) => {
 };
 
 export const renderDecade = (date: Date, isBCE: boolean) => {
-  const year = date.getFullYear();
+  const year = date.getUTCFullYear();
   const decade = Math.floor(Math.abs(year) / 10) * 10;
   if (!isBCE) {
     return `${decade}s`;
@@ -118,8 +117,8 @@ export const renderDecade = (date: Date, isBCE: boolean) => {
   }
 };
 
-export const renderYear = (date: Date, isBCE: boolean) => {
-  const year = Math.abs(date.getFullYear());
+export const renderYear = (date: Date, isBCE: boolean, originalYear: number) => {
+  const year = Math.abs(originalYear);
   if (!isBCE) {
     return `${year}`;
   } else {
@@ -127,18 +126,16 @@ export const renderYear = (date: Date, isBCE: boolean) => {
   }
 };
 
-export const renderMonth = (date: Date, isBCE: boolean) => {
-  const year = isBCE ? -Math.abs(date.getFullYear()) : date.getFullYear();
-  const month = monthNameByNumber.get(date.getMonth());
-  return `${month} of ${year}`;
+export const renderMonth = (date: Date, isBCE: boolean, originalYear: number) => {
+  const month = monthNameByNumber.get(date.getUTCMonth());
+  return `${month} of ${originalYear}`;
 };
 
-export const renderDay = (date: Date, isBCE: boolean) => {
-  const year = isBCE ? -Math.abs(date.getFullYear()) : date.getFullYear();
-  const month = monthNameByNumber.get(date.getMonth());
-  const day = formatOrdinals(date.getDate());
-  const weekday = dayMap.get(date.getDay());
-  return `${weekday} ${month} ${day}, ${year}`;
+export const renderDay = (date: Date, isBCE: boolean, originalYear: number) => {
+  const month = monthNameByNumber.get(date.getUTCMonth());
+  const day = formatOrdinals(date.getUTCDate());
+  const weekday = dayMap.get(date.getUTCDay());
+  return `${weekday} ${month} ${day}, ${originalYear}`;
 };
 
 export const MIN_YEAR = -5000;
@@ -155,7 +152,7 @@ export const buildYearMap = () => {
   for (const year of years) {
     const century = `${year}`.padStart(4, "0");
     const date = new Date(year, 1, 1);
-    const dateString = renderYear(date, false);
+    const dateString = renderYear(date, false, year);
     optionMap.set(dateString, date);
   }
   return optionMap;
