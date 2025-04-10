@@ -1041,7 +1041,6 @@ class Repository:
         if new_string is provided, new_string_guid is required as well.
         if old_string is provided, old_string_guid is required as well.
         """
-        return  # temporarily disable entity trie
         if new_string:
             if not new_string_guid:
                 raise Exception(
