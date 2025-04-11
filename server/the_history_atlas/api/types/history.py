@@ -83,3 +83,12 @@ class StorySearchResponse(BaseModel):
     """Response model for story search results."""
 
     results: List[StorySearchResult]
+
+
+class MapStory(BaseModel):
+    eventId: UUID
+    storyId: UUID
+    title: str
+    description: str | None = None
+    point: Point
+    date: CalendarDate
