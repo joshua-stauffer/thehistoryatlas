@@ -1,6 +1,7 @@
 import { Skeleton } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { mapTiles } from "../map/mapTiles";
+import {CalendarDate} from "../../graphql/events";
 
 type Size = "SM" | "MD" | "LG";
 
@@ -32,10 +33,12 @@ export interface SingleEntityMapProps {
   zoom: number;
   size: Size;
   title: string;
+  description: string | undefined;
+  currentDate: CalendarDate;
 }
 
 export const SingleEntityMap = (props: SingleEntityMapProps) => {
-  const { size, latitude, longitude, coords, title, zoom } = props;
+  const { size, latitude, longitude, coords, title, zoom, description } = props;
   let lat: number, long: number;
   let markers;
   if (!latitude || !longitude) {
@@ -43,8 +46,8 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
       return <Skeleton></Skeleton>;
     }
     markers = coords.map(({ latitude, longitude }) => (
-      <Marker position={[latitude, longitude]}>
-        <Popup>{title}</Popup>
+      <Marker title={"foo"} position={[latitude, longitude]}>
+        <Popup >{title} - {description}</Popup>
       </Marker>
     ));
     // only considering the first place
@@ -90,5 +93,7 @@ const MapInsides = (props: MapProps) => {
     animate: false,
     duration: 0.5,
   });
+  const bounds = map.getBounds()
+  console.log({bounds})
   return null;
 };
