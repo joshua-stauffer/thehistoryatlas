@@ -89,6 +89,11 @@ class Point(BaseModel):
     name: str
 
 
+class LatLong(BaseModel):
+    latitude: float
+    longitude: float
+
+
 class Source(BaseModel):
     id: UUID
     text: str
@@ -136,3 +141,12 @@ class Story(BaseModel):
     name: str
     description: str | None = None
     events: list[HistoryEvent]
+
+
+class MapStory(BaseModel):
+    event_id: UUID
+    story_id: UUID
+    title: str
+    description: str | None = None
+    point: LatLong
+    date: CalendarDate
