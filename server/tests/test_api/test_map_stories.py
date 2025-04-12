@@ -185,12 +185,15 @@ def setup_test_data(db_session: Session):
         },
     )
 
+    # Commit the transaction
+    db_session.commit()
+
     return {
         "summary_id": summary_id,
-        "story_id": story_id,
+        "story_id": person_id,
         "latitude": 40.7128,
         "longitude": -74.0060,
-        "datetime": "2024-01-01T00:00:00Z",
+        "datetime": "+2024-01-01T00:00:00Z",
     }
 
 
