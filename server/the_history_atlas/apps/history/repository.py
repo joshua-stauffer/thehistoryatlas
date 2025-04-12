@@ -1115,10 +1115,8 @@ class Repository:
             A list of MapStory objects containing story and event information
         """
         with Session(self._engine, future=True) as session:
-            # Extract year from calendar_date to create time window
-            target_year = datetime.strptime(
-                calendar_date.datetime, "%Y-%m-%dT%H:%M:%SZ"
-            ).year
+            # Extract year from calendar_date while preserving +/- prefix for BCE/CE
+            target_year = calendar_date.datetime[0] + calendar_date.datetime[1:5]  # e.g. "+1685" or "-0044"
             year_start = f"{target_year}-01-01T00:00:00Z"
             year_end = f"{target_year}-12-31T23:59:59Z"
 
