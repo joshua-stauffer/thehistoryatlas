@@ -1116,9 +1116,19 @@ class Repository:
         """
         with Session(self._engine, future=True) as session:
             # Extract year from calendar_date while preserving +/- prefix for BCE/CE
-            target_year = calendar_date.datetime[0] + calendar_date.datetime[1:5]  # e.g. "+1685" or "-0044"
-            year_start = f"{target_year}-01-01T00:00:00Z"
-            year_end = f"{target_year}-12-31T23:59:59Z"
+            if calendar_date.datetime.startswith(("+", "-")):
+                year_start_index = 1
+                year_end_index = 5
+                start_char = calendar_date.datetime[0]
+            else:
+                year_start_index = 0
+                year_end_index = 4
+                start_char = "+"  # assume AD
+            target_year = calendar_date.datetime[
+                year_start_index:year_end_index
+            ]  # e.g. "2024" or "0044"
+            year_start = f"{start_char}{target_year}-01-01T00:00:00Z"
+            year_end = f"{start_char}{target_year}-12-31T23:59:59Z"
 
             # Query for stories that have both a person and a place within the bounds
             # and a time within the year
