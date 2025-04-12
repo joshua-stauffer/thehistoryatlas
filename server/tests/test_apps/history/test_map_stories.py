@@ -126,7 +126,7 @@ def setup_test_data(history_db):
             ),
             {
                 "id": time_id,
-                "datetime": "2000-01-01T00:00:00Z",
+                "datetime": "+2000-01-01T00:00:00Z",
                 "calendar_model": "gregorian",
                 "precision": 9,  # year precision
             },
@@ -207,9 +207,9 @@ def test_get_people_stories_by_bounds_and_time(history_db, setup_test_data):
 
     # Create test calendar date
     calendar_date = CalendarDate(
-        datetime="2000-01-01T00:00:00Z",
+        datetime="+2000-01-01T00:00:00Z",
         calendar="gregorian",
-        precision=9,  # year precision
+        precision=11,
     )
 
     # Get stories
@@ -232,7 +232,7 @@ def test_get_people_stories_by_bounds_and_time_no_results(history_db, setup_test
     min_bound = LatLong(latitude=0.0, longitude=0.0)
     max_bound = LatLong(latitude=1.0, longitude=1.0)
     calendar_date = CalendarDate(
-        datetime="2023-06-01T00:00:00Z",
+        datetime="+2023-06-01T00:00:00Z",
         calendar="gregorian",
         precision=11,
     )
@@ -252,7 +252,7 @@ def test_get_people_stories_by_bounds_and_time_wrong_year(history_db, setup_test
     min_bound = LatLong(latitude=39.0, longitude=-75.0)
     max_bound = LatLong(latitude=41.0, longitude=-73.0)
     calendar_date = CalendarDate(
-        datetime="2024-06-01T00:00:00Z",
+        datetime="+2024-06-01T00:00:00Z",
         calendar="gregorian",
         precision=11,
     )

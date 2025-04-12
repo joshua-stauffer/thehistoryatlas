@@ -161,7 +161,7 @@ def setup_test_data(db_session: Session):
         ),
         {
             "id": time_id,
-            "datetime": "2024-01-01T00:00:00Z",
+            "datetime": "+2024-01-01T00:00:00Z",
             "calendar_model": "gregorian",
             "precision": 11,
         },
