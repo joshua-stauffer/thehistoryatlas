@@ -29,12 +29,15 @@ class WikiQueue(Base):
 
     wiki_id = Column(VARCHAR, primary_key=True)
     wiki_url = Column(VARCHAR)
-    entity_type = Column(VARCHAR, nullable=False)
+    entity_type = Column(VARCHAR, nullable=False, index=True)
     errors = Column(JSONB, default={})
     time_added = Column(TIMESTAMP(timezone=True), nullable=False)
 
-    # Index for fast retrieval of oldest items
-    __table_args__ = (Index("idx_wiki_queue_time_added", "time_added"),)
+    # Indices for faster operations
+    __table_args__ = (
+        Index("idx_wiki_queue_time_added", "time_added"),
+        Index("idx_wiki_queue_errors", errors, postgresql_using="gin"),
+    )
 
 
 class FactoryResult(Base):
@@ -52,6 +55,12 @@ class FactoryResult(Base):
     __table_args__ = (
         Index("idx_factory_results_wiki_id_factory_label", "wiki_id", "factory_label"),
         Index("idx_factory_results_factory_label", "factory_label"),
+        Index(
+            "idx_factory_results_wiki_id_factory_label_version",
+            "wiki_id",
+            "factory_label",
+            "factory_version",
+        ),
     )
 
 
