@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP
+from sqlalchemy import Column, String, TIMESTAMP, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table, UniqueConstraint
@@ -19,6 +19,9 @@ class Summary(Base):
 
     # each summary may have multiple citations
     citations = relationship("Citation", back_populates="summary")
+
+    # Add hash index for faster text lookups
+    __table_args__ = (Index("idx_summaries_text", text, postgresql_using="hash"),)
 
 
 class StoryName(Base):
@@ -46,6 +49,9 @@ class Citation(Base):
     wikidata_item_id = Column(VARCHAR)
     wikidata_item_title = Column(VARCHAR)
     wikidata_item_url = Column(VARCHAR)
+
+    # Add index for faster citation lookup by summary
+    __table_args__ = (Index("idx_citations_summary_id", summary_id),)
 
 
 class Source(Base):
@@ -80,9 +86,14 @@ class TagInstance(Base):
     tag = relationship("Tag", back_populates="tag_instances")
 
     story_order = Column(INTEGER, nullable=False)
-    __table_args__ = (UniqueConstraint("story_order", "tag_id", name="uq_story_order"),)
+    __table_args__ = (
+        UniqueConstraint("story_order", "tag_id", name="uq_story_order"),
+        # Add index for faster story order operations
+        Index("idx_tag_instances_tag_id_story_order", tag_id, story_order),
+    )
 
 
+# Add index for tag_names for faster lookups
 tag_names = Table(
     "tag_names",
     Base.metadata,
@@ -97,6 +108,7 @@ tag_names = Table(
         index=True,
     ),
     UniqueConstraint("tag_id", "name_id"),
+    Index("idx_tag_names_composite", "tag_id", "name_id"),
 )
 
 
@@ -112,6 +124,14 @@ class Tag(Base):
     names = relationship("Name", secondary=tag_names, back_populates="tags")
 
     __mapper_args__ = {"polymorphic_identity": "TAG", "polymorphic_on": type}
+    __table_args__ = (
+        # Add index for faster lookup of tags by wikidata_id
+        Index(
+            "idx_tags_wikidata_id",
+            wikidata_id,
+            postgresql_where=wikidata_id.isnot(None),
+        ),
+    )
 
 
 class Time(Tag):
@@ -124,6 +144,12 @@ class Time(Tag):
     precision = Column(INTEGER)
 
     __mapper_args__ = {"polymorphic_identity": "TIME"}
+    __table_args__ = (
+        # Add composite index for faster time lookups
+        Index("idx_times_lookup", datetime, calendar_model, precision),
+        # Add index for faster time-based story lookups
+        Index("idx_times_datetime", datetime),
+    )
 
 
 class Person(Tag):
@@ -145,6 +171,15 @@ class Place(Tag):
     geonames_id = Column(INTEGER)
 
     __mapper_args__ = {"polymorphic_identity": "PLACE"}
+    __table_args__ = (
+        # Add index for faster spatial searches
+        Index(
+            "idx_places_coordinates",
+            latitude,
+            longitude,
+            postgresql_where=(latitude.isnot(None) & longitude.isnot(None)),
+        ),
+    )
 
 
 class Name(Base):
