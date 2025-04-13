@@ -130,6 +130,10 @@ class Database:
 
     @trace_time()
     def get_oldest_item_from_queue(self) -> Optional[Item]:
+        """
+        Get the oldest item from the queue, ordered by time_added.
+        This query is optimized with an index on wiki_queue.time_added.
+        """
         with Session(self._engine, future=True) as session:
             row = (
                 session.query(WikiQueue)

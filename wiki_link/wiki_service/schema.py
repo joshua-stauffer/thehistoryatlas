@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER, TIMESTAMP
 
@@ -32,6 +32,9 @@ class WikiQueue(Base):
     entity_type = Column(VARCHAR, nullable=False)
     errors = Column(JSONB, default={})
     time_added = Column(TIMESTAMP(timezone=True), nullable=False)
+
+    # Index for fast retrieval of oldest items
+    __table_args__ = (Index("idx_wiki_queue_time_added", "time_added"),)
 
 
 class FactoryResult(Base):
