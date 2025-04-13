@@ -5,6 +5,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 from wiki_service.config import WikiServiceConfig
+from wiki_service.tracing import trace_time
 
 
 class RestClientError(Exception):
@@ -14,11 +15,17 @@ class RestClientError(Exception):
 class RestClient:
     def __init__(self, config: WikiServiceConfig):
         self._base_url = config.server_base_url
+        self._config = config
         self._session = requests.Session()
         # Get auth token
+        self._authenticate()
+
+    @trace_time()
+    def _authenticate(self):
+        """Authenticate with the server and get a token"""
         response = self._session.post(
             f"{self._base_url}/token",
-            data={"username": config.username, "password": config.password},
+            data={"username": self._config.username, "password": self._config.password},
         )
         if not response.ok:
             raise RestClientError(f"Failed to authenticate: {response.text}")
@@ -26,6 +33,7 @@ class RestClient:
             {"Authorization": f"Bearer {response.json()['access_token']}"}
         )
 
+    @trace_time()
     def get_tags(self, wikidata_ids: List[str]) -> dict:
         """Get existing tags by their WikiData IDs"""
         response = self._session.get(
@@ -35,6 +43,7 @@ class RestClient:
             raise RestClientError(f"Failed to get tags: {response.text}")
         return response.json()
 
+    @trace_time()
     def create_person(
         self,
         name: str,
@@ -58,6 +67,7 @@ class RestClient:
             raise RestClientError(f"Failed to create person: {response.text}")
         return response.json()
 
+    @trace_time()
     def create_place(
         self,
         name: str,
@@ -85,6 +95,7 @@ class RestClient:
             raise RestClientError(f"Failed to create place: {response.text}")
         return response.json()
 
+    @trace_time()
     def create_time(
         self,
         name: str,
@@ -114,6 +125,7 @@ class RestClient:
             raise RestClientError(f"Failed to create time: {response.text}")
         return response.json()
 
+    @trace_time()
     def check_time_exists(
         self,
         datetime: str,
@@ -149,6 +161,7 @@ class RestClient:
         result = response.json()
         return UUID(result["id"]) if result["id"] else None
 
+    @trace_time()
     def create_event(
         self, summary: str, tags: List[dict], citation: dict, after: list[UUID]
     ) -> dict:

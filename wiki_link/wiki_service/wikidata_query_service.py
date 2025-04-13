@@ -27,6 +27,7 @@ from wiki_service.event_factories.q_numbers import (
     BOOK,
     POINT_IN_TIME,
 )
+from wiki_service.tracing import trace_time
 
 
 MAX_RETRIES = 5
@@ -141,6 +142,7 @@ class WikiDataQueryService:
             return True
         return False
 
+    @trace_time()
     def find_people(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
         """Find people from WikiData."""
         query = f"""
@@ -153,6 +155,7 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
+    @trace_time()
     def find_works_of_art(self, limit: int, offset: int) -> set[WikiDataItem]:
         INSTANCE_OF = "P31"
         WORK_OF_ART = "Q838948"
@@ -169,6 +172,7 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
+    @trace_time()
     def find_books(self, limit: int, offset: int) -> set[WikiDataItem]:
         INSTANCE_OF = "P31"
         query = f"""
@@ -184,6 +188,7 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
+    @trace_time()
     def find_orations(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
         """Find orations from WikiData."""
         query = f"""
@@ -199,6 +204,7 @@ class WikiDataQueryService:
         """
         return self._sparql_query(query)
 
+    @trace_time()
     def _sparql_query(self, query: str) -> set[WikiDataItem]:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         items = res.get("results", {}).get("bindings", [])
@@ -211,6 +217,7 @@ class WikiDataQueryService:
         }
         return items
 
+    @trace_time()
     def get_wikidata_people_count(self) -> int:
 
         query = """
@@ -222,6 +229,7 @@ class WikiDataQueryService:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         return int(res["results"]["bindings"][0]["count"]["value"])
 
+    @trace_time()
     def get_wikidata_works_of_art_count(self) -> int:
         query = """
             SELECT ?count WHERE {
@@ -237,6 +245,7 @@ class WikiDataQueryService:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         return int(res["results"]["bindings"][0]["count"]["value"])
 
+    @trace_time()
     def get_wikidata_books_count(self) -> int:
         query = """
             SELECT ?count WHERE {
@@ -252,6 +261,7 @@ class WikiDataQueryService:
         res = self.make_sparql_query(query=query, url=self._config.WIKIDATA_SPARQL_URL)
         return int(res["results"]["bindings"][0]["count"]["value"])
 
+    @trace_time()
     def make_sparql_query(self, query: str, url: str) -> dict:
         """
         Make a SPARQL query to the specified URL.
@@ -287,6 +297,7 @@ class WikiDataQueryService:
         """
         return self._get_entity_cached(id)
 
+    @trace_time()
     def _get_entity_impl(self, id: str) -> Entity:
         """Implementation of get_entity without caching"""
         url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
@@ -311,6 +322,7 @@ class WikiDataQueryService:
         """
         return self._get_label_cached(id, language)
 
+    @trace_time()
     def _get_label_impl(self, id: str, language: str) -> str:
         """Implementation of get_label without caching"""
         url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
@@ -341,6 +353,7 @@ class WikiDataQueryService:
         """
         return self._get_description_cached(id, language)
 
+    @trace_time()
     def _get_description_impl(self, id: str, language: str) -> str | None:
         """Implementation of get_description without caching"""
         url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/descriptions/{language}"
@@ -359,10 +372,12 @@ class WikiDataQueryService:
                 )
             return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
+    @trace_time()
     def get_geo_location(self, id: str) -> GeoLocation:
         entity = self.get_entity(id)
         return self.get_hierarchical_location(entity=entity)
 
+    @trace_time()
     def get_hierarchical_location(
         self, entity: Entity, properties: list[str] | None = None
     ) -> GeoLocation:
@@ -405,6 +420,7 @@ class WikiDataQueryService:
 
         return GeoLocation(coordinates=None, geoshape=None)
 
+    @trace_time()
     def get_location_from_entity(
         self, entity: Entity, claim_props: list[str]
     ) -> LocationResult | None:
@@ -435,6 +451,7 @@ class WikiDataQueryService:
 
         return None
 
+    @trace_time()
     def get_location_from_claim(
         self, claim: dict, location_props: list[str]
     ) -> LocationResult | None:
@@ -478,6 +495,7 @@ class WikiDataQueryService:
                         )
         return None
 
+    @trace_time()
     def get_time_definition_from_entity(
         self, entity: Entity, claim: str, time_props: list[str]
     ) -> TimeDefinition | None:
@@ -502,6 +520,7 @@ class WikiDataQueryService:
                 return time_definition
         return None
 
+    @trace_time()
     def get_time_definition_from_claim(
         self, claim: dict, time_props: list[str]
     ) -> TimeDefinition | None:
@@ -532,6 +551,7 @@ class WikiDataQueryService:
                 logger.info(f"Failed to get time from {referenced_id}: {exc}")
                 return None
 
+    @trace_time()
     def get_coordinate_location(self, entity: Entity) -> CoordinateLocation | None:
         """
         Get an entity's location properties or None.
@@ -542,6 +562,7 @@ class WikiDataQueryService:
         coordinate_location = self.build_coordinate_location(geo_claim[0])
         return coordinate_location
 
+    @trace_time()
     def get_geoshape_location(self, entity: Entity) -> GeoshapeLocation | None:
         """
         Get an Entity's geoshape property or None.
@@ -558,6 +579,7 @@ class WikiDataQueryService:
             geoclaim=geoclaim, geoshape=geoshape, geoshape_url=geoshape_url
         )
 
+    @trace_time()
     def get_time(
         self, entity: Entity, time_prop: str = POINT_IN_TIME
     ) -> TimeDefinition | None:
