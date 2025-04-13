@@ -48,9 +48,10 @@ class FactoryResult(Base):
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc)
     )
 
-    # Index for faster lookups of (wiki_id, factory_label) combination
+    # Indices for faster lookups
     __table_args__ = (
         Index("idx_factory_results_wiki_id_factory_label", "wiki_id", "factory_label"),
+        Index("idx_factory_results_factory_label", "factory_label"),
     )
 
 
@@ -61,9 +62,18 @@ class CreatedEvent(Base):
         UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False, index=True
     )
     primary_entity_id = Column(VARCHAR, nullable=False, index=True)
-    secondary_entity_id = Column(VARCHAR, nullable=True)
+    secondary_entity_id = Column(VARCHAR, nullable=True, index=True)
     server_id = Column(UUID(as_uuid=True), nullable=True)
     event = Column(JSONB, nullable=True)
+
+    # Partial index for server_id
+    __table_args__ = (
+        Index(
+            "idx_created_events_server_id",
+            "server_id",
+            postgresql_where=(server_id.isnot(None)),
+        ),
+    )
 
 
 class Config(Base):
