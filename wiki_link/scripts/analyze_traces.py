@@ -16,16 +16,36 @@ import re
 import statistics
 from collections import defaultdict
 from typing import Dict, List, Tuple
+from datetime import datetime, timedelta
 
-TRACE_PATTERN = re.compile(r"TRACE: (.+) took ([\d.]+)ms")
+# Match traces in both formats - with and without timestamps
+# Format: TRACE: ClassName.method_name took 123.45ms
+# Format: 2023-05-25 10:15:30,123 - wiki_link.tracing - INFO - TRACE: ClassName.method_name took 123.45ms
+SIMPLE_TRACE_PATTERN = re.compile(r"TRACE: (.+) took ([\d.]+)ms")
+TIMESTAMPED_TRACE_PATTERN = re.compile(
+    r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - .* - INFO - TRACE: (.+) took ([\d.]+)ms"
+)
 
 
 def analyze_traces(lines):
     # Collect data by function
     data: Dict[str, List[float]] = defaultdict(list)
+    # Store timestamps for timeline analysis
+    timestamps: Dict[str, List[tuple]] = defaultdict(list)
 
     for line in lines:
-        match = TRACE_PATTERN.search(line)
+        # Try timestamped format first
+        match = TIMESTAMPED_TRACE_PATTERN.search(line)
+        if match:
+            timestamp_str, func_name, duration_str = match.groups()
+            duration = float(duration_str)
+            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S,%f")
+            data[func_name].append(duration)
+            timestamps[func_name].append((timestamp, duration))
+            continue
+
+        # Try simple format
+        match = SIMPLE_TRACE_PATTERN.search(line)
         if match:
             func_name, duration_str = match.groups()
             duration = float(duration_str)
@@ -50,10 +70,10 @@ def analyze_traces(lines):
     # Sort by total time (highest impact first)
     stats.sort(key=lambda x: x[7], reverse=True)
 
-    return stats
+    return stats, timestamps
 
 
-def print_report(stats):
+def print_report(stats, timestamps):
     print("\nWikiLink Trace Analysis Report")
     print("============================\n")
 
@@ -93,6 +113,51 @@ def print_report(stats):
             f"{func_name}: {total:.2f}ms ({count} calls, {total/total_time*100:.1f}% of total time)"
         )
 
+    # Time analysis if timestamps are available
+    if timestamps:
+        print("\nTimeline Analysis (if timestamps available):")
+        # Find functions with high concentrations of calls
+        for func_name, time_data in sorted(
+            timestamps.items(), key=lambda x: len(x[1]), reverse=True
+        )[:5]:
+            if len(time_data) < 2:
+                continue
+
+            # Sort by timestamp
+            sorted_calls = sorted(time_data, key=lambda x: x[0])
+
+            # Find groups of closely spaced calls
+            window_size = timedelta(
+                seconds=5
+            )  # Consider calls within 5 seconds as a group
+            groups = []
+            current_group = [sorted_calls[0]]
+
+            for i in range(1, len(sorted_calls)):
+                if sorted_calls[i][0] - current_group[-1][0] <= window_size:
+                    current_group.append(sorted_calls[i])
+                else:
+                    if len(current_group) > 1:
+                        groups.append(current_group)
+                    current_group = [sorted_calls[i]]
+
+            if len(current_group) > 1:
+                groups.append(current_group)
+
+            # Report on largest group
+            if groups:
+                largest_group = max(groups, key=len)
+                if len(largest_group) > 2:  # Only report if we have a meaningful group
+                    start_time = largest_group[0][0]
+                    end_time = largest_group[-1][0]
+                    duration = (end_time - start_time).total_seconds()
+                    total_time = sum(call[1] for call in largest_group)
+
+                    print(
+                        f"  {func_name}: {len(largest_group)} calls in {duration:.2f}s window, "
+                        f"total time {total_time:.2f}ms, avg {total_time/len(largest_group):.2f}ms per call"
+                    )
+
 
 def main():
     if len(sys.argv) > 1:
@@ -101,8 +166,8 @@ def main():
     else:
         lines = sys.stdin.readlines()
 
-    stats = analyze_traces(lines)
-    print_report(stats)
+    stats, timestamps = analyze_traces(lines)
+    print_report(stats, timestamps)
 
 
 if __name__ == "__main__":
