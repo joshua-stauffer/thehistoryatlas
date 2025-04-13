@@ -39,49 +39,42 @@ INDICES = [
     ON tags (wikidata_id)
     WHERE wikidata_id IS NOT NULL;
     """,
-    
     # Composite index for time_exists method
     """
     CREATE INDEX IF NOT EXISTS idx_times_lookup 
     ON times (datetime, calendar_model, precision);
     """,
-    
     # Index for tag instances by tag_id and story_order for faster sorting
     """
     CREATE INDEX IF NOT EXISTS idx_tag_instances_tag_id_story_order 
     ON tag_instances (tag_id, story_order);
     """,
-    
     # Index for summaries by text for faster lookups
     """
     CREATE INDEX IF NOT EXISTS idx_summaries_text 
     ON summaries USING hash (text);
     """,
-    
     # Index for citations by summary_id
     """
     CREATE INDEX IF NOT EXISTS idx_citations_summary_id 
     ON citations (summary_id);
     """,
-    
     # Index for tag_names lookup
     """
     CREATE INDEX IF NOT EXISTS idx_tag_names_composite 
     ON tag_names (tag_id, name_id);
     """,
-    
     # Time-related indices for faster related story lookups
     """
     CREATE INDEX IF NOT EXISTS idx_times_datetime 
     ON times (datetime);
     """,
-    
     # Index for place coordinates
     """
     CREATE INDEX IF NOT EXISTS idx_places_coordinates 
     ON places (latitude, longitude)
     WHERE latitude IS NOT NULL AND longitude IS NOT NULL;
-    """
+    """,
 ]
 
 # Add statistics collection for query planner
@@ -92,13 +85,14 @@ ANALYZE_TABLES = [
     "ANALYZE summaries;",
     "ANALYZE citations;",
     "ANALYZE tag_names;",
-    "ANALYZE places;"
+    "ANALYZE places;",
 ]
+
 
 def main():
     """Create the indices in the database."""
     logger.info("Starting to add performance indices to the database")
-    
+
     with engine.connect() as connection:
         # Create indices
         for index_sql in INDICES:
@@ -109,7 +103,7 @@ def main():
             except Exception as e:
                 logger.error(f"Error creating index: {e}")
                 connection.rollback()
-        
+
         # Analyze tables for better query planning
         for analyze_sql in ANALYZE_TABLES:
             try:
@@ -119,8 +113,9 @@ def main():
             except Exception as e:
                 logger.error(f"Error analyzing table: {e}")
                 connection.rollback()
-    
+
     logger.info("Finished adding performance indices")
 
+
 if __name__ == "__main__":
-    main() 
+    main()
