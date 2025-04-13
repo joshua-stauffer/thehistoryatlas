@@ -48,14 +48,19 @@ class FactoryResult(Base):
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc)
     )
 
+    # Index for faster lookups of (wiki_id, factory_label) combination
+    __table_args__ = (
+        Index("idx_factory_results_wiki_id_factory_label", "wiki_id", "factory_label"),
+    )
+
 
 class CreatedEvent(Base):
     __tablename__ = "created_events"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     factory_result_id = Column(
-        UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False, index=True
     )
-    primary_entity_id = Column(VARCHAR, nullable=False)
+    primary_entity_id = Column(VARCHAR, nullable=False, index=True)
     secondary_entity_id = Column(VARCHAR, nullable=True)
     server_id = Column(UUID(as_uuid=True), nullable=True)
     event = Column(JSONB, nullable=True)
