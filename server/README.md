@@ -25,13 +25,6 @@ To apply all pending migrations to bring your database to the latest schema vers
 alembic upgrade head
 ```
 
-Or you can use the helper script:
-
-```bash
-# From the project root
-./run_migrations.sh
-```
-
 ### Creating New Migrations
 
 To create a new migration after changing the SQLAlchemy models:
