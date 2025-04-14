@@ -27,7 +27,7 @@ services:
         image: ilriccio/thehistoryatlas:test_server
         command: ["python", "-m", "the_history_atlas.scripts.run_migrations"]
         depends_on:
-            - db
+            - provisioner
         networks:
             - tha-test
         environment:
