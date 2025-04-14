@@ -53,7 +53,7 @@ class BookWasPublished(EventFactory):
 
         return True
 
-    def create_wiki_event(self) -> List[WikiEvent]:
+    def _create_events(self) -> List[WikiEvent]:
         book_name = self._entity.labels["en"].value
         time_definition = self._time_definition()
         time_name = wikidata_time_to_text(time_definition)

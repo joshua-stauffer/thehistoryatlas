@@ -57,7 +57,7 @@ class WorkOfArtCreated(EventFactory):
 
         return True
 
-    def create_wiki_event(self) -> list[WikiEvent]:
+    def _create_events(self) -> list[WikiEvent]:
         artwork_name = self._entity.labels["en"].value
         time_definition = self._time_definition()
         time_name = wikidata_time_to_text(time_definition)

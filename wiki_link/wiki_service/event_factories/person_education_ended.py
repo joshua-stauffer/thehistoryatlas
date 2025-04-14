@@ -69,7 +69,7 @@ class PersonEducationEnded(EventFactory):
                 return True
         return False
 
-    def create_wiki_event(self) -> list[WikiEvent]:
+    def _create_events(self) -> list[WikiEvent]:
         person_name = self._entity.labels["en"].value
         events = []
 

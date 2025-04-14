@@ -2,6 +2,7 @@ from logging import getLogger
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
+import time
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database, Item
@@ -9,6 +10,7 @@ from wiki_service.event_factories.event_factory import get_event_factories, Even
 from wiki_service.rest_client import RestClient, RestClientError
 from wiki_service.types import WikiDataItem
 from wiki_service.utils import get_current_time
+from wiki_service.event_metrics import EventMetrics
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     WikiDataQueryServiceError,
@@ -32,6 +34,7 @@ class WikiService:
         self._database = database
         self._query = wikidata_query_service
         self._rest_client = rest_client or RestClient(config)
+        self._metrics = EventMetrics()
 
     def search_for_people(self, num_people: int | None = None):
         """
@@ -313,9 +316,23 @@ class WikiService:
             else:
                 label = f"Unknown label ({entity.title})"
 
+            # Start metrics collection
+            self._metrics.start_entity()
+
             try:
                 for event_factory in event_factories:
                     self._create_wiki_event(event_factory, item.wiki_id, label)
+
+                    # Collect metrics after processing
+                    self._metrics.process_factory(event_factory)
+
+                # Log entity metrics
+                self._metrics.log_entity_metrics(
+                    entity_id=item.wiki_id,
+                    entity_name=label,
+                    entity_type=item.entity_type,
+                )
+
             except RestClientError as e:
                 self._database.report_queue_error(
                     wiki_id=item.wiki_id,
