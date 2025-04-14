@@ -1,5 +1,4 @@
 import os
-import sys
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -21,16 +20,9 @@ from the_history_atlas.apps.history.schema import Base as HistoryBase
 from the_history_atlas.apps.accounts.schema import Base as AccountsBase
 
 # Set the database URL from environment variable
-db_url = os.environ.get("THA_DB_URI")
-if not db_url:
-    print("ERROR: THA_DB_URI environment variable not set")
-    sys.exit(1)
-
-# In CI environments, we may need to use a different hostname
-if os.environ.get("CI") == "true" and "localhost" in db_url:
-    db_url = db_url.replace("localhost", "host.docker.internal")
-    print(f"In CI environment, using modified DB URI.")
-
+db_url = os.environ.get(
+    "THA_DB_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
+)
 config.set_main_option("sqlalchemy.url", db_url)
 
 # add your model's MetaData object here

@@ -12,7 +12,6 @@ import logging
 import os
 import subprocess
 import sys
-import time
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -34,37 +33,6 @@ def main():
         os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     )
     os.chdir(server_dir)
-
-    # Set CI environment variable for alembic/env.py
-    if "host.docker.internal" in db_uri:
-        os.environ["CI"] = "true"
-        logger.info("Setting CI=true for Docker environment")
-
-    # Wait for database to be available
-    retry_count = 5
-    for attempt in range(retry_count):
-        try:
-            logger.info(
-                f"Testing database connection, attempt {attempt+1}/{retry_count}"
-            )
-            # Basic check if DB is ready using alembic
-            subprocess.run(
-                ["alembic", "current"], check=True, capture_output=True, text=True
-            )
-            logger.info("Database connection successful")
-            break
-        except subprocess.CalledProcessError as e:
-            if attempt < retry_count - 1:
-                wait_time = 2 * (attempt + 1)  # Exponential backoff
-                logger.warning(
-                    f"Database not ready, retrying in {wait_time} seconds..."
-                )
-                logger.warning(f"Error: {e.stderr}")
-                time.sleep(wait_time)
-            else:
-                logger.error("Max retries reached, database not available")
-                logger.error(f"Error: {e.stderr}")
-                return 1
 
     try:
         # Run the migrations
