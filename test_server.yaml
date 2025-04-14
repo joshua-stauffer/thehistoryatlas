@@ -1,8 +1,6 @@
 version: "3"
 services:
     db:
-        # NOTE: using postgres 13.3 to avoid m1 libpq issue:
-        #       https://github.com/psycopg/psycopg2/issues/1360#issuecomment-1209943490
         image: postgres:16
         restart: always
         environment:
@@ -24,10 +22,22 @@ services:
         environment:
             - THA_DB_URI=${THA_DB_URI}
             - THA_TEST_PASSWORD=${POSTGRES_PASS}
+            
+    migrations:
+        image: ilriccio/thehistoryatlas:test_server
+        command: ["python", "-m", "the_history_atlas.scripts.run_migrations"]
+        depends_on:
+            - db
+        networks:
+            - tha-test
+        environment:
+            - THA_DB_URI=${THA_DB_URI}
 
     server:
         image: ilriccio/thehistoryatlas:test_server
         command: [ "python3", "-m", "pytest", "-vvv" ]
+        depends_on:
+            - migrations
         networks:
             - tha-test
         environment:

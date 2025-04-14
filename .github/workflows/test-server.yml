@@ -22,17 +22,11 @@ jobs:
             file: ./server/Dockerfile
             tags: ilriccio/thehistoryatlas:test_server
             load: true
-      -   name: Setup Test Environment
+      -   name: Setup Test Environment and Run Migrations
           env:
             POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-          run: docker compose -f test_server.yaml up db provisioner -d
-      -   name: Run Database Migrations
-          env:
             THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
-          run: |
-            cd server
-            pip install -r requirements.txt
-            python -m the_history_atlas.scripts.run_migrations
+          run: docker compose -f test_server.yaml up db provisioner migrations --exit-code-from migrations
       -   name: Test Server
           env:
             THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
