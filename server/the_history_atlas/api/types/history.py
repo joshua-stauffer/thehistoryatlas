@@ -83,3 +83,23 @@ class StorySearchResponse(BaseModel):
     """Response model for story search results."""
 
     results: List[StorySearchResult]
+
+
+class LatLong(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class MapStoryRequest(BaseModel):
+    northwest_bound: LatLong
+    southeast_bound: LatLong
+    date: CalendarDate
+
+
+class MapStory(BaseModel):
+    eventId: UUID
+    storyId: UUID
+    title: str
+    description: str | None = None
+    point: Point
+    date: CalendarDate
