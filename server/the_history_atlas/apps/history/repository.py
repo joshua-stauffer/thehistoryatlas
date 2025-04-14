@@ -57,37 +57,12 @@ class Repository:
 
     Session: sessionmaker
 
-    def __init__(
-        self, database_client: DatabaseClient, source_trie: Trie, entity_trie: Trie
-    ):
-        self._entity_trie = entity_trie
+    def __init__(self, database_client: DatabaseClient, source_trie: Trie):
         self._source_trie = source_trie
         self._engine = database_client
 
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
-
-    def get_all_entity_names(self) -> List[Tuple[str, str]]:
-        """Util for building Entity search trie. Returns a list of (name, guid) tuples."""
-        res = []
-        with Session(self._engine, future=True) as session:
-
-            people = session.execute(select(Person)).scalars()
-            for person in people:
-                for name in person.names:
-                    res.append((name.name, person.id))
-
-            places = session.execute(select(Place)).scalars()
-            for place in places:
-                for name in place.names:
-                    res.append((name.name, place.id))
-
-            times = session.execute(select(Time)).scalars()
-            for time in times:
-                for name in time.names:
-                    res.append((name.name, time.id))
-
-        return res
 
     def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:
         """Util for building Source search trie. Returns a list of (name, id) tuples."""
@@ -104,15 +79,38 @@ class Repository:
         return res
 
     def get_name_by_fuzzy_search(self, name: str) -> List[FuzzySearchByName]:
-        """Search for possible completions to a given string from known entity names."""
+        """Search for possible completions to a given string from known entity names using PostgreSQL."""
         if name == "":
             return []
-        return [
-            FuzzySearchByName(
-                name=trie_result.name, ids=[id for id in trie_result.guids]
+
+        # Use PostgreSQL trigram similarity search
+        with Session(self._engine, future=True) as session:
+            # Query for names that match using trigram similarity
+            query = text(
+                """
+                SELECT 
+                    names.name, 
+                    ARRAY_AGG(tag_names.tag_id) AS ids
+                FROM names
+                JOIN tag_names ON names.id = tag_names.name_id
+                WHERE similarity(names.name, :search_term) > 0.3
+                   OR names.name ILIKE :like_pattern
+                GROUP BY names.name
+                ORDER BY similarity(names.name, :search_term) DESC
+                LIMIT 10
+            """
             )
-            for trie_result in self._entity_trie.find(name, res_count=10)
-        ]
+
+            results = session.execute(
+                query, {"search_term": name, "like_pattern": f"%{name}%"}
+            ).all()
+
+            return [
+                FuzzySearchByName(
+                    name=row.name, ids=row.ids  # The ids are already UUID objects
+                )
+                for row in results
+            ]
 
     def get_default_story_and_event(
         self,
@@ -1037,26 +1035,10 @@ class Repository:
         old_string_guid=None,
     ):
         """
-        Maintains trie state by adding new string and/or removing old string.
-        if new_string is provided, new_string_guid is required as well.
-        if old_string is provided, old_string_guid is required as well.
+        This method is now a no-op as we use PostgreSQL for text search instead of an in-memory trie.
+        The method signature is kept for backwards compatibility.
         """
-        if new_string:
-            if not new_string_guid:
-                raise Exception(
-                    f"Update_trie was provided with new_string {new_string} but not a new_string_guid."
-                )
-            sub_strings = self._entity_trie.phrase_parts(new_string)
-            for sub_string in sub_strings:
-                self._entity_trie.insert(string=sub_string, guid=new_string_guid)
-        if old_string:
-            if not new_string_guid:
-                raise Exception(
-                    f"Update_trie was provided with old_string {old_string} but not a new_string_guid."
-                )
-            sub_strings = self._entity_trie.phrase_parts(old_string)
-            for sub_string in sub_strings:
-                self._entity_trie.delete(string=sub_string, guid=old_string_guid)
+        pass
 
     def time_exists(
         self,
