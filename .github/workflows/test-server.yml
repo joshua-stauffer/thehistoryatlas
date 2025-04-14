@@ -25,17 +25,26 @@ jobs:
       -   name: Setup Test Environment
           env:
             POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
-          run: docker compose -f test_server.yaml up db provisioner -d
+          run: |
+            echo "Setting up database environment..."
+            # Start database with health check
+            docker compose -f test_server.yaml up db -d
+            echo "Waiting for database to be ready..."
+            # Wait for database to be ready (health check will handle this)
+            docker compose -f test_server.yaml up provisioner -d
       -   name: Run Database Migrations
           env:
-            THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
+            # Use the db service name instead of localhost
+            THA_DB_URI: postgresql://postgres:${{ secrets.POSTGRES_PASS }}@localhost:5432
+            POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
           run: |
             cd server
             pip install -r requirements.txt
             python -m the_history_atlas.scripts.run_migrations
       -   name: Test Server
           env:
-            THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
+            # All environment variables are set in docker-compose
+            POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
             TTL: ${{ secrets.ACCOUNTS_TTL }}
             REFRESH_BY: ${{ secrets.ACCOUNTS_REFRESH_BY }}
             SEC_KEY: ${{ secrets.ACCOUNTS_SEC_KEY }}

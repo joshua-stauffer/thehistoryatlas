@@ -11,29 +11,43 @@ services:
             - tha-test
         ports:
             - 5432:5432
+        # Set hostname to be consistent across environments
+        hostname: db
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
 
     provisioner:
         build:
             context:
                 test_provisioner
         depends_on:
-            - db
+            db:
+                condition: service_healthy
         restart: "no"
         networks:
             - tha-test
         environment:
-            - THA_DB_URI=${THA_DB_URI}
+            # Use container name in docker-compose
+            - THA_DB_URI=postgresql://postgres:${POSTGRES_PASS}@db:5432
             - THA_TEST_PASSWORD=${POSTGRES_PASS}
 
     server:
         image: ilriccio/thehistoryatlas:test_server
         command: [ "python3", "-m", "pytest", "-vvv" ]
+        depends_on:
+            db:
+                condition: service_healthy
         networks:
             - tha-test
         environment:
-            - THA_DB_URI=${THA_DB_URI}
+            # Use container name in docker-compose
+            - THA_DB_URI=postgresql://postgres:${POSTGRES_PASS}@db:5432
             - TTL=${TTL}
             - REFRESH_BY=${REFRESH_BY}
             - SEC_KEY=${SEC_KEY}
+            
 networks:
     tha-test:
