@@ -6,7 +6,19 @@ from typing import Dict, List, Any
 
 from wiki_service.event_factories.event_factory import EventFactory
 
-logger = logging.getLogger(__name__)
+# Configure logger with a more detailed format
+logger = logging.getLogger("wiki_link.tracing")
+logger.setLevel(logging.INFO)
+
+# Add console handler if none exists
+if not logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
 
 
 class EventMetrics:
@@ -14,16 +26,19 @@ class EventMetrics:
 
     def __init__(self):
         self.reset()
+        logger.info("EventMetrics initialized")
 
     def reset(self) -> None:
         """Reset all collected metrics."""
         self.entity_start_time = time.time()
         self.total_events_created = 0
         self.factory_metrics: Dict[str, Dict[str, Any]] = {}
+        logger.debug("EventMetrics reset")
 
     def start_entity(self) -> None:
         """Start tracking metrics for a new entity."""
         self.reset()
+        logger.debug("Started tracking new entity")
 
     def process_factory(self, event_factory: EventFactory) -> None:
         """
@@ -48,6 +63,12 @@ class EventMetrics:
             "total_time_ms"
         ] += event_factory.processing_time
         self.total_events_created += event_factory.events_created_count
+
+        logger.debug(
+            f"Processed factory {factory_name}: "
+            f"events={event_factory.events_created_count}, "
+            f"time={event_factory.processing_time:.2f}ms"
+        )
 
     def get_entity_processing_time(self) -> float:
         """Get the total processing time for the current entity in milliseconds."""
