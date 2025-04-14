@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import VARCHAR, UUID, JSONB, INTEGER, TIMESTAMP
 
@@ -29,9 +29,15 @@ class WikiQueue(Base):
 
     wiki_id = Column(VARCHAR, primary_key=True)
     wiki_url = Column(VARCHAR)
-    entity_type = Column(VARCHAR, nullable=False)
+    entity_type = Column(VARCHAR, nullable=False, index=True)
     errors = Column(JSONB, default={})
     time_added = Column(TIMESTAMP(timezone=True), nullable=False)
+
+    # Indices for faster operations
+    __table_args__ = (
+        Index("idx_wiki_queue_time_added", "time_added"),
+        Index("idx_wiki_queue_errors", errors, postgresql_using="gin"),
+    )
 
 
 class FactoryResult(Base):
@@ -45,17 +51,38 @@ class FactoryResult(Base):
         TIMESTAMP(timezone=True), nullable=False, default=datetime.now(timezone.utc)
     )
 
+    # Indices for faster lookups
+    __table_args__ = (
+        Index("idx_factory_results_wiki_id_factory_label", "wiki_id", "factory_label"),
+        Index("idx_factory_results_factory_label", "factory_label"),
+        Index(
+            "idx_factory_results_wiki_id_factory_label_version",
+            "wiki_id",
+            "factory_label",
+            "factory_version",
+        ),
+    )
+
 
 class CreatedEvent(Base):
     __tablename__ = "created_events"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     factory_result_id = Column(
-        UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("factory_results.id"), nullable=False, index=True
     )
-    primary_entity_id = Column(VARCHAR, nullable=False)
-    secondary_entity_id = Column(VARCHAR, nullable=True)
+    primary_entity_id = Column(VARCHAR, nullable=False, index=True)
+    secondary_entity_id = Column(VARCHAR, nullable=True, index=True)
     server_id = Column(UUID(as_uuid=True), nullable=True)
     event = Column(JSONB, nullable=True)
+
+    # Partial index for server_id
+    __table_args__ = (
+        Index(
+            "idx_created_events_server_id",
+            "server_id",
+            postgresql_where=(server_id.isnot(None)),
+        ),
+    )
 
 
 class Config(Base):

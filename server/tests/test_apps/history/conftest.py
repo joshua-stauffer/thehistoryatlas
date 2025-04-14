@@ -23,12 +23,11 @@ def history_app(engine, config):
 @pytest.fixture
 def history_db(engine):
     source_trie = Trie()
-    entity_trie = Trie()
     database = Repository(
-        database_client=engine, source_trie=source_trie, entity_trie=entity_trie
+        database_client=engine,
+        source_trie=source_trie,
     )
     source_trie.build(entity_tuples=database.get_all_source_titles_and_authors())
-    entity_trie.build(entity_tuples=database.get_all_entity_names())
     return database
 
 

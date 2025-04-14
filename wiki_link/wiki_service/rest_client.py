@@ -5,6 +5,7 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 from wiki_service.config import WikiServiceConfig
+from wiki_service.tracing import trace_time
 
 
 class RestClientError(Exception):
@@ -14,20 +15,43 @@ class RestClientError(Exception):
 class RestClient:
     def __init__(self, config: WikiServiceConfig):
         self._base_url = config.server_base_url
+        self._config = config
         self._session = requests.Session()
+        self._refresh_by = config.TOKEN_REFRESH_BY
+        self._token_time = None
         # Get auth token
+        self._authenticate()
+
+    @trace_time()
+    def _authenticate(self):
+        """Authenticate with the server and get a token"""
         response = self._session.post(
             f"{self._base_url}/token",
-            data={"username": config.username, "password": config.password},
+            data={"username": self._config.username, "password": self._config.password},
         )
         if not response.ok:
             raise RestClientError(f"Failed to authenticate: {response.text}")
         self._session.headers.update(
             {"Authorization": f"Bearer {response.json()['access_token']}"}
         )
+        # Update token timestamp
+        self._token_time = datetime.now(timezone.utc)
 
+    def _check_token_refresh(self):
+        """Check if the authentication token needs refreshing"""
+        if not self._token_time:
+            return self._authenticate()
+
+        now = datetime.now(timezone.utc)
+        elapsed = (now - self._token_time).total_seconds()
+
+        if elapsed >= self._refresh_by:
+            self._authenticate()
+
+    @trace_time()
     def get_tags(self, wikidata_ids: List[str]) -> dict:
         """Get existing tags by their WikiData IDs"""
+        self._check_token_refresh()
         response = self._session.get(
             f"{self._base_url}/wikidata/tags", params={"wikidata_ids": wikidata_ids}
         )
@@ -35,6 +59,7 @@ class RestClient:
             raise RestClientError(f"Failed to get tags: {response.text}")
         return response.json()
 
+    @trace_time()
     def create_person(
         self,
         name: str,
@@ -43,6 +68,7 @@ class RestClient:
         description: str | None = None,
     ) -> dict:
         """Create a new person tag"""
+        self._check_token_refresh()
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
@@ -58,6 +84,7 @@ class RestClient:
             raise RestClientError(f"Failed to create person: {response.text}")
         return response.json()
 
+    @trace_time()
     def create_place(
         self,
         name: str,
@@ -68,6 +95,7 @@ class RestClient:
         description: str | None = None,
     ) -> dict:
         """Create a new place tag"""
+        self._check_token_refresh()
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
@@ -85,6 +113,7 @@ class RestClient:
             raise RestClientError(f"Failed to create place: {response.text}")
         return response.json()
 
+    @trace_time()
     def create_time(
         self,
         name: str,
@@ -96,6 +125,7 @@ class RestClient:
         description: str | None = None,
     ) -> dict:
         """Create a new time tag"""
+        self._check_token_refresh()
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
@@ -114,6 +144,7 @@ class RestClient:
             raise RestClientError(f"Failed to create time: {response.text}")
         return response.json()
 
+    @trace_time()
     def check_time_exists(
         self,
         datetime: str,
@@ -133,6 +164,7 @@ class RestClient:
         Raises:
             RestClientError: If the API request fails
         """
+        self._check_token_refresh()
         data = {
             "datetime": datetime,
             "calendar_model": calendar_model,
@@ -149,10 +181,12 @@ class RestClient:
         result = response.json()
         return UUID(result["id"]) if result["id"] else None
 
+    @trace_time()
     def create_event(
         self, summary: str, tags: List[dict], citation: dict, after: list[UUID]
     ) -> dict:
         """Create a new event"""
+        self._check_token_refresh()
         data = {
             "summary": summary,
             "tags": tags,

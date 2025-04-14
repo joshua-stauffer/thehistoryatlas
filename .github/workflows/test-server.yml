@@ -26,6 +26,11 @@ jobs:
           env:
             POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
           run: docker compose -f test_server.yaml up db provisioner -d
+      -   name: Run Database Migrations
+          env:
+            THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
+          run: |
+            docker compose -f test_server.yaml up migrations --exit-code-from migrations
       -   name: Test Server
           env:
             THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}

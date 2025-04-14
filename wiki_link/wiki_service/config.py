@@ -15,6 +15,8 @@ class WikiServiceConfig:
             "SERVER_BASE_URL", "http://localhost:8000"
         )
         self.contact = os.environ.get("WIKILINK_CONTACT", "https://historyatlas.org")
+        # Token refresh configuration
+        self.TOKEN_REFRESH_BY = int(os.environ.get("REFRESH_BY", 7200))
 
         # Cache configuration
         self.ENTITY_CACHE_SIZE = int(os.environ.get("THA_ENTITY_CACHE_SIZE", "1000"))

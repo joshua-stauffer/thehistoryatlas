@@ -17,6 +17,7 @@ from wiki_service.schema import IDLookup
 from wiki_service.schema import Config as ConfigModel
 from wiki_service.schema import FactoryResult
 from wiki_service.types import EntityType, WikiDataItem
+from wiki_service.tracing import trace_time
 
 log = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class Database:
         # initialize the db
         Base.metadata.create_all(self._engine)
 
+    @trace_time()
     def add_wiki_entry(
         self,
         wiki_id: str,
@@ -54,6 +56,7 @@ class Database:
             session.add(row)
             session.commit()
 
+    @trace_time()
     def wiki_id_exists(self, wiki_id: str) -> bool:
         with Session(self._engine, future=True) as session:
             row = (
@@ -65,6 +68,7 @@ class Database:
                 return False
             return True
 
+    @trace_time()
     def correlate_local_id_to_wiki_id(self, wiki_id: str, local_id: str) -> None:
         with Session(self._engine, future=True) as session:
             row = (
@@ -78,6 +82,7 @@ class Database:
             session.add(row)
             session.commit()
 
+    @trace_time()
     def record_wiki_id_checked(
         self, wiki_id: str, last_modified_at: Optional[str] = None
     ):
@@ -95,6 +100,7 @@ class Database:
             session.add(row)
             session.commit()
 
+    @trace_time()
     def add_items_to_queue(self, entity_type: EntityType, items: List[WikiDataItem]):
         if not items:
             return
@@ -122,7 +128,12 @@ class Database:
                 log.debug(f"Bulk insert failed: {e}")
                 session.rollback()
 
+    @trace_time()
     def get_oldest_item_from_queue(self) -> Optional[Item]:
+        """
+        Get the oldest item from the queue, ordered by time_added.
+        This query is optimized with an index on wiki_queue.time_added.
+        """
         with Session(self._engine, future=True) as session:
             row = (
                 session.query(WikiQueue)
@@ -138,6 +149,7 @@ class Database:
                 wiki_link=row.wiki_url,
             )
 
+    @trace_time()
     def remove_item_from_queue(self, wiki_id: str):
         with Session(self._engine, future=True) as session:
             row = (
@@ -150,6 +162,7 @@ class Database:
             session.delete(row)
             session.commit()
 
+    @trace_time()
     def is_wiki_id_in_queue(self, wiki_id: str) -> bool:
         with Session(self._engine, future=True) as session:
             row = (
@@ -161,6 +174,7 @@ class Database:
                 return False
             return True
 
+    @trace_time()
     def report_queue_error(self, wiki_id: str, error_time: str, errors: str):
         with Session(self._engine, future=True) as session:
             row = (
@@ -175,12 +189,14 @@ class Database:
             session.add(row)
             session.commit()
 
+    @trace_time()
     def save_last_person_offset(self, offset: int) -> None:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one()
             row.last_person_search_offset = offset
             session.commit()
 
+    @trace_time()
     def get_last_person_offset(self) -> int:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one_or_none()
@@ -190,12 +206,14 @@ class Database:
                 return 0
             return row.last_person_search_offset
 
+    @trace_time()
     def save_last_works_of_art_offset(self, offset: int) -> None:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one()
             row.last_works_of_art_search_offset = offset
             session.commit()
 
+    @trace_time()
     def get_last_works_of_art_offset(self) -> int:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one_or_none()
@@ -205,12 +223,14 @@ class Database:
                 return 0
             return row.last_works_of_art_search_offset
 
+    @trace_time()
     def save_last_books_offset(self, offset: int) -> None:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one()
             row.last_books_search_offset = offset
             session.commit()
 
+    @trace_time()
     def get_last_books_offset(self) -> int:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one_or_none()
@@ -220,12 +240,14 @@ class Database:
                 return 0
             return row.last_books_search_offset
 
+    @trace_time()
     def save_last_orations_offset(self, offset: int) -> None:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one()
             row.last_orations_search_offset = offset
             session.commit()
 
+    @trace_time()
     def get_last_orations_offset(self) -> int:
         with Session(self._engine, future=True) as session:
             row = session.query(ConfigModel).one_or_none()
@@ -245,6 +267,7 @@ class Database:
             last_orations_search_offset=0,
         )
 
+    @trace_time()
     def upsert_created_event(
         self,
         wiki_id: str,
@@ -342,6 +365,7 @@ class Database:
 
             session.commit()
 
+    @trace_time()
     def event_exists(
         self, wiki_id: str, factory_label: str, factory_version: int
     ) -> bool:
@@ -382,6 +406,7 @@ class Database:
         database = cls(config=WikiServiceConfig())
         return database
 
+    @trace_time()
     def get_server_id_by_event_label(
         self,
         event_labels: list[str],
@@ -426,6 +451,7 @@ class Database:
 
             return [row[0] for row in result]
 
+    @trace_time()
     def get_wiki_ids_in_queue(self, wiki_ids: List[str]) -> set[str]:
         """
         Check which wiki IDs from the provided list exist in the queue.
