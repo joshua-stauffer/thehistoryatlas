@@ -25,9 +25,22 @@ services:
             - THA_DB_URI=${THA_DB_URI}
             - THA_TEST_PASSWORD=${POSTGRES_PASS}
 
+    migrations:
+        image: ilriccio/thehistoryatlas:test_server
+        command: [ "python3", "-m", "init_db"]
+        depends_on:
+            - db
+        networks:
+            - tha-test
+        environment:
+            - THA_DB_URI=${THA_DB_URI}
+
     server:
         image: ilriccio/thehistoryatlas:test_server
         command: [ "python3", "-m", "pytest", "-vvv" ]
+        depends_on:
+            - db
+            - migrations
         networks:
             - tha-test
         environment:
