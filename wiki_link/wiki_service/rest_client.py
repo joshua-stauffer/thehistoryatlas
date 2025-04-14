@@ -17,6 +17,8 @@ class RestClient:
         self._base_url = config.server_base_url
         self._config = config
         self._session = requests.Session()
+        self._refresh_by = config.TOKEN_REFRESH_BY
+        self._token_time = None
         # Get auth token
         self._authenticate()
 
@@ -32,10 +34,24 @@ class RestClient:
         self._session.headers.update(
             {"Authorization": f"Bearer {response.json()['access_token']}"}
         )
+        # Update token timestamp
+        self._token_time = datetime.now(timezone.utc)
+
+    def _check_token_refresh(self):
+        """Check if the authentication token needs refreshing"""
+        if not self._token_time:
+            return self._authenticate()
+
+        now = datetime.now(timezone.utc)
+        elapsed = (now - self._token_time).total_seconds()
+
+        if elapsed >= self._refresh_by:
+            self._authenticate()
 
     @trace_time()
     def get_tags(self, wikidata_ids: List[str]) -> dict:
         """Get existing tags by their WikiData IDs"""
+        self._check_token_refresh()
         response = self._session.get(
             f"{self._base_url}/wikidata/tags", params={"wikidata_ids": wikidata_ids}
         )
@@ -52,6 +68,7 @@ class RestClient:
         description: str | None = None,
     ) -> dict:
         """Create a new person tag"""
+        self._check_token_refresh()
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
@@ -78,6 +95,7 @@ class RestClient:
         description: str | None = None,
     ) -> dict:
         """Create a new place tag"""
+        self._check_token_refresh()
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
@@ -107,6 +125,7 @@ class RestClient:
         description: str | None = None,
     ) -> dict:
         """Create a new time tag"""
+        self._check_token_refresh()
         data = {
             "name": name,
             "wikidata_id": wikidata_id,
@@ -145,6 +164,7 @@ class RestClient:
         Raises:
             RestClientError: If the API request fails
         """
+        self._check_token_refresh()
         data = {
             "datetime": datetime,
             "calendar_model": calendar_model,
@@ -166,6 +186,7 @@ class RestClient:
         self, summary: str, tags: List[dict], citation: dict, after: list[UUID]
     ) -> dict:
         """Create a new event"""
+        self._check_token_refresh()
         data = {
             "summary": summary,
             "tags": tags,

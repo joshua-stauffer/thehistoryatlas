@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 import requests
 import json
 from uuid import UUID
+from datetime import datetime, timezone, timedelta
 
 from wiki_service.rest_client import RestClient, RestClientError
 from wiki_service.config import WikiServiceConfig
@@ -25,6 +26,7 @@ def config():
     config.server_base_url = "http://test.example.com"
     config.username = "test_user"
     config.password = "test_pass"
+    config.TOKEN_REFRESH_BY = 7200  # 2 hours
     return config
 
 
@@ -363,3 +365,30 @@ def test_create_time_with_description(mock_session, config):
     assert json_data["calendar_model"] == calendar_model
     assert json_data["precision"] == precision
     assert json_data["description"] == description
+
+
+def test_token_refresh(mock_session, config):
+    """Test that the token is refreshed after the refresh period has passed"""
+    client = RestClient(config)
+
+    # Reset mocks after initialization
+    mock_session.reset_mock()
+
+    # First API call with a fresh token - should not trigger a refresh
+    client.get_tags(["Q123"])
+    auth_calls_before = len(
+        [call for call in mock_session.post.call_args_list if "/token" in call[0][0]]
+    )
+    assert auth_calls_before == 0
+
+    # Manually set the token time to be older than the refresh period
+    client._token_time = datetime.now(timezone.utc) - timedelta(
+        seconds=config.TOKEN_REFRESH_BY + 100
+    )
+
+    # Next call should trigger a refresh
+    client.get_tags(["Q456"])
+    auth_calls_after = len(
+        [call for call in mock_session.post.call_args_list if "/token" in call[0][0]]
+    )
+    assert auth_calls_after == 1
