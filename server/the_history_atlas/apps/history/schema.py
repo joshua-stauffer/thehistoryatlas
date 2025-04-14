@@ -188,3 +188,13 @@ class Name(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     name = Column(VARCHAR, unique=True, nullable=False)
     tags = relationship("Tag", secondary=tag_names, back_populates="names")
+
+    # Add GIN index for trigram-based fuzzy search
+    __table_args__ = (
+        Index(
+            "idx_names_trgm_gin",
+            name,
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+    )

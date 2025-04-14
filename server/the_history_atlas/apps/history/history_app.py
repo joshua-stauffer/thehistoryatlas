@@ -39,20 +39,14 @@ class HistoryApp:
     def __init__(self, config_app: Config, database_client: DatabaseClient):
         self.config = config_app
         source_trie = Trie()
-        entity_trie = Trie()
 
         repository = Repository(
             database_client=database_client,
             source_trie=source_trie,
-            entity_trie=entity_trie,
         )
         self._repository = repository
         self._source_trie = source_trie.build(
             entity_tuples=repository.get_all_source_titles_and_authors()
-        )
-        self._entity_trie = entity_trie.build(
-            # entity_tuples=[]
-            entity_tuples=repository.get_all_entity_names()
         )
 
     def create_person(self, person: PersonInput) -> Person:
