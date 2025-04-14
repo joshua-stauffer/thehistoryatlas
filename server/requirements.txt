@@ -10,3 +10,4 @@ pydantic==2.10.4
 pydantic-settings==2.7.0
 fastapi[standard]==0.115.6
 faker==33.1.0
+alembic==1.13.1
