@@ -9,13 +9,20 @@ services:
             - tha-test
         ports:
             - 5432:5432
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
 
     provisioner:
         build:
             context:
                 test_provisioner
         depends_on:
-            - db
+            db:
+                condition: service_healthy
         restart: "no"
         networks:
             - tha-test
@@ -27,7 +34,8 @@ services:
         image: ilriccio/thehistoryatlas:test_server
         command: ["python", "-m", "the_history_atlas.scripts.run_migrations"]
         depends_on:
-            - provisioner
+            provisioner:
+                condition: service_completed_successfully
         networks:
             - tha-test
         environment:
@@ -37,7 +45,8 @@ services:
         image: ilriccio/thehistoryatlas:test_server
         command: [ "python3", "-m", "pytest", "-vvv" ]
         depends_on:
-            - migrations
+            migrations:
+                condition: service_completed_successfully
         networks:
             - tha-test
         environment:
