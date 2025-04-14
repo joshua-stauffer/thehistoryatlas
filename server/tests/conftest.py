@@ -64,8 +64,7 @@ def db_session(config):
 @pytest.fixture
 def engine(config):
     engine = create_engine(config.DB_URI, echo=config.DEBUG, future=True)
-    AccountsBase.metadata.create_all(engine)
-    ReadModelBase.metadata.create_all(engine)
+    # Removed metadata.create_all - migrations will handle schema creation
     yield engine
 
     with Session(engine, future=True) as session:
