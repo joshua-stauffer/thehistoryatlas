@@ -30,6 +30,7 @@ from the_history_atlas.apps.config import Config
 from the_history_atlas.apps.history.repository import Repository
 from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
 from the_history_atlas.apps.history.trie import Trie
+from the_history_atlas.apps.history.tracing import trace_method, trace_block
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
@@ -168,6 +169,7 @@ class HistoryApp:
             for story_id, story_info in story_names.items()
         ]
 
+    @trace_method("create_wikidata_event")
     def create_wikidata_event(
         self,
         text: str,
@@ -175,62 +177,73 @@ class HistoryApp:
         citation: CitationInput,
         after: list[UUID],
     ):
-        source = self._repository.get_source_by_title(title="Wikidata")
-        if source:
-            source_id = UUID(source.id)
-        else:
-            source_id = uuid4()
-            self._repository.create_source(
-                id=source_id,
-                title="Wikidata",
-                author="Wikidata Contributors",
-                publisher="Wikimedia Foundation",
-                pub_date=None,
-            )
+        with trace_block("get_or_create_source"):
+            source = self._repository.get_source_by_title(title="Wikidata")
+            if source:
+                source_id = UUID(source.id)
+            else:
+                source_id = uuid4()
+                self._repository.create_source(
+                    id=source_id,
+                    title="Wikidata",
+                    author="Wikidata Contributors",
+                    publisher="Wikimedia Foundation",
+                    pub_date=None,
+                )
         summary_id = uuid4()
 
         with self._repository.Session() as session:
-            self._repository.create_summary(
-                id=summary_id,
-                text=text,
-            )
-            citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
-            citation_id = uuid4()
-            self._repository.create_citation(
-                id=citation_id,
-                session=session,
-                citation_text=citation_text,
-                access_date=str(citation.access_date),
-            )
-            self._repository.create_citation_source_fkey(
-                session=session,
-                citation_id=citation_id,
-                source_id=source_id,
-            )
-            self._repository.create_citation_summary_fkey(
-                session=session,
-                citation_id=citation_id,
-                summary_id=summary_id,
-            )
-            (
-                tag_instance_time,
-                precision,
-            ) = self._repository.get_time_and_precision_by_tags(
-                session=session,
-                tag_ids=[tag.id for tag in tags],
-            )
-            for tag in tags:
-                self._repository.create_tag_instance(
-                    start_char=tag.start_char,
-                    stop_char=tag.stop_char,
-                    summary_id=summary_id,
-                    tag_id=tag.id,
-                    tag_instance_time=tag_instance_time,
-                    time_precision=precision,
-                    after=after,
-                    session=session,
+            with trace_block("create_summary"):
+                self._repository.create_summary(
+                    id=summary_id,
+                    text=text,
                 )
-            session.commit()
+
+            with trace_block("create_citation"):
+                citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
+                citation_id = uuid4()
+                self._repository.create_citation(
+                    id=citation_id,
+                    session=session,
+                    citation_text=citation_text,
+                    access_date=str(citation.access_date),
+                )
+                self._repository.create_citation_source_fkey(
+                    session=session,
+                    citation_id=citation_id,
+                    source_id=source_id,
+                )
+                self._repository.create_citation_summary_fkey(
+                    session=session,
+                    citation_id=citation_id,
+                    summary_id=summary_id,
+                )
+
+            with trace_block("get_time_and_precision"):
+                (
+                    tag_instance_time,
+                    precision,
+                ) = self._repository.get_time_and_precision_by_tags(
+                    session=session,
+                    tag_ids=[tag.id for tag in tags],
+                )
+
+            with trace_block("create_tag_instances"):
+                for tag in tags:
+                    self._repository.create_tag_instance(
+                        start_char=tag.start_char,
+                        stop_char=tag.stop_char,
+                        summary_id=summary_id,
+                        tag_id=tag.id,
+                        tag_instance_time=tag_instance_time,
+                        time_precision=precision,
+                        after=after,
+                        session=session,
+                    )
+
+            with trace_block("commit_transaction"):
+                session.commit()
+
         return summary_id
 
     def get_story_pointers(
