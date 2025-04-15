@@ -2,6 +2,8 @@ from logging import getLogger
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
+import time
+import logging
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database, Item
@@ -9,9 +11,15 @@ from wiki_service.event_factories.event_factory import get_event_factories, Even
 from wiki_service.rest_client import RestClient, RestClientError
 from wiki_service.types import WikiDataItem
 from wiki_service.utils import get_current_time
+from wiki_service.event_metrics import EventMetrics
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     WikiDataQueryServiceError,
+)
+
+# Configure root logger
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 log = getLogger(__name__)
@@ -32,6 +40,8 @@ class WikiService:
         self._database = database
         self._query = wikidata_query_service
         self._rest_client = rest_client or RestClient(config)
+        self._metrics = EventMetrics()
+        log.info("WikiService initialized with EventMetrics")
 
     def search_for_people(self, num_people: int | None = None):
         """
@@ -313,9 +323,23 @@ class WikiService:
             else:
                 label = f"Unknown label ({entity.title})"
 
+            # Start metrics collection
+            self._metrics.start_entity()
+
             try:
                 for event_factory in event_factories:
                     self._create_wiki_event(event_factory, item.wiki_id, label)
+
+                    # Collect metrics after processing
+                    self._metrics.process_factory(event_factory)
+
+                # Log entity metrics
+                self._metrics.log_entity_metrics(
+                    entity_id=item.wiki_id,
+                    entity_name=label,
+                    entity_type=item.entity_type,
+                )
+
             except RestClientError as e:
                 self._database.report_queue_error(
                     wiki_id=item.wiki_id,
@@ -341,6 +365,9 @@ class WikiService:
     def _create_wiki_event(
         self, event_factory: EventFactory, wiki_id: str, entity_title: str
     ) -> None:
+        log.debug(
+            f"Attempting to create event with factory {event_factory.label} for wiki_id: {wiki_id}"
+        )
         if not event_factory.entity_has_event():
             log.info(f"{event_factory.label} has no event for wiki_id: {wiki_id}")
             return
@@ -355,6 +382,7 @@ class WikiService:
             return
 
         try:
+            log.debug(f"Creating events for {wiki_id} using {event_factory.label}")
             events = event_factory.create_wiki_event()
 
             # Create a citation that will be used for all events
@@ -364,6 +392,9 @@ class WikiService:
                 "wikidata_item_title": entity_title,
                 "wikidata_item_id": wiki_id,
             }
+            log.debug(
+                f"Created {len(events)} events for {wiki_id} using {event_factory.label}"
+            )
 
             # Process each event
             for event in events:
@@ -513,6 +544,9 @@ class WikiService:
                     secondary_wiki_id=event.secondary_entity_id,
                     event=event.model_dump(mode="json"),
                 )
+                log.info(
+                    f"Successfully created and stored {len(events)} events for {wiki_id} using {event_factory.label}"
+                )
 
         except (RestClientError, Exception) as e:
             # Record error
@@ -522,5 +556,8 @@ class WikiService:
                 factory_version=event_factory.version,
                 errors={"error": str(e)},
                 event=None,
+            )
+            log.error(
+                f"Error creating event with {event_factory.label} for {wiki_id}: {str(e)}"
             )
             raise  # Re-raise the error to be handled by the caller

@@ -98,7 +98,7 @@ class PersonParticipatedIn(EventFactory):
 
         return None
 
-    def create_wiki_event(self) -> list[WikiEvent]:
+    def _create_events(self) -> list[WikiEvent]:
         events = []
         person_name = self._entity.labels["en"].value
 
