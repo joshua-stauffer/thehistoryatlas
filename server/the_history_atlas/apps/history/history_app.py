@@ -202,21 +202,14 @@ class HistoryApp:
             with trace_block("create_citation"):
                 citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
                 citation_id = uuid4()
-                self._repository.create_citation(
+                # Use the optimized citation creation method that handles all relationships
+                self._repository.create_citation_complete(
                     id=citation_id,
                     session=session,
                     citation_text=citation_text,
-                    access_date=str(citation.access_date),
-                )
-                self._repository.create_citation_source_fkey(
-                    session=session,
-                    citation_id=citation_id,
                     source_id=source_id,
-                )
-                self._repository.create_citation_summary_fkey(
-                    session=session,
-                    citation_id=citation_id,
                     summary_id=summary_id,
+                    access_date=str(citation.access_date),
                 )
 
             with trace_block("get_time_and_precision"):
@@ -229,17 +222,25 @@ class HistoryApp:
                 )
 
             with trace_block("create_tag_instances"):
-                for tag in tags:
-                    self._repository.create_tag_instance(
-                        start_char=tag.start_char,
-                        stop_char=tag.stop_char,
-                        summary_id=summary_id,
-                        tag_id=tag.id,
-                        tag_instance_time=tag_instance_time,
-                        time_precision=precision,
-                        after=after,
-                        session=session,
-                    )
+                # Convert tags to dictionaries for bulk processing
+                tag_instance_dicts = [
+                    {
+                        "start_char": tag.start_char,
+                        "stop_char": tag.stop_char,
+                        "summary_id": summary_id,
+                        "tag_id": tag.id,
+                    }
+                    for tag in tags
+                ]
+
+                # Use the bulk operation instead of individual inserts
+                self._repository.bulk_create_tag_instances(
+                    tag_instances=tag_instance_dicts,
+                    tag_instance_time=tag_instance_time,
+                    time_precision=precision,
+                    after=after,
+                    session=session,
+                )
 
             with trace_block("commit_transaction"):
                 session.commit()
