@@ -25,6 +25,7 @@ client/coverage
 # production
 client/build
 wiki_link/log/
+server/logs/
 
 # misc
 .DS_Store

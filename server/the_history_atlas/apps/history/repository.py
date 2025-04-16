@@ -1,10 +1,21 @@
 import logging
 from collections import defaultdict
-from datetime import datetime
-from typing import Tuple, Optional, List, Literal
+from datetime import datetime, timedelta
+from typing import (
+    Tuple,
+    Optional,
+    List,
+    Literal,
+    Any,
+    Callable,
+    ClassVar,
+    TypeVar,
+    cast,
+)
 from uuid import uuid4, UUID
+from enum import Enum
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, create_engine, orm, insert
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -34,6 +45,7 @@ from the_history_atlas.apps.domain.models.history.tables import (
     NameModel,
     PlaceModel,
     TagNameAssocModel,
+    SummaryModel,
 )
 from the_history_atlas.apps.domain.models.history.tables.time import (
     TimePrecision,
@@ -47,8 +59,11 @@ from the_history_atlas.apps.history.schema import (
     Summary,
     Time,
     Source,
+    Tag,
+    TagInstance,
 )
 from the_history_atlas.apps.history.trie import Trie
+from the_history_atlas.apps.history.tracing import trace_db, trace_method, trace_block
 
 log = logging.getLogger(__name__)
 
@@ -526,6 +541,7 @@ class Repository:
             for row in rows
         }
 
+    @trace_db("create_summary")
     def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary"""
         log.info(f"Creating a new summary: {text[:50]}...")
@@ -534,6 +550,7 @@ class Repository:
             session.add(summary)
             session.commit()
 
+    @trace_db("create_citation")
     def create_citation(
         self,
         session: Session,
@@ -558,6 +575,7 @@ class Repository:
             },
         )
 
+    @trace_db("create_citation_source_fkey")
     def create_citation_source_fkey(
         self,
         session: Session,
@@ -572,6 +590,7 @@ class Repository:
             text(stmt), {"source_id": source_id, "citation_id": citation_id}
         )
 
+    @trace_db("create_citation_summary_fkey")
     def create_citation_summary_fkey(
         self,
         session: Session,
@@ -584,6 +603,36 @@ class Repository:
         """
         session.execute(
             text(stmt), {"summary_id": summary_id, "citation_id": citation_id}
+        )
+
+    @trace_db("create_citation_complete")
+    def create_citation_complete(
+        self,
+        session: Session,
+        id: UUID,
+        citation_text: str,
+        source_id: UUID,
+        summary_id: UUID,
+        access_date: Optional[str] = None,
+        page_num: Optional[int] = None,
+    ) -> None:
+        """Creates a citation with all relationships in a single database operation"""
+        stmt = """
+            INSERT INTO citations 
+                (id, text, source_id, summary_id, page_num, access_date)
+            VALUES 
+                (:id, :text, :source_id, :summary_id, :page_num, :access_date)
+        """
+        session.execute(
+            text(stmt),
+            {
+                "id": id,
+                "text": citation_text,
+                "source_id": source_id,
+                "summary_id": summary_id,
+                "page_num": page_num,
+                "access_date": access_date,
+            },
         )
 
     def create_person(
@@ -710,6 +759,7 @@ class Repository:
         else:
             return None
 
+    @trace_db("create_tag_instance")
     def create_tag_instance(
         self,
         start_char: int,
@@ -721,18 +771,22 @@ class Repository:
         after: list[UUID],
         session: Session,
     ) -> TagInstanceModel:
-        story_order = self.get_story_order(
-            session=session,
-            tag_id=tag_id,
-            tag_instance_time=tag_instance_time,
-            time_precision=time_precision,
-            after=after,
-        )
-        self.update_story_orders(
-            session=session,
-            story_order=story_order,
-            tag_id=tag_id,
-        )
+        with trace_block("get_story_order"):
+            story_order = self.get_story_order(
+                session=session,
+                tag_id=tag_id,
+                tag_instance_time=tag_instance_time,
+                time_precision=time_precision,
+                after=after,
+            )
+
+        with trace_block("update_story_orders"):
+            self.update_story_orders(
+                session=session,
+                story_order=story_order,
+                tag_id=tag_id,
+            )
+
         id = uuid4()
         tag_instance = TagInstanceModel(
             id=id,
@@ -742,15 +796,19 @@ class Repository:
             tag_id=tag_id,
             story_order=story_order,
         )
-        stmt = """
-            insert into tag_instances
-                (id, start_char, stop_char, summary_id, tag_id, story_order)
-            values
-                (:id, :start_char, :stop_char, :summary_id, :tag_id, :story_order)        
-        """
-        session.execute(text(stmt), tag_instance.model_dump())
+
+        with trace_block("execute_tag_instance_insert"):
+            stmt = """
+                insert into tag_instances
+                    (id, start_char, stop_char, summary_id, tag_id, story_order)
+                values
+                    (:id, :start_char, :stop_char, :summary_id, :tag_id, :story_order)        
+            """
+            session.execute(text(stmt), tag_instance.model_dump())
+
         return tag_instance
 
+    @trace_db("get_story_order")
     def get_story_order(
         self,
         session: Session,
@@ -832,6 +890,7 @@ class Repository:
         # this tag instance occurs later than all existing tag instances
         return story_order[-1].story_order + 1
 
+    @trace_db("update_story_orders")
     def update_story_orders(
         self, session: Session, tag_id: UUID, story_order: int
     ) -> None:
@@ -1076,3 +1135,94 @@ class Repository:
         ).scalar_one_or_none()
 
         return row
+
+    @trace_db("bulk_create_tag_instances")
+    def bulk_create_tag_instances(
+        self,
+        tag_instances: list[dict],
+        tag_instance_time: str,
+        time_precision: TimePrecision,
+        after: list[UUID],
+        session: Session,
+    ) -> list[TagInstanceModel]:
+        """Create multiple tag instances in a single operation for better performance."""
+        # Group tag instances by tag_id for efficient story ordering
+        instances_by_tag = defaultdict(list)
+        for instance in tag_instances:
+            instances_by_tag[instance["tag_id"]].append(instance)
+
+        # Process each tag group
+        result_instances = []
+
+        for tag_id, instances in instances_by_tag.items():
+            # Get the starting story order for this tag
+            with trace_block(f"get_story_order_for_tag_{tag_id}"):
+                story_order = self.get_story_order(
+                    session=session,
+                    tag_id=tag_id,
+                    tag_instance_time=tag_instance_time,
+                    time_precision=time_precision,
+                    after=after,
+                )
+
+            # Update existing story orders in one operation
+            with trace_block(f"update_story_orders_for_tag_{tag_id}"):
+                self.update_story_orders(
+                    session=session,
+                    story_order=story_order,
+                    tag_id=tag_id,
+                )
+
+            # Prepare all instances for this tag
+            models = []
+            values = []
+
+            for i, instance in enumerate(instances):
+                instance_id = uuid4()
+                current_order = story_order + i
+
+                model = TagInstanceModel(
+                    id=instance_id,
+                    start_char=instance["start_char"],
+                    stop_char=instance["stop_char"],
+                    summary_id=instance["summary_id"],
+                    tag_id=tag_id,
+                    story_order=current_order,
+                )
+                models.append(model)
+
+                values.append(
+                    {
+                        "id": instance_id,
+                        "start_char": instance["start_char"],
+                        "stop_char": instance["stop_char"],
+                        "summary_id": instance["summary_id"],
+                        "tag_id": tag_id,
+                        "story_order": current_order,
+                    }
+                )
+
+            # Bulk insert all instances for this tag
+            with trace_block(f"bulk_insert_for_tag_{tag_id}"):
+                if values:
+                    placeholders = []
+                    all_params = {}
+
+                    for i, val in enumerate(values):
+                        placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i})"
+                        placeholders.append(placeholder)
+
+                        for key, value in val.items():
+                            all_params[f"{key}_{i}"] = value
+
+                    stmt = f"""
+                        INSERT INTO tag_instances
+                            (id, start_char, stop_char, summary_id, tag_id, story_order)
+                        VALUES
+                            {', '.join(placeholders)}
+                    """
+                    session.execute(text(stmt), all_params)
+
+            result_instances.extend(models)
+
+        return result_instances
