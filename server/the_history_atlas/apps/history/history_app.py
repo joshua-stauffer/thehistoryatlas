@@ -247,6 +247,14 @@ class HistoryApp:
 
         return summary_id
 
+    def calculate_story_order(
+        self,
+        tag_ids: list[UUID],
+    ) -> None:
+        """Calculate story order for any tag_instances which have not yet been ordered."""
+        for tag_id in tag_ids:
+            self._repository.update_null_story_order(tag_id=tag_id)
+
     def get_story_pointers(
         self,
         event_id: UUID,
