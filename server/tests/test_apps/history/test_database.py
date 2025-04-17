@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Literal, Callable
 from uuid import uuid4, UUID
 
@@ -496,3 +496,183 @@ class TestTimeExists:
                 session=session,
             )
             assert id_result is None
+
+
+def test_update_story_order_bulk_simple_chain(history_db):
+    """Test ordering with simple linear dependencies."""
+    tag_id = uuid4()
+    summaries = [uuid4() for _ in range(4)]
+    time_ids = []
+
+    with history_db.Session() as session:
+        # Create tag
+        session.execute(
+            text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"), {"id": tag_id}
+        )
+
+        # Create summaries and their relationships
+        for i, summary_id in enumerate(summaries):
+            # Create summary
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, :text)"),
+                {"id": summary_id, "text": f"Test summary {summary_id}"},
+            )
+
+            # Create tag instance with initial story_order
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances
+                    (id, summary_id, tag_id, start_char, stop_char, story_order)
+                    VALUES (:id, :summary_id, :tag_id, 0, 10, :story_order)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "summary_id": summary_id,
+                    "tag_id": tag_id,
+                    "story_order": i * 1000,  # Initial ordering
+                },
+            )
+
+        # Add time information
+        for i, summary_id in enumerate(summaries):
+            time_id = uuid4()
+            time_ids.append(time_id)
+            time = datetime.now(timezone.utc) + timedelta(days=i)
+
+            session.execute(
+                text("INSERT INTO tags (id, type) VALUES (:id, 'TIME')"),
+                {"id": time_id},
+            )
+
+            session.execute(
+                text(
+                    """
+                    INSERT INTO times (id, datetime, calendar_model, precision)
+                    VALUES (:id, :datetime, 'gregorian', 11)
+                """
+                ),
+                {"id": time_id, "datetime": time},
+            )
+
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances
+                    (id, summary_id, tag_id, start_char, stop_char, story_order)
+                    VALUES (:id, :summary_id, :tag_id, 0, 10, :story_order)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "summary_id": summary_id,
+                    "tag_id": time_id,
+                    "story_order": i * 1000,  # Initial ordering
+                },
+            )
+
+        session.commit()
+
+        # Run the bulk update
+        history_db.update_story_order_bulk(tag_id=tag_id, session=session)
+
+        # Verify results
+        results = session.execute(
+            text(
+                """
+                SELECT summary_id, story_order
+                FROM tag_instances
+                WHERE tag_id = :tag_id
+                ORDER BY story_order
+            """
+            ),
+            {"tag_id": tag_id},
+        ).fetchall()
+
+        # Check that order matches our chain
+        result_ids = [r.summary_id for r in results]
+        assert result_ids == summaries
+
+        # Check that orders are properly spaced
+        orders = [r.story_order for r in results]
+        assert all(orders[i] < orders[i + 1] for i in range(len(orders) - 1))
+        assert all(o % 1000 == 0 for o in orders)
+
+        # Cleanup in correct order
+        cleanup_queries = [
+            "DELETE FROM tag_instances WHERE tag_id = :tag_id OR tag_id = ANY(:time_ids)",
+            "DELETE FROM times WHERE id = ANY(:time_ids)",
+            "DELETE FROM tags WHERE id = :tag_id OR id = ANY(:time_ids)",
+            "DELETE FROM summaries WHERE id = ANY(:summary_ids)",
+        ]
+
+        for query in cleanup_queries:
+            session.execute(
+                text(query),
+                {"tag_id": tag_id, "time_ids": time_ids, "summary_ids": summaries},
+            )
+        session.commit()
+
+
+def test_update_story_order_bulk_circular_dependency(history_db):
+    """Test that circular dependencies are detected and raise an error."""
+    tag_id = uuid4()
+    summaries = [uuid4() for _ in range(3)]
+
+    with history_db.Session() as session:
+        # Create tag
+        session.execute(
+            text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"), {"id": tag_id}
+        )
+
+        # Create summaries and their relationships
+        for summary_id in summaries:
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, :text)"),
+                {"id": summary_id, "text": f"Test summary {summary_id}"},
+            )
+
+        # Create circular dependency: 0 -> 1 -> 2 -> 0
+        dependencies = {
+            summaries[0]: [str(summaries[2])],  # Convert UUIDs to strings
+            summaries[1]: [str(summaries[0])],
+            summaries[2]: [str(summaries[1])],
+        }
+
+        for i, (summary_id, after) in enumerate(dependencies.items()):
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances
+                    (id, summary_id, tag_id, start_char, stop_char, story_order, after)
+                    VALUES (:id, :summary_id, :tag_id, 0, 10, :story_order, to_jsonb(:after))
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "summary_id": summary_id,
+                    "tag_id": tag_id,
+                    "story_order": i * 1000,  # Different initial orders
+                    "after": after,
+                },
+            )
+
+        session.commit()
+
+        # Verify that circular dependency is detected
+        with pytest.raises(ValueError, match="Circular dependency detected"):
+            history_db.update_story_order_bulk(tag_id=tag_id, session=session)
+
+        # Cleanup in correct order
+        cleanup_queries = [
+            "DELETE FROM tag_instances WHERE tag_id = :tag_id",
+            "DELETE FROM tags WHERE id = :tag_id",
+            "DELETE FROM summaries WHERE id IN :summary_ids",
+        ]
+
+        for query in cleanup_queries:
+            session.execute(
+                text(query), {"tag_id": tag_id, "summary_ids": tuple(summaries)}
+            )
+        session.commit()

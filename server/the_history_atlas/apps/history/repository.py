@@ -15,7 +15,7 @@ from typing import (
 from uuid import uuid4, UUID
 from enum import Enum
 
-from sqlalchemy import select, text, create_engine, orm, insert
+from sqlalchemy import select, text, create_engine, orm, insert, and_, update, exists
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -1227,4 +1227,98 @@ class Repository:
 
         return result_instances
 
-    def update_order_story_bulk(self, story_id: UUID) -> None: ...
+    def update_story_order_bulk(self, tag_id: UUID, session: Session) -> None:
+        """Update story_order values for all tag_instances of a given tag in bulk.
+
+        This function will:
+        1. Get all tag_instances for the given tag
+        2. Build a dependency graph based on the 'after' field
+        3. Perform a topological sort to get the correct order
+        4. Update all story_order values in a single transaction
+
+        Args:
+            tag_id: The UUID of the tag to update
+            session: The database session to use
+
+        Raises:
+            ValueError: If a circular dependency is detected
+        """
+        # Get all tag_instances for this tag
+        query = """
+            SELECT summary_id, after
+            FROM tag_instances
+            WHERE tag_id = :tag_id
+        """
+        result = session.execute(text(query), {"tag_id": tag_id})
+
+        # Build dependency graph
+        graph = defaultdict(list)
+        for row in result:
+            summary_id = row[0]
+            after = row[1] if row[1] else []
+            for dep in after:
+                graph[str(dep)].append(str(summary_id))
+
+        # Perform topological sort
+        visited = set()
+        temp = set()
+        ordered_summaries = []
+
+        def visit(node):
+            if node in temp:
+                raise ValueError("Circular dependency detected")
+            if node not in visited:
+                temp.add(node)
+                for neighbor in graph.get(node, []):
+                    visit(neighbor)
+                temp.remove(node)
+                visited.add(node)
+                ordered_summaries.append(UUID(node))
+
+        # Visit all nodes
+        all_nodes = set(graph.keys()).union(
+            node for neighbors in graph.values() for node in neighbors
+        )
+        for node in all_nodes:
+            if node not in visited:
+                visit(node)
+
+        # Reverse the list since we want dependencies to come first
+        ordered_summaries.reverse()
+
+        # Now that we know there are no circular dependencies, create the temporary table
+        # and update the story orders
+        temp_table_query = """
+            CREATE TEMP TABLE temp_story_orders (
+                summary_id UUID PRIMARY KEY,
+                new_order INTEGER
+            );
+        """
+        session.execute(text(temp_table_query))
+
+        try:
+            # Insert the new orders into temp table
+            for idx, summary_id in enumerate(ordered_summaries):
+                insert_query = """
+                    INSERT INTO temp_story_orders (summary_id, new_order)
+                    VALUES (:summary_id, :new_order)
+                """
+                session.execute(
+                    text(insert_query),
+                    {"summary_id": summary_id, "new_order": idx * 1000},
+                )
+
+            # Update the actual tag_instances table using the temp table
+            update_query = """
+                UPDATE tag_instances
+                SET story_order = temp_story_orders.new_order
+                FROM temp_story_orders
+                WHERE tag_instances.summary_id = temp_story_orders.summary_id
+                AND tag_instances.tag_id = :tag_id
+            """
+            session.execute(text(update_query), {"tag_id": tag_id})
+        finally:
+            # Clean up temp table
+            session.execute(text("DROP TABLE IF EXISTS temp_story_orders"))
+
+    def update_order_story_bulk(self, tag_id: UUID) -> None: ...
