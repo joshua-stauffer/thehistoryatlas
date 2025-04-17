@@ -139,6 +139,7 @@ class Repository:
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
                     WHERE tag_instances.story_order = 0
+                    AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     ORDER BY RANDOM()
                     LIMIT 1;
@@ -159,6 +160,7 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     WHERE tag_instances.story_order = 0
+                    AND tag_instances.story_order IS NOT NULL
                     AND tag_instances.tag_id = :story_id
                 """
                 ),
@@ -179,6 +181,7 @@ class Repository:
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
                     WHERE tag_instances.story_order = 0
+                    AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     AND tag_instances.tag_id = :event_id
                     ORDER BY RANDOM()
@@ -221,10 +224,12 @@ class Repository:
                     ti.tag_id as story_id
                 from tag_instances ti
                 where ti.tag_id = :tag_id
+                and ti.story_order IS NOT NULL
                 and ti.story_order {operator} (
                     select story_order from tag_instances
                     where tag_instances.tag_id =  :tag_id
                     and tag_instances.summary_id = :summary_id
+                    and tag_instances.story_order IS NOT NULL
                 ) {predicate}
                 order by ti.story_order {order_by_clause}
                 limit 10
@@ -852,7 +857,8 @@ class Repository:
                 from summaries
                     join tag_instances on tag_instances.summary_id = summaries.id
                 where summaries.id in :summary_ids
-                    and tag_instances.tag_id = :tag_id;
+                    and tag_instances.tag_id = :tag_id
+                    and tag_instances.story_order IS NOT NULL;
             """
             ),
             {
@@ -871,6 +877,7 @@ class Repository:
                     precision=row.precision,
                 )
                 for summary_id, row in summary_map.items()
+                if summary_id in story_order_map
             ],
             key=lambda row: row.story_order,
         )
@@ -904,12 +911,14 @@ class Repository:
                 UPDATE tag_instances
                 SET story_order = story_order + :offset 
                 WHERE tag_id = :tag_id
-                  AND story_order >= :story_order;
+                  AND story_order >= :story_order
+                  AND story_order IS NOT NULL;
 
                 UPDATE tag_instances
                 SET story_order = story_order - (:offset - 1) 
                 WHERE tag_id = :tag_id
-                  AND story_order >= :story_order + :offset;
+                  AND story_order >= :story_order + :offset
+                  AND story_order IS NOT NULL;
             """
             ),
             {"tag_id": tag_id, "story_order": story_order, "offset": OFFSET},

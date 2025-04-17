@@ -71,7 +71,7 @@ class Time(TimeInput):
 
 class StoryOrder(BaseModel):
     summary_id: UUID
-    story_order: int
+    story_order: int | None = None
     datetime: str
     precision: Precision
 
