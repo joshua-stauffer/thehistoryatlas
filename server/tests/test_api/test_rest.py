@@ -7,9 +7,7 @@ from faker import Faker
 import pytest
 from fastapi.testclient import TestClient
 from httpx import QueryParams
-from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.engine import row
 from sqlalchemy.orm import Session, scoped_session
 
 from the_history_atlas.api.types.history import Story
@@ -17,7 +15,6 @@ from the_history_atlas.api.types.tags import (
     WikiDataPersonInput,
     WikiDataPlaceInput,
     WikiDataTimeInput,
-    WikiDataTagsInput,
     WikiDataTagPointer,
     WikiDataEventInput,
     WikiDataCitationInput,
@@ -557,6 +554,7 @@ def test_create_stories_order(
                 where tag_id = :tag_id
             )
             and tag_instances.tag_id = :tag_id
+            and tag_instances.story_order IS NOT NULL
             order by story_order;
         """
         ),
@@ -606,6 +604,7 @@ def get_all_events_in_order(
                 where tag_id = :tag_id
             )
             and tag_instances.tag_id = :tag_id
+            and tag_instances.story_order IS NOT NULL
             order by story_order;
         """
         ),
