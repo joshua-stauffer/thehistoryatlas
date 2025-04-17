@@ -1226,3 +1226,5 @@ class Repository:
             result_instances.extend(models)
 
         return result_instances
+
+    def update_order_story_bulk(self, story_id: UUID) -> None: ...

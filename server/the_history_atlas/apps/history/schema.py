@@ -91,6 +91,9 @@ class TagInstance(Base):
         # Add index for faster story order operations
         Index("idx_tag_instances_tag_id_story_order", tag_id, story_order),
     )
+    after = Column(
+        JSONB, nullable=True, default={}
+    )  # semantic ordering data independent of dates
 
 
 # Add index for tag_names for faster lookups
