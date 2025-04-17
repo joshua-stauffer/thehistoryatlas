@@ -1236,4 +1236,128 @@ class Repository:
 
         return result_instances
 
-    def update_order_story_bulk(self, story_id: UUID) -> None: ...
+    def update_null_story_order(self, tag_id: UUID) -> None:
+        """
+        Updates all null story_order values for a given tag_id based on time ordering.
+
+        This method:
+        1. Finds all tag instances with null story_order for the given tag_id
+        2. For each instance, determines the correct order using event datetime
+        3. Updates all instances in a single database operation
+        4. Uses a sparse integer approach for story_order values
+
+        Args:
+            tag_id: UUID of the tag to update story orders for
+        """
+        with Session(self._engine, future=True) as session:
+            # First, get all tag instances with null story_order for this tag
+            null_instances = session.execute(
+                text(
+                    """
+                    SELECT 
+                        tag_instances.id,
+                        tag_instances.summary_id,
+                        tag_instances.tag_id,
+                        tag_instances.after,
+                        (
+                            SELECT times.datetime
+                            FROM summaries s
+                            JOIN tag_instances ti ON ti.summary_id = s.id
+                            JOIN tags t ON t.id = ti.tag_id AND t.type = 'TIME'
+                            JOIN times ON times.id = t.id
+                            WHERE s.id = tag_instances.summary_id
+                            ORDER BY times.datetime, times.precision
+                            LIMIT 1
+                        ) AS datetime,
+                        (
+                            SELECT times.precision
+                            FROM summaries s
+                            JOIN tag_instances ti ON ti.summary_id = s.id
+                            JOIN tags t ON t.id = ti.tag_id AND t.type = 'TIME'
+                            JOIN times ON times.id = t.id
+                            WHERE s.id = tag_instances.summary_id
+                            ORDER BY times.datetime, times.precision
+                            LIMIT 1
+                        ) AS precision
+                    FROM tag_instances
+                    WHERE tag_instances.tag_id = :tag_id
+                    AND tag_instances.story_order IS NULL
+                    """
+                ),
+                {"tag_id": tag_id},
+            ).all()
+
+            if not null_instances:
+                return
+
+            # Get the current max story_order for this tag to start spacing from
+            max_order = session.execute(
+                text(
+                    """
+                    SELECT COALESCE(MAX(story_order), -1) 
+                    FROM tag_instances
+                    WHERE tag_id = :tag_id
+                    AND story_order IS NOT NULL
+                    """
+                ),
+                {"tag_id": tag_id},
+            ).scalar_one()
+
+            # Sort instances by datetime for consistent ordering
+            sorted_instances = sorted(
+                null_instances, key=lambda x: (x.datetime, x.precision)
+            )
+
+            # Calculate new orders with sparse spacing
+            instance_updates = []
+            next_order = max_order + 1
+
+            for instance in sorted_instances:
+                # Handle after relationships
+                after_ids = []
+                if instance.after:
+                    after_ids = [UUID(id_str) for id_str in instance.after]
+
+                if after_ids:
+                    # Find the maximum story_order of the "after" instances
+                    after_max_order = session.execute(
+                        text(
+                            """
+                            SELECT COALESCE(MAX(story_order), -1)
+                            FROM tag_instances
+                            WHERE tag_id = :tag_id
+                            AND summary_id = ANY(:after_ids)
+                            """
+                        ),
+                        {"tag_id": tag_id, "after_ids": after_ids},
+                    ).scalar_one()
+
+                    if after_max_order >= 0:
+                        next_order = max(next_order, after_max_order + 1)
+
+                instance_updates.append({"id": instance.id, "story_order": next_order})
+                next_order += 1
+
+            # Update all instances in a single operation
+            if instance_updates:
+                # Prepare the SQL for bulk update
+                update_stmt = "UPDATE tag_instances SET story_order = CASE id "
+
+                params = {"tag_id": tag_id}
+                id_list = []
+
+                for i, update in enumerate(instance_updates):
+                    update_stmt += f"WHEN :id_{i} THEN :order_{i} "
+                    params[f"id_{i}"] = update["id"]
+                    params[f"order_{i}"] = update["story_order"]
+                    id_list.append(f":id_{i}")
+
+                update_stmt += (
+                    "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
+                    + ", ".join(id_list)
+                    + ")"
+                )
+
+                # Execute the update
+                session.execute(text(update_stmt), params)
+                session.commit()
