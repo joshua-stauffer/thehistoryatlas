@@ -24,6 +24,8 @@ from the_history_atlas.apps.domain.core import (
     StoryOrder,
     StoryName,
     StoryPointer,
+    TagInstanceWithTime,
+    TagInstanceWithTimeAndOrder,
 )
 from the_history_atlas.apps.domain.models.history import (
     Source as ADMSource,
@@ -66,6 +68,12 @@ from the_history_atlas.apps.history.trie import Trie
 from the_history_atlas.apps.history.tracing import trace_db, trace_method, trace_block
 
 log = logging.getLogger(__name__)
+
+
+class RebalanceError:
+    """Story orders require rebalancing"""
+
+    pass
 
 
 class Repository:
@@ -138,7 +146,7 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 0
+                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     ORDER BY RANDOM()
@@ -159,7 +167,7 @@ class Repository:
                     """
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
-                    WHERE tag_instances.story_order = 0
+                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tag_instances.tag_id = :story_id
                 """
@@ -180,7 +188,7 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 0
+                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     AND tag_instances.tag_id = :event_id
@@ -897,6 +905,88 @@ class Repository:
         # this tag instance occurs later than all existing tag instances
         return story_order[-1].story_order + 1
 
+    def get_story_order_2(
+        self,
+        tag_instances: list[TagInstanceWithTimeAndOrder],
+        target: TagInstanceWithTime,
+    ) -> int:
+        BASE_INDEX = 100_000
+        INTERVAL = 1_000
+        if not tag_instances:  # base case
+            return BASE_INDEX
+        sorted_tag_instances = sorted(tag_instances, key=lambda tag: tag.story_order)
+        target_date_tuple = (target.datetime, target.precision)
+        tag_instances_by_date_tuples = defaultdict(list)
+        for tag_instance in sorted_tag_instances:
+            date_tuple = (tag_instance.datetime, tag_instance.precision)
+            tag_instances_by_date_tuples[date_tuple].append(tag_instance)
+
+        if target_date_tuple in tag_instances_by_date_tuples:
+            # tag instance datetime and precision match all the instances in this list,
+            # so find the earliest possible story_order that doesn't violate an ID in `after`
+            after = target.after or set()
+
+            tag_instance_subset = tag_instances_by_date_tuples[target_date_tuple]
+            min_index_of_subset = -1  # keep track of lower limit
+            for index, tag_instance in enumerate(tag_instance_subset):
+                if tag_instance.summary_id in after:
+                    min_index_of_subset = index
+            if min_index_of_subset == -1:
+                # index is less than the first index in this list, so we go back to the full
+                # list to find the previous index
+                current_index = sorted_tag_instances.index(tag_instance_subset[0])
+                if current_index == 0:
+                    return sorted_tag_instances[0].story_order - INTERVAL
+                else:
+                    return self.calculate_index(
+                        min_index=sorted_tag_instances[current_index - 1].story_order,
+                        max_index=sorted_tag_instances[current_index].story_order,
+                    )
+            elif min_index_of_subset + 1 == len(tag_instance_subset):
+                # index is greater than the last index in this list,
+                # so we go back to full list to find next index
+                current_index = sorted_tag_instances.index(
+                    tag_instance_subset[min_index_of_subset]
+                )
+                if current_index + 1 == len(sorted_tag_instances):  # last tag_instance
+                    return sorted_tag_instances[current_index].story_order + INTERVAL
+                return self.calculate_index(
+                    min_index=sorted_tag_instances[current_index].story_order,
+                    max_index=sorted_tag_instances[current_index + 1].story_order,
+                )
+            else:
+                return self.calculate_index(
+                    min_index=tag_instance_subset[min_index_of_subset].story_order,
+                    max_index=tag_instance_subset[min_index_of_subset + 1].story_order,
+                )
+
+        # this tag instance has a unique datetime/precision combination, so
+        # we find its order in the existing list.
+        for index, tag_instance in enumerate(sorted_tag_instances):
+            if tag_instance.datetime < target.datetime:
+                continue
+            elif (
+                tag_instance.datetime == target.datetime
+                and tag_instance.precision < target.precision
+            ):
+                continue
+            else:
+                if index == 0:  # base case
+                    return tag_instance.story_order - INTERVAL
+                return self.calculate_index(
+                    min_index=sorted_tag_instances[index - 1].story_order,
+                    max_index=tag_instance.story_order,
+                )
+        # this tag instance is later than all others
+        return sorted_tag_instances[-1].story_order + INTERVAL
+
+    def calculate_index(self, min_index: int, max_index: int):
+        difference = max_index - min_index
+        if difference == 1:
+            raise RebalanceError
+        # return an index approx halfway between the two existing indices
+        return min_index + (difference // 2)
+
     @trace_db("update_story_orders")
     def update_story_orders(
         self, session: Session, tag_id: UUID, story_order: int
@@ -1164,31 +1254,12 @@ class Repository:
         result_instances = []
 
         for tag_id, instances in instances_by_tag.items():
-            # Get the starting story order for this tag
-            with trace_block(f"get_story_order_for_tag_{tag_id}"):
-                story_order = self.get_story_order(
-                    session=session,
-                    tag_id=tag_id,
-                    tag_instance_time=tag_instance_time,
-                    time_precision=time_precision,
-                    after=after,
-                )
-
-            # Update existing story orders in one operation
-            with trace_block(f"update_story_orders_for_tag_{tag_id}"):
-                self.update_story_orders(
-                    session=session,
-                    story_order=story_order,
-                    tag_id=tag_id,
-                )
-
             # Prepare all instances for this tag
             models = []
             values = []
 
             for i, instance in enumerate(instances):
                 instance_id = uuid4()
-                current_order = story_order + i
 
                 model = TagInstanceModel(
                     id=instance_id,
@@ -1196,7 +1267,7 @@ class Repository:
                     stop_char=instance["stop_char"],
                     summary_id=instance["summary_id"],
                     tag_id=tag_id,
-                    story_order=current_order,
+                    story_order=None,  # will be calculated after request is returned
                 )
                 models.append(model)
 
@@ -1207,7 +1278,7 @@ class Repository:
                         "stop_char": instance["stop_char"],
                         "summary_id": instance["summary_id"],
                         "tag_id": tag_id,
-                        "story_order": current_order,
+                        "story_order": None,
                     }
                 )
 
@@ -1250,8 +1321,7 @@ class Repository:
             tag_id: UUID of the tag to update story orders for
         """
         with Session(self._engine, future=True) as session:
-            # First, get all tag instances with null story_order for this tag
-            null_instances = session.execute(
+            tag_instances = session.execute(
                 text(
                     """
                     SELECT 
@@ -1259,6 +1329,7 @@ class Repository:
                         tag_instances.summary_id,
                         tag_instances.tag_id,
                         tag_instances.after,
+                        tag_instances.story_order,
                         (
                             SELECT times.datetime
                             FROM summaries s
@@ -1281,62 +1352,34 @@ class Repository:
                         ) AS precision
                     FROM tag_instances
                     WHERE tag_instances.tag_id = :tag_id
-                    AND tag_instances.story_order IS NULL
                     """
                 ),
                 {"tag_id": tag_id},
             ).all()
+            nonnull_instances: list[TagInstanceWithTimeAndOrder] = []
+            null_instances: list[TagInstanceWithTime] = []
+            for row in tag_instances:
+                if row.story_order is None:
+                    null_instances.append(
+                        TagInstanceWithTime.model_validate(row, from_attributes=True)
+                    )
+                else:
+                    nonnull_instances.append(
+                        TagInstanceWithTimeAndOrder.model_validate(
+                            row, from_attributes=True
+                        )
+                    )
 
             if not null_instances:
                 return
 
-            # Get the current max story_order for this tag to start spacing from
-            max_order = session.execute(
-                text(
-                    """
-                    SELECT COALESCE(MAX(story_order), -1) 
-                    FROM tag_instances
-                    WHERE tag_id = :tag_id
-                    AND story_order IS NOT NULL
-                    """
-                ),
-                {"tag_id": tag_id},
-            ).scalar_one()
-
-            # Sort instances by datetime for consistent ordering
-            sorted_instances = sorted(
-                null_instances, key=lambda x: (x.datetime, x.precision)
-            )
-
-            # Calculate new orders with sparse spacing
-            instance_updates = []
-            next_order = max_order + 1
-
-            for instance in sorted_instances:
-                # Handle after relationships
-                after_ids = []
-                if instance.after:
-                    after_ids = [UUID(id_str) for id_str in instance.after]
-
-                if after_ids:
-                    # Find the maximum story_order of the "after" instances
-                    after_max_order = session.execute(
-                        text(
-                            """
-                            SELECT COALESCE(MAX(story_order), -1)
-                            FROM tag_instances
-                            WHERE tag_id = :tag_id
-                            AND summary_id = ANY(:after_ids)
-                            """
-                        ),
-                        {"tag_id": tag_id, "after_ids": after_ids},
-                    ).scalar_one()
-
-                    if after_max_order >= 0:
-                        next_order = max(next_order, after_max_order + 1)
-
-                instance_updates.append({"id": instance.id, "story_order": next_order})
-                next_order += 1
+            instance_updates: list[dict[str, int]] = []
+            for target in null_instances:
+                story_order = self.get_story_order_2(
+                    tag_instances=nonnull_instances,
+                    target=target,
+                )
+                instance_updates.append({"id": target.id, "story_order": story_order})
 
             # Update all instances in a single operation
             if instance_updates:

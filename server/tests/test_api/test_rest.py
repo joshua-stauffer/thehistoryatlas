@@ -2,6 +2,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 import random
+from time import sleep
 from typing import Literal, Dict
 from uuid import uuid4, UUID
 from faker import Faker
@@ -518,6 +519,7 @@ def test_create_stories_order(
         )
         for time, place in zip(times, places)
     ]
+    sleep(0)
 
     # act
     response = client.get("/history")
@@ -568,8 +570,6 @@ def test_create_stories_order(
     row_tuples = [(row.story_order, row.datetime) for row in rows]
     assert len(row_tuples) == EVENT_COUNT
     assert sorted(row_tuples) == row_tuples
-    for i, (story_order, _) in enumerate(row_tuples):
-        assert i == story_order
 
 
 def get_all_events_in_order(
@@ -637,6 +637,7 @@ class TestGetHistory:
             )
             for time, place in zip(times, places)
         ]
+        sleep(0)
 
         # act
         response = client.get("/history")
