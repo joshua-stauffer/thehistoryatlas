@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -1286,10 +1287,10 @@ class Repository:
             with trace_block(f"bulk_insert_for_tag_{tag_id}"):
                 if values:
                     placeholders = []
-                    all_params = {}
+                    all_params = {"after": json.dumps([str(id) for id in after])}
 
                     for i, val in enumerate(values):
-                        placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i})"
+                        placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i}, :after)"
                         placeholders.append(placeholder)
 
                         for key, value in val.items():
@@ -1297,7 +1298,7 @@ class Repository:
 
                     stmt = f"""
                         INSERT INTO tag_instances
-                            (id, start_char, stop_char, summary_id, tag_id, story_order)
+                            (id, start_char, stop_char, summary_id, tag_id, story_order, after)
                         VALUES
                             {', '.join(placeholders)}
                     """
