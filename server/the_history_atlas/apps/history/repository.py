@@ -50,6 +50,9 @@ from the_history_atlas.apps.domain.models.history.tables import (
     TagNameAssocModel,
     SummaryModel,
 )
+from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
+    TagInstanceInput,
+)
 from the_history_atlas.apps.domain.models.history.tables.time import (
     TimePrecision,
     TimeModel,
@@ -71,7 +74,7 @@ from the_history_atlas.apps.history.tracing import trace_db, trace_method, trace
 log = logging.getLogger(__name__)
 
 
-class RebalanceError:
+class RebalanceError(Exception):
     """Story orders require rebalancing"""
 
     pass
@@ -1239,9 +1242,7 @@ class Repository:
     @trace_db("bulk_create_tag_instances")
     def bulk_create_tag_instances(
         self,
-        tag_instances: list[dict],
-        tag_instance_time: str,
-        time_precision: TimePrecision,
+        tag_instances: list[TagInstanceInput],
         after: list[UUID],
         session: Session,
     ) -> list[TagInstanceModel]:
@@ -1249,7 +1250,7 @@ class Repository:
         # Group tag instances by tag_id for efficient story ordering
         instances_by_tag = defaultdict(list)
         for instance in tag_instances:
-            instances_by_tag[instance["tag_id"]].append(instance)
+            instances_by_tag[instance.tag_id].append(instance)
 
         # Process each tag group
         result_instances = []
@@ -1264,24 +1265,11 @@ class Repository:
 
                 model = TagInstanceModel(
                     id=instance_id,
-                    start_char=instance["start_char"],
-                    stop_char=instance["stop_char"],
-                    summary_id=instance["summary_id"],
-                    tag_id=tag_id,
-                    story_order=None,  # will be calculated after request is returned
+                    **instance.model_dump(),
                 )
                 models.append(model)
 
-                values.append(
-                    {
-                        "id": instance_id,
-                        "start_char": instance["start_char"],
-                        "stop_char": instance["stop_char"],
-                        "summary_id": instance["summary_id"],
-                        "tag_id": tag_id,
-                        "story_order": None,
-                    }
-                )
+                values.append(model.model_dump())
 
             # Bulk insert all instances for this tag
             with trace_block(f"bulk_insert_for_tag_{tag_id}"):
