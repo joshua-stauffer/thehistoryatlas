@@ -722,7 +722,7 @@ class Repository:
         self,
         session: Session,
         id: UUID,
-        datetime: datetime,
+        datetime: str,
         calendar_model: str,
         precision: TimePrecision,
         wikidata_id: str | None = None,
@@ -764,140 +764,7 @@ class Repository:
         else:
             return None
 
-    @trace_db("create_tag_instance")
-    def create_tag_instance(
-        self,
-        start_char: int,
-        stop_char: int,
-        summary_id: UUID,
-        tag_id: UUID,
-        tag_instance_time: str,
-        time_precision: TimePrecision,
-        after: list[UUID],
-        session: Session,
-    ) -> TagInstanceModel:
-        with trace_block("get_story_order"):
-            story_order = self.get_story_order(
-                session=session,
-                tag_id=tag_id,
-                tag_instance_time=tag_instance_time,
-                time_precision=time_precision,
-                after=after,
-            )
-
-        with trace_block("update_story_orders"):
-            self.update_story_orders(
-                session=session,
-                story_order=story_order,
-                tag_id=tag_id,
-            )
-
-        id = uuid4()
-        tag_instance = TagInstanceModel(
-            id=id,
-            start_char=start_char,
-            stop_char=stop_char,
-            summary_id=summary_id,
-            tag_id=tag_id,
-            story_order=story_order,
-        )
-
-        with trace_block("execute_tag_instance_insert"):
-            stmt = """
-                insert into tag_instances
-                    (id, start_char, stop_char, summary_id, tag_id, story_order)
-                values
-                    (:id, :start_char, :stop_char, :summary_id, :tag_id, :story_order)        
-            """
-            session.execute(text(stmt), tag_instance.model_dump())
-
-        return tag_instance
-
-    @trace_db("get_story_order")
     def get_story_order(
-        self,
-        session: Session,
-        tag_id: UUID,
-        tag_instance_time: str,
-        time_precision: TimePrecision,
-        after: list[UUID],
-    ) -> int:
-        """Given a tag, find the order belonging to a given time."""
-        summary_rows = session.execute(
-            text(
-                """
-                select 
-                    summaries.id as summary_id,
-                    times.datetime as datetime, 
-                    times.precision as precision
-                from summaries 
-                    -- given a summary, find its time tag
-                    join tag_instances on tag_instances.summary_id = summaries.id
-                    join tags on tags.id = tag_instances.tag_id and tags.type = 'TIME'
-                    join times on times.id = tags.id
-                where summaries.id in (
-                    -- find all the summaries related to input tag_id
-                    select summary_id from tag_instances where tag_id = :tag_id
-                )
-                order by times.datetime, times.precision
-            """
-            ),
-            {"tag_id": tag_id},
-        ).all()
-        summary_map = {row.summary_id: row for row in summary_rows}
-        if not summary_map:
-            return 0
-
-        story_order_rows = session.execute(
-            text(
-                """
-                select 
-                    summaries.id as summary_id,
-                    tag_instances.story_order as story_order
-                from summaries
-                    join tag_instances on tag_instances.summary_id = summaries.id
-                where summaries.id in :summary_ids
-                    and tag_instances.tag_id = :tag_id
-                    and tag_instances.story_order IS NOT NULL;
-            """
-            ),
-            {
-                "summary_ids": tuple([row.summary_id for row in summary_rows]),
-                "tag_id": tag_id,
-            },
-        ).all()
-        story_order_map = {row.summary_id: row.story_order for row in story_order_rows}
-
-        story_order = sorted(
-            [
-                StoryOrder(
-                    summary_id=summary_id,
-                    story_order=story_order_map[summary_id],
-                    datetime=row.datetime,
-                    precision=row.precision,
-                )
-                for summary_id, row in summary_map.items()
-                if summary_id in story_order_map
-            ],
-            key=lambda row: row.story_order,
-        )
-        if not story_order:
-            return 0
-        for row in story_order:
-            if row.datetime < tag_instance_time:
-                continue
-            elif row.datetime == tag_instance_time and row.precision < time_precision:
-                continue
-            elif row.summary_id in after:
-                # make a best effort to put this summary after the given IDs,
-                # but only if the time matches
-                continue
-            else:
-                return row.story_order
-        # this tag instance occurs later than all existing tag instances
-        return story_order[-1].story_order + 1
-
-    def get_story_order_2(
         self,
         tag_instances: list[TagInstanceWithTimeAndOrder],
         target: TagInstanceWithTime,
@@ -978,33 +845,6 @@ class Repository:
             raise RebalanceError
         # return an index approx halfway between the two existing indices
         return min_index + (difference // 2)
-
-    @trace_db("update_story_orders")
-    def update_story_orders(
-        self, session: Session, tag_id: UUID, story_order: int
-    ) -> None:
-        """Increment story_order for every row of tag_instances with fkey tag_id where the
-        current value of story_order is equal or greater than param story_order.
-        """
-        OFFSET = 10_000_000
-        session.execute(
-            text(
-                """
-                UPDATE tag_instances
-                SET story_order = story_order + :offset 
-                WHERE tag_id = :tag_id
-                  AND story_order >= :story_order
-                  AND story_order IS NOT NULL;
-
-                UPDATE tag_instances
-                SET story_order = story_order - (:offset - 1) 
-                WHERE tag_id = :tag_id
-                  AND story_order >= :story_order + :offset
-                  AND story_order IS NOT NULL;
-            """
-            ),
-            {"tag_id": tag_id, "story_order": story_order, "offset": OFFSET},
-        )
 
     def get_time_and_precision_by_tags(
         self, session: Session, tag_ids: list[UUID]
@@ -1352,7 +1192,7 @@ class Repository:
 
             instance_updates: list[dict[str, int]] = []
             for target in null_instances:
-                story_order = self.get_story_order_2(
+                story_order = self.get_story_order(
                     tag_instances=nonnull_instances,
                     target=target,
                 )
