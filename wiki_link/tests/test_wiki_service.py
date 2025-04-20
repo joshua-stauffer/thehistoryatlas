@@ -1144,105 +1144,104 @@ class TestBuildEvents:
             assert time_tag_in_call["id"] == existing_time_id
 
 
-def test_run_with_num_people_limit(
-    wiki_service,
-    mock_database,
-    mock_wikidata_service,
-    mock_rest_client,
-    mock_event_factory,
-    item,
-    entity,
-):
-    # Arrange
-    mock_wikidata_service.find_people.return_value = [
-        WikiDataItem(
-            qid="Q1",
-            url="https://www.wikidata.org/wiki/Q1",
-        ),
-        WikiDataItem(
-            qid="Q2",
-            url="https://www.wikidata.org/wiki/Q2",
-        ),
-    ]
-    mock_database.get_last_person_offset.return_value = 0
-    mock_database.is_wiki_id_in_queue.return_value = False
-    mock_database.wiki_id_exists.return_value = False
-    mock_database.get_oldest_item_from_queue.side_effect = [item, None]
-    mock_wikidata_service.get_entity.return_value = entity
-    mock_event_factory.entity_has_event.return_value = True
+class TestRun:
+    def test_num_people_limit(
+        self,
+        wiki_service,
+        mock_database,
+        mock_wikidata_service,
+        mock_rest_client,
+        mock_event_factory,
+        item,
+        entity,
+    ):
+        # Arrange
+        mock_wikidata_service.find_people.return_value = [
+            WikiDataItem(
+                qid="Q1",
+                url="https://www.wikidata.org/wiki/Q1",
+            ),
+            WikiDataItem(
+                qid="Q2",
+                url="https://www.wikidata.org/wiki/Q2",
+            ),
+        ]
+        mock_database.get_last_person_offset.return_value = 0
+        mock_database.is_wiki_id_in_queue.return_value = False
+        mock_database.wiki_id_exists.return_value = False
+        mock_database.pop_oldest_item_from_queue.side_effect = [item, None]
+        mock_wikidata_service.get_entity.return_value = entity
+        mock_event_factory.entity_has_event.return_value = True
 
-    # Act
-    wiki_service.run()
+        # Act
+        wiki_service.run()
 
-    # Assert
-    assert mock_database.get_oldest_item_from_queue.call_count == 2
-    mock_database.remove_item_from_queue.assert_called_once()
+        # Assert
+        assert mock_database.pop_oldest_item_from_queue.call_count == 2
 
+    def test_processes_until_queue_empty(
+        self,
+        wiki_service,
+        mock_database,
+        mock_wikidata_service,
+        mock_rest_client,
+        mock_event_factory,
+        item,
+        entity,
+    ):
+        # Arrange
+        mock_wikidata_service.find_people.return_value = [
+            WikiDataItem(
+                qid="Q1",
+                url="https://www.wikidata.org/wiki/Q1",
+            ),
+            WikiDataItem(
+                qid="Q2",
+                url="https://www.wikidata.org/wiki/Q2",
+            ),
+        ]
+        mock_database.get_last_person_offset.return_value = 0
+        mock_database.is_wiki_id_in_queue.return_value = False
+        mock_database.wiki_id_exists.return_value = False
+        mock_database.pop_oldest_item_from_queue.side_effect = [item, item, None]
+        mock_wikidata_service.get_entity.return_value = entity
+        mock_event_factory.entity_has_event.return_value = True
 
-def test_run_processes_until_queue_empty(
-    wiki_service,
-    mock_database,
-    mock_wikidata_service,
-    mock_rest_client,
-    mock_event_factory,
-    item,
-    entity,
-):
-    # Arrange
-    mock_wikidata_service.find_people.return_value = [
-        WikiDataItem(
-            qid="Q1",
-            url="https://www.wikidata.org/wiki/Q1",
-        ),
-        WikiDataItem(
-            qid="Q2",
-            url="https://www.wikidata.org/wiki/Q2",
-        ),
-    ]
-    mock_database.get_last_person_offset.return_value = 0
-    mock_database.is_wiki_id_in_queue.return_value = False
-    mock_database.wiki_id_exists.return_value = False
-    mock_database.get_oldest_item_from_queue.side_effect = [item, item, None]
-    mock_wikidata_service.get_entity.return_value = entity
-    mock_event_factory.entity_has_event.return_value = True
+        # Act
+        wiki_service.run()
 
-    # Act
-    wiki_service.run()
+        # Assert
+        assert mock_database.pop_oldest_item_from_queue.call_count == 3
 
-    # Assert
-    assert mock_database.get_oldest_item_from_queue.call_count == 3
-    assert mock_database.remove_item_from_queue.call_count == 2
+    def test_continues_on_error(
+        self,
+        wiki_service,
+        mock_database,
+        mock_wikidata_service,
+        mock_rest_client,
+        mock_event_factory,
+        item,
+        entity,
+    ):
+        # Arrange
+        mock_wikidata_service.find_people.return_value = [
+            WikiDataItem(
+                qid="Q1",
+                url="https://www.wikidata.org/wiki/Q1",
+            ),
+        ]
+        mock_database.get_last_person_offset.return_value = 0
+        mock_database.is_wiki_id_in_queue.return_value = False
+        mock_database.wiki_id_exists.return_value = False
+        mock_database.pop_oldest_item_from_queue.side_effect = [item, item, None]
+        mock_wikidata_service.get_entity.side_effect = [Exception("Test error"), entity]
+        mock_event_factory.entity_has_event.return_value = True
 
+        # Act
+        wiki_service.run()
 
-def test_run_continues_on_error(
-    wiki_service,
-    mock_database,
-    mock_wikidata_service,
-    mock_rest_client,
-    mock_event_factory,
-    item,
-    entity,
-):
-    # Arrange
-    mock_wikidata_service.find_people.return_value = [
-        WikiDataItem(
-            qid="Q1",
-            url="https://www.wikidata.org/wiki/Q1",
-        ),
-    ]
-    mock_database.get_last_person_offset.return_value = 0
-    mock_database.is_wiki_id_in_queue.return_value = False
-    mock_database.wiki_id_exists.return_value = False
-    mock_database.get_oldest_item_from_queue.side_effect = [item, item, None]
-    mock_wikidata_service.get_entity.side_effect = [Exception("Test error"), entity]
-    mock_event_factory.entity_has_event.return_value = True
-
-    # Act
-    wiki_service.run()
-
-    # Assert
-    assert mock_database.get_oldest_item_from_queue.call_count == 3
-    assert mock_database.remove_item_from_queue.call_count == 2
+        # Assert
+        assert mock_database.pop_oldest_item_from_queue.call_count == 3
 
 
 def test_build_events_handles_any_entity_type(config):

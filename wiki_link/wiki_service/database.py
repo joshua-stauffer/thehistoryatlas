@@ -132,7 +132,6 @@ class Database:
     def get_oldest_item_from_queue(self) -> Optional[Item]:
         """
         Get the oldest item from the queue, ordered by time_added.
-        This query is optimized with an index on wiki_queue.time_added.
         """
         with Session(self._engine, future=True) as session:
             row = (
@@ -161,6 +160,26 @@ class Database:
                 return
             session.delete(row)
             session.commit()
+
+    @trace_time()
+    def pop_oldest_item_from_queue(self) -> Optional[Item]:
+        with Session(self._engine, future=True) as session:
+            row = (
+                session.query(WikiQueue)
+                .order_by(WikiQueue.time_added)
+                .limit(1)
+                .one_or_none()
+            )
+            if row is None:
+                return None
+            item = Item(
+                wiki_id=row.wiki_id,
+                entity_type=row.entity_type,
+                wiki_link=row.wiki_url,
+            )
+            session.delete(row)
+            session.commit()
+            return item
 
     @trace_time()
     def is_wiki_id_in_queue(self, wiki_id: str) -> bool:
