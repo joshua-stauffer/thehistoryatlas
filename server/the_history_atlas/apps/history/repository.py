@@ -1,22 +1,16 @@
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import (
     Tuple,
     Optional,
     List,
     Literal,
-    Any,
-    Callable,
-    ClassVar,
-    TypeVar,
-    cast,
 )
 from uuid import uuid4, UUID
-from enum import Enum
 
-from sqlalchemy import select, text, create_engine, orm, insert
+from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -48,7 +42,6 @@ from the_history_atlas.apps.domain.models.history.tables import (
     NameModel,
     PlaceModel,
     TagNameAssocModel,
-    SummaryModel,
 )
 from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
     TagInstanceInput,
@@ -60,16 +53,11 @@ from the_history_atlas.apps.domain.models.history.tables.time import (
 from the_history_atlas.apps.history.errors import MissingResourceError
 from the_history_atlas.apps.history.schema import (
     Base,
-    Person,
-    Place,
     Summary,
-    Time,
     Source,
-    Tag,
-    TagInstance,
 )
 from the_history_atlas.apps.history.trie import Trie
-from the_history_atlas.apps.history.tracing import trace_db, trace_method, trace_block
+from the_history_atlas.apps.history.tracing import trace_db, trace_block
 
 log = logging.getLogger(__name__)
 
