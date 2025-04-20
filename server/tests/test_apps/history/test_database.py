@@ -18,6 +18,9 @@ from the_history_atlas.apps.domain.models.history.tables import (
     PlaceModel,
     TimeModel,
 )
+from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
+    TagInstanceInput,
+)
 from the_history_atlas.apps.history.repository import Repository
 from the_history_atlas.apps.history.trie import Trie
 
@@ -170,20 +173,22 @@ def test_create_tag_instance(history_db):
         db_builder = DBBuilder(session=session)
         db_builder.insert_people(people=PEOPLE)
         db_builder.insert_summaries(summaries=SUMMARIES)
-
-        # act
-        tag_instance = history_db.create_tag_instance(
+        tag_instance = TagInstanceInput(
             tag_id=tag_id,
             summary_id=summary_id,
             start_char=start_char,
             stop_char=stop_char,
+        )
+        # act
+        tag_instances = history_db.bulk_create_tag_instances(
+            tag_instances=[tag_instance],
             session=session,
-            tag_instance_time=datetime.now(timezone.utc),
-            time_precision=9,
             after=[],
         )
         session.commit()
 
+    assert len(tag_instances) == 1
+    tag_instance = tag_instances[0]
     assert isinstance(tag_instance, TagInstanceModel)
 
     with history_db.Session() as session:

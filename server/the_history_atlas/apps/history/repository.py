@@ -1,21 +1,16 @@
+import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import (
     Tuple,
     Optional,
     List,
     Literal,
-    Any,
-    Callable,
-    ClassVar,
-    TypeVar,
-    cast,
 )
 from uuid import uuid4, UUID
-from enum import Enum
 
-from sqlalchemy import select, text, create_engine, orm, insert
+from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -24,6 +19,8 @@ from the_history_atlas.apps.domain.core import (
     StoryOrder,
     StoryName,
     StoryPointer,
+    TagInstanceWithTime,
+    TagInstanceWithTimeAndOrder,
 )
 from the_history_atlas.apps.domain.models.history import (
     Source as ADMSource,
@@ -45,7 +42,9 @@ from the_history_atlas.apps.domain.models.history.tables import (
     NameModel,
     PlaceModel,
     TagNameAssocModel,
-    SummaryModel,
+)
+from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
+    TagInstanceInput,
 )
 from the_history_atlas.apps.domain.models.history.tables.time import (
     TimePrecision,
@@ -54,18 +53,19 @@ from the_history_atlas.apps.domain.models.history.tables.time import (
 from the_history_atlas.apps.history.errors import MissingResourceError
 from the_history_atlas.apps.history.schema import (
     Base,
-    Person,
-    Place,
     Summary,
-    Time,
     Source,
-    Tag,
-    TagInstance,
 )
 from the_history_atlas.apps.history.trie import Trie
-from the_history_atlas.apps.history.tracing import trace_db, trace_method, trace_block
+from the_history_atlas.apps.history.tracing import trace_db, trace_block
 
 log = logging.getLogger(__name__)
+
+
+class RebalanceError(Exception):
+    """Story orders require rebalancing"""
+
+    pass
 
 
 class Repository:
@@ -138,7 +138,7 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 0
+                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     ORDER BY RANDOM()
@@ -159,7 +159,7 @@ class Repository:
                     """
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
-                    WHERE tag_instances.story_order = 0
+                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tag_instances.tag_id = :story_id
                 """
@@ -180,7 +180,7 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 0
+                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     AND tag_instances.tag_id = :event_id
@@ -722,7 +722,7 @@ class Repository:
         self,
         session: Session,
         id: UUID,
-        datetime: datetime,
+        datetime: str,
         calendar_model: str,
         precision: TimePrecision,
         wikidata_id: str | None = None,
@@ -764,165 +764,87 @@ class Repository:
         else:
             return None
 
-    @trace_db("create_tag_instance")
-    def create_tag_instance(
-        self,
-        start_char: int,
-        stop_char: int,
-        summary_id: UUID,
-        tag_id: UUID,
-        tag_instance_time: str,
-        time_precision: TimePrecision,
-        after: list[UUID],
-        session: Session,
-    ) -> TagInstanceModel:
-        with trace_block("get_story_order"):
-            story_order = self.get_story_order(
-                session=session,
-                tag_id=tag_id,
-                tag_instance_time=tag_instance_time,
-                time_precision=time_precision,
-                after=after,
-            )
-
-        with trace_block("update_story_orders"):
-            self.update_story_orders(
-                session=session,
-                story_order=story_order,
-                tag_id=tag_id,
-            )
-
-        id = uuid4()
-        tag_instance = TagInstanceModel(
-            id=id,
-            start_char=start_char,
-            stop_char=stop_char,
-            summary_id=summary_id,
-            tag_id=tag_id,
-            story_order=story_order,
-        )
-
-        with trace_block("execute_tag_instance_insert"):
-            stmt = """
-                insert into tag_instances
-                    (id, start_char, stop_char, summary_id, tag_id, story_order)
-                values
-                    (:id, :start_char, :stop_char, :summary_id, :tag_id, :story_order)        
-            """
-            session.execute(text(stmt), tag_instance.model_dump())
-
-        return tag_instance
-
-    @trace_db("get_story_order")
     def get_story_order(
         self,
-        session: Session,
-        tag_id: UUID,
-        tag_instance_time: str,
-        time_precision: TimePrecision,
-        after: list[UUID],
+        tag_instances: list[TagInstanceWithTimeAndOrder],
+        target: TagInstanceWithTime,
     ) -> int:
-        """Given a tag, find the order belonging to a given time."""
-        summary_rows = session.execute(
-            text(
-                """
-                select 
-                    summaries.id as summary_id,
-                    times.datetime as datetime, 
-                    times.precision as precision
-                from summaries 
-                    -- given a summary, find its time tag
-                    join tag_instances on tag_instances.summary_id = summaries.id
-                    join tags on tags.id = tag_instances.tag_id and tags.type = 'TIME'
-                    join times on times.id = tags.id
-                where summaries.id in (
-                    -- find all the summaries related to input tag_id
-                    select summary_id from tag_instances where tag_id = :tag_id
-                )
-                order by times.datetime, times.precision
-            """
-            ),
-            {"tag_id": tag_id},
-        ).all()
-        summary_map = {row.summary_id: row for row in summary_rows}
-        if not summary_map:
-            return 0
+        BASE_INDEX = 100_000
+        INTERVAL = 1_000
+        if not tag_instances:  # base case
+            return BASE_INDEX
+        sorted_tag_instances = sorted(tag_instances, key=lambda tag: tag.story_order)
+        target_date_tuple = (target.datetime, target.precision)
+        tag_instances_by_date_tuples = defaultdict(list)
+        for tag_instance in sorted_tag_instances:
+            date_tuple = (tag_instance.datetime, tag_instance.precision)
+            tag_instances_by_date_tuples[date_tuple].append(tag_instance)
 
-        story_order_rows = session.execute(
-            text(
-                """
-                select 
-                    summaries.id as summary_id,
-                    tag_instances.story_order as story_order
-                from summaries
-                    join tag_instances on tag_instances.summary_id = summaries.id
-                where summaries.id in :summary_ids
-                    and tag_instances.tag_id = :tag_id
-                    and tag_instances.story_order IS NOT NULL;
-            """
-            ),
-            {
-                "summary_ids": tuple([row.summary_id for row in summary_rows]),
-                "tag_id": tag_id,
-            },
-        ).all()
-        story_order_map = {row.summary_id: row.story_order for row in story_order_rows}
+        if target_date_tuple in tag_instances_by_date_tuples:
+            # tag instance datetime and precision match all the instances in this list,
+            # so find the earliest possible story_order that doesn't violate an ID in `after`
+            after = target.after or set()
 
-        story_order = sorted(
-            [
-                StoryOrder(
-                    summary_id=summary_id,
-                    story_order=story_order_map[summary_id],
-                    datetime=row.datetime,
-                    precision=row.precision,
+            tag_instance_subset = tag_instances_by_date_tuples[target_date_tuple]
+            min_index_of_subset = -1  # keep track of lower limit
+            for index, tag_instance in enumerate(tag_instance_subset):
+                if tag_instance.summary_id in after:
+                    min_index_of_subset = index
+            if min_index_of_subset == -1:
+                # index is less than the first index in this list, so we go back to the full
+                # list to find the previous index
+                current_index = sorted_tag_instances.index(tag_instance_subset[0])
+                if current_index == 0:
+                    return sorted_tag_instances[0].story_order - INTERVAL
+                else:
+                    return self.calculate_index(
+                        min_index=sorted_tag_instances[current_index - 1].story_order,
+                        max_index=sorted_tag_instances[current_index].story_order,
+                    )
+            elif min_index_of_subset + 1 == len(tag_instance_subset):
+                # index is greater than the last index in this list,
+                # so we go back to full list to find next index
+                current_index = sorted_tag_instances.index(
+                    tag_instance_subset[min_index_of_subset]
                 )
-                for summary_id, row in summary_map.items()
-                if summary_id in story_order_map
-            ],
-            key=lambda row: row.story_order,
-        )
-        if not story_order:
-            return 0
-        for row in story_order:
-            if row.datetime < tag_instance_time:
+                if current_index + 1 == len(sorted_tag_instances):  # last tag_instance
+                    return sorted_tag_instances[current_index].story_order + INTERVAL
+                return self.calculate_index(
+                    min_index=sorted_tag_instances[current_index].story_order,
+                    max_index=sorted_tag_instances[current_index + 1].story_order,
+                )
+            else:
+                return self.calculate_index(
+                    min_index=tag_instance_subset[min_index_of_subset].story_order,
+                    max_index=tag_instance_subset[min_index_of_subset + 1].story_order,
+                )
+
+        # this tag instance has a unique datetime/precision combination, so
+        # we find its order in the existing list.
+        for index, tag_instance in enumerate(sorted_tag_instances):
+            if tag_instance.datetime < target.datetime:
                 continue
-            elif row.datetime == tag_instance_time and row.precision < time_precision:
-                continue
-            elif row.summary_id in after:
-                # make a best effort to put this summary after the given IDs,
-                # but only if the time matches
+            elif (
+                tag_instance.datetime == target.datetime
+                and tag_instance.precision < target.precision
+            ):
                 continue
             else:
-                return row.story_order
-        # this tag instance occurs later than all existing tag instances
-        return story_order[-1].story_order + 1
+                if index == 0:  # base case
+                    return tag_instance.story_order - INTERVAL
+                return self.calculate_index(
+                    min_index=sorted_tag_instances[index - 1].story_order,
+                    max_index=tag_instance.story_order,
+                )
+        # this tag instance is later than all others
+        return sorted_tag_instances[-1].story_order + INTERVAL
 
-    @trace_db("update_story_orders")
-    def update_story_orders(
-        self, session: Session, tag_id: UUID, story_order: int
-    ) -> None:
-        """Increment story_order for every row of tag_instances with fkey tag_id where the
-        current value of story_order is equal or greater than param story_order.
-        """
-        OFFSET = 10_000_000
-        session.execute(
-            text(
-                """
-                UPDATE tag_instances
-                SET story_order = story_order + :offset 
-                WHERE tag_id = :tag_id
-                  AND story_order >= :story_order
-                  AND story_order IS NOT NULL;
-
-                UPDATE tag_instances
-                SET story_order = story_order - (:offset - 1) 
-                WHERE tag_id = :tag_id
-                  AND story_order >= :story_order + :offset
-                  AND story_order IS NOT NULL;
-            """
-            ),
-            {"tag_id": tag_id, "story_order": story_order, "offset": OFFSET},
-        )
+    def calculate_index(self, min_index: int, max_index: int):
+        difference = max_index - min_index
+        if difference == 1:
+            raise RebalanceError
+        # return an index approx halfway between the two existing indices
+        return min_index + (difference // 2)
 
     def get_time_and_precision_by_tags(
         self, session: Session, tag_ids: list[UUID]
@@ -1148,9 +1070,7 @@ class Repository:
     @trace_db("bulk_create_tag_instances")
     def bulk_create_tag_instances(
         self,
-        tag_instances: list[dict],
-        tag_instance_time: str,
-        time_precision: TimePrecision,
+        tag_instances: list[TagInstanceInput],
         after: list[UUID],
         session: Session,
     ) -> list[TagInstanceModel]:
@@ -1158,67 +1078,35 @@ class Repository:
         # Group tag instances by tag_id for efficient story ordering
         instances_by_tag = defaultdict(list)
         for instance in tag_instances:
-            instances_by_tag[instance["tag_id"]].append(instance)
+            instances_by_tag[instance.tag_id].append(instance)
 
         # Process each tag group
         result_instances = []
 
         for tag_id, instances in instances_by_tag.items():
-            # Get the starting story order for this tag
-            with trace_block(f"get_story_order_for_tag_{tag_id}"):
-                story_order = self.get_story_order(
-                    session=session,
-                    tag_id=tag_id,
-                    tag_instance_time=tag_instance_time,
-                    time_precision=time_precision,
-                    after=after,
-                )
-
-            # Update existing story orders in one operation
-            with trace_block(f"update_story_orders_for_tag_{tag_id}"):
-                self.update_story_orders(
-                    session=session,
-                    story_order=story_order,
-                    tag_id=tag_id,
-                )
-
             # Prepare all instances for this tag
             models = []
             values = []
 
             for i, instance in enumerate(instances):
                 instance_id = uuid4()
-                current_order = story_order + i
 
                 model = TagInstanceModel(
                     id=instance_id,
-                    start_char=instance["start_char"],
-                    stop_char=instance["stop_char"],
-                    summary_id=instance["summary_id"],
-                    tag_id=tag_id,
-                    story_order=current_order,
+                    **instance.model_dump(),
                 )
                 models.append(model)
 
-                values.append(
-                    {
-                        "id": instance_id,
-                        "start_char": instance["start_char"],
-                        "stop_char": instance["stop_char"],
-                        "summary_id": instance["summary_id"],
-                        "tag_id": tag_id,
-                        "story_order": current_order,
-                    }
-                )
+                values.append(model.model_dump())
 
             # Bulk insert all instances for this tag
             with trace_block(f"bulk_insert_for_tag_{tag_id}"):
                 if values:
                     placeholders = []
-                    all_params = {}
+                    all_params = {"after": json.dumps([str(id) for id in after])}
 
                     for i, val in enumerate(values):
-                        placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i})"
+                        placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i}, :after)"
                         placeholders.append(placeholder)
 
                         for key, value in val.items():
@@ -1226,7 +1114,7 @@ class Repository:
 
                     stmt = f"""
                         INSERT INTO tag_instances
-                            (id, start_char, stop_char, summary_id, tag_id, story_order)
+                            (id, start_char, stop_char, summary_id, tag_id, story_order, after)
                         VALUES
                             {', '.join(placeholders)}
                     """
@@ -1250,8 +1138,7 @@ class Repository:
             tag_id: UUID of the tag to update story orders for
         """
         with Session(self._engine, future=True) as session:
-            # First, get all tag instances with null story_order for this tag
-            null_instances = session.execute(
+            tag_instances = session.execute(
                 text(
                     """
                     SELECT 
@@ -1259,6 +1146,7 @@ class Repository:
                         tag_instances.summary_id,
                         tag_instances.tag_id,
                         tag_instances.after,
+                        tag_instances.story_order,
                         (
                             SELECT times.datetime
                             FROM summaries s
@@ -1281,62 +1169,34 @@ class Repository:
                         ) AS precision
                     FROM tag_instances
                     WHERE tag_instances.tag_id = :tag_id
-                    AND tag_instances.story_order IS NULL
                     """
                 ),
                 {"tag_id": tag_id},
             ).all()
+            nonnull_instances: list[TagInstanceWithTimeAndOrder] = []
+            null_instances: list[TagInstanceWithTime] = []
+            for row in tag_instances:
+                if row.story_order is None:
+                    null_instances.append(
+                        TagInstanceWithTime.model_validate(row, from_attributes=True)
+                    )
+                else:
+                    nonnull_instances.append(
+                        TagInstanceWithTimeAndOrder.model_validate(
+                            row, from_attributes=True
+                        )
+                    )
 
             if not null_instances:
                 return
 
-            # Get the current max story_order for this tag to start spacing from
-            max_order = session.execute(
-                text(
-                    """
-                    SELECT COALESCE(MAX(story_order), -1) 
-                    FROM tag_instances
-                    WHERE tag_id = :tag_id
-                    AND story_order IS NOT NULL
-                    """
-                ),
-                {"tag_id": tag_id},
-            ).scalar_one()
-
-            # Sort instances by datetime for consistent ordering
-            sorted_instances = sorted(
-                null_instances, key=lambda x: (x.datetime, x.precision)
-            )
-
-            # Calculate new orders with sparse spacing
-            instance_updates = []
-            next_order = max_order + 1
-
-            for instance in sorted_instances:
-                # Handle after relationships
-                after_ids = []
-                if instance.after:
-                    after_ids = [UUID(id_str) for id_str in instance.after]
-
-                if after_ids:
-                    # Find the maximum story_order of the "after" instances
-                    after_max_order = session.execute(
-                        text(
-                            """
-                            SELECT COALESCE(MAX(story_order), -1)
-                            FROM tag_instances
-                            WHERE tag_id = :tag_id
-                            AND summary_id = ANY(:after_ids)
-                            """
-                        ),
-                        {"tag_id": tag_id, "after_ids": after_ids},
-                    ).scalar_one()
-
-                    if after_max_order >= 0:
-                        next_order = max(next_order, after_max_order + 1)
-
-                instance_updates.append({"id": instance.id, "story_order": next_order})
-                next_order += 1
+            instance_updates: list[dict[str, int]] = []
+            for target in null_instances:
+                story_order = self.get_story_order(
+                    tag_instances=nonnull_instances,
+                    target=target,
+                )
+                instance_updates.append({"id": target.id, "story_order": story_order})
 
             # Update all instances in a single operation
             if instance_updates:

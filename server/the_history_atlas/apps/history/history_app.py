@@ -27,6 +27,10 @@ from the_history_atlas.apps.domain.core import (
 )
 
 from the_history_atlas.apps.config import Config
+from the_history_atlas.apps.domain.models.history.tables import TagInstanceModel
+from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
+    TagInstanceInput,
+)
 from the_history_atlas.apps.history.repository import Repository
 from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
 from the_history_atlas.apps.history.trie import Trie
@@ -212,32 +216,21 @@ class HistoryApp:
                     access_date=str(citation.access_date),
                 )
 
-            with trace_block("get_time_and_precision"):
-                (
-                    tag_instance_time,
-                    precision,
-                ) = self._repository.get_time_and_precision_by_tags(
-                    session=session,
-                    tag_ids=[tag.id for tag in tags],
-                )
-
             with trace_block("create_tag_instances"):
                 # Convert tags to dictionaries for bulk processing
-                tag_instance_dicts = [
-                    {
-                        "start_char": tag.start_char,
-                        "stop_char": tag.stop_char,
-                        "summary_id": summary_id,
-                        "tag_id": tag.id,
-                    }
+                tag_instances = [
+                    TagInstanceInput(
+                        start_char=tag.start_char,
+                        stop_char=tag.stop_char,
+                        summary_id=summary_id,
+                        tag_id=tag.id,
+                    )
                     for tag in tags
                 ]
 
                 # Use the bulk operation instead of individual inserts
                 self._repository.bulk_create_tag_instances(
-                    tag_instances=tag_instance_dicts,
-                    tag_instance_time=tag_instance_time,
-                    time_precision=precision,
+                    tag_instances=tag_instances,
                     after=after,
                     session=session,
                 )
@@ -246,6 +239,14 @@ class HistoryApp:
                 session.commit()
 
         return summary_id
+
+    def calculate_story_order(
+        self,
+        tag_ids: list[UUID],
+    ) -> None:
+        """Calculate story order for any tag_instances which have not yet been ordered."""
+        for tag_id in tag_ids:
+            self._repository.update_null_story_order(tag_id=tag_id)
 
     def get_story_pointers(
         self,
