@@ -1192,17 +1192,11 @@ class Repository:
 
             instance_updates: list[dict[str, int]] = []
             for target in null_instances:
-                try:
-                    story_order = self.get_story_order(
-                        tag_instances=nonnull_instances,
-                        target=target,
-                    )
-                except RebalanceError:
-                    self.rebalance_story_order(tag_id=target.tag_id)
-                    story_order = self.get_story_order(
-                        tag_instances=nonnull_instances,
-                        target=target,
-                    )
+                # may raise RebalanceError; caller must retry
+                story_order = self.get_story_order(
+                    tag_instances=nonnull_instances,
+                    target=target,
+                )
                 instance_updates.append({"id": target.id, "story_order": story_order})
 
             # Update all instances in a single operation
@@ -1229,7 +1223,7 @@ class Repository:
                 session.execute(text(update_stmt), params)
                 session.commit()
 
-    def rebalance_story_order(self, tag_id: UUID) -> None:
+    def rebalance_story_order(self, tag_id: UUID) -> dict[UUID, int]:
         """Rebalances story_order values for a given tag_id.
 
         Takes all non-null story_order values for the given tag_id and updates them
@@ -1238,6 +1232,9 @@ class Repository:
 
         Args:
             tag_id: UUID of the tag to rebalance story orders for
+
+        Returns:
+            dict[UUID, int]: A dictionary mapping tag instance IDs to their new story order values
         """
         with Session(self._engine, future=True) as session:
             # Get all non-null story_order values for this tag, ordered
@@ -1255,7 +1252,7 @@ class Repository:
             ).all()
 
             if not rows:
-                return
+                return {}
 
             # First set all story_orders to NULL to avoid unique constraint violations
             session.execute(
@@ -1275,9 +1272,11 @@ class Repository:
             INTERVAL = 1_000
 
             updates = []
+            result = {}
             for i, row in enumerate(rows):
                 new_order = BASE_ORDER + (i * INTERVAL)
                 updates.append({"id": row.id, "story_order": new_order})
+                result[row.id] = new_order
 
             # Update all instances in a single operation
             if updates:
@@ -1299,3 +1298,5 @@ class Repository:
 
                 session.execute(text(update_stmt), params)
                 session.commit()
+
+            return result

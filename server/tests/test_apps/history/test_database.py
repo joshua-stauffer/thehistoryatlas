@@ -564,9 +564,18 @@ class TestRebalanceStoryOrder:
             session.commit()
 
             # Call rebalance
-            history_db.rebalance_story_order(tag_id)
+            result = history_db.rebalance_story_order(tag_id)
 
-            # Verify results
+            # Verify the returned dictionary
+            assert len(result) == len(story_orders)
+            assert set(result.keys()) == set(instance_ids)
+
+            # Verify the values are properly spaced
+            orders = sorted(result.values())
+            for i in range(len(orders) - 1):
+                assert orders[i + 1] - orders[i] == 1000
+
+            # Verify results in database
             rows = session.execute(
                 text(
                     """
@@ -623,8 +632,9 @@ class TestRebalanceStoryOrder:
             )
             session.commit()
 
-            # Call rebalance - should not error
-            history_db.rebalance_story_order(tag_id)
+            # Call rebalance - should not error and return empty dict
+            result = history_db.rebalance_story_order(tag_id)
+            assert result == {}
 
             # Cleanup
             session.execute(text("DELETE FROM tags WHERE id = :id"), {"id": tag_id})
@@ -663,8 +673,9 @@ class TestRebalanceStoryOrder:
                 )
             session.commit()
 
-            # Call rebalance - should not error and not change nulls
-            history_db.rebalance_story_order(tag_id)
+            # Call rebalance - should not error and return empty dict
+            result = history_db.rebalance_story_order(tag_id)
+            assert result == {}
 
             # Verify all story orders are still null
             rows = session.execute(
