@@ -1192,10 +1192,17 @@ class Repository:
 
             instance_updates: list[dict[str, int]] = []
             for target in null_instances:
-                story_order = self.get_story_order(
-                    tag_instances=nonnull_instances,
-                    target=target,
-                )
+                try:
+                    story_order = self.get_story_order(
+                        tag_instances=nonnull_instances,
+                        target=target,
+                    )
+                except RebalanceError:
+                    self.rebalance_story_order(tag_id=target.tag_id)
+                    story_order = self.get_story_order(
+                        tag_instances=nonnull_instances,
+                        target=target,
+                    )
                 instance_updates.append({"id": target.id, "story_order": story_order})
 
             # Update all instances in a single operation
