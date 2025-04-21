@@ -501,3 +501,205 @@ class TestTimeExists:
                 session=session,
             )
             assert id_result is None
+
+
+class TestRebalanceStoryOrder:
+    def test_rebalance_story_order_success(self, history_db):
+        """Test that story orders are rebalanced correctly while maintaining order"""
+        # Create a tag and some tag instances with story orders
+        tag_id = uuid4()
+
+        with history_db.Session() as session:
+            # Create tag
+            session.execute(
+                text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"),
+                {"id": tag_id},
+            )
+
+            # Create summary
+            summary_id = uuid4()
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, 'test summary')"),
+                {"id": summary_id},
+            )
+
+            # Create tag instances with varying story orders
+            instance_ids = []
+            story_orders = [100000, 100001, 100500, 101000, 102000]
+            for order in story_orders:
+                instance_id = uuid4()
+                instance_ids.append(instance_id)
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO tag_instances 
+                        (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                        VALUES (:id, :tag_id, :summary_id, :story_order, 0, 1)
+                    """
+                    ),
+                    {
+                        "id": instance_id,
+                        "tag_id": tag_id,
+                        "summary_id": summary_id,
+                        "story_order": order,
+                    },
+                )
+
+            # Also add a null story_order instance
+            null_instance_id = uuid4()
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id, :tag_id, :summary_id, NULL, 0, 1)
+                """
+                ),
+                {
+                    "id": null_instance_id,
+                    "tag_id": tag_id,
+                    "summary_id": summary_id,
+                },
+            )
+            session.commit()
+
+            # Call rebalance
+            result = history_db.rebalance_story_order(tag_id)
+
+            # Verify the returned dictionary
+            assert len(result) == len(story_orders)
+            assert set(result.keys()) == set(instance_ids)
+
+            # Verify the values are properly spaced
+            orders = sorted(result.values())
+            for i in range(len(orders) - 1):
+                assert orders[i + 1] - orders[i] == 1000
+
+            # Verify results in database
+            rows = session.execute(
+                text(
+                    """
+                    SELECT story_order 
+                    FROM tag_instances 
+                    WHERE tag_id = :tag_id 
+                    AND story_order IS NOT NULL 
+                    ORDER BY story_order ASC
+                """
+                ),
+                {"tag_id": tag_id},
+            ).all()
+
+            # Check that we have the right number of non-null rows
+            assert len(rows) == len(story_orders)
+
+            # Check that the difference between each story_order is exactly 1000
+            orders = [row[0] for row in rows]
+            for i in range(len(orders) - 1):
+                assert orders[i + 1] - orders[i] == 1000
+
+            # Check that null story_order is still null
+            null_row = session.execute(
+                text(
+                    """
+                    SELECT story_order 
+                    FROM tag_instances 
+                    WHERE id = :id
+                """
+                ),
+                {"id": null_instance_id},
+            ).scalar_one()
+            assert null_row is None
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE tag_id = :tag_id"),
+                {"tag_id": tag_id},
+            )
+            session.execute(text("DELETE FROM tags WHERE id = :id"), {"id": tag_id})
+            session.execute(
+                text("DELETE FROM summaries WHERE id = :id"), {"id": summary_id}
+            )
+            session.commit()
+
+    def test_rebalance_story_order_empty(self, history_db):
+        """Test that rebalancing works with no tag instances"""
+        tag_id = uuid4()
+        with history_db.Session() as session:
+            # Create tag
+            session.execute(
+                text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"),
+                {"id": tag_id},
+            )
+            session.commit()
+
+            # Call rebalance - should not error and return empty dict
+            result = history_db.rebalance_story_order(tag_id)
+            assert result == {}
+
+            # Cleanup
+            session.execute(text("DELETE FROM tags WHERE id = :id"), {"id": tag_id})
+            session.commit()
+
+    def test_rebalance_story_order_all_null(self, history_db):
+        """Test that rebalancing works when all story orders are null"""
+        tag_id = uuid4()
+        summary_id = uuid4()
+
+        with history_db.Session() as session:
+            # Create tag
+            session.execute(
+                text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"),
+                {"id": tag_id},
+            )
+
+            # Create summary
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, 'test summary')"),
+                {"id": summary_id},
+            )
+
+            # Create tag instances with null story orders
+            for _ in range(3):
+                instance_id = uuid4()
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO tag_instances 
+                        (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                        VALUES (:id, :tag_id, :summary_id, NULL, 0, 1)
+                    """
+                    ),
+                    {"id": instance_id, "tag_id": tag_id, "summary_id": summary_id},
+                )
+            session.commit()
+
+            # Call rebalance - should not error and return empty dict
+            result = history_db.rebalance_story_order(tag_id)
+            assert result == {}
+
+            # Verify all story orders are still null
+            rows = session.execute(
+                text(
+                    """
+                    SELECT story_order 
+                    FROM tag_instances 
+                    WHERE tag_id = :tag_id
+                """
+                ),
+                {"tag_id": tag_id},
+            ).all()
+
+            assert len(rows) == 3
+            for row in rows:
+                assert row[0] is None
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE tag_id = :tag_id"),
+                {"tag_id": tag_id},
+            )
+            session.execute(text("DELETE FROM tags WHERE id = :id"), {"id": tag_id})
+            session.execute(
+                text("DELETE FROM summaries WHERE id = :id"), {"id": summary_id}
+            )
+            session.commit()

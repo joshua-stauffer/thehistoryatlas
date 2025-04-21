@@ -1192,6 +1192,7 @@ class Repository:
 
             instance_updates: list[dict[str, int]] = []
             for target in null_instances:
+                # may raise RebalanceError; caller must retry
                 story_order = self.get_story_order(
                     tag_instances=nonnull_instances,
                     target=target,
@@ -1221,3 +1222,81 @@ class Repository:
                 # Execute the update
                 session.execute(text(update_stmt), params)
                 session.commit()
+
+    def rebalance_story_order(self, tag_id: UUID) -> dict[UUID, int]:
+        """Rebalances story_order values for a given tag_id.
+
+        Takes all non-null story_order values for the given tag_id and updates them
+        to maintain their relative ordering while ensuring exactly 1000 between each value.
+        Null values are left untouched.
+
+        Args:
+            tag_id: UUID of the tag to rebalance story orders for
+
+        Returns:
+            dict[UUID, int]: A dictionary mapping tag instance IDs to their new story order values
+        """
+        with Session(self._engine, future=True) as session:
+            # Get all non-null story_order values for this tag, ordered
+            rows = session.execute(
+                text(
+                    """
+                    SELECT id, story_order
+                    FROM tag_instances 
+                    WHERE tag_id = :tag_id 
+                    AND story_order IS NOT NULL
+                    ORDER BY story_order ASC
+                    """
+                ),
+                {"tag_id": tag_id},
+            ).all()
+
+            if not rows:
+                return {}
+
+            # First set all story_orders to NULL to avoid unique constraint violations
+            session.execute(
+                text(
+                    """
+                    UPDATE tag_instances 
+                    SET story_order = NULL 
+                    WHERE tag_id = :tag_id 
+                    AND id IN (SELECT id FROM tag_instances WHERE tag_id = :tag_id AND story_order IS NOT NULL)
+                    """
+                ),
+                {"tag_id": tag_id},
+            )
+
+            # Calculate new story_order values with 1000 between each
+            BASE_ORDER = 100_000  # Start at 100,000 to match existing pattern
+            INTERVAL = 1_000
+
+            updates = []
+            result = {}
+            for i, row in enumerate(rows):
+                new_order = BASE_ORDER + (i * INTERVAL)
+                updates.append({"id": row.id, "story_order": new_order})
+                result[row.id] = new_order
+
+            # Update all instances in a single operation
+            if updates:
+                update_stmt = "UPDATE tag_instances SET story_order = CASE id "
+                params = {"tag_id": tag_id}
+                id_list = []
+
+                for i, update in enumerate(updates):
+                    update_stmt += f"WHEN :id_{i} THEN :order_{i} "
+                    params[f"id_{i}"] = update["id"]
+                    params[f"order_{i}"] = update["story_order"]
+                    id_list.append(f":id_{i}")
+
+                update_stmt += (
+                    "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
+                    + ", ".join(id_list)
+                    + ")"
+                )
+
+                session.execute(text(update_stmt), params)
+                session.commit()
+
+            return result

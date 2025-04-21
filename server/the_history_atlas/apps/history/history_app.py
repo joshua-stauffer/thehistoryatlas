@@ -31,7 +31,7 @@ from the_history_atlas.apps.domain.models.history.tables import TagInstanceModel
 from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
     TagInstanceInput,
 )
-from the_history_atlas.apps.history.repository import Repository
+from the_history_atlas.apps.history.repository import Repository, RebalanceError
 from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
 from the_history_atlas.apps.history.trie import Trie
 from the_history_atlas.apps.history.tracing import trace_method, trace_block
@@ -246,7 +246,12 @@ class HistoryApp:
     ) -> None:
         """Calculate story order for any tag_instances which have not yet been ordered."""
         for tag_id in tag_ids:
-            self._repository.update_null_story_order(tag_id=tag_id)
+            try:
+                self._repository.update_null_story_order(tag_id=tag_id)
+            except RebalanceError:
+                log.info(f"Rebalancing story order for story {tag_id}.")
+                self._repository.rebalance_story_order(tag_id=tag_id)
+                self._repository.update_null_story_order(tag_id=tag_id)
 
     def get_story_pointers(
         self,
