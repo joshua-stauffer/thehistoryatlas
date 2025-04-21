@@ -247,14 +247,13 @@ class WikiService:
     def run(self) -> None:
         processed = 0
         while True:
-            item = self._database.get_oldest_item_from_queue()
+            item = self._database.pop_oldest_item_from_queue()
             if item is None:
                 log.info("Queue is empty, processing complete")
                 break
 
             try:
                 self.build_events(item=item)
-                self._database.remove_item_from_queue(wiki_id=item.wiki_id)
                 processed += 1
             except Exception as e:
                 log.error(f"Error processing item: {e}")
@@ -365,9 +364,6 @@ class WikiService:
     def _create_wiki_event(
         self, event_factory: EventFactory, wiki_id: str, entity_title: str
     ) -> None:
-        log.debug(
-            f"Attempting to create event with factory {event_factory.label} for wiki_id: {wiki_id}"
-        )
         if not event_factory.entity_has_event():
             log.info(f"{event_factory.label} has no event for wiki_id: {wiki_id}")
             return
@@ -382,7 +378,6 @@ class WikiService:
             return
 
         try:
-            log.debug(f"Creating events for {wiki_id} using {event_factory.label}")
             events = event_factory.create_wiki_event()
 
             # Create a citation that will be used for all events
