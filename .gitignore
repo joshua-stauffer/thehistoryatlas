@@ -27,6 +27,9 @@ client/build
 wiki_link/log/
 server/logs/
 
+# wikidata
+wikidata/.env
+
 # misc
 .DS_Store
 .env.local

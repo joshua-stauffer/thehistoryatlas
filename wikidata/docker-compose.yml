@@ -1,0 +1,87 @@
+services:
+  wikibase:
+    image: ${WIKIBASE_IMAGE_NAME}
+    ports:
+      - "${WIKIBASE_PORT}:80"
+    depends_on:
+      - mysql
+    environment:
+      - DB_SERVER=mysql:3306
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+      - MW_ADMIN_NAME=${MW_ADMIN_NAME}
+      - MW_ADMIN_PASS=${MW_ADMIN_PASS}
+      - MW_ADMIN_EMAIL=${MW_ADMIN_EMAIL}
+      - MW_SECRET_KEY=${MW_SECRET_KEY}
+      - MW_WG_ENABLE_UPLOADS=${MW_WG_ENABLE_UPLOADS}
+      - MW_WG_SECRET_KEY=${MW_WG_SECRET_KEY}
+    volumes:
+      - ${DATA_ROOT_DIR}/images:/var/www/html/images
+      - ${DATA_ROOT_DIR}/dumps:/var/lib/mysql/dumps
+    restart: unless-stopped
+
+  mysql:
+    image: ${MYSQL_IMAGE_NAME}
+    volumes:
+      - ${DATA_ROOT_DIR}/mysql:/var/lib/mysql
+      - ${DATA_ROOT_DIR}/dumps:/var/lib/mysql/dumps
+    environment:
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+      - MYSQL_ROOT_PASSWORD=wikidataroot
+    restart: unless-stopped
+
+  wdqs:
+    image: ${WDQS_IMAGE_NAME}
+    volumes:
+      - ${DATA_ROOT_DIR}/query-service:/wdqs/data
+    environment:
+      - WIKIBASE_HOST=wikibase
+      - WDQS_HOST=wdqs
+      - WDQS_PORT=9999
+    depends_on:
+      - wikibase
+    restart: unless-stopped
+
+  wdqs-frontend:
+    image: ${WDQS_FRONTEND_IMAGE_NAME}
+    ports:
+      - "${WDQS_FRONTEND_PORT}:80"
+    environment:
+      - WDQS_HOST=wdqs
+      - WDQS_PORT=9999
+    depends_on:
+      - wdqs
+    restart: unless-stopped
+
+  elasticsearch:
+    image: ${ELASTICSEARCH_IMAGE_NAME}
+    ports:
+      - "${MW_ELASTIC_PORT}:9200"
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - ${DATA_ROOT_DIR}/elasticsearch:/usr/share/elasticsearch/data
+    restart: unless-stopped
+
+  quickstatements:
+    image: ${QUICKSTATEMENTS_IMAGE_NAME}
+    ports:
+      - "${QUICKSTATEMENTS_PORT}:80"
+    environment:
+      - WIKIBASE_SCHEME=http
+      - WIKIBASE_HOST=wikibase
+      - WIKIBASE_PORT=80
+      - QS_PUBLIC_SCHEME_HOST_AND_PORT=http://${QUICKSTATEMENTS_HOST}:${QUICKSTATEMENTS_PORT}
+      - WB_PUBLIC_SCHEME_HOST_AND_PORT=http://${WIKIBASE_HOST}:${WIKIBASE_PORT}
+    depends_on:
+      - wikibase
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  images-data:
+  query-service-data:
+  elasticsearch-data: 
