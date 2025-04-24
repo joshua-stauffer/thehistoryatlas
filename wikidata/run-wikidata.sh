@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# Create required directories
-echo "Creating directories..."
-mkdir -p data/mysql data/images data/query-service data/elasticsearch data/dumps
 
 # Stop any existing containers
 echo "Stopping any existing containers..."
