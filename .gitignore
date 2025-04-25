@@ -21,6 +21,7 @@ client/.pnp
 
 # testing
 client/coverage
+wikidata/data
 
 # production
 client/build
