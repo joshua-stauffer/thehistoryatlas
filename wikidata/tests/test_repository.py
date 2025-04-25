@@ -44,7 +44,7 @@ def populate_db(test_config: Config, test_data: Dict[str, Dict[str, Any]]) -> No
     Fixture that creates and populates a RocksDB instance with test data.
     """
     # Populate the database with test data
-    db = Rdict(test_config.db_path)
+    db = Rdict(test_config.DB_PATH)
 
     try:
         for key, value in test_data.items():

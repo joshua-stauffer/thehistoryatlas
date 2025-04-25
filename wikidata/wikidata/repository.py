@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Config(BaseSettings):
-    db_path: str = "./data/rocks_db"
+    DB_PATH: str = "./data/rocks_db"
 
 
 class Repository:
@@ -15,7 +15,7 @@ class Repository:
 
     def _open_db(self):
         if self._db is None:
-            self._db = Rdict(self.config.db_path)
+            self._db = Rdict(self.config.DB_PATH)
 
     def close(self):
         """Close the database connection."""
