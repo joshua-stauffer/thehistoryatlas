@@ -1,9 +1,9 @@
 from fastapi import Depends, FastAPI, HTTPException, Path
-from typing import Dict, Any, Optional
+from typing import Dict
 from pydantic import BaseModel
 
-from .repository import Repository, Config
-from .wikidata_app import WikiDataApp
+from wikidata.repository import Repository, Config
+from wikidata.wikidata_app import WikiDataApp
 
 app = FastAPI(
     title="WikiData API", description="API for accessing WikiData information"
@@ -15,13 +15,12 @@ def get_config() -> Config:
     return Config()
 
 
+repository = Repository(config=Config())
+
+
 # Dependency for Repository, which depends on Config
 def get_repository(config: Config = Depends(get_config)) -> Repository:
-    repository = Repository(config=config)
-    try:
-        yield repository
-    finally:
-        repository.close()
+    return repository
 
 
 # Dependency for WikiDataApp, which depends on Repository
@@ -104,4 +103,4 @@ def get_entity(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8020)
