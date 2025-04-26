@@ -1,6 +1,8 @@
+import json
 from typing import Dict, Optional, Any
-from rocksdict import Rdict
+from rocksdict import Rdict, Options
 from pydantic_settings import BaseSettings
+from rocksdict.rocksdict import AccessType
 
 
 class Config(BaseSettings):
@@ -15,7 +17,7 @@ class Repository:
 
     def _open_db(self):
         if self._db is None:
-            self._db = Rdict(self.config.DB_PATH)
+            self._db = Rdict(self.config.DB_PATH, access_type=AccessType.read_only())
 
     def close(self):
         """Close the database connection."""
@@ -41,10 +43,10 @@ class Repository:
         """
         try:
             self._open_db()
-            value = self._db.get(id)
+            value = self._db.get(id.encode("utf-8"))
             if value is None:
                 raise KeyError(f"No document found with id: {id}")
-            return value
+            return json.loads(value.decode("utf-8"))
         except Exception as e:
             if isinstance(e, KeyError):
                 raise
@@ -67,6 +69,6 @@ class Repository:
 
         try:
             self._open_db()
-            self._db.put(id, data)
+            self._db.put(id.encode("utf-8"), json.dumps(data).encode("utf-8"))
         except Exception as e:
             raise RuntimeError(f"Failed to store document with id {id}: {str(e)}")
