@@ -29,6 +29,7 @@ client/build
 wiki_link/log/
 server/logs/
 .build_data_env
+logs/
 
 # misc
 .DS_Store
