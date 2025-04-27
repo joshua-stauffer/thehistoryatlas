@@ -329,7 +329,10 @@ class WikiDataQueryService:
     @trace_time()
     def _get_entity_impl(self, id: str) -> Entity:
         """Implementation of get_entity without caching"""
-        url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}"
+        if "www.wikidata.org" in self._config.wikidata_base_url:
+            url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
+        else:  # we're serving WikiData locally
+            url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}"
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
