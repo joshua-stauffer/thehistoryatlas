@@ -17,7 +17,8 @@ class Repository:
 
     def _open_db(self):
         if self._db is None:
-            self._db = Rdict(self.config.DB_PATH, access_type=AccessType.read_only())
+            opts, cols = Options.load_latest(self.config.DB_PATH)
+            self._db = Rdict(self.config.DB_PATH, options=opts, access_type=AccessType.read_only())
 
     def close(self):
         """Close the database connection."""
