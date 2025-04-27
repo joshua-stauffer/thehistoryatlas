@@ -8,11 +8,10 @@ RUN apt-get update && apt-get install -y \
     librocksdb-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the application code and setup.py
-COPY ./wikidata/*.py ./wikidata/
-COPY setup.py .
+# Copy the entire wikidata directory to maintain package structure
+COPY . /app
 
-# Install the local package
+# Install the package in editable mode
 RUN pip install -e .
 
 # Expose the port

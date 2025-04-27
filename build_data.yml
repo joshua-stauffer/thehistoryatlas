@@ -15,8 +15,8 @@ services:
 
   wikidata:
     build:
-      context: ./
-      dockerfile: ./wikidata/Dockerfile
+      context: ./wikidata
+      dockerfile: ./Dockerfile
     environment:
       - NUM_WORKERS=${WIKIDATA_WORKERS}
       - DB_PATH=${WIKIDATA_DB_URI}
@@ -25,7 +25,7 @@ services:
 
   wikilink:
     build:
-      context: ./
+      context: ./wikilink
       dockerfile: ./wiki_link/Dockerfile
     command: >
       bash -c 'for i in $$(seq 1 ${WIKILINK_INSTANCES}); do
