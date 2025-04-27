@@ -25,12 +25,12 @@ services:
 
   wikilink:
     build:
-      context: ./wikilink
-      dockerfile: ./wiki_link/Dockerfile
+      context: ./wiki_link
+      dockerfile: ./Dockerfile
     command: >
       bash -c 'for i in $$(seq 1 ${WIKILINK_INSTANCES}); do
         export WIKI_LINK_LOG_FILE=/app/logs/wikilink_$$i.log && 
-        python3 -m wiki_link.main --build-all &
+        python3 -m wiki_link.main --run &
       done && wait'
     environment:
       - THA_DB_URI=${WIKILINK_DB_URI}
