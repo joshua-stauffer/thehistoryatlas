@@ -14,6 +14,9 @@ class WikiServiceConfig:
         self.server_base_url = os.environ.get(
             "SERVER_BASE_URL", "http://localhost:8000"
         )
+        self.wikidata_base_url = os.environ.get(
+            "WIKIDATA_BASE_URL", "https://www.wikidata.org/w/rest.php/wikibase"
+        )
         self.contact = os.environ.get("WIKILINK_CONTACT", "https://historyatlas.org")
         # Token refresh configuration
         self.TOKEN_REFRESH_BY = int(os.environ.get("REFRESH_BY", 7200))

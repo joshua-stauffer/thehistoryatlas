@@ -329,7 +329,7 @@ class WikiDataQueryService:
     @trace_time()
     def _get_entity_impl(self, id: str) -> Entity:
         """Implementation of get_entity without caching"""
-        url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
+        url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}"
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
@@ -354,7 +354,9 @@ class WikiDataQueryService:
     @trace_time()
     def _get_label_impl(self, id: str, language: str) -> str:
         """Implementation of get_label without caching"""
-        url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
+        url = (
+            f"{self._config.wikidata_base_url}/v1/entities/items/{id}/labels/{language}"
+        )
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
@@ -385,7 +387,7 @@ class WikiDataQueryService:
     @trace_time()
     def _get_description_impl(self, id: str, language: str) -> str | None:
         """Implementation of get_description without caching"""
-        url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/descriptions/{language}"
+        url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}/descriptions/{language}"
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
