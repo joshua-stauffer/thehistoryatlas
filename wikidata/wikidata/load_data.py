@@ -46,7 +46,7 @@ def load_data(
         # Process and insert WikiData entities in batches
         BATCH_SIZE = 100_000
         batch = WriteBatch()
-        tz = ZoneInfo('Europe/Paris')
+        tz = ZoneInfo("Europe/Paris")
         absolute_start = datetime.now(tz=tz)
         total_expected_batches = 117_082_035 / BATCH_SIZE
         batch_start = datetime.now(tz=tz)
@@ -72,8 +72,12 @@ def load_data(
                         batch_start = datetime.now(tz=tz)
                         if len(batch_times) % 10 == 0 and len(batch_times):
                             average_batch_time = sum(batch_times) / len(batch_times)
-                            expected_finish_time = absolute_start + timedelta(seconds=(total_expected_batches * average_batch_time))
-                            print(f"Average batch in {average_batch_time} seconds, done at {expected_finish_time}")
+                            expected_finish_time = absolute_start + timedelta(
+                                seconds=(total_expected_batches * average_batch_time)
+                            )
+                            print(
+                                f"Average batch in {average_batch_time} seconds, done at {expected_finish_time}"
+                            )
                 except json.JSONDecodeError:
                     continue
 

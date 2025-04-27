@@ -15,11 +15,9 @@ def get_config() -> Config:
     return Config()
 
 
-repository = Repository(config=Config())
-
-
 # Dependency for Repository, which depends on Config
 def get_repository(config: Config = Depends(get_config)) -> Repository:
+    repository = Repository(config=config)
     return repository
 
 

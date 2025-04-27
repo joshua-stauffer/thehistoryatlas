@@ -1,3 +1,4 @@
+import json
 import shutil
 import tempfile
 import pytest
@@ -40,7 +41,7 @@ def temp_db_path() -> Generator[str, None, None]:
 @pytest.fixture(scope="function")
 def test_config(temp_db_path: str) -> Config:
     """Create a Config object with the test DB path."""
-    return Config(db_path=temp_db_path)
+    return Config(DB_PATH=temp_db_path)
 
 
 @pytest.fixture(scope="function")
@@ -51,7 +52,7 @@ def populate_db(test_config: Config) -> None:
 
     # Add test data
     try:
-        db.put("Q1339", TEST_ENTITY)
+        db.put("Q1339".encode(), json.dumps(TEST_ENTITY).encode())
     finally:
         # Ensure the DB is properly closed
         db.close()

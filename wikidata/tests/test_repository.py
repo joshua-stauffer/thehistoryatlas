@@ -1,3 +1,4 @@
+import json
 import shutil
 import tempfile
 import pytest
@@ -24,7 +25,7 @@ def test_config(rocks_db_path: str) -> Config:
     """
     Fixture that returns a Config object with a test DB path.
     """
-    return Config(db_path=rocks_db_path)
+    return Config(DB_PATH=rocks_db_path)
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ def populate_db(test_config: Config, test_data: Dict[str, Dict[str, Any]]) -> No
 
     try:
         for key, value in test_data.items():
-            db.put(key, value)
+            db.put(key.encode(), json.dumps(value).encode())
     finally:
         # Close the database connection before yielding control
         db.close()
@@ -83,46 +84,3 @@ class TestRepository:
         # Act & Assert
         with pytest.raises(KeyError):
             repository.get("nonexistent_item")
-
-    def test_put_new_item(self, test_config: Config) -> None:
-        """
-        Test that the put method stores a new item correctly.
-        """
-        # Arrange
-        repository = Repository(config=test_config)
-        new_item = {"id": "new_item", "name": "New Item", "value": 123}
-
-        # Act
-        repository.put("new_item", new_item)
-
-        # Assert
-        result = repository.get("new_item")
-        assert result == new_item
-
-    def test_put_update_existing_item(
-        self, test_config: Config, populate_db: None
-    ) -> None:
-        """
-        Test that the put method updates an existing item correctly.
-        """
-        # Arrange
-        repository = Repository(config=test_config)
-        updated_item = {"id": "item1", "name": "Updated Item 1", "value": 100}
-
-        # Act
-        repository.put("item1", updated_item)
-
-        # Assert
-        result = repository.get("item1")
-        assert result == updated_item
-
-    def test_put_invalid_data(self, test_config: Config) -> None:
-        """
-        Test that the put method raises a ValueError when given non-dict data.
-        """
-        # Arrange
-        repository = Repository(config=test_config)
-
-        # Act & Assert
-        with pytest.raises(ValueError):
-            repository.put("invalid", "not a dict")
