@@ -42,11 +42,25 @@ class DescriptionResponse(BaseModel):
     value: str
 
 
+class Property(BaseModel):
+    language: str
+    value: str
+
+
 class EntityResponse(BaseModel):
+    model_config = {"extra": "allow"}
     id: str
-    labels: Dict[str, Dict[str, str]] = {}
-    descriptions: Dict[str, Dict[str, str]] = {}
-    # Additional fields would be defined here
+    pageid: int
+    ns: int
+    title: str
+    lastrevid: int
+    modified: str
+    type: str
+    labels: Dict[str, Property]
+    descriptions: Dict[str, Property]
+    aliases: Dict[str, list[Property]]
+    claims: Dict[str, list[dict]]
+    sitelinks: Dict[str, dict]
 
 
 @app.get("/v1/entities/items/{id}/labels/{language}", response_model=LabelResponse)
