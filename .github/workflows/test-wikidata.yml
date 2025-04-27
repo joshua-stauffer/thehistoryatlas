@@ -1,0 +1,38 @@
+name: "Test Wikidata API"
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'wikidata/**'
+
+jobs:
+  test-wikidata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd wikidata
+          pip install -e .
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          cd wikidata
+          python -m pytest tests/ -v
