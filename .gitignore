@@ -28,6 +28,7 @@ wikidata/tests/data/
 client/build
 wiki_link/log/
 server/logs/
+.build_data_env
 
 # misc
 .DS_Store
