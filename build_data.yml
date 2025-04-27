@@ -20,6 +20,8 @@ services:
     environment:
       - NUM_WORKERS=${WIKIDATA_WORKERS}
       - DB_PATH=${WIKIDATA_DB_URI}
+    volumes:
+      - ${WIKIDATA_DB_URI}:${WIKIDATA_DB_URI}
     ports:
       - "8020:8020"
 
