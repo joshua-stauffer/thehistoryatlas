@@ -22,6 +22,7 @@ class Config:
         # debug mode?
         self.DEBUG = bool(os.environ.get("DEBUG"))
         self.DB_URI = os.environ.get("THA_DB_URI")
+        self.COMPUTE_STORY_ORDER = bool(os.environ.get("COMPUTE_STORY_ORDER", True))
 
     @staticmethod
     def get_timestamp() -> str:
