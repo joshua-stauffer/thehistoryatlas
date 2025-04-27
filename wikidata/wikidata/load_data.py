@@ -1,5 +1,6 @@
 import argparse
-
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from rocksdict.rocksdict import Options, Rdict, WriteOptions, WriteBatch
 from wikidata.repository import Config
 import json
@@ -10,7 +11,6 @@ def load_data(
     data_path: str,
     db_path: str | None,
     start_index: int,
-    limit: int,
 ) -> None:
     if db_path:
         config = Config(DB_PATH=db_path)
@@ -32,7 +32,7 @@ def load_data(
     )  # Disable auto compactions during bulk load
 
     # avoid `Too many open files` exception
-    # run `ulimit -n 4096` prior to running this script if the error is encountered.
+    # run `ulimit -n 10240` prior to running this script if the error is encountered.
     options.set_max_open_files(-1)
     options.set_table_cache_num_shard_bits(4)  # Helps with file handle management
 
@@ -44,15 +44,18 @@ def load_data(
         write_options.disable_wal = True  # Disable write-ahead log for bulk loading
 
         # Process and insert WikiData entities in batches
-        BATCH_SIZE = 10_000
+        BATCH_SIZE = 100_000
         batch = WriteBatch()
+        tz = ZoneInfo('Europe/Paris')
+        absolute_start = datetime.now(tz=tz)
+        total_expected_batches = 117_082_035 / BATCH_SIZE
+        batch_start = datetime.now(tz=tz)
+        batch_times = []
 
         with gzip.open(data_path, "rt", encoding="utf-8") as f:
             for index, line in enumerate(f):
                 if index < start_index:
                     continue
-                elif index > start_index + limit:
-                    break
                 line = line.strip().rstrip(",")
                 try:
                     entity = json.loads(line)
@@ -63,7 +66,14 @@ def load_data(
                     if len(batch) >= BATCH_SIZE:
                         db.write(batch, write_options)
                         batch = WriteBatch()
-                        print(f"Processed {index} entities")
+                        batch_time = (datetime.now(tz=tz) - batch_start).total_seconds()
+                        print(f"Processed to index {index}: {batch_time} seconds.")
+                        batch_times.append(batch_time)
+                        batch_start = datetime.now(tz=tz)
+                        if len(batch_times) % 10 == 0 and len(batch_times):
+                            average_batch_time = sum(batch_times) / len(batch_times)
+                            expected_finish_time = absolute_start + timedelta(seconds=(total_expected_batches * average_batch_time))
+                            print(f"Average batch in {average_batch_time} seconds, done at {expected_finish_time}")
                 except json.JSONDecodeError:
                     continue
 
@@ -71,7 +81,6 @@ def load_data(
             db.write(batch, write_options)
 
         options.set_disable_auto_compactions(False)
-        db.compact_range()
 
         # Close the database
         db.close()
@@ -99,18 +108,10 @@ if __name__ == "__main__":
         help="Start index. Defaults to 0.",
         default=0,
     )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        dest="limit",
-        help="Limit number of entities. Defaults to 10,000,000.",
-        default=10_000_000,
-    )
     args = parser.parse_args()
 
     load_data(
         data_path=args.data_path,
         db_path=args.db_path,
         start_index=args.start_index,
-        limit=args.limit,
     )
