@@ -8,6 +8,7 @@ services:
       - SEC_KEY=${SERVER_SEC_KEY}
       - REFRESH_BY=${SERVER_REFRESH_BY}
       - TTL=${SERVER_TTL}
+      - COMPUTE_STORY_ORDER=0
     volumes:
       - ./logs:/app/logs
     ports:
