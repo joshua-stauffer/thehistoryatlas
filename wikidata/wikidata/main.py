@@ -15,10 +15,15 @@ def get_config() -> Config:
     return Config()
 
 
+_repository: Repository | None = None
+
+
 # Dependency for Repository, which depends on Config
 def get_repository(config: Config = Depends(get_config)) -> Repository:
-    repository = Repository(config=config)
-    return repository
+    global _repository
+    if _repository is None:
+        _repository = Repository(config=config)
+    return _repository
 
 
 # Dependency for WikiDataApp, which depends on Repository
