@@ -47,7 +47,7 @@ class Property(BaseModel):
     value: str
 
 
-class EntityResponse(BaseModel):
+class WikiDataEntity(BaseModel):
     model_config = {"extra": "allow"}
     id: str
     pageid: int
@@ -61,6 +61,10 @@ class EntityResponse(BaseModel):
     aliases: Dict[str, list[Property]]
     claims: Dict[str, list[dict]]
     sitelinks: Dict[str, dict]
+
+
+class EntityResponse(BaseModel):
+    entities: dict[str, WikiDataEntity]
 
 
 @app.get("/v1/entities/items/{id}/labels/{language}", response_model=LabelResponse)
@@ -112,7 +116,7 @@ def get_entity(
     """
     try:
         entity = wikidata_app.get_entity(id)
-        return entity
+        return EntityResponse(entities={id: entity})
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
