@@ -44,7 +44,7 @@ def build_coordinate_location(geoclaim: dict) -> CoordinateLocation:
         id=geoclaim["id"],
         type=geoclaim["type"],
         rank=geoclaim["rank"],
-        hash=geoclaim["mainsnak"]["hash"],
+        hash=geoclaim["mainsnak"].get("hash"),
         snaktype=geoclaim["mainsnak"]["snaktype"],
         property=geoclaim["mainsnak"]["property"],
         latitude=geoclaim["mainsnak"]["datavalue"]["value"]["latitude"],
@@ -657,7 +657,7 @@ class WikiDataQueryService:
             id=geoclaim["id"],
             type=geoclaim["type"],
             rank=geoclaim["rank"],
-            hash=geoclaim["mainsnak"]["hash"],
+            hash=geoclaim["mainsnak"].get("hash"),
             snaktype=geoclaim["mainsnak"]["snaktype"],
             property=geoclaim["mainsnak"]["property"],
             latitude=geoclaim["mainsnak"]["datavalue"]["value"]["latitude"],
@@ -691,10 +691,10 @@ class WikiDataQueryService:
         # Check if this is a qualifier (has datavalue directly)
         if "datavalue" in time_claim:
             return TimeDefinition(
-                id=time_claim.get("hash", ""),  # Use hash as ID for qualifiers
+                id=time_claim.get("id", None),
                 type="statement",
                 rank="normal",
-                hash=time_claim["hash"],
+                hash=time_claim.get("hash"),
                 snaktype=time_claim["snaktype"],
                 property=time_claim["property"],
                 time=time_claim["datavalue"]["value"]["time"],
@@ -709,7 +709,7 @@ class WikiDataQueryService:
             id=time_claim["id"],
             type=time_claim["type"],
             rank=time_claim["rank"],
-            hash=time_claim["mainsnak"]["hash"],
+            hash=time_claim["mainsnak"].get("hash"),
             snaktype=time_claim["mainsnak"]["snaktype"],
             property=time_claim["mainsnak"]["property"],
             time=time_claim["mainsnak"]["datavalue"]["value"]["time"],

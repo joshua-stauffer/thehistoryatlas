@@ -443,7 +443,11 @@ class WikiService:
                             description=description,
                         )
                         id_map[event.place_tag.wiki_id] = result["id"]
-                    # todo: handle case of geoshape, no coords
+                    else:
+                        log.error(
+                            f"Place tag {event.place_tag.wiki_id} did not contain coords - skipping."
+                        )
+                        continue
 
                 # Create time tag
                 if event.time_tag.wiki_id:

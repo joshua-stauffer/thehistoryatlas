@@ -11,12 +11,10 @@ def build_time_definition_from_claim(time_claim: Dict) -> TimeDefinition:
     # For qualifiers, the structure is flatter
     if "mainsnak" not in time_claim:
         return TimeDefinition(
-            id=time_claim.get(
-                "id", f"Q{hash(str(time_claim))}"
-            ),  # Generate a stable ID if none exists
+            id=time_claim.get("id"),
             type=time_claim.get("type", "statement"),
             rank=time_claim.get("rank", "normal"),
-            hash=time_claim["hash"],
+            hash=time_claim.get("hash"),
             snaktype=time_claim["snaktype"],
             property=time_claim["property"],
             time=time_claim["datavalue"]["value"]["time"],
@@ -32,7 +30,7 @@ def build_time_definition_from_claim(time_claim: Dict) -> TimeDefinition:
         id=time_claim["id"],
         type=time_claim["type"],
         rank=time_claim["rank"],
-        hash=time_claim["mainsnak"]["hash"],
+        hash=time_claim["mainsnak"].get("hash"),
         snaktype=time_claim["mainsnak"]["snaktype"],
         property=time_claim["mainsnak"]["property"],
         time=time_claim["mainsnak"]["datavalue"]["value"]["time"],
