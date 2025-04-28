@@ -43,9 +43,9 @@ services:
       - WIKI_LINK_TRACING_THRESHOLD_MS=100
       - WIKI_LINK_FILE_LOGGING=true
       - SERVER_BASE_URL=http://server:8000
-      - WIKIDATA_BASE_URL=http://wikidata:8020
+      - WIKIDATA_BASE_URL=${WIKIDATA_BASE_URL}
     volumes:
       - ./logs:/app/logs
     depends_on:
       - server
-      - wikidata 
+#      - wikidata
