@@ -145,44 +145,44 @@ class WikiDataQueryService:
     @trace_time()
     def find_people(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
         """Find people from WikiData."""
-        # query = f"""
-        # SELECT DISTINCT ?item
-        # WHERE
-        # {{
-        #   ?item wdt:P31 wd:Q5 .
-        # }}
-        # LIMIT {limit} OFFSET {offset}
-        # """
-
-        query_pre_ww2 = f"""
-        SELECT DISTINCT ?item WHERE {{
-          {{
-            SELECT DISTINCT ?item WHERE {{
-              ?item p:P31 ?statement0.
-              ?statement0 (ps:P31) wd:Q5.
-              {{
-                ?item p:P569 ?statement_1.
-                ?statement_1 psv:P569 ?statementValue_1.
-                ?statementValue_1 wikibase:timePrecision ?precision_1.
-                FILTER(?precision_1 >= 7 )
-                ?statementValue_1 wikibase:timeValue ?P569_1.
-                FILTER(?P569_1 < "+1939-09-01T00:00:00Z"^^xsd:dateTime)
-              }}
-              UNION
-              {{
-                ?item p:P570 ?statement_2.
-                ?statement_2 psv:P570 ?statementValue_2.
-                ?statementValue_2 wikibase:timePrecision ?precision_2.
-                FILTER(?precision_2 >= 7 )
-                ?statementValue_2 wikibase:timeValue ?P570_2.
-                BIND("+1939-09-01T00:00:00Z"^^xsd:dateTime AS ?P570_2)
-              }}
-            }}
-            LIMIT {limit} OFFSET {offset}
-          }}
+        query = f"""
+        SELECT DISTINCT ?item
+        WHERE
+        {{
+          ?item wdt:P31 wd:Q5 .
         }}
+        LIMIT {limit} OFFSET {offset}
         """
-        return self._sparql_query(query_pre_ww2)
+
+        # query_pre_ww2 = f"""
+        # SELECT DISTINCT ?item WHERE {{
+        #   {{
+        #     SELECT DISTINCT ?item WHERE {{
+        #       ?item p:P31 ?statement0.
+        #       ?statement0 (ps:P31) wd:Q5.
+        #       {{
+        #         ?item p:P569 ?statement_1.
+        #         ?statement_1 psv:P569 ?statementValue_1.
+        #         ?statementValue_1 wikibase:timePrecision ?precision_1.
+        #         FILTER(?precision_1 >= 7 )
+        #         ?statementValue_1 wikibase:timeValue ?P569_1.
+        #         FILTER(?P569_1 < "+1939-09-01T00:00:00Z"^^xsd:dateTime)
+        #       }}
+        #       UNION
+        #       {{
+        #         ?item p:P570 ?statement_2.
+        #         ?statement_2 psv:P570 ?statementValue_2.
+        #         ?statementValue_2 wikibase:timePrecision ?precision_2.
+        #         FILTER(?precision_2 >= 7 )
+        #         ?statementValue_2 wikibase:timeValue ?P570_2.
+        #         BIND("+1939-09-01T00:00:00Z"^^xsd:dateTime AS ?P570_2)
+        #       }}
+        #     }}
+        #     LIMIT {limit} OFFSET {offset}
+        #   }}
+        # }}
+        # """
+        return self._sparql_query(query)
 
     @trace_time()
     def find_works_of_art(self, limit: int, offset: int) -> set[WikiDataItem]:
