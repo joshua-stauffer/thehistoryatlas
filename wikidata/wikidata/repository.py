@@ -18,6 +18,7 @@ class Repository:
     def _open_db(self):
         if self._db is None:
             opts, cols = Options.load_latest(self.config.DB_PATH)
+            opts.set_max_open_files(8000)
             self._db = Rdict(
                 self.config.DB_PATH, options=opts, access_type=AccessType.read_only()
             )
