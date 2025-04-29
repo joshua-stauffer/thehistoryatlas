@@ -296,9 +296,6 @@ class WikiService:
             log.info(f"Successfully processed WikiData item {wiki_id}")
         except Exception as e:
             log.error(f"Error processing WikiData item {wiki_id}: {e}")
-            self._database.report_queue_error(
-                wiki_id=wiki_id, error_time=datetime.now(tz=timezone.utc), errors=str(e)
-            )
             raise WikiServiceError(f"Failed to process WikiData item {wiki_id}: {e}")
 
     def build_events(self, item: Item) -> None:
