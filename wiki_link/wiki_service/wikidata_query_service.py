@@ -98,6 +98,9 @@ class WikiDataQueryService:
         """Get current time in UTC. Separate method to make testing easier."""
         return datetime.now(timezone.utc)
 
+    def _local_wikidata(self):
+        return "www.wikidata.org" not in self._config.wikidata_base_url
+
     def _parse_retry_after(self, retry_after: str) -> float:
         """
         Parse the retry-after header which can be either:
@@ -329,10 +332,11 @@ class WikiDataQueryService:
     @trace_time()
     def _get_entity_impl(self, id: str) -> Entity:
         """Implementation of get_entity without caching"""
-        if "www.wikidata.org" in self._config.wikidata_base_url:
-            url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
-        else:  # we're serving WikiData locally
+        if self._local_wikidata():
             url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}"
+        else:
+            url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
+
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
@@ -371,7 +375,10 @@ class WikiDataQueryService:
                 raise WikiDataQueryServiceError(
                     f"Query label request failed with {result.status_code}: {result.json()}"
                 )
-            return result.text.strip('"').encode("utf-8").decode("unicode_escape")
+            if self._local_wikidata():
+                return result.text
+            else:
+                return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     def get_description(self, id: str, language: str) -> str | None:
         """
@@ -404,7 +411,10 @@ class WikiDataQueryService:
                 raise WikiDataQueryServiceError(
                     f"Query description request failed with {result.status_code}: {result.json()}"
                 )
-            return result.text.strip('"').encode("utf-8").decode("unicode_escape")
+            if self._local_wikidata():
+                return result.text
+            else:
+                return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     @trace_time()
     def get_geo_location(self, id: str) -> GeoLocation:
