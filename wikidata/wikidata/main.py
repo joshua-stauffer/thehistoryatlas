@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, Path
+from fastapi import Depends, FastAPI, HTTPException, Path, Response
 from typing import Dict
 from pydantic import BaseModel
 
@@ -31,25 +31,32 @@ def get_wikidata_app(repository: Repository = Depends(get_repository)) -> WikiDa
     return WikiDataApp(repository)
 
 
-# Response models for better documentation
-class LabelResponse(BaseModel):
+class Property(BaseModel):
     language: str
     value: str
 
 
-class DescriptionResponse(BaseModel):
-    language: str
-    value: str
+class WikiDataEntity(BaseModel):
+    model_config = {"extra": "allow"}
+    id: str
+    pageid: int
+    ns: int
+    title: str
+    lastrevid: int
+    modified: str
+    type: str
+    labels: Dict[str, Property]
+    descriptions: Dict[str, Property]
+    aliases: Dict[str, list[Property]]
+    claims: Dict[str, list[dict]]
+    sitelinks: Dict[str, dict]
 
 
 class EntityResponse(BaseModel):
-    id: str
-    labels: Dict[str, Dict[str, str]] = {}
-    descriptions: Dict[str, Dict[str, str]] = {}
-    # Additional fields would be defined here
+    entities: dict[str, WikiDataEntity]
 
 
-@app.get("/v1/entities/items/{id}/labels/{language}", response_model=LabelResponse)
+@app.get("/v1/entities/items/{id}/labels/{language}", response_model=str)
 def get_label(
     id: str = Path(..., description="Entity ID"),
     language: str = Path(..., description="Language code"),
@@ -60,7 +67,7 @@ def get_label(
     """
     try:
         label = wikidata_app.get_label(id, language)
-        return {"language": language, "value": label}
+        return Response(content=label, media_type="text/plain")
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
@@ -69,7 +76,6 @@ def get_label(
 
 @app.get(
     "/v1/entities/items/{id}/descriptions/{language}",
-    response_model=DescriptionResponse,
 )
 def get_description(
     id: str = Path(..., description="Entity ID"),
@@ -81,7 +87,7 @@ def get_description(
     """
     try:
         description = wikidata_app.get_description(id, language)
-        return {"language": language, "value": description}
+        return Response(content=description, media_type="text/plain")
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
@@ -98,7 +104,7 @@ def get_entity(
     """
     try:
         entity = wikidata_app.get_entity(id)
-        return entity
+        return EntityResponse(entities={id: entity})
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

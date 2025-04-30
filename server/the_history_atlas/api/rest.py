@@ -228,11 +228,12 @@ def register_rest_endpoints(
         background_tasks: BackgroundTasks,
     ) -> WikiDataEventOutput:
         output = create_event_handler(apps=apps, event=event)
-        background_tasks.add_task(
-            lambda: apps.history_app.calculate_story_order(
-                [tag.id for tag in event.tags]
-            ),
-        )
+        if apps.config_app.COMPUTE_STORY_ORDER:
+            background_tasks.add_task(
+                lambda: apps.history_app.calculate_story_order(
+                    [tag.id for tag in event.tags]
+                ),
+            )
         return output
 
     @fastapi_app.post("/token")

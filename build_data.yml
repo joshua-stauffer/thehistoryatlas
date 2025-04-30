@@ -1,0 +1,51 @@
+services:
+  server:
+    build:
+      context: ./server
+    command: uvicorn the_history_atlas.main:app --host 0.0.0.0 --port 8000 --workers ${SERVER_WORKERS}
+    environment:
+      - THA_DB_URI=${SERVER_DB_URI}
+      - SEC_KEY=${SERVER_SEC_KEY}
+      - REFRESH_BY=${SERVER_REFRESH_BY}
+      - TTL=${SERVER_TTL}
+      - COMPUTE_STORY_ORDER=0
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "8000:8000"
+
+  wikidata:
+    build:
+      context: ./wikidata
+      dockerfile: ./Dockerfile
+    environment:
+      - NUM_WORKERS=${WIKIDATA_WORKERS}
+      - DB_PATH=${WIKIDATA_DB_URI}
+    volumes:
+      - ${WIKIDATA_DB_URI}:${WIKIDATA_DB_URI}
+    ports:
+      - "8020:8020"
+
+  wikilink:
+    build:
+      context: ./wiki_link
+      dockerfile: ./Dockerfile
+    command: >
+      bash -c 'for i in $$(seq 1 ${WIKILINK_INSTANCES}); do
+        export WIKI_LINK_LOG_FILE=/app/logs/wikilink_$$i.log && 
+        python3 -m wiki_link.main --run &
+      done && wait'
+    environment:
+      - THA_DB_URI=${WIKILINK_DB_URI}
+      - WIKILINK_USERNAME=${THA_USERNAME}
+      - WIKILINK_PASSWORD=${THA_PASSWORD}
+      - WIKI_LINK_TRACING_ENABLED=true
+      - WIKI_LINK_TRACING_THRESHOLD_MS=100
+      - WIKI_LINK_FILE_LOGGING=true
+      - SERVER_BASE_URL=${SERVER_BASE_URL}  
+      - WIKIDATA_BASE_URL=${WIKIDATA_BASE_URL}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - server
+#      - wikidata

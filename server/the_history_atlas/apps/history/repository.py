@@ -1099,26 +1099,24 @@ class Repository:
 
                 values.append(model.model_dump())
 
-            # Bulk insert all instances for this tag
-            with trace_block(f"bulk_insert_for_tag_{tag_id}"):
-                if values:
-                    placeholders = []
-                    all_params = {"after": json.dumps([str(id) for id in after])}
+            if values:
+                placeholders = []
+                all_params = {"after": json.dumps([str(id) for id in after])}
 
-                    for i, val in enumerate(values):
-                        placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i}, :after)"
-                        placeholders.append(placeholder)
+                for i, val in enumerate(values):
+                    placeholder = f"(:id_{i}, :start_char_{i}, :stop_char_{i}, :summary_id_{i}, :tag_id_{i}, :story_order_{i}, :after)"
+                    placeholders.append(placeholder)
 
-                        for key, value in val.items():
-                            all_params[f"{key}_{i}"] = value
+                    for key, value in val.items():
+                        all_params[f"{key}_{i}"] = value
 
-                    stmt = f"""
-                        INSERT INTO tag_instances
-                            (id, start_char, stop_char, summary_id, tag_id, story_order, after)
-                        VALUES
-                            {', '.join(placeholders)}
-                    """
-                    session.execute(text(stmt), all_params)
+                stmt = f"""
+                    INSERT INTO tag_instances
+                        (id, start_char, stop_char, summary_id, tag_id, story_order, after)
+                    VALUES
+                        {', '.join(placeholders)}
+                """
+                session.execute(text(stmt), all_params)
 
             result_instances.extend(models)
 

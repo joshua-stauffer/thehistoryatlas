@@ -44,7 +44,7 @@ def build_coordinate_location(geoclaim: dict) -> CoordinateLocation:
         id=geoclaim["id"],
         type=geoclaim["type"],
         rank=geoclaim["rank"],
-        hash=geoclaim["mainsnak"]["hash"],
+        hash=geoclaim["mainsnak"].get("hash"),
         snaktype=geoclaim["mainsnak"]["snaktype"],
         property=geoclaim["mainsnak"]["property"],
         latitude=geoclaim["mainsnak"]["datavalue"]["value"]["latitude"],
@@ -98,6 +98,9 @@ class WikiDataQueryService:
         """Get current time in UTC. Separate method to make testing easier."""
         return datetime.now(timezone.utc)
 
+    def _local_wikidata(self):
+        return "www.wikidata.org" not in self._config.wikidata_base_url
+
     def _parse_retry_after(self, retry_after: str) -> float:
         """
         Parse the retry-after header which can be either:
@@ -145,44 +148,44 @@ class WikiDataQueryService:
     @trace_time()
     def find_people(self, limit: int = 100, offset: int = 0) -> set[WikiDataItem]:
         """Find people from WikiData."""
-        # query = f"""
-        # SELECT DISTINCT ?item
-        # WHERE
-        # {{
-        #   ?item wdt:P31 wd:Q5 .
-        # }}
-        # LIMIT {limit} OFFSET {offset}
-        # """
-
-        query_pre_ww2 = f"""
-        SELECT DISTINCT ?item WHERE {{
-          {{
-            SELECT DISTINCT ?item WHERE {{
-              ?item p:P31 ?statement0.
-              ?statement0 (ps:P31) wd:Q5.
-              {{
-                ?item p:P569 ?statement_1.
-                ?statement_1 psv:P569 ?statementValue_1.
-                ?statementValue_1 wikibase:timePrecision ?precision_1.
-                FILTER(?precision_1 >= 7 )
-                ?statementValue_1 wikibase:timeValue ?P569_1.
-                FILTER(?P569_1 < "+1939-09-01T00:00:00Z"^^xsd:dateTime)
-              }}
-              UNION
-              {{
-                ?item p:P570 ?statement_2.
-                ?statement_2 psv:P570 ?statementValue_2.
-                ?statementValue_2 wikibase:timePrecision ?precision_2.
-                FILTER(?precision_2 >= 7 )
-                ?statementValue_2 wikibase:timeValue ?P570_2.
-                BIND("+1939-09-01T00:00:00Z"^^xsd:dateTime AS ?P570_2)
-              }}
-            }}
-            LIMIT {limit} OFFSET {offset}
-          }}
+        query = f"""
+        SELECT DISTINCT ?item
+        WHERE
+        {{
+          ?item wdt:P31 wd:Q5 .
         }}
+        LIMIT {limit} OFFSET {offset}
         """
-        return self._sparql_query(query_pre_ww2)
+
+        # query_pre_ww2 = f"""
+        # SELECT DISTINCT ?item WHERE {{
+        #   {{
+        #     SELECT DISTINCT ?item WHERE {{
+        #       ?item p:P31 ?statement0.
+        #       ?statement0 (ps:P31) wd:Q5.
+        #       {{
+        #         ?item p:P569 ?statement_1.
+        #         ?statement_1 psv:P569 ?statementValue_1.
+        #         ?statementValue_1 wikibase:timePrecision ?precision_1.
+        #         FILTER(?precision_1 >= 7 )
+        #         ?statementValue_1 wikibase:timeValue ?P569_1.
+        #         FILTER(?P569_1 < "+1939-09-01T00:00:00Z"^^xsd:dateTime)
+        #       }}
+        #       UNION
+        #       {{
+        #         ?item p:P570 ?statement_2.
+        #         ?statement_2 psv:P570 ?statementValue_2.
+        #         ?statementValue_2 wikibase:timePrecision ?precision_2.
+        #         FILTER(?precision_2 >= 7 )
+        #         ?statementValue_2 wikibase:timeValue ?P570_2.
+        #         BIND("+1939-09-01T00:00:00Z"^^xsd:dateTime AS ?P570_2)
+        #       }}
+        #     }}
+        #     LIMIT {limit} OFFSET {offset}
+        #   }}
+        # }}
+        # """
+        return self._sparql_query(query)
 
     @trace_time()
     def find_works_of_art(self, limit: int, offset: int) -> set[WikiDataItem]:
@@ -329,7 +332,11 @@ class WikiDataQueryService:
     @trace_time()
     def _get_entity_impl(self, id: str) -> Entity:
         """Implementation of get_entity without caching"""
-        url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
+        if self._local_wikidata():
+            url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}"
+        else:
+            url = f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={id}&format=json"
+
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
@@ -354,7 +361,9 @@ class WikiDataQueryService:
     @trace_time()
     def _get_label_impl(self, id: str, language: str) -> str:
         """Implementation of get_label without caching"""
-        url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/labels/{language}"
+        url = (
+            f"{self._config.wikidata_base_url}/v1/entities/items/{id}/labels/{language}"
+        )
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
@@ -366,7 +375,10 @@ class WikiDataQueryService:
                 raise WikiDataQueryServiceError(
                     f"Query label request failed with {result.status_code}: {result.json()}"
                 )
-            return result.text.strip('"').encode("utf-8").decode("unicode_escape")
+            if self._local_wikidata():
+                return result.text
+            else:
+                return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     def get_description(self, id: str, language: str) -> str | None:
         """
@@ -385,7 +397,7 @@ class WikiDataQueryService:
     @trace_time()
     def _get_description_impl(self, id: str, language: str) -> str | None:
         """Implementation of get_description without caching"""
-        url = f"https://www.wikidata.org/w/rest.php/wikibase/v1/entities/items/{id}/descriptions/{language}"
+        url = f"{self._config.wikidata_base_url}/v1/entities/items/{id}/descriptions/{language}"
         retries = 0
         while True:
             result = requests.get(url, headers={"User-Agent": self._agent_identifier()})
@@ -399,7 +411,10 @@ class WikiDataQueryService:
                 raise WikiDataQueryServiceError(
                     f"Query description request failed with {result.status_code}: {result.json()}"
                 )
-            return result.text.strip('"').encode("utf-8").decode("unicode_escape")
+            if self._local_wikidata():
+                return result.text
+            else:
+                return result.text.strip('"').encode("utf-8").decode("unicode_escape")
 
     @trace_time()
     def get_geo_location(self, id: str) -> GeoLocation:
@@ -652,7 +667,7 @@ class WikiDataQueryService:
             id=geoclaim["id"],
             type=geoclaim["type"],
             rank=geoclaim["rank"],
-            hash=geoclaim["mainsnak"]["hash"],
+            hash=geoclaim["mainsnak"].get("hash"),
             snaktype=geoclaim["mainsnak"]["snaktype"],
             property=geoclaim["mainsnak"]["property"],
             latitude=geoclaim["mainsnak"]["datavalue"]["value"]["latitude"],
@@ -686,10 +701,10 @@ class WikiDataQueryService:
         # Check if this is a qualifier (has datavalue directly)
         if "datavalue" in time_claim:
             return TimeDefinition(
-                id=time_claim.get("hash", ""),  # Use hash as ID for qualifiers
+                id=time_claim.get("id", None),
                 type="statement",
                 rank="normal",
-                hash=time_claim["hash"],
+                hash=time_claim.get("hash"),
                 snaktype=time_claim["snaktype"],
                 property=time_claim["property"],
                 time=time_claim["datavalue"]["value"]["time"],
@@ -704,7 +719,7 @@ class WikiDataQueryService:
             id=time_claim["id"],
             type=time_claim["type"],
             rank=time_claim["rank"],
-            hash=time_claim["mainsnak"]["hash"],
+            hash=time_claim["mainsnak"].get("hash"),
             snaktype=time_claim["mainsnak"]["snaktype"],
             property=time_claim["mainsnak"]["property"],
             time=time_claim["mainsnak"]["datavalue"]["value"]["time"],

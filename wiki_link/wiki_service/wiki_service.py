@@ -296,9 +296,6 @@ class WikiService:
             log.info(f"Successfully processed WikiData item {wiki_id}")
         except Exception as e:
             log.error(f"Error processing WikiData item {wiki_id}: {e}")
-            self._database.report_queue_error(
-                wiki_id=wiki_id, error_time=datetime.now(tz=timezone.utc), errors=str(e)
-            )
             raise WikiServiceError(f"Failed to process WikiData item {wiki_id}: {e}")
 
     def build_events(self, item: Item) -> None:
@@ -417,13 +414,25 @@ class WikiService:
                             )
                         else:
                             description = None
-                        result = self._rest_client.create_person(
-                            name=person_tag.name,
-                            wikidata_id=person_tag.wiki_id,
-                            wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
-                            description=description,
-                        )
-                        id_map[person_tag.wiki_id] = result["id"]
+                        try:
+                            result = self._rest_client.create_person(
+                                name=person_tag.name,
+                                wikidata_id=person_tag.wiki_id,
+                                wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
+                                description=description,
+                            )
+                            id_map[person_tag.wiki_id] = result["id"]
+                        except RestClientError as e:
+                            # handle possible race condition where this entity was created between our check and now
+                            refreshed_existing_tags = self._rest_client.get_tags(
+                                wikidata_ids=[person_tag.wiki_id]
+                            )
+                            newly_created_id = refreshed_existing_tags["wikidata_ids"][
+                                0
+                            ].get("id")
+                            if not newly_created_id:
+                                raise e
+                            id_map[person_tag.wiki_id] = newly_created_id
 
                 if not id_map.get(event.place_tag.wiki_id):
                     coords = event.place_tag.location.coordinates
@@ -434,16 +443,32 @@ class WikiService:
                             )
                         else:
                             description = None
-                        result = self._rest_client.create_place(
-                            name=event.place_tag.name,
-                            wikidata_id=event.place_tag.wiki_id,
-                            wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
-                            latitude=coords.latitude,
-                            longitude=coords.longitude,
-                            description=description,
+                        try:
+                            result = self._rest_client.create_place(
+                                name=event.place_tag.name,
+                                wikidata_id=event.place_tag.wiki_id,
+                                wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
+                                latitude=coords.latitude,
+                                longitude=coords.longitude,
+                                description=description,
+                            )
+                            id_map[event.place_tag.wiki_id] = result["id"]
+                        except RestClientError as e:
+                            # handle possible race condition where this entity was created between our check and now
+                            refreshed_existing_tags = self._rest_client.get_tags(
+                                wikidata_ids=[event.place_tag.wiki_id]
+                            )
+                            newly_created_id = refreshed_existing_tags["wikidata_ids"][
+                                0
+                            ].get("id")
+                            if not newly_created_id:
+                                raise e
+                            id_map[event.place_tag.wiki_id] = newly_created_id
+                    else:
+                        log.error(
+                            f"Place tag {event.place_tag.wiki_id} did not contain coords - skipping."
                         )
-                        id_map[event.place_tag.wiki_id] = result["id"]
-                    # todo: handle case of geoshape, no coords
+                        continue
 
                 # Create time tag
                 if event.time_tag.wiki_id:
@@ -451,16 +476,28 @@ class WikiService:
                         description = self._query.get_description(
                             id=event.time_tag.wiki_id, language="en"
                         )
-                        result = self._rest_client.create_time(
-                            name=event.time_tag.name,
-                            wikidata_id=event.time_tag.wiki_id,
-                            wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
-                            date=event.time_tag.time_definition.time,
-                            calendar_model=event.time_tag.time_definition.calendarmodel,
-                            precision=event.time_tag.time_definition.precision,
-                            description=description,
-                        )
-                        time_id = result["id"]
+                        try:
+                            result = self._rest_client.create_time(
+                                name=event.time_tag.name,
+                                wikidata_id=event.time_tag.wiki_id,
+                                wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
+                                date=event.time_tag.time_definition.time,
+                                calendar_model=event.time_tag.time_definition.calendarmodel,
+                                precision=event.time_tag.time_definition.precision,
+                                description=description,
+                            )
+                            time_id = result["id"]
+                        except RestClientError as e:
+                            # handle possible race condition where this entity was created between our check and now
+                            refreshed_existing_tags = self._rest_client.get_tags(
+                                wikidata_ids=[event.time_tag.wiki_id]
+                            )
+                            newly_created_id = refreshed_existing_tags["wikidata_ids"][
+                                0
+                            ].get("id")
+                            if not newly_created_id:
+                                raise e
+                            id_map[event.time_tag.wiki_id] = newly_created_id
                     else:
                         time_id = id_map[event.time_tag.wiki_id]
                 else:

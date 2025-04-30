@@ -13,6 +13,12 @@ from wikidata.main import app, get_config
 # Test entity data
 TEST_ENTITY = {
     "id": "Q1339",
+    "pageid": 1735,
+    "ns": 0,
+    "title": "Q1339",
+    "lastrevid": 2308290178,
+    "modified": "2025-02-07T16:15:46Z",
+    "type": "item",
     "labels": {
         "en": {"language": "en", "value": "Johann Sebastian Bach"},
         "fr": {"language": "fr", "value": "Jean-Sébastien Bach"},
@@ -26,6 +32,9 @@ TEST_ENTITY = {
         },
         "de": {"language": "de", "value": "deutscher Komponist des Barock"},
     },
+    "aliases": {},
+    "claims": {},
+    "sitelinks": {},
 }
 
 
@@ -77,7 +86,7 @@ class TestWikiDataAPI:
         """Test successful entity retrieval."""
         response = client.get("/v1/entities/items/Q1339")
         assert response.status_code == 200
-        assert response.json() == TEST_ENTITY
+        assert response.json() == {"entities": {"Q1339": TEST_ENTITY}}
 
     def test_get_entity_not_found(self, client):
         """Test entity retrieval when entity does not exist."""
@@ -89,7 +98,7 @@ class TestWikiDataAPI:
         """Test successful label retrieval."""
         response = client.get("/v1/entities/items/Q1339/labels/en")
         assert response.status_code == 200
-        assert response.json() == {"language": "en", "value": "Johann Sebastian Bach"}
+        assert response.text == "Johann Sebastian Bach"
 
     def test_get_label_entity_not_found(self, client):
         """Test label retrieval when entity does not exist."""
@@ -107,10 +116,7 @@ class TestWikiDataAPI:
         """Test successful description retrieval."""
         response = client.get("/v1/entities/items/Q1339/descriptions/en")
         assert response.status_code == 200
-        assert response.json() == {
-            "language": "en",
-            "value": "German composer (1685–1750)",
-        }
+        assert response.text == "German composer (1685–1750)"
 
     def test_get_description_entity_not_found(self, client):
         """Test description retrieval when entity does not exist."""

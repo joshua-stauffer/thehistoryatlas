@@ -134,88 +134,6 @@ def print_operation_stats(operations, indent=""):
         print(f"{indent}Std deviation:  {metrics['std_dev']:>10.3f} seconds")
 
 
-def generate_optimization_suggestions(stats):
-    """Generate optimization suggestions based on stats."""
-    suggestions = []
-
-    # Identify the most expensive operation
-    main_ops = stats["standard"]
-    sorted_ops = sorted(main_ops.items(), key=lambda x: x[1]["total"], reverse=True)
-
-    if len(sorted_ops) > 0:
-        top_op_name, top_op = sorted_ops[0]
-
-        # Check if create_tag_instances is the bottleneck
-        if top_op_name == "create_tag_instances" and top_op["total"] > 0:
-            # Look at the specific database operations
-            db_ops = stats["db_operations"]
-
-            # Check for update_story_orders performance
-            if (
-                "update_story_orders" in db_ops
-                and db_ops["update_story_orders"]["total"] > 0.3 * top_op["total"]
-            ):
-                suggestions.append(
-                    "The update_story_orders operation is consuming a significant portion of time. "
-                    "Consider optimizing the story_order update logic or implementing batch updates."
-                )
-
-            # Check for tag_instance insertion performance
-            if (
-                "execute_tag_instance_insert" in db_ops
-                and db_ops["execute_tag_instance_insert"]["avg"] > 0.1
-            ):
-                suggestions.append(
-                    "Tag instance insertions are slow. Consider implementing batch inserts "
-                    "instead of individual inserts, or check for missing indexes."
-                )
-
-            # Check if there's a uniqueness constraint enforcement overhead
-            if top_op["std_dev"] / top_op["avg"] > 0.5:
-                suggestions.append(
-                    "High variance in tag_instance creation suggests potential contention "
-                    "or deadlocks. Check for uniqueness constraint enforcement overhead."
-                )
-
-        # Suggestions for any operation that takes too long
-        if top_op["avg"] > 1.0:
-            suggestions.append(
-                f"The {top_op_name} operation takes an average of {top_op['avg']:.2f} seconds. "
-                f"Consider optimizing it or making it asynchronous if possible."
-            )
-
-    # Identify slow database operations
-    db_ops = stats["db_operations"]
-    slow_db_ops = [
-        (name, op)
-        for name, op in db_ops.items()
-        if op["avg"] > 0.2 or op["total"] > 5.0
-    ]
-
-    for name, op in slow_db_ops:
-        if name == "get_story_order":
-            suggestions.append(
-                "The get_story_order database operation is slow. Consider caching story orders "
-                "or implementing a more efficient algorithm to compute them."
-            )
-        elif name == "update_story_orders":
-            suggestions.append(
-                "Updating story orders is expensive. Consider batching updates or using "
-                "an alternative approach to sequence management that doesn't require reordering."
-            )
-
-    # Check transaction patterns
-    if "commit_transaction" in main_ops and main_ops["commit_transaction"]["count"] > 0:
-        avg_commit_time = main_ops["commit_transaction"]["avg"]
-        if avg_commit_time > 0.1:
-            suggestions.append(
-                f"Transactions take an average of {avg_commit_time:.2f} seconds to commit. "
-                f"Consider reducing transaction size or optimizing your database configuration."
-            )
-
-    return suggestions
-
-
 def main():
     parser = argparse.ArgumentParser(description="Analyze history trace logs")
     parser.add_argument(
@@ -236,9 +154,7 @@ def main():
 
         print("\nOPTIMIZATION SUGGESTIONS")
         print("=" * 80)
-        suggestions = generate_optimization_suggestions(stats)
-        for i, suggestion in enumerate(suggestions, 1):
-            print(f"\n{i}. {suggestion}")
+
 
         if args.output_json:
             # Convert stats to JSON serializable format
