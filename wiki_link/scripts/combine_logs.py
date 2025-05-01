@@ -38,14 +38,20 @@ def extract_timestamp(line: str) -> Tuple[datetime, str]:
 def combine_logs(
     input_dir: str = ".", output_file: str = "combined_wikilink.log"
 ) -> None:
-    """Combine all wikilink_*.log files in input_dir into a single output file."""
-    # Find all log files
-    log_files = glob.glob(os.path.join(input_dir, "wikilink_*.log"))
+    """Combine all wikilink_*.log files in input_dir into a single output file.
+    Also includes rotated log files with numerical suffixes (e.g., wikilink_*.log.1)"""
+    # Find all log files including rotated ones
+    base_logs = glob.glob(os.path.join(input_dir, "wikilink_*.log"))
+    rotated_logs = glob.glob(os.path.join(input_dir, "wikilink_*.log.*"))
+    log_files = base_logs + rotated_logs
+
     if not log_files:
         print(f"No log files found in {input_dir}")
         return
 
-    print(f"Found {len(log_files)} log files to combine")
+    print(
+        f"Found {len(log_files)} log files to combine ({len(base_logs)} base logs, {len(rotated_logs)} rotated logs)"
+    )
 
     # Read all lines from all files
     all_lines: List[Tuple[datetime, str]] = []

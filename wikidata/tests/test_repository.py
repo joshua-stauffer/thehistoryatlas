@@ -6,6 +6,7 @@ from typing import Dict, Generator, Any
 
 from rocksdict import Rdict
 from wikidata.repository import Repository, Config
+from wikidata.setup_db_for_reads import configure_for_read
 
 
 @pytest.fixture
@@ -53,6 +54,12 @@ def populate_db(test_config: Config, test_data: Dict[str, Dict[str, Any]]) -> No
     finally:
         # Close the database connection before yielding control
         db.close()
+
+
+def test_settings(test_config: Config, test_data: Dict[str, Dict[str, Any]]) -> None:
+    db = Rdict(test_config.DB_PATH)
+    db.close()
+    configure_for_read(test_config)
 
 
 class TestRepository:

@@ -246,20 +246,38 @@ class WikiService:
 
     def run(self) -> None:
         processed = 0
-        while True:
-            item = self._database.pop_oldest_item_from_queue()
-            if item is None:
-                log.info("Queue is empty, processing complete")
-                break
+        current_item: Item | None = None
+        try:
+            while True:
+                if current_item is None:
+                    current_item = self._database.pop_oldest_item_from_queue()
+                    if current_item is None:
+                        log.info("Queue is empty, processing complete")
+                        break
 
-            try:
-                self.build_events(item=item)
-                processed += 1
-            except Exception as e:
-                log.error(f"Error processing item: {e}")
-                continue
+                try:
+                    self.build_events(item=current_item)
+                    processed += 1
+                    current_item = None
+                except Exception as e:
+                    log.error(f"Error processing item: {e}")
+                    current_item = None
+                    continue
 
-        log.info(f"Processed {processed} items successfully")
+            log.info(f"Processed {processed} items successfully")
+        except KeyboardInterrupt:
+            log.info("\nGracefully shutting down...")
+            if current_item:
+                log.info(f"Putting item {current_item.wiki_id} back in queue")
+                self._database.add_items_to_queue(
+                    entity_type=current_item.entity_type,
+                    items=[
+                        WikiDataItem(
+                            qid=current_item.wiki_id, url=current_item.wiki_link
+                        )
+                    ],
+                )
+            log.info(f"Processed {processed} items before interruption")
 
     def process_wikidata_item(self, wiki_id: str, entity_type: str) -> None:
         """
