@@ -33,7 +33,7 @@ def load_data(
 
     # avoid `Too many open files` exception
     # run `ulimit -n 10240` prior to running this script if the error is encountered.
-    options.set_max_open_files(8000)
+    options.set_max_open_files(10240)
     options.set_table_cache_num_shard_bits(4)  # Helps with file handle management
 
     try:
