@@ -112,9 +112,7 @@ def reset_story_orders(session: Session):
     print(f"Reset {count} story_order values.")
 
 
-def process_batch(
-    session: Session, batch_size: int
-) -> int:
+def process_batch(session: Session, batch_size: int) -> int:
     """
     Process a batch of tag instances with null story_order values.
 
@@ -124,7 +122,6 @@ def process_batch(
     Args:
         session: The database session
         batch_size: Number of tag instances to process in each batch
-        include_timeless: Whether to include tag instances without time information
 
     Returns:
         The number of rows processed.
@@ -262,8 +259,6 @@ def main():
                 f"Starting bulk story order calculation with {null_count:,} NULL values"
             )
             print(f"Using batch size of {args.batch_size}")
-            if args.include_timeless:
-                print("Including tag instances without time information")
 
             # First process instances with time information
             print("Processing tag instances with time information...")
@@ -271,50 +266,17 @@ def main():
 
             while process_with_time:
                 # Process a batch
-                rows_processed = process_batch(
-                    session, args.batch_size
-                )
+                rows_processed = process_batch(session, args.batch_size)
                 total_processed += rows_processed
                 batch_count += 1
 
-                # If no rows were processed, we're either done or need to switch to timeless
+                # If no rows were processed, we're done
                 if rows_processed == 0:
-                    if args.include_timeless:
-                        process_with_time = False
-                        print(
-                            "\nSwitching to process tag instances without time information..."
-                        )
-                    else:
-                        break  # Done completely
+                    break  # Done completely
 
                 # Log progress at specified intervals
                 if batch_count % args.log_interval == 0:
                     log_progress(session, start_time, total_processed, batch_count)
-
-            # Then process instances without time information if requested
-            if args.include_timeless and not process_with_time:
-                timeless_batch_count = 0
-
-                while True:
-                    # Process a batch of timeless instances
-                    rows_processed = process_batch(
-                        session, args.batch_size
-                    )
-                    total_processed += rows_processed
-                    batch_count += 1
-                    timeless_batch_count += 1
-
-                    # If no rows were processed, we're done
-                    if rows_processed == 0:
-                        break
-
-                    # Log progress at specified intervals
-                    if timeless_batch_count % args.log_interval == 0:
-                        log_progress(session, start_time, total_processed, batch_count)
-
-                print(
-                    f"\nProcessed timeless instances in {timeless_batch_count} batches"
-                )
 
         finally:
             # Clean up temporary indexes if we created them
