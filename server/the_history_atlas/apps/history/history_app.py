@@ -249,26 +249,28 @@ class HistoryApp:
         session: Session = None,
     ) -> None:
         """Calculate story order for any tag_instances which have not yet been ordered."""
-        for tag_id in tag_ids:
-            try:
-                if session:
+        session_created = False
+        if session is None:
+            session = Session(self._repository._engine, future=True)
+            session_created = True
+
+        try:
+            for tag_id in tag_ids:
+                try:
                     self._repository.update_null_story_order(
                         tag_id=tag_id, session=session
                     )
-                else:
-                    self._repository.update_null_story_order(tag_id=tag_id)
-            except RebalanceError:
-                log.info(f"Rebalancing story order for story {tag_id}.")
-                if session:
+                except RebalanceError:
+                    log.info(f"Rebalancing story order for story {tag_id}.")
                     self._repository.rebalance_story_order(
                         tag_id=tag_id, session=session
                     )
-                    self._repository.update_null_story_order(
-                        tag_id=tag_id, session=session
-                    )
-                else:
-                    self._repository.rebalance_story_order(tag_id=tag_id)
-                    self._repository.update_null_story_order(tag_id=tag_id)
+
+            if session_created:
+                session.commit()
+        finally:
+            if session_created:
+                session.close()
 
     def calculate_story_order_range(
         self,
@@ -285,21 +287,23 @@ class HistoryApp:
             num_workers: Number of threads to use for parallel processing
         """
         # Get all tag IDs that need processing within the range
-        tag_ids = self._repository.get_tag_ids_with_null_orders(
-            start_tag_id=start_tag_id, stop_tag_id=stop_tag_id
-        )
+        with self._repository.Session() as session:
+            tag_ids = self._repository.get_tag_ids_with_null_orders(
+                start_tag_id=start_tag_id, stop_tag_id=stop_tag_id, session=session
+            )
 
-        if not tag_ids:
-            log.info("No tag IDs with null story orders found in the specified range.")
-            return
+            if not tag_ids:
+                log.info(
+                    "No tag IDs with null story orders found in the specified range."
+                )
+                return
 
-        log.info(f"Processing {len(tag_ids)} tag IDs with {num_workers} workers")
+            log.info(f"Processing {len(tag_ids)} tag IDs with {num_workers} workers")
 
-        if num_workers <= 1:
-            # Single-threaded mode
-            with self._repository.Session() as session:
+            if num_workers <= 1:
+                # Single-threaded mode
                 self.calculate_story_order(tag_ids=tag_ids, session=session)
-            return
+                return
 
         # Divide work among workers
         chunk_size = ceil(len(tag_ids) / num_workers)

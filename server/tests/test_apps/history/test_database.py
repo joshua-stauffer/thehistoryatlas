@@ -564,7 +564,7 @@ class TestRebalanceStoryOrder:
             session.commit()
 
             # Call rebalance
-            result = history_db.rebalance_story_order(tag_id)
+            result = history_db.rebalance_story_order(tag_id, session=session)
 
             # Verify the returned dictionary
             assert len(result) == len(story_orders)
@@ -633,7 +633,7 @@ class TestRebalanceStoryOrder:
             session.commit()
 
             # Call rebalance - should not error and return empty dict
-            result = history_db.rebalance_story_order(tag_id)
+            result = history_db.rebalance_story_order(tag_id, session=session)
             assert result == {}
 
             # Cleanup
@@ -674,7 +674,7 @@ class TestRebalanceStoryOrder:
             session.commit()
 
             # Call rebalance - should not error and return empty dict
-            result = history_db.rebalance_story_order(tag_id)
+            result = history_db.rebalance_story_order(tag_id, session=session)
             assert result == {}
 
             # Verify all story orders are still null
@@ -807,7 +807,7 @@ class TestGetTagIdsWithNullOrders:
             session.commit()
 
             # Call the method and verify results
-            result = history_db.get_tag_ids_with_null_orders()
+            result = history_db.get_tag_ids_with_null_orders(session=session)
 
             assert isinstance(result, list)
             assert len(result) == 2
@@ -821,28 +821,32 @@ class TestGetTagIdsWithNullOrders:
 
             # Test with start_tag_id parameter
             result_with_start = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=tag_id_with_null_2
+                start_tag_id=tag_id_with_null_2, session=session
             )
             assert len(result_with_start) == 1
             assert result_with_start[0] == tag_id_with_null_2
 
             # Test with stop_tag_id parameter
             result_with_stop = history_db.get_tag_ids_with_null_orders(
-                stop_tag_id=tag_id_with_null_1
+                stop_tag_id=tag_id_with_null_1, session=session
             )
             assert len(result_with_stop) == 1
             assert result_with_stop[0] == tag_id_with_null_1
 
             # Test with both parameters set to the same value (should return exactly one item)
             result_with_both_same = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=tag_id_with_null_1, stop_tag_id=tag_id_with_null_1
+                start_tag_id=tag_id_with_null_1,
+                stop_tag_id=tag_id_with_null_1,
+                session=session,
             )
             assert len(result_with_both_same) == 1
             assert result_with_both_same[0] == tag_id_with_null_1
 
             # Test with both parameters set to a range (should return both items)
             result_with_both_range = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=tag_id_with_null_1, stop_tag_id=tag_id_with_null_2
+                start_tag_id=tag_id_with_null_1,
+                stop_tag_id=tag_id_with_null_2,
+                session=session,
             )
             assert len(result_with_both_range) == 2
             assert result_with_both_range[0] == tag_id_with_null_1
@@ -932,7 +936,7 @@ class TestGetTagIdsWithNullOrders:
 
             # Test with too small start_tag_id (should include all)
             result_with_small_start = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=too_small_id
+                start_tag_id=too_small_id, session=session
             )
             assert len(result_with_small_start) == 2
             assert result_with_small_start[0] == tag_id_with_null_1
@@ -940,7 +944,7 @@ class TestGetTagIdsWithNullOrders:
 
             # Test with too large stop_tag_id (should include all)
             result_with_large_stop = history_db.get_tag_ids_with_null_orders(
-                stop_tag_id=too_large_id
+                stop_tag_id=too_large_id, session=session
             )
             assert len(result_with_large_stop) == 2
             assert result_with_large_stop[0] == tag_id_with_null_1
@@ -948,19 +952,21 @@ class TestGetTagIdsWithNullOrders:
 
             # Test with start_tag_id that's too large (should return empty)
             result_with_large_start = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=too_large_id
+                start_tag_id=too_large_id, session=session
             )
             assert len(result_with_large_start) == 0
 
             # Test with stop_tag_id that's too small (should return empty)
             result_with_small_stop = history_db.get_tag_ids_with_null_orders(
-                stop_tag_id=too_small_id
+                stop_tag_id=too_small_id, session=session
             )
             assert len(result_with_small_stop) == 0
 
             # Test with start_tag_id > stop_tag_id (should return empty)
             result_with_invalid_range = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=tag_id_with_null_2, stop_tag_id=tag_id_with_null_1
+                start_tag_id=tag_id_with_null_2,
+                stop_tag_id=tag_id_with_null_1,
+                session=session,
             )
             assert len(result_with_invalid_range) == 0
 
@@ -1022,14 +1028,14 @@ class TestGetTagIdsWithNullOrders:
             session.commit()
 
             # Call the method and verify results
-            result = history_db.get_tag_ids_with_null_orders()
+            result = history_db.get_tag_ids_with_null_orders(session=session)
 
             assert isinstance(result, list)
             assert len(result) == 0
 
             # Test with start_tag_id and stop_tag_id
             result_with_params = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=tag_id, stop_tag_id=tag_id
+                start_tag_id=tag_id, stop_tag_id=tag_id, session=session
             )
             assert isinstance(result_with_params, list)
             assert len(result_with_params) == 0
@@ -1063,14 +1069,14 @@ class TestGetTagIdsWithNullOrders:
             session.commit()
 
             # Call the method and verify results
-            result = history_db.get_tag_ids_with_null_orders()
+            result = history_db.get_tag_ids_with_null_orders(session=session)
 
             assert isinstance(result, list)
             assert len(result) == 0
 
             # Test with start_tag_id and stop_tag_id
             result_with_params = history_db.get_tag_ids_with_null_orders(
-                start_tag_id=tag_id, stop_tag_id=tag_id
+                start_tag_id=tag_id, stop_tag_id=tag_id, session=session
             )
             assert isinstance(result_with_params, list)
             assert len(result_with_params) == 0

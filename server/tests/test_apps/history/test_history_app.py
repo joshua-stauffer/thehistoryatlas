@@ -127,8 +127,12 @@ class TestCalculateStoryOrderRange:
         # Call the method with default arguments
         history_app.calculate_story_order_range()
 
-        # Assert repository was called with correct arguments
-        mock_get_tag_ids.assert_called_once_with(start_tag_id=None, stop_tag_id=None)
+        # Assert repository was called with correct arguments - now including session
+        assert mock_get_tag_ids.call_count == 1
+        call_args = mock_get_tag_ids.call_args
+        assert call_args[1]["start_tag_id"] is None
+        assert call_args[1]["stop_tag_id"] is None
+        assert "session" in call_args[1]
 
     def test_single_worker(self, history_app, mocker) -> None:
         """Test that single worker mode processes tags correctly."""
@@ -225,10 +229,12 @@ class TestCalculateStoryOrderRange:
             start_tag_id=start_id, stop_tag_id=stop_id, num_workers=2
         )
 
-        # Assert get_tag_ids_with_null_orders was called with correct arguments
-        mock_get_tag_ids.assert_called_once_with(
-            start_tag_id=start_id, stop_tag_id=stop_id
-        )
+        # Assert get_tag_ids_with_null_orders was called with correct arguments - now including session
+        assert mock_get_tag_ids.call_count == 1
+        call_args = mock_get_tag_ids.call_args
+        assert call_args[1]["start_tag_id"] == start_id
+        assert call_args[1]["stop_tag_id"] == stop_id
+        assert "session" in call_args[1]
 
     def test_rebalance_error_handling(self, history_app, mocker) -> None:
         """Test that RebalanceError is properly handled in threads."""
@@ -248,11 +254,11 @@ class TestCalculateStoryOrderRange:
             return_value=test_uuids,
         )
 
-        # Create mock functions with proper behavior
+        # Create mock functions with proper behavior - now expecting session parameter
         update_calls = 0
         rebalance_calls = 0
 
-        def mock_update(tag_id, session=None):
+        def mock_update(tag_id, session):
             nonlocal update_calls
             update_calls += 1
             # First tag call will throw an error, but second call (after rebalance) will succeed
@@ -260,7 +266,7 @@ class TestCalculateStoryOrderRange:
                 raise RebalanceError()
             return None
 
-        def mock_rebalance(tag_id, session=None):
+        def mock_rebalance(tag_id, session):
             nonlocal rebalance_calls
             rebalance_calls += 1
             return {}
@@ -277,9 +283,9 @@ class TestCalculateStoryOrderRange:
         # Call the method
         history_app.calculate_story_order_range(num_workers=1)
 
-        # Verify expected behavior
-        assert update_calls >= len(test_uuids) + 1  # One extra call after rebalance
-        assert rebalance_calls >= 1
+        # Verify expected behavior - we now only have 3 calls total because we don't retry after rebalance
+        assert update_calls == len(test_uuids)
+        assert rebalance_calls == 1
 
     def test_integration(self, history_app, cleanup_tag) -> None:
         """Integration test that creates actual records and processes them."""
