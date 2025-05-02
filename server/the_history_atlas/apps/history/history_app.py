@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from math import ceil
 import threading
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -35,7 +36,11 @@ from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
     TagInstanceInput,
 )
 from the_history_atlas.apps.history.repository import Repository, RebalanceError
-from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
+from the_history_atlas.apps.history.errors import (
+    TagExistsError,
+    MissingResourceError,
+    DuplicateEventError,
+)
 from the_history_atlas.apps.history.trie import Trie
 from the_history_atlas.apps.history.tracing import trace_method, trace_block
 
@@ -201,10 +206,13 @@ class HistoryApp:
 
         with self._repository.Session() as session:
             with trace_block("create_summary"):
-                self._repository.create_summary(
-                    id=summary_id,
-                    text=text,
-                )
+                try:
+                    self._repository.create_summary(
+                        id=summary_id,
+                        text=text,
+                    )
+                except IntegrityError:
+                    raise DuplicateEventError
 
             with trace_block("create_citation"):
                 citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"

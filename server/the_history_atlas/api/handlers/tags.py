@@ -10,8 +10,10 @@ from the_history_atlas.api.types.tags import (
     WikiDataEventInput,
     WikiDataEventOutput,
 )
+from fastapi import HTTPException
 from the_history_atlas.apps.app_manager import AppManager
 from the_history_atlas.apps.domain.core import PersonInput, PlaceInput, TimeInput
+from the_history_atlas.apps.history.errors import DuplicateEventError
 
 
 def create_person_handler(
@@ -50,10 +52,15 @@ def get_tags_handler(apps: AppManager, wikidata_ids: list[str]) -> WikiDataTagsO
 def create_event_handler(
     apps: AppManager, event: WikiDataEventInput
 ) -> WikiDataEventOutput:
-    id = apps.history_app.create_wikidata_event(
-        text=event.summary,
-        tags=event.tags,
-        citation=event.citation,
-        after=event.after,
-    )
+    try:
+        id = apps.history_app.create_wikidata_event(
+            text=event.summary,
+            tags=event.tags,
+            citation=event.citation,
+            after=event.after,
+        )
+    except DuplicateEventError:
+        raise HTTPException(
+            status_code=409, detail="An event with these parameters already exists"
+        )
     return WikiDataEventOutput(id=id)
