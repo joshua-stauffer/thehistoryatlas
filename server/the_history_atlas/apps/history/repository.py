@@ -1235,35 +1235,64 @@ class Repository:
 
         instance_updates: list[dict[str, int]] = []
         for target in null_instances:
-            # may raise RebalanceError; caller must retry
-            story_order = self.get_story_order(
-                tag_instances=nonnull_instances,
-                target=target,
-            )
+            try:
+                story_order = self.get_story_order(
+                    tag_instances=nonnull_instances,
+                    target=target,
+                )
+            except RebalanceError:
+                # commit current state so current calculations are included in the rebalance
+                if instance_updates:
+                    self._bulk_update_story_order(
+                        instance_updates=instance_updates,
+                        session=session,
+                        tag_id=tag_id,
+                    )
+                raise
             instance_updates.append({"id": target.id, "story_order": story_order})
+            # insert the new story into nonnull instances so its available for the next calculation
+            new_nonnull_instance = TagInstanceWithTimeAndOrder.model_validate(
+                {
+                    **target.model_dump(),
+                    "story_order": story_order,
+                }
+            )
+            try:
+                index = next(
+                    i
+                    for i, tag_instance in enumerate(nonnull_instances)
+                    if tag_instance.story_order < story_order
+                )
+                nonnull_instances.insert(index, new_nonnull_instance)
+            except StopIteration:  # story order belongs at the end
+                nonnull_instances.append(new_nonnull_instance)
 
         # Update all instances in a single operation
         if instance_updates:
-            # Prepare the SQL for bulk update
-            update_stmt = "UPDATE tag_instances SET story_order = CASE id "
-
-            params = {"tag_id": tag_id}
-            id_list = []
-
-            for i, update in enumerate(instance_updates):
-                update_stmt += f"WHEN :id_{i} THEN :order_{i} "
-                params[f"id_{i}"] = update["id"]
-                params[f"order_{i}"] = update["story_order"]
-                id_list.append(f":id_{i}")
-
-            update_stmt += (
-                "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
-                + ", ".join(id_list)
-                + ")"
+            self._bulk_update_story_order(
+                instance_updates=instance_updates, session=session, tag_id=tag_id
             )
 
-            # Execute the update
-            session.execute(text(update_stmt), params)
+    def _bulk_update_story_order(
+        self, instance_updates: list[dict[str, int]], session: Session, tag_id: UUID
+    ):
+        # Prepare the SQL for bulk update
+        update_stmt = "UPDATE tag_instances SET story_order = CASE id "
+        params = {"tag_id": tag_id}
+        id_list = []
+        for i, update in enumerate(instance_updates):
+            update_stmt += f"WHEN :id_{i} THEN :order_{i} "
+            params[f"id_{i}"] = update["id"]
+            params[f"order_{i}"] = update["story_order"]
+            id_list.append(f":id_{i}")
+        update_stmt += (
+            "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
+            + ", ".join(id_list)
+            + ")"
+        )
+        # Execute the update
+        session.execute(text(update_stmt), params)
+        session.commit()
 
     def rebalance_story_order(self, tag_id: UUID, session: Session) -> dict[UUID, int]:
         """Rebalances story_order values for a given tag_id.
@@ -1339,5 +1368,5 @@ class Repository:
             )
 
             session.execute(text(update_stmt), params)
-
+            session.commit()
         return result
