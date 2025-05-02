@@ -79,6 +79,28 @@ class Repository:
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
 
+    def get_tag_ids_with_null_orders(self) -> List[UUID]:
+        """
+        Returns a list of tag IDs that have at least one related tag_instance with a null story_order.
+        The list is ordered by tag ID.
+
+        Returns:
+            List[UUID]: A list of tag IDs ordered by ID
+        """
+        with Session(self._engine, future=True) as session:
+            query = text(
+                """
+                SELECT DISTINCT tags.id
+                FROM tags
+                JOIN tag_instances ON tags.id = tag_instances.tag_id
+                WHERE tag_instances.story_order IS NULL
+                ORDER BY tags.id
+                """
+            )
+
+            rows = session.execute(query).all()
+            return [row[0] for row in rows]
+
     def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:
         """Util for building Source search trie. Returns a list of (name, id) tuples."""
         res: List[Tuple[str, str]] = []

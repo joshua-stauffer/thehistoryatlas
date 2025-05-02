@@ -703,3 +703,224 @@ class TestRebalanceStoryOrder:
                 text("DELETE FROM summaries WHERE id = :id"), {"id": summary_id}
             )
             session.commit()
+
+
+class TestGetTagIdsWithNullOrders:
+    def test_get_tag_ids_with_null_orders(self, history_db):
+        """Test that tag IDs with null story orders are correctly identified and ordered"""
+        # Create three tags with carefully crafted UUIDs to ensure a predictable sort order
+        tag_id_with_null_1 = uuid4()
+        tag_id_with_null_2 = uuid4()
+        tag_id_without_null = uuid4()
+
+        # Ensure tag_id_with_null_1 < tag_id_with_null_2 for ordering test
+        if tag_id_with_null_1 > tag_id_with_null_2:
+            tag_id_with_null_1, tag_id_with_null_2 = (
+                tag_id_with_null_2,
+                tag_id_with_null_1,
+            )
+
+        summary_id = uuid4()
+
+        with history_db.Session() as session:
+            # Create tags
+            session.execute(
+                text(
+                    "INSERT INTO tags (id, type) VALUES (:id1, 'PERSON'), (:id2, 'PERSON'), (:id3, 'PERSON')"
+                ),
+                {
+                    "id1": tag_id_with_null_1,
+                    "id2": tag_id_with_null_2,
+                    "id3": tag_id_without_null,
+                },
+            )
+
+            # Create a summary
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, 'test summary')"),
+                {"id": summary_id},
+            )
+
+            # Create tag instance with NULL story_order for first tag
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id, :tag_id, :summary_id, NULL, 0, 1)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "tag_id": tag_id_with_null_1,
+                    "summary_id": summary_id,
+                },
+            )
+
+            # Create tag instance with NULL story_order for second tag
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id, :tag_id, :summary_id, NULL, 0, 1)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "tag_id": tag_id_with_null_2,
+                    "summary_id": summary_id,
+                },
+            )
+
+            # Create tag instance with non-NULL story_order for first tag
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id, :tag_id, :summary_id, 100000, 0, 1)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "tag_id": tag_id_with_null_1,
+                    "summary_id": summary_id,
+                },
+            )
+
+            # Create tag instance with non-NULL story_order for third tag
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id, :tag_id, :summary_id, 100000, 0, 1)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "tag_id": tag_id_without_null,
+                    "summary_id": summary_id,
+                },
+            )
+            session.commit()
+
+            # Call the method and verify results
+            result = history_db.get_tag_ids_with_null_orders()
+
+            assert isinstance(result, list)
+            assert len(result) == 2
+            assert tag_id_with_null_1 in result
+            assert tag_id_with_null_2 in result
+            assert tag_id_without_null not in result
+
+            # Check ordering: tag_id_with_null_1 should come before tag_id_with_null_2
+            assert result[0] == tag_id_with_null_1
+            assert result[1] == tag_id_with_null_2
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE tag_id IN (:id1, :id2, :id3)"),
+                {
+                    "id1": tag_id_with_null_1,
+                    "id2": tag_id_with_null_2,
+                    "id3": tag_id_without_null,
+                },
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id IN (:id1, :id2, :id3)"),
+                {
+                    "id1": tag_id_with_null_1,
+                    "id2": tag_id_with_null_2,
+                    "id3": tag_id_without_null,
+                },
+            )
+            session.execute(
+                text("DELETE FROM summaries WHERE id = :id"),
+                {"id": summary_id},
+            )
+            session.commit()
+
+    def test_empty_result(self, history_db):
+        """Test that empty list is returned when no tags have null orders"""
+        # Create a tag
+        tag_id = uuid4()
+        summary_id = uuid4()
+
+        with history_db.Session() as session:
+            # Create tag
+            session.execute(
+                text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"),
+                {"id": tag_id},
+            )
+
+            # Create a summary
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, 'test summary')"),
+                {"id": summary_id},
+            )
+
+            # Create tag instance with non-NULL story_order
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id, :tag_id, :summary_id, 100000, 0, 1)
+                """
+                ),
+                {
+                    "id": uuid4(),
+                    "tag_id": tag_id,
+                    "summary_id": summary_id,
+                },
+            )
+            session.commit()
+
+            # Call the method and verify results
+            result = history_db.get_tag_ids_with_null_orders()
+
+            assert isinstance(result, list)
+            assert len(result) == 0
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE tag_id = :id"),
+                {"id": tag_id},
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id = :id"),
+                {"id": tag_id},
+            )
+            session.execute(
+                text("DELETE FROM summaries WHERE id = :id"),
+                {"id": summary_id},
+            )
+            session.commit()
+
+    def test_no_tag_instances(self, history_db):
+        """Test behavior when there are no tag instances"""
+        # Create a tag but no tag instances
+        tag_id = uuid4()
+
+        with history_db.Session() as session:
+            # Create tag
+            session.execute(
+                text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"),
+                {"id": tag_id},
+            )
+            session.commit()
+
+            # Call the method and verify results
+            result = history_db.get_tag_ids_with_null_orders()
+
+            assert isinstance(result, list)
+            assert len(result) == 0
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tags WHERE id = :id"),
+                {"id": tag_id},
+            )
+            session.commit()
