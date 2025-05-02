@@ -183,10 +183,9 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
-                    ORDER BY RANDOM()
+                    ORDER BY tag_instances.story_order
                     LIMIT 1;
                 """
                 )
@@ -204,9 +203,10 @@ class Repository:
                     """
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
-                    WHERE tag_instances.story_order = 100000
-                    AND tag_instances.story_order IS NOT NULL
+                    where tag_instances.story_order IS NOT NULL
                     AND tag_instances.tag_id = :story_id
+                    ORDER BY tag_instances.story_order
+                    LIMIT 1;
                 """
                 ),
                 {"story_id": story_id},
@@ -225,7 +225,6 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     AND tag_instances.tag_id = :event_id
