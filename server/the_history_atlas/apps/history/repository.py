@@ -79,26 +79,46 @@ class Repository:
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
 
-    def get_tag_ids_with_null_orders(self) -> List[UUID]:
+    def get_tag_ids_with_null_orders(
+        self, start_tag_id: Optional[UUID] = None, stop_tag_id: Optional[UUID] = None
+    ) -> List[UUID]:
         """
         Returns a list of tag IDs that have at least one related tag_instance with a null story_order.
         The list is ordered by tag ID.
+
+        Args:
+            start_tag_id: Optional UUID to start the result set from (inclusive)
+            stop_tag_id: Optional UUID to end the result set at (inclusive)
 
         Returns:
             List[UUID]: A list of tag IDs ordered by ID
         """
         with Session(self._engine, future=True) as session:
-            query = text(
-                """
+            base_query = """
                 SELECT DISTINCT tags.id
                 FROM tags
                 JOIN tag_instances ON tags.id = tag_instances.tag_id
                 WHERE tag_instances.story_order IS NULL
-                ORDER BY tags.id
-                """
-            )
+            """
 
-            rows = session.execute(query).all()
+            conditions = []
+            params = {}
+
+            if start_tag_id is not None:
+                conditions.append("tags.id >= :start_tag_id")
+                params["start_tag_id"] = start_tag_id
+
+            if stop_tag_id is not None:
+                conditions.append("tags.id <= :stop_tag_id")
+                params["stop_tag_id"] = stop_tag_id
+
+            if conditions:
+                base_query += " AND " + " AND ".join(conditions)
+
+            base_query += " ORDER BY tags.id"
+
+            query = text(base_query)
+            rows = session.execute(query, params).all()
             return [row[0] for row in rows]
 
     def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:

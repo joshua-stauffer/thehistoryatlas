@@ -819,6 +819,35 @@ class TestGetTagIdsWithNullOrders:
             assert result[0] == tag_id_with_null_1
             assert result[1] == tag_id_with_null_2
 
+            # Test with start_tag_id parameter
+            result_with_start = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=tag_id_with_null_2
+            )
+            assert len(result_with_start) == 1
+            assert result_with_start[0] == tag_id_with_null_2
+
+            # Test with stop_tag_id parameter
+            result_with_stop = history_db.get_tag_ids_with_null_orders(
+                stop_tag_id=tag_id_with_null_1
+            )
+            assert len(result_with_stop) == 1
+            assert result_with_stop[0] == tag_id_with_null_1
+
+            # Test with both parameters set to the same value (should return exactly one item)
+            result_with_both_same = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=tag_id_with_null_1, stop_tag_id=tag_id_with_null_1
+            )
+            assert len(result_with_both_same) == 1
+            assert result_with_both_same[0] == tag_id_with_null_1
+
+            # Test with both parameters set to a range (should return both items)
+            result_with_both_range = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=tag_id_with_null_1, stop_tag_id=tag_id_with_null_2
+            )
+            assert len(result_with_both_range) == 2
+            assert result_with_both_range[0] == tag_id_with_null_1
+            assert result_with_both_range[1] == tag_id_with_null_2
+
             # Cleanup
             session.execute(
                 text("DELETE FROM tag_instances WHERE tag_id IN (:id1, :id2, :id3)"),
@@ -834,6 +863,120 @@ class TestGetTagIdsWithNullOrders:
                     "id1": tag_id_with_null_1,
                     "id2": tag_id_with_null_2,
                     "id3": tag_id_without_null,
+                },
+            )
+            session.execute(
+                text("DELETE FROM summaries WHERE id = :id"),
+                {"id": summary_id},
+            )
+            session.commit()
+
+    def test_get_tag_ids_with_null_orders_with_nonexistent_bounds(self, history_db):
+        """Test that using start_tag_id and stop_tag_id with values outside the range works correctly"""
+        # Create tags
+        tag_id_with_null_1 = uuid4()
+        tag_id_with_null_2 = uuid4()
+
+        # Ensure tag_id_with_null_1 < tag_id_with_null_2 for ordering test
+        if tag_id_with_null_1 > tag_id_with_null_2:
+            tag_id_with_null_1, tag_id_with_null_2 = (
+                tag_id_with_null_2,
+                tag_id_with_null_1,
+            )
+
+        summary_id = uuid4()
+
+        # Create IDs for bounds testing that are definitely outside our range
+        # UUID('00000000-0000-0000-0000-000000000000') is the smallest possible UUID
+        # UUID('ffffffff-ffff-ffff-ffff-ffffffffffff') is the largest possible UUID
+        too_small_id = UUID("00000000-0000-0000-0000-000000000000")
+        too_large_id = UUID("ffffffff-ffff-ffff-ffff-ffffffffffff")
+
+        with history_db.Session() as session:
+            # Create tags
+            session.execute(
+                text(
+                    "INSERT INTO tags (id, type) VALUES (:id1, 'PERSON'), (:id2, 'PERSON')"
+                ),
+                {
+                    "id1": tag_id_with_null_1,
+                    "id2": tag_id_with_null_2,
+                },
+            )
+
+            # Create a summary
+            session.execute(
+                text("INSERT INTO summaries (id, text) VALUES (:id, 'test summary')"),
+                {"id": summary_id},
+            )
+
+            # Create tag instances with NULL story_orders
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances 
+                    (id, tag_id, summary_id, story_order, start_char, stop_char) 
+                    VALUES (:id1, :tag_id1, :summary_id, NULL, 0, 1),
+                           (:id2, :tag_id2, :summary_id, NULL, 0, 1)
+                """
+                ),
+                {
+                    "id1": uuid4(),
+                    "tag_id1": tag_id_with_null_1,
+                    "id2": uuid4(),
+                    "tag_id2": tag_id_with_null_2,
+                    "summary_id": summary_id,
+                },
+            )
+            session.commit()
+
+            # Test with too small start_tag_id (should include all)
+            result_with_small_start = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=too_small_id
+            )
+            assert len(result_with_small_start) == 2
+            assert result_with_small_start[0] == tag_id_with_null_1
+            assert result_with_small_start[1] == tag_id_with_null_2
+
+            # Test with too large stop_tag_id (should include all)
+            result_with_large_stop = history_db.get_tag_ids_with_null_orders(
+                stop_tag_id=too_large_id
+            )
+            assert len(result_with_large_stop) == 2
+            assert result_with_large_stop[0] == tag_id_with_null_1
+            assert result_with_large_stop[1] == tag_id_with_null_2
+
+            # Test with start_tag_id that's too large (should return empty)
+            result_with_large_start = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=too_large_id
+            )
+            assert len(result_with_large_start) == 0
+
+            # Test with stop_tag_id that's too small (should return empty)
+            result_with_small_stop = history_db.get_tag_ids_with_null_orders(
+                stop_tag_id=too_small_id
+            )
+            assert len(result_with_small_stop) == 0
+
+            # Test with start_tag_id > stop_tag_id (should return empty)
+            result_with_invalid_range = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=tag_id_with_null_2, stop_tag_id=tag_id_with_null_1
+            )
+            assert len(result_with_invalid_range) == 0
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE tag_id IN (:id1, :id2)"),
+                {
+                    "id1": tag_id_with_null_1,
+                    "id2": tag_id_with_null_2,
+                },
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id IN (:id1, :id2)"),
+                {
+                    "id1": tag_id_with_null_1,
+                    "id2": tag_id_with_null_2,
                 },
             )
             session.execute(
@@ -884,6 +1027,13 @@ class TestGetTagIdsWithNullOrders:
             assert isinstance(result, list)
             assert len(result) == 0
 
+            # Test with start_tag_id and stop_tag_id
+            result_with_params = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=tag_id, stop_tag_id=tag_id
+            )
+            assert isinstance(result_with_params, list)
+            assert len(result_with_params) == 0
+
             # Cleanup
             session.execute(
                 text("DELETE FROM tag_instances WHERE tag_id = :id"),
@@ -917,6 +1067,13 @@ class TestGetTagIdsWithNullOrders:
 
             assert isinstance(result, list)
             assert len(result) == 0
+
+            # Test with start_tag_id and stop_tag_id
+            result_with_params = history_db.get_tag_ids_with_null_orders(
+                start_tag_id=tag_id, stop_tag_id=tag_id
+            )
+            assert isinstance(result_with_params, list)
+            assert len(result_with_params) == 0
 
             # Cleanup
             session.execute(
