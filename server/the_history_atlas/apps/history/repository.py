@@ -80,7 +80,10 @@ class Repository:
         Base.metadata.create_all(self._engine)
 
     def get_tag_ids_with_null_orders(
-        self, start_tag_id: Optional[UUID] = None, stop_tag_id: Optional[UUID] = None
+        self,
+        start_tag_id: Optional[UUID] = None,
+        stop_tag_id: Optional[UUID] = None,
+        session: Session = None,
     ) -> List[UUID]:
         """
         Returns a list of tag IDs that have at least one related tag_instance with a null story_order.
@@ -89,11 +92,18 @@ class Repository:
         Args:
             start_tag_id: Optional UUID to start the result set from (inclusive)
             stop_tag_id: Optional UUID to end the result set at (inclusive)
+            session: Optional SQLAlchemy session to use
 
         Returns:
             List[UUID]: A list of tag IDs ordered by ID
         """
-        with Session(self._engine, future=True) as session:
+        # Determine if we need to create a session or use the provided one
+        session_created = False
+        if session is None:
+            session = Session(self._engine, future=True)
+            session_created = True
+
+        try:
             base_query = """
                 SELECT DISTINCT tags.id
                 FROM tags
@@ -120,6 +130,10 @@ class Repository:
             query = text(base_query)
             rows = session.execute(query, params).all()
             return [row[0] for row in rows]
+        finally:
+            # Close the session if we created it
+            if session_created:
+                session.close()
 
     def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:
         """Util for building Source search trie. Returns a list of (name, id) tuples."""
@@ -1164,7 +1178,7 @@ class Repository:
 
         return result_instances
 
-    def update_null_story_order(self, tag_id: UUID) -> None:
+    def update_null_story_order(self, tag_id: UUID, session: Session = None) -> None:
         """
         Updates all null story_order values for a given tag_id based on time ordering.
 
@@ -1176,8 +1190,15 @@ class Repository:
 
         Args:
             tag_id: UUID of the tag to update story orders for
+            session: Optional SQLAlchemy session to use
         """
-        with Session(self._engine, future=True) as session:
+        # Determine if we need to create a session or use the provided one
+        session_created = False
+        if session is None:
+            session = Session(self._engine, future=True)
+            session_created = True
+
+        try:
             tag_instances = session.execute(
                 text(
                     """
@@ -1261,9 +1282,16 @@ class Repository:
 
                 # Execute the update
                 session.execute(text(update_stmt), params)
-                session.commit()
+                if session_created:
+                    session.commit()
+        finally:
+            # Close the session if we created it
+            if session_created:
+                session.close()
 
-    def rebalance_story_order(self, tag_id: UUID) -> dict[UUID, int]:
+    def rebalance_story_order(
+        self, tag_id: UUID, session: Session = None
+    ) -> dict[UUID, int]:
         """Rebalances story_order values for a given tag_id.
 
         Takes all non-null story_order values for the given tag_id and updates them
@@ -1272,11 +1300,18 @@ class Repository:
 
         Args:
             tag_id: UUID of the tag to rebalance story orders for
+            session: Optional SQLAlchemy session to use
 
         Returns:
             dict[UUID, int]: A dictionary mapping tag instance IDs to their new story order values
         """
-        with Session(self._engine, future=True) as session:
+        # Determine if we need to create a session or use the provided one
+        session_created = False
+        if session is None:
+            session = Session(self._engine, future=True)
+            session_created = True
+
+        try:
             # Get all non-null story_order values for this tag, ordered
             rows = session.execute(
                 text(
@@ -1337,6 +1372,11 @@ class Repository:
                 )
 
                 session.execute(text(update_stmt), params)
-                session.commit()
+                if session_created:
+                    session.commit()
 
             return result
+        finally:
+            # Close the session if we created it
+            if session_created:
+                session.close()
