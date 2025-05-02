@@ -246,11 +246,11 @@ class HistoryApp:
     def calculate_story_order(
         self,
         tag_ids: list[UUID],
-        session: Session = None,
+        session: Session | None = None,
     ) -> None:
         """Calculate story order for any tag_instances which have not yet been ordered."""
         session_created = False
-        if session is None:
+        if not session:
             session = Session(self._repository._engine, future=True)
             session_created = True
 
@@ -265,9 +265,6 @@ class HistoryApp:
                     self._repository.rebalance_story_order(
                         tag_id=tag_id, session=session
                     )
-
-            if session_created:
-                session.commit()
         finally:
             if session_created:
                 session.close()
