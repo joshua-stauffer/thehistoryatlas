@@ -24,12 +24,84 @@ import time
 import argparse
 from collections import defaultdict
 import uuid
+import re
 
 # Register UUID adapter for PostgreSQL
 psycopg2.extras.register_uuid()
 
 # Database connection string
 DB_URI = "postgresql://postgres:4f6WxSSoYVSWTVp3QVovWnzLTeCkj9HZ@localhost:5432"
+
+
+def parse_date_for_sorting(date_str):
+    """
+    Parse a datetime string and return a tuple suitable for chronological sorting.
+    Handles both BCE dates (negative years) and CE dates (positive years).
+
+    A date string like "+0079-06-24T00:00:00Z" becomes (79, 6, 24, 0, 0, 0)
+    A date string like "-0578-00-00T00:00:00Z" becomes (-578, 0, 0, 0, 0, 0)
+
+    The result is suitable for direct comparison in chronological order.
+    """
+    if not date_str:
+        return (float("inf"),)  # Put None/empty dates at the end
+
+    # Extract sign and numerical components
+    match = re.match(
+        r"([+-])(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z", date_str
+    )
+
+    if not match:
+        # Handle partial dates like "+0079-00-00T00:00:00Z"
+        match = re.match(r"([+-])(\d{4})-(\d{2})-(\d{2})T", date_str)
+        if match:
+            sign, year, month, day = match.groups()
+            hour, minute, second = 0, 0, 0
+        else:
+            # Try even more simplified format "+0079-00-00"
+            match = re.match(r"([+-])(\d{4})-(\d{2})-(\d{2})", date_str)
+            if match:
+                sign, year, month, day = match.groups()
+                hour, minute, second = 0, 0, 0
+            else:
+                # Ultimate fallback for very partial dates like "+0079-00-00"
+                match = re.match(r"([+-])(\d{4})-(\d{2})", date_str)
+                if match:
+                    sign, year, month = match.groups()
+                    day, hour, minute, second = 0, 0, 0, 0
+                else:
+                    # Final fallback for just year "+0079"
+                    match = re.match(r"([+-])(\d{4})", date_str)
+                    if match:
+                        sign, year = match.groups()
+                        month, day, hour, minute, second = 0, 0, 0, 0, 0
+                    else:
+                        # If we can't parse it at all, return a tuple that sorts last
+                        return (float("inf"),)
+    else:
+        sign, year, month, day, hour, minute, second = match.groups()
+
+    # Convert strings to integers, handling "00" values
+    year = int(year)
+    month = int(month) if month != "00" else 0
+    day = int(day) if day != "00" else 0
+    hour = int(hour) if "hour" in locals() else 0
+    minute = int(minute) if "minute" in locals() else 0
+    second = int(second) if "second" in locals() else 0
+
+    # Apply sign to year for BCE dates
+    if sign == "-":
+        year = -year
+
+    return (year, month, day, hour, minute, second)
+
+
+def get_date_sort_key(instance):
+    """
+    Extract a sort key for an instance based on its datetime and precision.
+    Handles BCE dates correctly by parsing the datetime string.
+    """
+    return (parse_date_for_sorting(instance["datetime"]), instance["precision"])
 
 
 def main():
@@ -144,8 +216,8 @@ def process_tag(conn, tag_id):
                     }
                 )
 
-    # Sort instances by datetime first, then precision
-    instance_data.sort(key=lambda x: (x["datetime"], x["precision"]))
+    # Sort instances by datetime first (correctly handling BCE dates), then precision
+    instance_data.sort(key=get_date_sort_key)
 
     if not instance_data:
         return 0
@@ -247,23 +319,14 @@ def fix_tag_ordering(conn, tag_id):
         if len(valid_instances) < 2:
             return 0
 
-        # Check if instances are already correctly ordered by datetime
+        # Use custom sorting function to check if instances are already correctly ordered
+        sorted_instances = sorted(valid_instances, key=get_date_sort_key)
         is_ordered = all(
-            valid_instances[i]["datetime"] <= valid_instances[i + 1]["datetime"]
-            or (
-                valid_instances[i]["datetime"] == valid_instances[i + 1]["datetime"]
-                and valid_instances[i]["precision"]
-                <= valid_instances[i + 1]["precision"]
-            )
-            for i in range(len(valid_instances) - 1)
+            valid_instances[i]["id"] == sorted_instances[i]["id"]
+            for i in range(len(valid_instances))
         )
 
         if not is_ordered:
-            # Sort instances by datetime, then precision
-            sorted_instances = sorted(
-                valid_instances, key=lambda x: (x["datetime"], x["precision"])
-            )
-
             # Update each instance one by one to avoid unique constraint issues
             # First, temporarily set all story_orders to negative values
             for i, instance in enumerate(valid_instances):
@@ -389,32 +452,40 @@ def verify_tag_ordering(tag_id):
                 print("Not enough instances with time data to verify ordering")
                 return
 
-            # Check if instances are correctly ordered by datetime
-            ordered_correctly = True
-            for i in range(len(valid_instances) - 1):
-                curr = valid_instances[i]
-                next_inst = valid_instances[i + 1]
-                if curr["datetime"] > next_inst["datetime"] or (
-                    curr["datetime"] == next_inst["datetime"]
-                    and curr["precision"] > next_inst["precision"]
-                ):
-                    ordered_correctly = False
-                    print(f"Ordering issue found:")
-                    print(
-                        f"  Instance {curr['id']}: {curr['datetime']} (precision {curr['precision']}) at position {i}"
-                    )
-                    print(
-                        f"  Instance {next_inst['id']}: {next_inst['datetime']} (precision {next_inst['precision']}) at position {i+1}"
-                    )
+            # Use custom sorting function to check if instances are correctly ordered
+            sorted_instances = sorted(valid_instances, key=get_date_sort_key)
+            ordered_correctly = all(
+                valid_instances[i]["id"] == sorted_instances[i]["id"]
+                for i in range(len(valid_instances))
+            )
 
-            if ordered_correctly:
+            if not ordered_correctly:
+                print(f"Ordering issue found:")
+                for i in range(len(valid_instances)):
+                    if valid_instances[i]["id"] != sorted_instances[i]["id"]:
+                        curr = valid_instances[i]
+                        expected = sorted_instances[i]
+                        print(f"  Position {i}:")
+                        print(
+                            f"    Current: ID {curr['id']}: {curr['datetime']} (precision {curr['precision']})"
+                        )
+                        print(
+                            f"    Expected: ID {expected['id']}: {expected['datetime']} (precision {expected['precision']})"
+                        )
+            else:
                 print("All instances are correctly ordered by datetime and precision")
 
             # Print the current ordering
             print("\nCurrent ordering:")
             for i, instance in enumerate(valid_instances):
+                date_components = parse_date_for_sorting(instance["datetime"])
+                year_str = (
+                    date_components[0] if date_components[0] != float("inf") else "N/A"
+                )
                 print(
-                    f"{i+1}. ID: {instance['id']}, Story Order: {instance['story_order']}, Date: {instance['datetime']}, Precision: {instance['precision']}"
+                    f"{i+1}. ID: {instance['id']}, Story Order: {instance['story_order']}, "
+                    f"Date: {instance['datetime']}, Precision: {instance['precision']}, "
+                    f"Parsed Year: {year_str}"
                 )
 
     except Exception as e:
