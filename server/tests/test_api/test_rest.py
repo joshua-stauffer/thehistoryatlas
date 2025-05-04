@@ -483,6 +483,25 @@ class TestCreateEvent:
             assert summary_base in story.events[i].text
         assert story.events[-1].text == sentinal_summary
 
+    def test_duplicate_event_error(self, client: TestClient, auth_headers: dict):
+        # Create initial event
+        event_input = self._event(client, auth_headers)
+        response = client.post(
+            "/wikidata/events",
+            data=event_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        assert response.status_code == 200, response.text
+
+        # Try to create the exact same event again
+        response = client.post(
+            "/wikidata/events",
+            data=event_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        assert response.status_code == 409, response.text
+        assert "already exists" in response.json()["detail"]
+
 
 @pytest.fixture
 def seed_story(client: TestClient, auth_headers: dict):

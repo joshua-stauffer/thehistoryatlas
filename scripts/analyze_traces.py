@@ -155,7 +155,6 @@ def main():
         print("\nOPTIMIZATION SUGGESTIONS")
         print("=" * 80)
 
-
         if args.output_json:
             # Convert stats to JSON serializable format
             json_stats = {

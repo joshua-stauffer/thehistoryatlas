@@ -1,7 +1,11 @@
 import logging
 from typing import Literal
 from uuid import UUID, uuid4
+from concurrent.futures import ThreadPoolExecutor
+from math import ceil
+import threading
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -32,7 +36,11 @@ from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
     TagInstanceInput,
 )
 from the_history_atlas.apps.history.repository import Repository, RebalanceError
-from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
+from the_history_atlas.apps.history.errors import (
+    TagExistsError,
+    MissingResourceError,
+    DuplicateEventError,
+)
 from the_history_atlas.apps.history.trie import Trie
 from the_history_atlas.apps.history.tracing import trace_method, trace_block
 
@@ -198,10 +206,13 @@ class HistoryApp:
 
         with self._repository.Session() as session:
             with trace_block("create_summary"):
-                self._repository.create_summary(
-                    id=summary_id,
-                    text=text,
-                )
+                try:
+                    self._repository.create_summary(
+                        id=summary_id,
+                        text=text,
+                    )
+                except IntegrityError:
+                    raise DuplicateEventError
 
             with trace_block("create_citation"):
                 citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
@@ -243,15 +254,80 @@ class HistoryApp:
     def calculate_story_order(
         self,
         tag_ids: list[UUID],
+        session: Session | None = None,
     ) -> None:
         """Calculate story order for any tag_instances which have not yet been ordered."""
-        for tag_id in tag_ids:
-            try:
-                self._repository.update_null_story_order(tag_id=tag_id)
-            except RebalanceError:
-                log.info(f"Rebalancing story order for story {tag_id}.")
-                self._repository.rebalance_story_order(tag_id=tag_id)
-                self._repository.update_null_story_order(tag_id=tag_id)
+        session_created = False
+        if not session:
+            session = Session(self._repository._engine, future=True)
+            session_created = True
+
+        try:
+            for tag_id in tag_ids:
+                try:
+                    self._repository.update_null_story_order(
+                        tag_id=tag_id, session=session
+                    )
+                except RebalanceError:
+                    log.info(f"Rebalancing story order for story {tag_id}.")
+                    self._repository.rebalance_story_order(
+                        tag_id=tag_id, session=session
+                    )
+        finally:
+            if session_created:
+                session.close()
+
+    def calculate_story_order_range(
+        self,
+        start_tag_id: UUID | None = None,
+        stop_tag_id: UUID | None = None,
+        num_workers: int = 1,
+    ) -> None:
+        """
+        Calculate story order for tag_instances within the specified tag ID range.
+
+        Args:
+            start_tag_id: Optional UUID to start processing from (inclusive)
+            stop_tag_id: Optional UUID to stop processing at (inclusive)
+            num_workers: Number of threads to use for parallel processing
+        """
+        # Get all tag IDs that need processing within the range
+        with self._repository.Session() as session:
+            tag_ids = self._repository.get_tag_ids_with_null_orders(
+                start_tag_id=start_tag_id, stop_tag_id=stop_tag_id, session=session
+            )
+
+            if not tag_ids:
+                log.info(
+                    "No tag IDs with null story orders found in the specified range."
+                )
+                return
+
+            log.info(f"Processing {len(tag_ids)} tag IDs with {num_workers} workers")
+
+            if num_workers <= 1:
+                # Single-threaded mode
+                self.calculate_story_order(tag_ids=tag_ids, session=session)
+                return
+
+        # Divide work among workers
+        chunk_size = ceil(len(tag_ids) / num_workers)
+        chunks = [
+            tag_ids[i : i + chunk_size] for i in range(0, len(tag_ids), chunk_size)
+        ]
+
+        # Define worker function that will run in each thread
+        def worker(chunk):
+            thread_name = threading.current_thread().name
+            log.info(f"{thread_name} processing {len(chunk)} tag IDs")
+
+            # Create a new session for this thread
+            with self._repository.Session() as session:
+                self.calculate_story_order(tag_ids=chunk, session=session)
+
+        # Execute in parallel
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            executor.map(worker, chunks)
 
     def get_story_pointers(
         self,

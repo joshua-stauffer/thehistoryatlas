@@ -79,6 +79,51 @@ class Repository:
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
 
+    def get_tag_ids_with_null_orders(
+        self,
+        session: Session,
+        start_tag_id: Optional[UUID] = None,
+        stop_tag_id: Optional[UUID] = None,
+    ) -> List[UUID]:
+        """
+        Returns a list of tag IDs that have at least one related tag_instance with a null story_order.
+        The list is ordered by tag ID.
+
+        Args:
+            start_tag_id: Optional UUID to start the result set from (inclusive)
+            stop_tag_id: Optional UUID to end the result set at (inclusive)
+            session: SQLAlchemy session to use
+
+        Returns:
+            List[UUID]: A list of tag IDs ordered by ID
+        """
+        base_query = """
+            SELECT DISTINCT tags.id
+            FROM tags
+            JOIN tag_instances ON tags.id = tag_instances.tag_id
+            WHERE tag_instances.story_order IS NULL
+        """
+
+        conditions = []
+        params = {}
+
+        if start_tag_id is not None:
+            conditions.append("tags.id >= :start_tag_id")
+            params["start_tag_id"] = start_tag_id
+
+        if stop_tag_id is not None:
+            conditions.append("tags.id <= :stop_tag_id")
+            params["stop_tag_id"] = stop_tag_id
+
+        if conditions:
+            base_query += " AND " + " AND ".join(conditions)
+
+        base_query += " ORDER BY tags.id"
+
+        query = text(base_query)
+        rows = session.execute(query, params).all()
+        return [row[0] for row in rows]
+
     def get_all_source_titles_and_authors(self) -> List[Tuple[str, str]]:
         """Util for building Source search trie. Returns a list of (name, id) tuples."""
         res: List[Tuple[str, str]] = []
@@ -138,10 +183,9 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
-                    ORDER BY RANDOM()
+                    ORDER BY tag_instances.story_order
                     LIMIT 1;
                 """
                 )
@@ -159,9 +203,10 @@ class Repository:
                     """
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
-                    WHERE tag_instances.story_order = 100000
-                    AND tag_instances.story_order IS NOT NULL
+                    where tag_instances.story_order IS NOT NULL
                     AND tag_instances.tag_id = :story_id
+                    ORDER BY tag_instances.story_order
+                    LIMIT 1;
                 """
                 ),
                 {"story_id": story_id},
@@ -180,7 +225,6 @@ class Repository:
                     SELECT summary_id as event_id, tag_id as story_id
                     FROM tag_instances
                     JOIN tags ON tag_instances.tag_id = tags.id
-                    WHERE tag_instances.story_order = 100000
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     AND tag_instances.tag_id = :event_id
@@ -1122,7 +1166,7 @@ class Repository:
 
         return result_instances
 
-    def update_null_story_order(self, tag_id: UUID) -> None:
+    def update_null_story_order(self, tag_id: UUID, session: Session) -> None:
         """
         Updates all null story_order values for a given tag_id based on time ordering.
 
@@ -1134,94 +1178,122 @@ class Repository:
 
         Args:
             tag_id: UUID of the tag to update story orders for
+            session: SQLAlchemy session to use
         """
-        with Session(self._engine, future=True) as session:
-            tag_instances = session.execute(
-                text(
-                    """
-                    SELECT 
-                        tag_instances.id,
-                        tag_instances.summary_id,
-                        tag_instances.tag_id,
-                        tag_instances.after,
-                        tag_instances.story_order,
-                        (
-                            SELECT times.datetime
-                            FROM summaries s
-                            JOIN tag_instances ti ON ti.summary_id = s.id
-                            JOIN tags t ON t.id = ti.tag_id AND t.type = 'TIME'
-                            JOIN times ON times.id = t.id
-                            WHERE s.id = tag_instances.summary_id
-                            ORDER BY times.datetime, times.precision
-                            LIMIT 1
-                        ) AS datetime,
-                        (
-                            SELECT times.precision
-                            FROM summaries s
-                            JOIN tag_instances ti ON ti.summary_id = s.id
-                            JOIN tags t ON t.id = ti.tag_id AND t.type = 'TIME'
-                            JOIN times ON times.id = t.id
-                            WHERE s.id = tag_instances.summary_id
-                            ORDER BY times.datetime, times.precision
-                            LIMIT 1
-                        ) AS precision
-                    FROM tag_instances
-                    WHERE tag_instances.tag_id = :tag_id
-                    """
-                ),
-                {"tag_id": tag_id},
-            ).all()
-            nonnull_instances: list[TagInstanceWithTimeAndOrder] = []
-            null_instances: list[TagInstanceWithTime] = []
-            for row in tag_instances:
-                if row.story_order is None:
-                    null_instances.append(
-                        TagInstanceWithTime.model_validate(row, from_attributes=True)
+        tag_instances = session.execute(
+            text(
+                """
+                SELECT 
+                    tag_instances.id,
+                    tag_instances.summary_id,
+                    tag_instances.tag_id,
+                    tag_instances.after,
+                    tag_instances.story_order,
+                    (
+                        SELECT times.datetime
+                        FROM summaries s
+                        JOIN tag_instances ti ON ti.summary_id = s.id
+                        JOIN tags t ON t.id = ti.tag_id AND t.type = 'TIME'
+                        JOIN times ON times.id = t.id
+                        WHERE s.id = tag_instances.summary_id
+                        ORDER BY times.datetime, times.precision
+                        LIMIT 1
+                    ) AS datetime,
+                    (
+                        SELECT times.precision
+                        FROM summaries s
+                        JOIN tag_instances ti ON ti.summary_id = s.id
+                        JOIN tags t ON t.id = ti.tag_id AND t.type = 'TIME'
+                        JOIN times ON times.id = t.id
+                        WHERE s.id = tag_instances.summary_id
+                        ORDER BY times.datetime, times.precision
+                        LIMIT 1
+                    ) AS precision
+                FROM tag_instances
+                WHERE tag_instances.tag_id = :tag_id
+                """
+            ),
+            {"tag_id": tag_id},
+        ).all()
+        nonnull_instances: list[TagInstanceWithTimeAndOrder] = []
+        null_instances: list[TagInstanceWithTime] = []
+        for row in tag_instances:
+            if row.story_order is None:
+                null_instances.append(
+                    TagInstanceWithTime.model_validate(row, from_attributes=True)
+                )
+            else:
+                nonnull_instances.append(
+                    TagInstanceWithTimeAndOrder.model_validate(
+                        row, from_attributes=True
                     )
-                else:
-                    nonnull_instances.append(
-                        TagInstanceWithTimeAndOrder.model_validate(
-                            row, from_attributes=True
-                        )
-                    )
+                )
 
-            if not null_instances:
-                return
+        if not null_instances:
+            return
 
-            instance_updates: list[dict[str, int]] = []
-            for target in null_instances:
-                # may raise RebalanceError; caller must retry
+        instance_updates: list[dict[str, int]] = []
+        for target in null_instances:
+            try:
                 story_order = self.get_story_order(
                     tag_instances=nonnull_instances,
                     target=target,
                 )
-                instance_updates.append({"id": target.id, "story_order": story_order})
-
-            # Update all instances in a single operation
-            if instance_updates:
-                # Prepare the SQL for bulk update
-                update_stmt = "UPDATE tag_instances SET story_order = CASE id "
-
-                params = {"tag_id": tag_id}
-                id_list = []
-
-                for i, update in enumerate(instance_updates):
-                    update_stmt += f"WHEN :id_{i} THEN :order_{i} "
-                    params[f"id_{i}"] = update["id"]
-                    params[f"order_{i}"] = update["story_order"]
-                    id_list.append(f":id_{i}")
-
-                update_stmt += (
-                    "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
-                    + ", ".join(id_list)
-                    + ")"
+            except RebalanceError:
+                # commit current state so current calculations are included in the rebalance
+                if instance_updates:
+                    self._bulk_update_story_order(
+                        instance_updates=instance_updates,
+                        session=session,
+                        tag_id=tag_id,
+                    )
+                raise
+            instance_updates.append({"id": target.id, "story_order": story_order})
+            # insert the new story into nonnull instances so its available for the next calculation
+            new_nonnull_instance = TagInstanceWithTimeAndOrder.model_validate(
+                {
+                    **target.model_dump(),
+                    "story_order": story_order,
+                }
+            )
+            try:
+                index = next(
+                    i
+                    for i, tag_instance in enumerate(nonnull_instances)
+                    if tag_instance.story_order < story_order
                 )
+                nonnull_instances.insert(index, new_nonnull_instance)
+            except StopIteration:  # story order belongs at the end
+                nonnull_instances.append(new_nonnull_instance)
 
-                # Execute the update
-                session.execute(text(update_stmt), params)
-                session.commit()
+        # Update all instances in a single operation
+        if instance_updates:
+            self._bulk_update_story_order(
+                instance_updates=instance_updates, session=session, tag_id=tag_id
+            )
 
-    def rebalance_story_order(self, tag_id: UUID) -> dict[UUID, int]:
+    def _bulk_update_story_order(
+        self, instance_updates: list[dict[str, int]], session: Session, tag_id: UUID
+    ):
+        # Prepare the SQL for bulk update
+        update_stmt = "UPDATE tag_instances SET story_order = CASE id "
+        params = {"tag_id": tag_id}
+        id_list = []
+        for i, update in enumerate(instance_updates):
+            update_stmt += f"WHEN :id_{i} THEN :order_{i} "
+            params[f"id_{i}"] = update["id"]
+            params[f"order_{i}"] = update["story_order"]
+            id_list.append(f":id_{i}")
+        update_stmt += (
+            "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
+            + ", ".join(id_list)
+            + ")"
+        )
+        # Execute the update
+        session.execute(text(update_stmt), params)
+        session.commit()
+
+    def rebalance_story_order(self, tag_id: UUID, session: Session) -> dict[UUID, int]:
         """Rebalances story_order values for a given tag_id.
 
         Takes all non-null story_order values for the given tag_id and updates them
@@ -1230,71 +1302,70 @@ class Repository:
 
         Args:
             tag_id: UUID of the tag to rebalance story orders for
+            session: SQLAlchemy session to use
 
         Returns:
             dict[UUID, int]: A dictionary mapping tag instance IDs to their new story order values
         """
-        with Session(self._engine, future=True) as session:
-            # Get all non-null story_order values for this tag, ordered
-            rows = session.execute(
-                text(
-                    """
-                    SELECT id, story_order
-                    FROM tag_instances 
-                    WHERE tag_id = :tag_id 
-                    AND story_order IS NOT NULL
-                    ORDER BY story_order ASC
-                    """
-                ),
-                {"tag_id": tag_id},
-            ).all()
+        # Get all non-null story_order values for this tag, ordered
+        rows = session.execute(
+            text(
+                """
+                SELECT id, story_order
+                FROM tag_instances 
+                WHERE tag_id = :tag_id 
+                AND story_order IS NOT NULL
+                ORDER BY story_order ASC
+                """
+            ),
+            {"tag_id": tag_id},
+        ).all()
 
-            if not rows:
-                return {}
+        if not rows:
+            return {}
 
-            # First set all story_orders to NULL to avoid unique constraint violations
-            session.execute(
-                text(
-                    """
-                    UPDATE tag_instances 
-                    SET story_order = NULL 
-                    WHERE tag_id = :tag_id 
-                    AND id IN (SELECT id FROM tag_instances WHERE tag_id = :tag_id AND story_order IS NOT NULL)
-                    """
-                ),
-                {"tag_id": tag_id},
+        # First set all story_orders to NULL to avoid unique constraint violations
+        session.execute(
+            text(
+                """
+                UPDATE tag_instances 
+                SET story_order = NULL 
+                WHERE tag_id = :tag_id 
+                AND id IN (SELECT id FROM tag_instances WHERE tag_id = :tag_id AND story_order IS NOT NULL)
+                """
+            ),
+            {"tag_id": tag_id},
+        )
+
+        # Calculate new story_order values with 1000 between each
+        BASE_ORDER = 100_000  # Start at 100,000 to match existing pattern
+        INTERVAL = 1_000
+
+        updates = []
+        result = {}
+        for i, row in enumerate(rows):
+            new_order = BASE_ORDER + (i * INTERVAL)
+            updates.append({"id": row.id, "story_order": new_order})
+            result[row.id] = new_order
+
+        # Update all instances in a single operation
+        if updates:
+            update_stmt = "UPDATE tag_instances SET story_order = CASE id "
+            params = {"tag_id": tag_id}
+            id_list = []
+
+            for i, update in enumerate(updates):
+                update_stmt += f"WHEN :id_{i} THEN :order_{i} "
+                params[f"id_{i}"] = update["id"]
+                params[f"order_{i}"] = update["story_order"]
+                id_list.append(f":id_{i}")
+
+            update_stmt += (
+                "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
+                + ", ".join(id_list)
+                + ")"
             )
 
-            # Calculate new story_order values with 1000 between each
-            BASE_ORDER = 100_000  # Start at 100,000 to match existing pattern
-            INTERVAL = 1_000
-
-            updates = []
-            result = {}
-            for i, row in enumerate(rows):
-                new_order = BASE_ORDER + (i * INTERVAL)
-                updates.append({"id": row.id, "story_order": new_order})
-                result[row.id] = new_order
-
-            # Update all instances in a single operation
-            if updates:
-                update_stmt = "UPDATE tag_instances SET story_order = CASE id "
-                params = {"tag_id": tag_id}
-                id_list = []
-
-                for i, update in enumerate(updates):
-                    update_stmt += f"WHEN :id_{i} THEN :order_{i} "
-                    params[f"id_{i}"] = update["id"]
-                    params[f"order_{i}"] = update["story_order"]
-                    id_list.append(f":id_{i}")
-
-                update_stmt += (
-                    "ELSE story_order END WHERE tag_id = :tag_id AND id IN ("
-                    + ", ".join(id_list)
-                    + ")"
-                )
-
-                session.execute(text(update_stmt), params)
-                session.commit()
-
-            return result
+            session.execute(text(update_stmt), params)
+            session.commit()
+        return result
