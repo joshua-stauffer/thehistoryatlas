@@ -18,6 +18,7 @@ Usage:
 """
 import os
 import sys
+from datetime import datetime
 
 import psycopg2
 import psycopg2.extras
@@ -165,10 +166,12 @@ def main():
 def process_tag(conn, tag_id):
     """Process all tag_instances for a single tag_id"""
     processed_count = 0
-
+    start_time = datetime.now()
+    print(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Tag: {tag_id}")
     # Get all tag_instances for this tag_id that need story_order
     with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
         # Get all instances for this tag that need story_order
+        query_start = datetime.now()
         cursor.execute(
             """
             SELECT ti.id AS instance_id, ti.summary_id
@@ -177,7 +180,15 @@ def process_tag(conn, tag_id):
         """,
             (tag_id,),
         )
+        query_end = datetime.now()
+        print(
+            f"[Query 1] Time: {(query_end - query_start).total_seconds():.3f}s - Get instances with NULL story_order"
+        )
+
         instances = cursor.fetchall()
+        print(
+            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Processing {len(instances)} instances"
+        )
 
         if not instances:
             return 0
@@ -186,6 +197,7 @@ def process_tag(conn, tag_id):
         summary_ids = [instance["summary_id"] for instance in instances]
 
         # Use a single query to get all time data for all summaries
+        query_start = datetime.now()
         cursor.execute(
             """
             SELECT DISTINCT ON (ti.summary_id) 
@@ -197,6 +209,14 @@ def process_tag(conn, tag_id):
             AND tg.type = 'TIME'
         """,
             (summary_ids,),
+        )
+        query_end = datetime.now()
+        print(
+            f"[Query 2] Time: {(query_end - query_start).total_seconds():.3f}s - Get time data for {len(summary_ids)} summaries"
+        )
+
+        print(
+            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Finished querying times via summaries table."
         )
 
         # Create a mapping of summary_id to time data
@@ -221,13 +241,19 @@ def process_tag(conn, tag_id):
                 )
 
     # Sort instances by datetime first (correctly handling BCE dates), then precision
+    sort_start = datetime.now()
     instance_data.sort(key=get_date_sort_key)
+    sort_end = datetime.now()
+    print(
+        f"[Sort] Time: {(sort_end - sort_start).total_seconds():.3f}s - Sorting {len(instance_data)} instances"
+    )
 
     if not instance_data:
         return 0
 
     # Find the next available story_order for this tag
     with conn.cursor() as cursor:
+        query_start = datetime.now()
         cursor.execute(
             """
             SELECT MAX(story_order) 
@@ -236,13 +262,19 @@ def process_tag(conn, tag_id):
         """,
             (tag_id,),
         )
+        query_end = datetime.now()
+        print(
+            f"[Query 3] Time: {(query_end - query_start).total_seconds():.3f}s - Get max story_order"
+        )
+
         max_order = cursor.fetchone()[0]
 
         # Start at 100000 if no previous story_orders
         curr_order = max_order + 1000 if max_order is not None else 100000
 
         # Update each instance with its new story_order
-        for instance in instance_data:
+        update_start = datetime.now()
+        for i, instance in enumerate(instance_data):
             cursor.execute(
                 """
                 UPDATE tag_instances 
@@ -253,7 +285,15 @@ def process_tag(conn, tag_id):
             )
             processed_count += 1
             curr_order += 1000
+        update_end = datetime.now()
+        print(
+            f"[Updates] Time: {(update_end - update_start).total_seconds():.3f}s - Updated {len(instance_data)} instances"
+        )
 
+    end_time = datetime.now()
+    print(
+        f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] Finished in {(end_time - start_time).total_seconds()} seconds"
+    )
     return processed_count
 
 
