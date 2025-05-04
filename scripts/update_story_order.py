@@ -10,6 +10,7 @@ Each tag_instances row will be assigned a story_order value that follows these r
 Usage:
     python update_story_order.py                # Fix ordering issues for all tags
     python update_story_order.py --update-all   # Update all NULL story_orders
+    python update_story_order.py --update-all --workers N  # Update with N parallel workers
     python update_story_order.py --reset-all    # Reset all story_orders to NULL
     python update_story_order.py --verify       # Verify ordering for random sample of tags
     python update_story_order.py --tag TAG_ID   # Fix ordering for a specific tag
@@ -19,6 +20,9 @@ Usage:
 import os
 import sys
 from datetime import datetime
+import multiprocessing
+from multiprocessing import Pool
+from functools import partial
 
 import psycopg2
 import psycopg2.extras
@@ -109,9 +113,34 @@ def get_date_sort_key(instance):
     return (parse_date_for_sorting(instance["datetime"]), instance["precision"])
 
 
-def main():
+def process_tag_parallel(tag_id):
+    """Process a single tag_id in parallel - connects to DB independently"""
+    conn = None
+    try:
+        conn = psycopg2.connect(DB_URI)
+        conn.autocommit = False
+        result = process_tag(conn, tag_id)
+        conn.commit()
+        return result
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error processing tag {tag_id}: {e}")
+        return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def main_parallel(workers=None):
+    """Process all tags in parallel using a process pool"""
+    if workers is None:
+        workers = max(1, multiprocessing.cpu_count() - 1)  # Default to CPU count - 1
+
+    print(f"Using {workers} worker processes")
+
     conn = psycopg2.connect(DB_URI)
-    conn.autocommit = False
+    tag_ids = []
 
     try:
         # Count total null story_order rows
@@ -133,34 +162,25 @@ def main():
                 SELECT DISTINCT tag_id 
                 FROM tag_instances 
                 WHERE story_order IS NULL
-            """
+                """
             )
             tag_ids = [row[0] for row in cursor.fetchall()]
-            print(f"Processing {len(tag_ids)} distinct tags")
+            print(f"Processing {len(tag_ids)} distinct tags in parallel")
 
-        # Process each tag_id
-        total_processed = 0
-        for idx, tag_id in enumerate(tag_ids):
-            processed = process_tag(conn, tag_id)
-            total_processed += processed
-
-            # Commit every 1000 tags to avoid long transactions
-            if (idx + 1) % 1000 == 0:
-                conn.commit()
-                print(
-                    f"Committed {idx + 1}/{len(tag_ids)} tags, {total_processed} instances"
-                )
-
-        # Final commit
-        conn.commit()
-        print(f"Successfully updated {total_processed} tag_instances")
-
-    except Exception as e:
-        conn.rollback()
-        print(f"Error: {e}")
-        raise
     finally:
         conn.close()
+
+    # Process tags in parallel using a process pool
+    with Pool(processes=workers) as pool:
+        results = []
+        # Use imap_unordered for better load balancing
+        for i, result in enumerate(pool.imap_unordered(process_tag_parallel, tag_ids)):
+            results.append(result)
+            if (i + 1) % 100 == 0 or (i + 1) == len(tag_ids):
+                print(f"Completed {i + 1}/{len(tag_ids)} tags")
+
+    total_processed = sum(results)
+    print(f"Successfully updated {total_processed} tag_instances")
 
 
 def process_tag(conn, tag_id):
@@ -564,6 +584,61 @@ def verify_random_tags(count=3):
         conn.close()
 
 
+def main():
+    """Process all tags sequentially (original implementation)"""
+    conn = psycopg2.connect(DB_URI)
+    conn.autocommit = False
+
+    try:
+        # Count total null story_order rows
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT COUNT(*) FROM tag_instances WHERE story_order IS NULL"
+            )
+            null_count = cursor.fetchone()[0]
+            print(f"Found {null_count} rows with NULL story_order")
+
+        if null_count == 0:
+            print("No rows to update. Exiting.")
+            return
+
+        # Get all distinct tag_ids with null story_order
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT DISTINCT tag_id 
+                FROM tag_instances 
+                WHERE story_order IS NULL
+            """
+            )
+            tag_ids = [row[0] for row in cursor.fetchall()]
+            print(f"Processing {len(tag_ids)} distinct tags")
+
+        # Process each tag_id
+        total_processed = 0
+        for idx, tag_id in enumerate(tag_ids):
+            processed = process_tag(conn, tag_id)
+            total_processed += processed
+
+            # Commit every 1000 tags to avoid long transactions
+            if (idx + 1) % 1000 == 0:
+                conn.commit()
+                print(
+                    f"Committed {idx + 1}/{len(tag_ids)} tags, {total_processed} instances"
+                )
+
+        # Final commit
+        conn.commit()
+        print(f"Successfully updated {total_processed} tag_instances")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Error: {e}")
+        raise
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Update or fix story_order values in tag_instances table"
@@ -575,7 +650,7 @@ if __name__ == "__main__":
         "--update-all", action="store_true", help="Update all NULL story_order values"
     )
     group.add_argument(
-        "--reset-all", action="store_true", help="Reset all story_order values to NULL"
+        "--reset-all", action="store_true", help="Reset all story_orders to NULL"
     )
     group.add_argument(
         "--fix-all", action="store_true", help="Fix ordering issues for all tags"
@@ -593,13 +668,23 @@ if __name__ == "__main__":
         "--reset-tag", type=str, help="Reset story_order for a specific tag_id"
     )
 
+    # Add optional workers argument for parallel processing
+    parser.add_argument(
+        "--workers",
+        type=int,
+        help="Number of worker processes for parallel execution (default: CPU count - 1)",
+    )
+
     args = parser.parse_args()
 
     start_time = time.time()
 
     # Default action is to fix all ordering issues
     if args.update_all:
-        main()
+        if args.workers is not None:
+            main_parallel(args.workers)
+        else:
+            main_parallel()
     elif args.reset_all:
         reset_all_story_orders()
     elif args.tag:
