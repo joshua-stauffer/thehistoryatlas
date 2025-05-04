@@ -256,7 +256,7 @@ def process_tag(conn, tag_id):
         query_start = datetime.now()
         cursor.execute(
             """
-            SELECT MAX(story_order) 
+            SELECT COALESCE(MAX(story_order), 0) 
             FROM tag_instances 
             WHERE tag_id = %s AND story_order IS NOT NULL
         """,
@@ -270,7 +270,7 @@ def process_tag(conn, tag_id):
         max_order = cursor.fetchone()[0]
 
         # Start at 100000 if no previous story_orders
-        curr_order = max_order + 1000 if max_order is not None else 100000
+        curr_order = max_order + 1000 if max_order > 0 else 100000
 
         # Update each instance with its new story_order
         update_start = datetime.now()
