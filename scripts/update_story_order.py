@@ -15,9 +15,10 @@ Usage:
     python update_story_order.py --tag TAG_ID   # Fix ordering for a specific tag
     python update_story_order.py --verify-tag TAG_ID  # Verify ordering for a specific tag
     python update_story_order.py --reset-tag TAG_ID   # Reset story_orders for a specific tag
-
-Connection string: postgresql://postgres:4f6WxSSoYVSWTVp3QVovWnzLTeCkj9HZ@localhost:5432
 """
+import os
+import sys
+
 import psycopg2
 import psycopg2.extras
 import time
@@ -29,8 +30,11 @@ import re
 # Register UUID adapter for PostgreSQL
 psycopg2.extras.register_uuid()
 
-# Database connection string
-DB_URI = "postgresql://postgres:4f6WxSSoYVSWTVp3QVovWnzLTeCkj9HZ@localhost:5432"
+# Get DB URI from environment
+DB_URI = os.environ.get("THA_DB_URI")
+if not DB_URI:
+    print("Error: THA_DB_URI environment variable not set.")
+    sys.exit(1)
 
 
 def parse_date_for_sorting(date_str):
