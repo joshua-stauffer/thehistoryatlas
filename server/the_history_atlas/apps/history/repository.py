@@ -57,7 +57,6 @@ from the_history_atlas.apps.history.schema import (
     Source,
 )
 from the_history_atlas.apps.history.trie import Trie
-from the_history_atlas.apps.history.tracing import trace_db, trace_block
 
 log = logging.getLogger(__name__)
 
@@ -590,16 +589,12 @@ class Repository:
             for row in rows
         }
 
-    @trace_db("create_summary")
     def create_summary(self, id: UUID, text: str) -> None:
-        """Creates a new summary"""
-        log.info(f"Creating a new summary: {text[:50]}...")
-        summary = Summary(id=id, text=text)
         with Session(self._engine, future=True) as session:
+            summary = Summary(id=id, text=text)
             session.add(summary)
             session.commit()
 
-    @trace_db("create_citation")
     def create_citation(
         self,
         session: Session,
@@ -608,53 +603,38 @@ class Repository:
         page_num: Optional[int] = None,
         access_date: Optional[str] = None,
     ) -> None:
-        """Initializes a new citation in the database."""
-        # doesn't create fkeys
-        stmt = """
-            insert into citations (id, text, page_num, access_date)
-            values (:id, :text, :page_num, :access_date)
-        """
-        session.execute(
-            text(stmt),
-            {
-                "id": id,
-                "text": citation_text,
-                "page_num": page_num,
-                "access_date": access_date,
-            },
+        citation = Citation(
+            id=id,
+            text=citation_text,
+            page_num=page_num,
+            access_date=access_date,
         )
+        session.add(citation)
 
-    @trace_db("create_citation_source_fkey")
     def create_citation_source_fkey(
         self,
         session: Session,
         citation_id: UUID,
         source_id: UUID,
     ):
-        stmt = f"""
-            update citations set source_id = :source_id 
-                where citations.id = :citation_id
-        """
-        session.execute(
-            text(stmt), {"source_id": source_id, "citation_id": citation_id}
+        citation_source = CitationSource(
+            citation_id=citation_id,
+            source_id=source_id,
         )
+        session.add(citation_source)
 
-    @trace_db("create_citation_summary_fkey")
     def create_citation_summary_fkey(
         self,
         session: Session,
         citation_id: UUID,
         summary_id: UUID,
     ):
-        stmt = f"""
-            update citations set summary_id = :summary_id 
-                where citations.id = :citation_id
-        """
-        session.execute(
-            text(stmt), {"summary_id": summary_id, "citation_id": citation_id}
+        citation_summary = CitationSummary(
+            citation_id=citation_id,
+            summary_id=summary_id,
         )
+        session.add(citation_summary)
 
-    @trace_db("create_citation_complete")
     def create_citation_complete(
         self,
         session: Session,
@@ -665,24 +645,28 @@ class Repository:
         access_date: Optional[str] = None,
         page_num: Optional[int] = None,
     ) -> None:
-        """Creates a citation with all relationships in a single database operation"""
-        stmt = """
-            INSERT INTO citations 
-                (id, text, source_id, summary_id, page_num, access_date)
-            VALUES 
-                (:id, :text, :source_id, :summary_id, :page_num, :access_date)
-        """
-        session.execute(
-            text(stmt),
-            {
-                "id": id,
-                "text": citation_text,
-                "source_id": source_id,
-                "summary_id": summary_id,
-                "page_num": page_num,
-                "access_date": access_date,
-            },
+        # Create citation
+        citation = Citation(
+            id=id,
+            text=citation_text,
+            page_num=page_num,
+            access_date=access_date,
         )
+        session.add(citation)
+
+        # Link citation to source
+        citation_source = CitationSource(
+            citation_id=id,
+            source_id=source_id,
+        )
+        session.add(citation_source)
+
+        # Link citation to summary
+        citation_summary = CitationSummary(
+            citation_id=id,
+            summary_id=summary_id,
+        )
+        session.add(citation_summary)
 
     def create_person(
         self,
@@ -1111,7 +1095,6 @@ class Repository:
 
         return row
 
-    @trace_db("bulk_create_tag_instances")
     def bulk_create_tag_instances(
         self,
         tag_instances: list[TagInstanceInput],
