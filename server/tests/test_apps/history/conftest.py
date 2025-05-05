@@ -52,14 +52,24 @@ def cleanup_tag(history_db) -> Generator[Callable[[UUID], None], None, None]:
     if not tags_to_cleanup:
         return  # don't error on an empty tuple
     with history_db.Session() as session:
-        # cleanup
+        # Cleanup in the correct order to handle foreign key constraints
         session.execute(
             text(
                 """
-                delete from people where people.id in :ids;
-                delete from story_names where story_names.tag_id in :ids;
-                delete from tag_names where tag_names.tag_id in :ids;
-                delete from tags where tags.id in :ids;
+                -- Delete related tag instances first
+                DELETE FROM tag_instances WHERE tag_id IN :ids;
+                
+                -- Delete related records based on tag type
+                DELETE FROM times WHERE id IN :ids;
+                DELETE FROM places WHERE id IN :ids;
+                DELETE FROM people WHERE id IN :ids;
+                
+                -- Delete story names and tag names
+                DELETE FROM story_names WHERE tag_id IN :ids;
+                DELETE FROM tag_names WHERE tag_id IN :ids;
+                
+                -- Finally, delete the tags
+                DELETE FROM tags WHERE id IN :ids;
                 """
             ),
             {"ids": tuple(tags_to_cleanup)},

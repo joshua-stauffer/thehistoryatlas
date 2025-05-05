@@ -2,6 +2,8 @@ from logging import getLogger
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
+import time
+import logging
 
 from wiki_service.config import WikiServiceConfig
 from wiki_service.database import Database, Item
@@ -9,9 +11,15 @@ from wiki_service.event_factories.event_factory import get_event_factories, Even
 from wiki_service.rest_client import RestClient, RestClientError
 from wiki_service.types import WikiDataItem
 from wiki_service.utils import get_current_time
+from wiki_service.event_metrics import EventMetrics
 from wiki_service.wikidata_query_service import (
     WikiDataQueryService,
     WikiDataQueryServiceError,
+)
+
+# Configure root logger
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 log = getLogger(__name__)
@@ -32,6 +40,8 @@ class WikiService:
         self._database = database
         self._query = wikidata_query_service
         self._rest_client = rest_client or RestClient(config)
+        self._metrics = EventMetrics()
+        log.info("WikiService initialized with EventMetrics")
 
     def search_for_people(self, num_people: int | None = None):
         """
@@ -236,21 +246,38 @@ class WikiService:
 
     def run(self) -> None:
         processed = 0
-        while True:
-            item = self._database.get_oldest_item_from_queue()
-            if item is None:
-                log.info("Queue is empty, processing complete")
-                break
+        current_item: Item | None = None
+        try:
+            while True:
+                if current_item is None:
+                    current_item = self._database.pop_oldest_item_from_queue()
+                    if current_item is None:
+                        log.info("Queue is empty, processing complete")
+                        break
 
-            try:
-                self.build_events(item=item)
-                self._database.remove_item_from_queue(wiki_id=item.wiki_id)
-                processed += 1
-            except Exception as e:
-                log.error(f"Error processing item: {e}")
-                continue
+                try:
+                    self.build_events(item=current_item)
+                    processed += 1
+                    current_item = None
+                except Exception as e:
+                    log.error(f"Error processing item: {e}")
+                    current_item = None
+                    continue
 
-        log.info(f"Processed {processed} items successfully")
+            log.info(f"Processed {processed} items successfully")
+        except KeyboardInterrupt:
+            log.info("\nGracefully shutting down...")
+            if current_item:
+                log.info(f"Putting item {current_item.wiki_id} back in queue")
+                self._database.add_items_to_queue(
+                    entity_type=current_item.entity_type,
+                    items=[
+                        WikiDataItem(
+                            qid=current_item.wiki_id, url=current_item.wiki_link
+                        )
+                    ],
+                )
+            log.info(f"Processed {processed} items before interruption")
 
     def process_wikidata_item(self, wiki_id: str, entity_type: str) -> None:
         """
@@ -287,9 +314,6 @@ class WikiService:
             log.info(f"Successfully processed WikiData item {wiki_id}")
         except Exception as e:
             log.error(f"Error processing WikiData item {wiki_id}: {e}")
-            self._database.report_queue_error(
-                wiki_id=wiki_id, error_time=datetime.now(tz=timezone.utc), errors=str(e)
-            )
             raise WikiServiceError(f"Failed to process WikiData item {wiki_id}: {e}")
 
     def build_events(self, item: Item) -> None:
@@ -313,9 +337,23 @@ class WikiService:
             else:
                 label = f"Unknown label ({entity.title})"
 
+            # Start metrics collection
+            self._metrics.start_entity()
+
             try:
                 for event_factory in event_factories:
                     self._create_wiki_event(event_factory, item.wiki_id, label)
+
+                    # Collect metrics after processing
+                    self._metrics.process_factory(event_factory)
+
+                # Log entity metrics
+                self._metrics.log_entity_metrics(
+                    entity_id=item.wiki_id,
+                    entity_name=label,
+                    entity_type=item.entity_type,
+                )
+
             except RestClientError as e:
                 self._database.report_queue_error(
                     wiki_id=item.wiki_id,
@@ -364,6 +402,9 @@ class WikiService:
                 "wikidata_item_title": entity_title,
                 "wikidata_item_id": wiki_id,
             }
+            log.debug(
+                f"Created {len(events)} events for {wiki_id} using {event_factory.label}"
+            )
 
             # Process each event
             for event in events:
@@ -391,13 +432,25 @@ class WikiService:
                             )
                         else:
                             description = None
-                        result = self._rest_client.create_person(
-                            name=person_tag.name,
-                            wikidata_id=person_tag.wiki_id,
-                            wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
-                            description=description,
-                        )
-                        id_map[person_tag.wiki_id] = result["id"]
+                        try:
+                            result = self._rest_client.create_person(
+                                name=person_tag.name,
+                                wikidata_id=person_tag.wiki_id,
+                                wikidata_url=f"https://www.wikidata.org/wiki/{person_tag.wiki_id}",
+                                description=description,
+                            )
+                            id_map[person_tag.wiki_id] = result["id"]
+                        except RestClientError as e:
+                            # handle possible race condition where this entity was created between our check and now
+                            refreshed_existing_tags = self._rest_client.get_tags(
+                                wikidata_ids=[person_tag.wiki_id]
+                            )
+                            newly_created_id = refreshed_existing_tags["wikidata_ids"][
+                                0
+                            ].get("id")
+                            if not newly_created_id:
+                                raise e
+                            id_map[person_tag.wiki_id] = newly_created_id
 
                 if not id_map.get(event.place_tag.wiki_id):
                     coords = event.place_tag.location.coordinates
@@ -408,16 +461,32 @@ class WikiService:
                             )
                         else:
                             description = None
-                        result = self._rest_client.create_place(
-                            name=event.place_tag.name,
-                            wikidata_id=event.place_tag.wiki_id,
-                            wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
-                            latitude=coords.latitude,
-                            longitude=coords.longitude,
-                            description=description,
+                        try:
+                            result = self._rest_client.create_place(
+                                name=event.place_tag.name,
+                                wikidata_id=event.place_tag.wiki_id,
+                                wikidata_url=f"https://www.wikidata.org/wiki/{event.place_tag.wiki_id}",
+                                latitude=coords.latitude,
+                                longitude=coords.longitude,
+                                description=description,
+                            )
+                            id_map[event.place_tag.wiki_id] = result["id"]
+                        except RestClientError as e:
+                            # handle possible race condition where this entity was created between our check and now
+                            refreshed_existing_tags = self._rest_client.get_tags(
+                                wikidata_ids=[event.place_tag.wiki_id]
+                            )
+                            newly_created_id = refreshed_existing_tags["wikidata_ids"][
+                                0
+                            ].get("id")
+                            if not newly_created_id:
+                                raise e
+                            id_map[event.place_tag.wiki_id] = newly_created_id
+                    else:
+                        log.error(
+                            f"Place tag {event.place_tag.wiki_id} did not contain coords - skipping."
                         )
-                        id_map[event.place_tag.wiki_id] = result["id"]
-                    # todo: handle case of geoshape, no coords
+                        continue
 
                 # Create time tag
                 if event.time_tag.wiki_id:
@@ -425,16 +494,28 @@ class WikiService:
                         description = self._query.get_description(
                             id=event.time_tag.wiki_id, language="en"
                         )
-                        result = self._rest_client.create_time(
-                            name=event.time_tag.name,
-                            wikidata_id=event.time_tag.wiki_id,
-                            wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
-                            date=event.time_tag.time_definition.time,
-                            calendar_model=event.time_tag.time_definition.calendarmodel,
-                            precision=event.time_tag.time_definition.precision,
-                            description=description,
-                        )
-                        time_id = result["id"]
+                        try:
+                            result = self._rest_client.create_time(
+                                name=event.time_tag.name,
+                                wikidata_id=event.time_tag.wiki_id,
+                                wikidata_url=f"https://www.wikidata.org/wiki/{event.time_tag.wiki_id}",
+                                date=event.time_tag.time_definition.time,
+                                calendar_model=event.time_tag.time_definition.calendarmodel,
+                                precision=event.time_tag.time_definition.precision,
+                                description=description,
+                            )
+                            time_id = result["id"]
+                        except RestClientError as e:
+                            # handle possible race condition where this entity was created between our check and now
+                            refreshed_existing_tags = self._rest_client.get_tags(
+                                wikidata_ids=[event.time_tag.wiki_id]
+                            )
+                            newly_created_id = refreshed_existing_tags["wikidata_ids"][
+                                0
+                            ].get("id")
+                            if not newly_created_id:
+                                raise e
+                            id_map[event.time_tag.wiki_id] = newly_created_id
                     else:
                         time_id = id_map[event.time_tag.wiki_id]
                 else:
@@ -513,6 +594,9 @@ class WikiService:
                     secondary_wiki_id=event.secondary_entity_id,
                     event=event.model_dump(mode="json"),
                 )
+                log.info(
+                    f"Successfully created and stored {len(events)} events for {wiki_id} using {event_factory.label}"
+                )
 
         except (RestClientError, Exception) as e:
             # Record error
@@ -522,5 +606,8 @@ class WikiService:
                 factory_version=event_factory.version,
                 errors={"error": str(e)},
                 event=None,
+            )
+            log.error(
+                f"Error creating event with {event_factory.label} for {wiki_id}: {str(e)}"
             )
             raise  # Re-raise the error to be handled by the caller

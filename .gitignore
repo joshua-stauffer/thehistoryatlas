@@ -21,10 +21,15 @@ client/.pnp
 
 # testing
 client/coverage
+wikidata/data
+wikidata/tests/data/
 
 # production
 client/build
 wiki_link/log/
+server/logs/
+.build_data_env
+logs/
 
 # misc
 .DS_Store

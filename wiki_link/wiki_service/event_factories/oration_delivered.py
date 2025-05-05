@@ -137,7 +137,7 @@ class OrationDelivered(EventFactory):
         person_name = self._query.get_label(id=person_id, language="en")
         return person_name, person_id
 
-    def create_wiki_event(self) -> list[WikiEvent]:
+    def _create_events(self) -> list[WikiEvent]:
         events = []
         oration_name = self._entity.labels["en"].value
 

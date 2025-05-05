@@ -35,7 +35,7 @@ class CoordinateLocation(BaseModel):
     type: str
     snaktype: str
     property: str
-    hash: str
+    hash: str | None
     latitude: float
     longitude: float
     altitude: Optional[int]
@@ -69,12 +69,12 @@ class LocationResult(BaseModel):
 
 
 class TimeDefinition(BaseModel):
-    id: str
+    id: str | None
     rank: str
     type: str
     snaktype: str
     property: str
-    hash: str
+    hash: str | None
     time: str
     timezone: int
     before: int

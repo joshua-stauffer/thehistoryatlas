@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException, BackgroundTasks
 from typing import Callable, Annotated, Literal
 from faker import Faker
 import random
@@ -245,9 +245,19 @@ def register_rest_endpoints(
 
     @fastapi_app.post("/wikidata/events", response_model=WikiDataEventOutput)
     def create_event(
-        event: WikiDataEventInput, apps: Apps, user: AuthenticatedUser
+        event: WikiDataEventInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+        background_tasks: BackgroundTasks,
     ) -> WikiDataEventOutput:
-        return create_event_handler(apps=apps, event=event)
+        output = create_event_handler(apps=apps, event=event)
+        if apps.config_app.COMPUTE_STORY_ORDER:
+            background_tasks.add_task(
+                lambda: apps.history_app.calculate_story_order(
+                    [tag.id for tag in event.tags]
+                ),
+            )
+        return output
 
     @fastapi_app.post("/token")
     def login(

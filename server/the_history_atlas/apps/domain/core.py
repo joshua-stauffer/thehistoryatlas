@@ -71,9 +71,22 @@ class Time(TimeInput):
 
 class StoryOrder(BaseModel):
     summary_id: UUID
-    story_order: int
+    story_order: int | None = None
     datetime: str
     precision: Precision
+
+
+class TagInstanceWithTime(BaseModel):
+    id: UUID
+    summary_id: UUID
+    tag_id: UUID
+    datetime: str
+    precision: Precision
+    after: list[UUID] | None
+
+
+class TagInstanceWithTimeAndOrder(TagInstanceWithTime):
+    story_order: int
 
 
 class StoryName(BaseModel):

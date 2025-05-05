@@ -1,7 +1,11 @@
 import logging
 from typing import Literal
 from uuid import UUID, uuid4
+from concurrent.futures import ThreadPoolExecutor
+from math import ceil
+import threading
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from the_history_atlas.apps.database import DatabaseClient
@@ -29,9 +33,18 @@ from the_history_atlas.apps.domain.core import (
 )
 
 from the_history_atlas.apps.config import Config
-from the_history_atlas.apps.history.repository import Repository
-from the_history_atlas.apps.history.errors import TagExistsError, MissingResourceError
+from the_history_atlas.apps.domain.models.history.tables import TagInstanceModel
+from the_history_atlas.apps.domain.models.history.tables.tag_instance import (
+    TagInstanceInput,
+)
+from the_history_atlas.apps.history.repository import Repository, RebalanceError
+from the_history_atlas.apps.history.errors import (
+    TagExistsError,
+    MissingResourceError,
+    DuplicateEventError,
+)
 from the_history_atlas.apps.history.trie import Trie
+from the_history_atlas.apps.history.tracing import trace_method, trace_block
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
@@ -170,6 +183,7 @@ class HistoryApp:
             for story_id, story_info in story_names.items()
         ]
 
+    @trace_method("create_wikidata_event")
     def create_wikidata_event(
         self,
         text: str,
@@ -177,63 +191,145 @@ class HistoryApp:
         citation: CitationInput,
         after: list[UUID],
     ):
-        source = self._repository.get_source_by_title(title="Wikidata")
-        if source:
-            source_id = UUID(source.id)
-        else:
-            source_id = uuid4()
-            self._repository.create_source(
-                id=source_id,
-                title="Wikidata",
-                author="Wikidata Contributors",
-                publisher="Wikimedia Foundation",
-                pub_date=None,
-            )
+        with trace_block("get_or_create_source"):
+            source = self._repository.get_source_by_title(title="Wikidata")
+            if source:
+                source_id = UUID(source.id)
+            else:
+                source_id = uuid4()
+                self._repository.create_source(
+                    id=source_id,
+                    title="Wikidata",
+                    author="Wikidata Contributors",
+                    publisher="Wikimedia Foundation",
+                    pub_date=None,
+                )
         summary_id = uuid4()
 
         with self._repository.Session() as session:
-            self._repository.create_summary(
-                id=summary_id,
-                text=text,
-            )
-            citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
-            citation_id = uuid4()
-            self._repository.create_citation(
-                id=citation_id,
-                session=session,
-                citation_text=citation_text,
-                access_date=str(citation.access_date),
-            )
-            self._repository.create_citation_source_fkey(
-                session=session,
-                citation_id=citation_id,
-                source_id=source_id,
-            )
-            self._repository.create_citation_summary_fkey(
-                session=session,
-                citation_id=citation_id,
-                summary_id=summary_id,
-            )
-            (
-                tag_instance_time,
-                precision,
-            ) = self._repository.get_time_and_precision_by_tags(
-                session=session,
-                tag_ids=[tag.id for tag in tags],
-            )
-            for tag in tags:
-                self._repository.create_tag_instance(
-                    start_char=tag.start_char,
-                    stop_char=tag.stop_char,
+            with trace_block("create_summary"):
+                try:
+                    self._repository.create_summary(
+                        id=summary_id,
+                        text=text,
+                    )
+                except IntegrityError:
+                    raise DuplicateEventError
+
+            with trace_block("create_citation"):
+                citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
+                citation_id = uuid4()
+                # Use the optimized citation creation method that handles all relationships
+                self._repository.create_citation_complete(
+                    id=citation_id,
+                    session=session,
+                    citation_text=citation_text,
+                    source_id=source_id,
                     summary_id=summary_id,
-                    tag_id=tag.id,
-                    tag_instance_time=tag_instance_time,
-                    time_precision=precision,
+                    access_date=str(citation.access_date),
+                )
+
+            with trace_block("create_tag_instances"):
+                # Convert tags to dictionaries for bulk processing
+                tag_instances = [
+                    TagInstanceInput(
+                        start_char=tag.start_char,
+                        stop_char=tag.stop_char,
+                        summary_id=summary_id,
+                        tag_id=tag.id,
+                    )
+                    for tag in tags
+                ]
+
+                # Use the bulk operation instead of individual inserts
+                self._repository.bulk_create_tag_instances(
+                    tag_instances=tag_instances,
                     after=after,
                     session=session,
                 )
-            session.commit()
+
+            with trace_block("commit_transaction"):
+                session.commit()
+
         return summary_id
+
+    def calculate_story_order(
+        self,
+        tag_ids: list[UUID],
+        session: Session | None = None,
+    ) -> None:
+        """Calculate story order for any tag_instances which have not yet been ordered."""
+        session_created = False
+        if not session:
+            session = Session(self._repository._engine, future=True)
+            session_created = True
+
+        try:
+            for tag_id in tag_ids:
+                try:
+                    self._repository.update_null_story_order(
+                        tag_id=tag_id, session=session
+                    )
+                except RebalanceError:
+                    log.info(f"Rebalancing story order for story {tag_id}.")
+                    self._repository.rebalance_story_order(
+                        tag_id=tag_id, session=session
+                    )
+        finally:
+            if session_created:
+                session.close()
+
+    def calculate_story_order_range(
+        self,
+        start_tag_id: UUID | None = None,
+        stop_tag_id: UUID | None = None,
+        num_workers: int = 1,
+    ) -> None:
+        """
+        Calculate story order for tag_instances within the specified tag ID range.
+
+        Args:
+            start_tag_id: Optional UUID to start processing from (inclusive)
+            stop_tag_id: Optional UUID to stop processing at (inclusive)
+            num_workers: Number of threads to use for parallel processing
+        """
+        # Get all tag IDs that need processing within the range
+        with self._repository.Session() as session:
+            tag_ids = self._repository.get_tag_ids_with_null_orders(
+                start_tag_id=start_tag_id, stop_tag_id=stop_tag_id, session=session
+            )
+
+            if not tag_ids:
+                log.info(
+                    "No tag IDs with null story orders found in the specified range."
+                )
+                return
+
+            log.info(f"Processing {len(tag_ids)} tag IDs with {num_workers} workers")
+
+            if num_workers <= 1:
+                # Single-threaded mode
+                self.calculate_story_order(tag_ids=tag_ids, session=session)
+                return
+
+        # Divide work among workers
+        chunk_size = ceil(len(tag_ids) / num_workers)
+        chunks = [
+            tag_ids[i : i + chunk_size] for i in range(0, len(tag_ids), chunk_size)
+        ]
+
+        # Define worker function that will run in each thread
+        def worker(chunk):
+            thread_name = threading.current_thread().name
+            log.info(f"{thread_name} processing {len(chunk)} tag IDs")
+
+            # Create a new session for this thread
+            with self._repository.Session() as session:
+                self.calculate_story_order(tag_ids=chunk, session=session)
+
+        # Execute in parallel
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            executor.map(worker, chunks)
 
     def get_story_pointers(
         self,

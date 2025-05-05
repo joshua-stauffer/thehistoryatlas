@@ -85,12 +85,15 @@ class TagInstance(Base):
     tag_id = Column(UUID(as_uuid=True), ForeignKey("tags.id"), index=True)
     tag = relationship("Tag", back_populates="tag_instances")
 
-    story_order = Column(INTEGER, nullable=False)
+    story_order = Column(INTEGER, nullable=True)
     __table_args__ = (
         UniqueConstraint("story_order", "tag_id", name="uq_story_order"),
         # Add index for faster story order operations
         Index("idx_tag_instances_tag_id_story_order", tag_id, story_order),
     )
+    after = Column(
+        JSONB, nullable=True, default={}
+    )  # semantic ordering data independent of dates
 
 
 # Add index for tag_names for faster lookups

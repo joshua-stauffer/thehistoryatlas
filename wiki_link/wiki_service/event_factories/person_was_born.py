@@ -32,16 +32,12 @@ class PersonWasBorn(EventFactory):
     def entity_has_event(self) -> bool:
         if self._entity_type != "PERSON":
             return False
+        return (
+            PLACE_OF_BIRTH in self._entity.claims
+            and DATE_OF_BIRTH in self._entity.claims
+        )
 
-        if DATE_OF_BIRTH not in self._entity.claims:
-            return False
-
-        if PLACE_OF_BIRTH not in self._entity.claims:
-            return False
-
-        return True
-
-    def create_wiki_event(self) -> list[WikiEvent]:
+    def _create_events(self) -> list[WikiEvent]:
         person_name = self._entity.labels["en"].value
         time_definition = self._time_definition()
         time_name = wikidata_time_to_text(time_definition)

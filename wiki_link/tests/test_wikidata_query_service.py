@@ -161,6 +161,13 @@ def test_get_label(config):
     assert label == "Johann Sebastian Bach"
 
 
+def test_get_non_ascii_label(config):
+    service = WikiDataQueryService(config)
+
+    label = service.get_label(id="Q8605", language="en")
+    assert label == "Simón Bolívar"
+
+
 def test_get_description(config):
     """Test retrieving a description for an entity that has one"""
     service = WikiDataQueryService(config)
@@ -169,6 +176,13 @@ def test_get_description(config):
     description = service.get_description(id="Q1339", language="en")
     assert description is not None
     assert "composer" in description.lower()
+
+
+def test_get_non_ascii_description(config):
+    service = WikiDataQueryService(config)
+
+    description = service.get_description(id="Q8605", language="ja")
+    assert description == "南アメリカの革命家、政治家、軍人 (1783-1830)"
 
 
 def test_get_description_missing(config):

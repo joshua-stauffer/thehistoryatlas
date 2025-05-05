@@ -1,5 +1,8 @@
+import os
+import uuid
 from datetime import datetime, timezone
 import random
+from time import sleep
 from typing import Literal, Dict
 from uuid import uuid4, UUID
 from faker import Faker
@@ -7,17 +10,15 @@ from faker import Faker
 import pytest
 from fastapi.testclient import TestClient
 from httpx import QueryParams
-from pydantic import BaseModel
-from sqlalchemy import text
-from sqlalchemy.engine import row
+from sqlalchemy import text, create_engine
 from sqlalchemy.orm import Session, scoped_session
+from starlette.testclient import TestClient
 
 from the_history_atlas.api.types.history import Story
 from the_history_atlas.api.types.tags import (
     WikiDataPersonInput,
     WikiDataPlaceInput,
     WikiDataTimeInput,
-    WikiDataTagsInput,
     WikiDataTagPointer,
     WikiDataEventInput,
     WikiDataCitationInput,
@@ -28,6 +29,8 @@ from the_history_atlas.api.types.tags import (
     WikiDataEventOutput,
 )
 from the_history_atlas.apps.domain.core import StoryOrder
+from the_history_atlas.apps.history.repository import Repository
+from the_history_atlas.apps.history.trie import Trie
 from the_history_atlas.main import get_app
 
 fake = Faker()
@@ -480,6 +483,25 @@ class TestCreateEvent:
             assert summary_base in story.events[i].text
         assert story.events[-1].text == sentinal_summary
 
+    def test_duplicate_event_error(self, client: TestClient, auth_headers: dict):
+        # Create initial event
+        event_input = self._event(client, auth_headers)
+        response = client.post(
+            "/wikidata/events",
+            data=event_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        assert response.status_code == 200, response.text
+
+        # Try to create the exact same event again
+        response = client.post(
+            "/wikidata/events",
+            data=event_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        assert response.status_code == 409, response.text
+        assert "already exists" in response.json()["detail"]
+
 
 @pytest.fixture
 def seed_story(client: TestClient, auth_headers: dict):
@@ -516,6 +538,7 @@ def test_create_stories_order(
         )
         for time, place in zip(times, places)
     ]
+    sleep(0)
 
     # act
     response = client.get("/history")
@@ -557,6 +580,7 @@ def test_create_stories_order(
                 where tag_id = :tag_id
             )
             and tag_instances.tag_id = :tag_id
+            and tag_instances.story_order IS NOT NULL
             order by story_order;
         """
         ),
@@ -565,8 +589,6 @@ def test_create_stories_order(
     row_tuples = [(row.story_order, row.datetime) for row in rows]
     assert len(row_tuples) == EVENT_COUNT
     assert sorted(row_tuples) == row_tuples
-    for i, (story_order, _) in enumerate(row_tuples):
-        assert i == story_order
 
 
 def get_all_events_in_order(
@@ -606,6 +628,7 @@ def get_all_events_in_order(
                 where tag_id = :tag_id
             )
             and tag_instances.tag_id = :tag_id
+            and tag_instances.story_order IS NOT NULL
             order by story_order;
         """
         ),
@@ -633,6 +656,7 @@ class TestGetHistory:
             )
             for time, place in zip(times, places)
         ]
+        sleep(0)
 
         # act
         response = client.get("/history")
@@ -1384,3 +1408,77 @@ class TestStorySearch:
         data = response.json()
         assert len(data["results"]) > 0
         assert any("humboldt" in result["name"].lower() for result in data["results"])
+
+
+@pytest.mark.parametrize("EVENT_COUNT", [3])
+def test_null_story_order(
+    client: TestClient, db_session: Session, EVENT_COUNT, auth_headers: dict
+):
+    """Test that the application works correctly with null story_order values."""
+    # arrange
+    person = create_person(client, auth_headers)
+    times = [create_time(client, auth_headers) for _ in range(EVENT_COUNT)]
+    places = [create_place(client, auth_headers) for _ in range(EVENT_COUNT)]
+
+    # Create events with normal story_order values
+    events = [
+        create_event(
+            person=person,
+            place=place,
+            time=time,
+            client=client,
+            auth_headers=auth_headers,
+        )
+        for time, place in zip(times, places)
+    ]
+
+    # Add a tag instance with null story_order
+    null_summary_id = uuid4()
+    null_tag_instance_id = uuid4()
+    null_summary = "Test summary with null story_order"
+
+    # Insert a summary
+    db_session.execute(
+        text(
+            """
+            INSERT INTO summaries (id, text)
+            VALUES (:id, :text)
+            """
+        ),
+        {"id": null_summary_id, "text": null_summary},
+    )
+
+    # Insert a tag instance with null story_order
+    db_session.execute(
+        text(
+            """
+            INSERT INTO tag_instances (id, start_char, stop_char, summary_id, tag_id, story_order)
+            VALUES (:id, :start_char, :stop_char, :summary_id, :tag_id, NULL)
+            """
+        ),
+        {
+            "id": null_tag_instance_id,
+            "start_char": 0,
+            "stop_char": 5,
+            "summary_id": null_summary_id,
+            "tag_id": person.id,
+        },
+    )
+
+    # act
+    response = client.get(
+        "/history",
+        params=QueryParams(
+            storyId=person.id,
+        ),
+    )
+
+    # assert
+    assert response.status_code == 200
+    story = Story.model_validate(response.json())
+
+    # We should only get the non-null story_order events
+    assert len(story.events) == EVENT_COUNT
+
+    summaries = [event.text for event in story.events]
+    assert null_summary not in summaries
