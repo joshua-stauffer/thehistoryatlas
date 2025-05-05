@@ -57,7 +57,6 @@ from the_history_atlas.apps.history.schema import (
     Source,
 )
 from the_history_atlas.apps.history.trie import Trie
-from the_history_atlas.apps.history.tracing import trace_db, trace_block
 
 log = logging.getLogger(__name__)
 
@@ -590,7 +589,6 @@ class Repository:
             for row in rows
         }
 
-    @trace_db("create_summary")
     def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary"""
         log.info(f"Creating a new summary: {text[:50]}...")
@@ -599,7 +597,6 @@ class Repository:
             session.add(summary)
             session.commit()
 
-    @trace_db("create_citation")
     def create_citation(
         self,
         session: Session,
@@ -624,7 +621,6 @@ class Repository:
             },
         )
 
-    @trace_db("create_citation_source_fkey")
     def create_citation_source_fkey(
         self,
         session: Session,
@@ -639,7 +635,6 @@ class Repository:
             text(stmt), {"source_id": source_id, "citation_id": citation_id}
         )
 
-    @trace_db("create_citation_summary_fkey")
     def create_citation_summary_fkey(
         self,
         session: Session,
@@ -654,7 +649,6 @@ class Repository:
             text(stmt), {"summary_id": summary_id, "citation_id": citation_id}
         )
 
-    @trace_db("create_citation_complete")
     def create_citation_complete(
         self,
         session: Session,
@@ -1111,7 +1105,6 @@ class Repository:
 
         return row
 
-    @trace_db("bulk_create_tag_instances")
     def bulk_create_tag_instances(
         self,
         tag_instances: list[TagInstanceInput],
