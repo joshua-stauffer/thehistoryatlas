@@ -41,8 +41,9 @@ jobs:
         platforms: linux/amd64, linux/arm64
         file: ./server/Dockerfile
         push: true
-        tags: ilriccio/thehistoryatlas:server-${{ github.sha }}
-
+        tags: |
+          ilriccio/thehistoryatlas:server-${{ github.sha }}
+          ilriccio/thehistoryatlas:server-latest
     -
       name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
