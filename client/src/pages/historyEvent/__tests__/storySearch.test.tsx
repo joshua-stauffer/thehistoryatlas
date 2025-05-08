@@ -229,13 +229,22 @@ describe("Story Search Integration Tests", () => {
     jest.clearAllMocks();
   });
 
-  it("displays search results", async () => {
+  it("displays search results when search button is clicked", async () => {
+    // Mock the debounced search response
+    mockDebouncedSearchStories.mockResolvedValueOnce({
+      results: [{ id: "1", name: "The Life of Bach" }] as StorySearchResult[],
+    } as StorySearchResponse);
+    
     const router = createRouter();
     render(<RouterProvider router={router} />);
 
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Bach" } });
+    
+    // Click the search button
+    const searchButton = screen.getByRole('button', { name: 'Search' });
+    fireEvent.click(searchButton);
 
     // Wait for the option to appear
     await waitFor(
@@ -260,6 +269,10 @@ describe("Story Search Integration Tests", () => {
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.focus(searchInput);
     fireEvent.change(searchInput, { target: { value: "Bach" } });
+    
+    // Click the search button
+    const searchButton = screen.getByRole('button', { name: 'Search' });
+    fireEvent.click(searchButton);
 
     // Wait for the search results to be populated
     const option = await screen.findByRole(
@@ -276,16 +289,74 @@ describe("Story Search Integration Tests", () => {
     expect(mockNavigate).toHaveBeenCalledWith("/stories/1");
   });
 
-  it("handles empty search results", async () => {
-    (global.fetch as jest.Mock).mockImplementationOnce((url: string) => {
-      if (url.includes("/api/stories/search")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ results: [] }),
-        });
-      }
-      return Promise.reject(new Error("Not found"));
+  it("disables search button when input is empty", async () => {
+    const router = createRouter();
+    render(<RouterProvider router={router} />);
+
+    // Wait for the search input to appear first
+    const searchInput = await screen.findByLabelText("Search for a story");
+    
+    // Find the search button (with a wait)
+    const searchButton = await screen.findByRole('button', { name: 'Search' });
+    
+    // Check that button is initially disabled (empty input)
+    expect(searchButton).toBeDisabled();
+    
+    // Type in the search box
+    fireEvent.change(searchInput, { target: { value: "Bach" } });
+    
+    // Check that button is enabled
+    expect(searchButton).not.toBeDisabled();
+    
+    // Clear the input
+    fireEvent.change(searchInput, { target: { value: "" } });
+    
+    // Button should be disabled again
+    expect(searchButton).toBeDisabled();
+  });
+
+  it("disables search button during search and shows loading indicator", async () => {
+    // Mock a delayed search response
+    mockDebouncedSearchStories.mockImplementationOnce(() => {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve({
+            results: [{ id: "1", name: "The Life of Bach" }] as StorySearchResult[],
+          } as StorySearchResponse);
+        }, 500);
+      });
     });
+    
+    const router = createRouter();
+    render(<RouterProvider router={router} />);
+
+    // Type in the search box
+    const searchInput = await screen.findByLabelText("Search for a story");
+    fireEvent.change(searchInput, { target: { value: "Bach" } });
+    
+    // Click the search button
+    const searchButton = screen.getByRole('button', { name: 'Search' });
+    fireEvent.click(searchButton);
+    
+    // Button should be disabled while searching
+    expect(searchButton).toBeDisabled();
+    
+    // CircularProgress should be visible
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    
+    // Wait for search to complete
+    await waitFor(
+      () => {
+        expect(searchButton).not.toBeDisabled();
+      },
+      { timeout: 1000 },
+    );
+  });
+
+  it("handles empty search results", async () => {
+    mockDebouncedSearchStories.mockResolvedValueOnce({
+      results: [] as StorySearchResult[],
+    } as StorySearchResponse);
 
     const router = createRouter();
     render(<RouterProvider router={router} />);
@@ -293,6 +364,10 @@ describe("Story Search Integration Tests", () => {
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Nonexistent" } });
+    
+    // Click the search button
+    const searchButton = screen.getByRole('button', { name: 'Search' });
+    fireEvent.click(searchButton);
 
     // Wait for the loading state to finish and verify no results
     await waitFor(() => {
@@ -316,9 +391,11 @@ describe("Story Search Integration Tests", () => {
 
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
-    await act(async () => {
-      fireEvent.change(searchInput, { target: { value: "Bach" } });
-    });
+    fireEvent.change(searchInput, { target: { value: "Bach" } });
+    
+    // Click the search button
+    const searchButton = screen.getByRole('button', { name: 'Search' });
+    fireEvent.click(searchButton);
 
     // Wait for error to be logged
     await waitFor(() => {

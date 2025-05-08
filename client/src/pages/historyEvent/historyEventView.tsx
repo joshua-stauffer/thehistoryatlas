@@ -5,7 +5,7 @@ import { SingleEntityMap } from "../../components/singleEntityMap";
 import React, { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
-import { InputAdornment, TextField, Typography } from "@mui/material";
+import { InputAdornment, TextField, Typography, Button, CircularProgress, IconButton } from "@mui/material";
 import { EventView } from "./eventView";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
@@ -21,6 +21,7 @@ export const HistoryEventView = () => {
     useLoaderData() as HistoryEventData;
   const [searchResults, setSearchResults] = useState<StorySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   const {
     historyEvents,
@@ -64,6 +65,10 @@ export const HistoryEventView = () => {
     }
   };
 
+  const handleSearchButtonClick = () => {
+    handleSearch(searchValue);
+  };
+
   return (
     <Box
       sx={{
@@ -104,7 +109,7 @@ export const HistoryEventView = () => {
               freeSolo
               options={searchResults}
               loading={loading}
-              onInputChange={(_, value) => handleSearch(value)}
+              onInputChange={(_, value) => setSearchValue(value)}
               getOptionLabel={(option) =>
                 typeof option === "string" ? option : option.name
               }
@@ -113,6 +118,7 @@ export const HistoryEventView = () => {
                   navigate(`/stories/${value.id}`);
                 }
               }}
+              disableClearable={true}
               renderOption={(props, option) => (
                 <li {...props}>
                   {option.name}
@@ -127,8 +133,19 @@ export const HistoryEventView = () => {
                     ...params.InputProps,
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon />
+                        {loading ? <CircularProgress size={20} /> : <SearchIcon />}
                       </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <Button 
+                        onClick={handleSearchButtonClick}
+                        disabled={loading || !searchValue}
+                        sx={{ minWidth: '64px', ml: 1 }}
+                        variant="contained"
+                        color="primary"
+                      >
+                        Search
+                      </Button>
                     ),
                   }}
                 />
