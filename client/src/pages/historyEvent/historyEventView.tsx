@@ -22,6 +22,7 @@ export const HistoryEventView = () => {
   const [searchResults, setSearchResults] = useState<StorySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const {
     historyEvents,
@@ -57,6 +58,9 @@ export const HistoryEventView = () => {
     try {
       const response = await debouncedSearchStories(value);
       setSearchResults(response?.results || []);
+      if ((response?.results || []).length > 0) {
+        setDropdownOpen(true);
+      }
     } catch (error) {
       console.error("Failed to search stories:", error);
       setSearchResults([]);
@@ -119,6 +123,9 @@ export const HistoryEventView = () => {
                 }
               }}
               disableClearable={true}
+              open={dropdownOpen}
+              onOpen={() => setDropdownOpen(true)}
+              onClose={() => setDropdownOpen(false)}
               renderOption={(props, option) => (
                 <li {...props}>
                   {option.name}
@@ -129,6 +136,12 @@ export const HistoryEventView = () => {
                   {...params}
                   label="Search for a story"
                   variant={"outlined"}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch(searchValue);
+                    }
+                  }}
                   InputProps={{
                     ...params.InputProps,
                     startAdornment: (
