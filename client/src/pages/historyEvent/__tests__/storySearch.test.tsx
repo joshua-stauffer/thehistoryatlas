@@ -274,19 +274,18 @@ describe("Story Search Integration Tests", () => {
     const searchButton = screen.getByRole('button', { name: 'Search' });
     fireEvent.click(searchButton);
 
-    // Wait for the search results to be populated
-    const option = await screen.findByRole(
-      "option",
-      { name: "The Life of Bach" },
-      { timeout: 3000 },
-    );
-    expect(option).toBeInTheDocument();
-
-    // Click the option (this will trigger navigation)
-    fireEvent.click(option);
-
-    // Wait for navigation
-    expect(mockNavigate).toHaveBeenCalledWith("/stories/1");
+    // Wait for the search results to be populated and click the list item
+    await waitFor(async () => {
+      // Find the ListItem by its role (button) and text content
+      const listItem = await screen.findByRole('button', { name: "The Life of Bach" });
+      expect(listItem).toBeInTheDocument();
+      
+      // Click the list item
+      fireEvent.click(listItem);
+      
+      // Verify navigation happened
+      expect(mockNavigate).toHaveBeenCalledWith("/stories/1");
+    }, { timeout: 3000 });
   });
 
   it("disables search button when input is empty", async () => {
@@ -369,10 +368,10 @@ describe("Story Search Integration Tests", () => {
     const searchButton = screen.getByRole('button', { name: 'Search' });
     fireEvent.click(searchButton);
 
-    // Wait for the loading state to finish and verify no results
+    // Wait for the loading state to finish and verify the "No results found" message
     await waitFor(() => {
-      const listbox = screen.queryByRole("listbox");
-      expect(listbox).not.toBeInTheDocument();
+      const noResultsMessage = screen.getByText("No results found.");
+      expect(noResultsMessage).toBeInTheDocument();
     });
   });
 
@@ -405,10 +404,10 @@ describe("Story Search Integration Tests", () => {
       );
     });
 
-    // Verify no results are shown
+    // Verify no results message is shown
     await waitFor(() => {
-      const listbox = screen.queryByRole("listbox");
-      expect(listbox).not.toBeInTheDocument();
+      const noResultsMessage = screen.getByText("No results found.");
+      expect(noResultsMessage).toBeInTheDocument();
     });
 
     consoleErrorSpy.mockRestore();
