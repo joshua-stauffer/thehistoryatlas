@@ -184,7 +184,7 @@ class Repository:
                     JOIN tags ON tag_instances.tag_id = tags.id
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
-                    ORDER BY tag_instances.story_order
+                    ORDER BY RANDOM()
                     LIMIT 1;
                 """
                 )
