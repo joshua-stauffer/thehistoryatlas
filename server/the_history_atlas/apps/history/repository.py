@@ -1,6 +1,6 @@
 import json
 import logging
-import random
+import threading
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -9,6 +9,7 @@ from typing import (
     Optional,
     List,
     Literal,
+    Dict,
 )
 from uuid import uuid4, UUID
 
@@ -72,9 +73,6 @@ class RebalanceError(Exception):
 class Repository:
 
     Session: sessionmaker
-    _default_story_cache: List[StoryPointer] = []
-    _cache_last_updated: float = 0
-    _cache_update_interval: int = 3600  # Update cache every hour
 
     def __init__(self, database_client: DatabaseClient, source_trie: Trie):
         self._source_trie = source_trie
@@ -82,6 +80,139 @@ class Repository:
 
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
+
+        # Cache for default story and event
+        self._default_story_cache = []
+        self._cache_lock = threading.RLock()
+        self._cache_refresh_thread = None
+        self._stop_cache_refresh = threading.Event()
+
+    def start_cache_refresh_thread(self, refresh_interval_seconds=3600):
+        """Start a background thread to periodically refresh the cache"""
+        if (
+            self._cache_refresh_thread is not None
+            and self._cache_refresh_thread.is_alive()
+        ):
+            log.warning("Cache refresh thread is already running")
+            return
+
+        self._stop_cache_refresh.clear()
+        self._cache_refresh_thread = threading.Thread(
+            target=self._cache_refresh_worker,
+            args=(refresh_interval_seconds,),
+            daemon=True,
+            name="DefaultStoryCacheRefresher",
+        )
+        self._cache_refresh_thread.start()
+        log.info(
+            f"Started cache refresh thread with interval {refresh_interval_seconds} seconds"
+        )
+
+    def stop_cache_refresh_thread(self):
+        """Stop the background cache refresh thread"""
+        if (
+            self._cache_refresh_thread is not None
+            and self._cache_refresh_thread.is_alive()
+        ):
+            log.info("Stopping cache refresh thread")
+            self._stop_cache_refresh.set()
+            self._cache_refresh_thread.join(timeout=5.0)
+            if self._cache_refresh_thread.is_alive():
+                log.warning("Cache refresh thread did not stop within timeout")
+            else:
+                log.info("Cache refresh thread stopped successfully")
+        self._cache_refresh_thread = None
+
+    def _cache_refresh_worker(self, refresh_interval_seconds):
+        """Worker function for the cache refresh thread"""
+        log.info("Cache refresh thread started")
+        while not self._stop_cache_refresh.is_set():
+            try:
+                self.prime_default_story_cache()
+                # Sleep for the refresh interval, but check for stop signal every second
+                for _ in range(refresh_interval_seconds):
+                    if self._stop_cache_refresh.is_set():
+                        break
+                    time.sleep(1)
+            except Exception as e:
+                log.error(f"Error refreshing default story cache: {e}")
+                # Sleep for a shorter period after error
+                time.sleep(60)
+
+    def prime_default_story_cache(self, cache_size=100):
+        """Prime the cache with default story and event combinations"""
+        log.info(f"Priming default story cache with {cache_size} entries")
+        with Session(self._engine, future=True) as session:
+            try:
+                # Get random person stories with valid story_order
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT summary_id as event_id, tag_id as story_id
+                        FROM tag_instances
+                        JOIN tags ON tag_instances.tag_id = tags.id
+                        WHERE tag_instances.story_order IS NOT NULL
+                        AND tags.type = 'PERSON'
+                        ORDER BY RANDOM()
+                        LIMIT :limit;
+                        """
+                    ),
+                    {"limit": cache_size},
+                ).all()
+
+                with self._cache_lock:
+                    self._default_story_cache = [
+                        {"event_id": row.event_id, "story_id": row.story_id}
+                        for row in rows
+                    ]
+                log.info(
+                    f"Default story cache primed with {len(self._default_story_cache)} entries"
+                )
+            except Exception as e:
+                log.error(f"Failed to prime default story cache: {e}")
+                # Keep the existing cache if there was an error
+
+    def get_default_story_and_event(
+        self,
+    ) -> StoryPointer:
+        """Get a default story and event, using the cache if available"""
+        with self._cache_lock:
+            if not self._default_story_cache:
+                # Cache is empty, build it now
+                log.info("Default story cache is empty, building it now")
+                self.prime_default_story_cache()
+
+            if self._default_story_cache:
+                # Use a random entry from the cache
+                import random
+
+                cache_entry = random.choice(self._default_story_cache)
+                return StoryPointer(
+                    event_id=cache_entry["event_id"],
+                    story_id=cache_entry["story_id"],
+                )
+
+        # Fallback to direct database query if cache is still empty
+        log.warning("Using fallback direct database query for default story and event")
+        with Session(self._engine, future=True) as session:
+            # get the beginning of a person's life
+            row = session.execute(
+                text(
+                    """
+                    SELECT summary_id as event_id, tag_id as story_id
+                    FROM tag_instances
+                    JOIN tags ON tag_instances.tag_id = tags.id
+                    AND tag_instances.story_order IS NOT NULL
+                    AND tags.type = 'PERSON'
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+                    """
+                )
+            ).one()
+            return StoryPointer(
+                event_id=row.event_id,
+                story_id=row.story_id,
+            )
 
     def get_tag_ids_with_null_orders(
         self,
@@ -175,58 +306,6 @@ class Repository:
                 )
                 for row in results
             ]
-
-    def get_default_story_and_event(
-        self,
-    ) -> StoryPointer:
-        # Check if cache needs to be refreshed
-        current_time = time.time()
-        if (
-            not self._default_story_cache
-            or (current_time - self._cache_last_updated) > self._cache_update_interval
-        ):
-            self._refresh_default_story_cache()
-
-        # Return a random story from the cache
-        return random.choice(self._default_story_cache)
-
-    def _refresh_default_story_cache(self, cache_size: int = 100):
-        """Refresh the cache of default story pointers by fetching a batch of valid stories."""
-        with Session(self._engine, future=True) as session:
-            rows = session.execute(
-                text(
-                    """
-                    SELECT summary_id as event_id, tag_id as story_id
-                    FROM tag_instances
-                    JOIN tags ON tag_instances.tag_id = tags.id
-                    AND tag_instances.story_order IS NOT NULL
-                    AND tags.type = 'PERSON'
-                    ORDER BY RANDOM()
-                    LIMIT :cache_size;
-                """
-                ),
-                {"cache_size": cache_size},
-            ).all()
-
-            # Update the cache with fresh data
-            self._default_story_cache = [
-                StoryPointer(
-                    event_id=row.event_id,
-                    story_id=row.story_id,
-                )
-                for row in rows
-            ]
-            self._cache_last_updated = time.time()
-
-            # If we couldn't get the requested cache size, log a warning
-            if len(self._default_story_cache) < cache_size:
-                log.warning(
-                    f"Default story cache contains only {len(self._default_story_cache)} items"
-                )
-
-            # Ensure we have at least one item
-            if not self._default_story_cache:
-                log.error("Could not load any default stories for cache")
 
     def get_default_event_by_story(self, story_id: UUID) -> StoryPointer:
         # given a story, return the first event
