@@ -1,5 +1,7 @@
 import json
 import logging
+import random
+import time
 from collections import defaultdict
 from datetime import datetime
 from typing import (
@@ -70,6 +72,9 @@ class RebalanceError(Exception):
 class Repository:
 
     Session: sessionmaker
+    _default_story_cache: List[StoryPointer] = []
+    _cache_last_updated: float = 0
+    _cache_update_interval: int = 3600  # Update cache every hour
 
     def __init__(self, database_client: DatabaseClient, source_trie: Trie):
         self._source_trie = source_trie
@@ -174,9 +179,21 @@ class Repository:
     def get_default_story_and_event(
         self,
     ) -> StoryPointer:
+        # Check if cache needs to be refreshed
+        current_time = time.time()
+        if (
+            not self._default_story_cache
+            or (current_time - self._cache_last_updated) > self._cache_update_interval
+        ):
+            self._refresh_default_story_cache()
+
+        # Return a random story from the cache
+        return random.choice(self._default_story_cache)
+
+    def _refresh_default_story_cache(self, cache_size: int = 100):
+        """Refresh the cache of default story pointers by fetching a batch of valid stories."""
         with Session(self._engine, future=True) as session:
-            # get the beginning of a person's life
-            row = session.execute(
+            rows = session.execute(
                 text(
                     """
                     SELECT summary_id as event_id, tag_id as story_id
@@ -185,14 +202,31 @@ class Repository:
                     AND tag_instances.story_order IS NOT NULL
                     AND tags.type = 'PERSON'
                     ORDER BY RANDOM()
-                    LIMIT 1;
+                    LIMIT :cache_size;
                 """
+                ),
+                {"cache_size": cache_size},
+            ).all()
+
+            # Update the cache with fresh data
+            self._default_story_cache = [
+                StoryPointer(
+                    event_id=row.event_id,
+                    story_id=row.story_id,
                 )
-            ).one()
-            return StoryPointer(
-                event_id=row.event_id,
-                story_id=row.story_id,
-            )
+                for row in rows
+            ]
+            self._cache_last_updated = time.time()
+
+            # If we couldn't get the requested cache size, log a warning
+            if len(self._default_story_cache) < cache_size:
+                log.warning(
+                    f"Default story cache contains only {len(self._default_story_cache)} items"
+                )
+
+            # Ensure we have at least one item
+            if not self._default_story_cache:
+                log.error("Could not load any default stories for cache")
 
     def get_default_event_by_story(self, story_id: UUID) -> StoryPointer:
         # given a story, return the first event
