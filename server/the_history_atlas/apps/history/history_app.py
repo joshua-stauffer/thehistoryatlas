@@ -61,6 +61,20 @@ class HistoryApp:
             entity_tuples=repository.get_all_source_titles_and_authors()
         )
 
+    def prime_cache(self, cache_size=100):
+        """Prime the default story and event cache"""
+        self._repository.prime_default_story_cache(cache_size=cache_size)
+
+    def start_cache_refresh(self, refresh_interval_seconds=3600):
+        """Start the background cache refresh thread"""
+        self._repository.start_cache_refresh_thread(
+            refresh_interval_seconds=refresh_interval_seconds
+        )
+
+    def stop_cache_refresh(self):
+        """Stop the background cache refresh thread"""
+        self._repository.stop_cache_refresh_thread()
+
     def create_person(self, person: PersonInput) -> Person:
         if self._repository.get_tag_id_by_wikidata_id(wikidata_id=person.wikidata_id):
             raise TagExistsError(
