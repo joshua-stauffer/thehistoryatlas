@@ -28,6 +28,8 @@ from the_history_atlas.apps.domain.core import (
     HistoryEvent,
     CalendarDate,
     Source,
+    LatLong,
+    MapStory,
 )
 
 from the_history_atlas.apps.config import Config
@@ -595,3 +597,33 @@ class HistoryApp:
                 precision=precision,
                 session=session,
             )
+
+    def get_map_stories(
+        self,
+        northwest_bound: LatLong,
+        southeast_bound: LatLong,
+        date: CalendarDate,
+    ) -> list[MapStory]:
+        """Get all people stories that have events within the given geographic bounds and time window.
+
+        Args:
+            northwest_bound: The northwest corner of the bounding box
+            southeast_bound: The southeast corner of the bounding box
+            date: The target date to search around
+
+        Returns:
+            A list of MapStory objects containing story and event information
+        """
+        min_bound = LatLong(
+            latitude=min(northwest_bound.latitude, southeast_bound.latitude),
+            longitude=min(northwest_bound.longitude, southeast_bound.longitude),
+        )
+        max_bound = LatLong(
+            latitude=max(northwest_bound.latitude, southeast_bound.latitude),
+            longitude=max(northwest_bound.longitude, southeast_bound.longitude),
+        )
+        return self._repository.get_people_stories_by_bounds_and_time(
+            min_bound=min_bound,
+            max_bound=max_bound,
+            calendar_date=date,
+        )

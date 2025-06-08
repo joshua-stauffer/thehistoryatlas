@@ -251,8 +251,10 @@ export const HistoryEventView = () => {
               <SingleEntityMap
                 coords={coords}
                 size={"SM"}
-                title={currentEvent.map.locations[0].name}
+                title={currentEvent.storyTitle}
                 zoom={6}
+                description={currentEvent.description}
+                currentDate={currentEvent.date}
               />
             </Hidden>
           </Box>
@@ -265,8 +267,10 @@ export const HistoryEventView = () => {
             <SingleEntityMap
               coords={coords}
               size={"MD"}
-              title={currentEvent.map.locations[0].name}
+              title={currentEvent.storyTitle}
               zoom={7}
+              description={currentEvent.description}
+              currentDate={currentEvent.date}
             />
           </Hidden>
         </Grid>

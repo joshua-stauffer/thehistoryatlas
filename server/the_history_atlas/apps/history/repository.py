@@ -24,6 +24,9 @@ from the_history_atlas.apps.domain.core import (
     StoryPointer,
     TagInstanceWithTime,
     TagInstanceWithTimeAndOrder,
+    LatLong,
+    CalendarDate,
+    MapStory,
 )
 from the_history_atlas.apps.domain.models.history import (
     Source as ADMSource,
@@ -1475,3 +1478,101 @@ class Repository:
             session.execute(text(update_stmt), params)
             session.commit()
         return result
+
+    def get_people_stories_by_bounds_and_time(
+        self,
+        min_bound: LatLong,
+        max_bound: LatLong,
+        calendar_date: CalendarDate,
+    ) -> list[MapStory]:
+        """Get all people stories that have events within the given geographic bounds and time window.
+
+        Args:
+            min_bound: The minimum latitude/longitude bounds
+            max_bound: The maximum latitude/longitude bounds
+            calendar_date: The target date to search around
+
+        Returns:
+            A list of MapStory objects containing story and event information
+        """
+        with Session(self._engine, future=True) as session:
+            # Extract year from calendar_date while preserving +/- prefix for BCE/CE
+            if calendar_date.datetime.startswith(("+", "-")):
+                year_start_index = 1
+                year_end_index = 5
+                start_char = calendar_date.datetime[0]
+            else:
+                year_start_index = 0
+                year_end_index = 4
+                start_char = "+"  # assume AD
+            target_year = calendar_date.datetime[
+                year_start_index:year_end_index
+            ]  # e.g. "2024" or "0044"
+            year_start = f"{start_char}{target_year}-01-01T00:00:00Z"
+            year_end = f"{start_char}{target_year}-12-31T23:59:59Z"
+
+            # Query for stories that have both a person and a place within the bounds
+            # and a time within the year
+            result = session.execute(
+                text(
+                    """
+                    SELECT DISTINCT
+                        sn.name,
+                        sn.description,
+                        sn.lang,
+                        s.id as summary_id,
+                        p.latitude,
+                        p.longitude,
+                        t.datetime,
+                        t.calendar_model,
+                        t.precision,
+                        person_tag.id as story_id
+                    FROM story_names sn
+                    JOIN tags person_tag ON sn.tag_id = person_tag.id
+                    JOIN tag_instances ti ON person_tag.id = ti.tag_id
+                    JOIN summaries s ON ti.summary_id = s.id
+                    JOIN tag_instances place_ti ON s.id = place_ti.summary_id
+                    JOIN tags place_tag ON place_ti.tag_id = place_tag.id
+                    JOIN places p ON place_tag.id = p.id
+                    JOIN tag_instances time_ti ON s.id = time_ti.summary_id
+                    JOIN tags time_tag ON time_ti.tag_id = time_tag.id
+                    JOIN times t ON time_tag.id = t.id
+                    WHERE person_tag.type = 'PERSON'
+                    AND place_tag.type = 'PLACE'
+                    AND time_tag.type = 'TIME'
+                    AND p.latitude BETWEEN :min_lat AND :max_lat
+                    AND p.longitude BETWEEN :min_lon AND :max_lon
+                    AND t.datetime BETWEEN :year_start AND :year_end
+                    """
+                ),
+                {
+                    "min_lat": min_bound.latitude,
+                    "max_lat": max_bound.latitude,
+                    "min_lon": min_bound.longitude,
+                    "max_lon": max_bound.longitude,
+                    "year_start": year_start,
+                    "year_end": year_end,
+                },
+            )
+
+            stories = []
+            for row in result:
+                stories.append(
+                    MapStory(
+                        event_id=row.summary_id,
+                        story_id=row.story_id,  #  person story
+                        title=row.name,
+                        description=row.description,
+                        point=LatLong(
+                            latitude=row.latitude,
+                            longitude=row.longitude,
+                        ),
+                        date=CalendarDate(
+                            datetime=row.datetime,
+                            calendar=row.calendar_model,
+                            precision=row.precision,
+                        ),
+                    )
+                )
+
+            return stories
