@@ -43,6 +43,18 @@ services:
             - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
             - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
 
+    postgres_exporter:
+        image: prometheuscommunity/postgres-exporter:latest
+        restart: always
+        networks:
+            - tha-test
+        ports:
+            - "9187:9187"
+        environment:
+            - DATA_SOURCE_NAME=postgresql://josh@host.docker.internal:5432/prod_replica?sslmode=disable
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+
     provisioner:
         build:
             context:
