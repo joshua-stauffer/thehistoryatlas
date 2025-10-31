@@ -12,51 +12,6 @@ services:
         ports:
             - "${POSTGRES_PORT:-5432}:5432"
 
-    prometheus:
-        image: prom/prometheus:latest
-        restart: always
-        networks:
-            - tha-test
-        ports:
-            - "${PROMETHEUS_PORT:-9090}:9090"
-        volumes:
-            - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-            - prometheus_data:/prometheus
-        command:
-            - --config.file=/etc/prometheus/prometheus.yml
-            - --storage.tsdb.path=/prometheus
-            - --web.console.libraries=/etc/prometheus/console_libraries
-            - --web.console.templates=/etc/prometheus/consoles
-            - --storage.tsdb.retention.time=200h
-            - --web.enable-lifecycle
-
-    grafana:
-        image: grafana/grafana:latest
-        restart: always
-        networks:
-            - tha-test
-        ports:
-            - "${GRAFANA_PORT:-4000}:3000"
-        environment:
-            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-            - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGNUP:-false}
-        volumes:
-            - grafana_data:/var/lib/grafana
-            - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-            - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
-
-    postgres_exporter:
-        image: prometheuscommunity/postgres-exporter:latest
-        restart: always
-        networks:
-            - tha-test
-        ports:
-            - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
-        environment:
-            - DATA_SOURCE_NAME=postgresql://${POSTGRES_EXPORTER_USER:-postgres}@${POSTGRES_EXPORTER_HOST:-host.docker.internal}:${POSTGRES_EXPORTER_PORT:-5432}/${POSTGRES_EXPORTER_DB:-postgres}?sslmode=${POSTGRES_SSL_MODE:-disable}
-        extra_hosts:
-            - "host.docker.internal:host-gateway"
 
     provisioner:
         build:
