@@ -4,11 +4,13 @@ services:
         image: postgres:16
         restart: always
         environment:
-            - POSTGRES_PASSWORD=${POSTGRES_PASS}
+            - POSTGRES_USER=${POSTGRES_USER:-postgres}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB:-postgres}
         networks:
             - tha-test
         ports:
-            - 5432:5432
+            - "${POSTGRES_PORT:-5432}:5432"
 
     prometheus:
         image: prom/prometheus:latest
@@ -16,7 +18,7 @@ services:
         networks:
             - tha-test
         ports:
-            - "9090:9090"
+            - "${PROMETHEUS_PORT:-9090}:9090"
         volumes:
             - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
             - prometheus_data:/prometheus
@@ -34,10 +36,11 @@ services:
         networks:
             - tha-test
         ports:
-            - "4000:3000"
+            - "${GRAFANA_PORT:-4000}:3000"
         environment:
-            - GF_SECURITY_ADMIN_PASSWORD=admin
-            - GF_USERS_ALLOW_SIGN_UP=false
+            - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+            - GF_USERS_ALLOW_SIGN_UP=${GRAFANA_ALLOW_SIGNUP:-false}
         volumes:
             - grafana_data:/var/lib/grafana
             - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -49,9 +52,9 @@ services:
         networks:
             - tha-test
         ports:
-            - "9187:9187"
+            - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
         environment:
-            - DATA_SOURCE_NAME=postgresql://josh@host.docker.internal:5432/prod_replica?sslmode=disable
+            - DATA_SOURCE_NAME=postgresql://${POSTGRES_EXPORTER_USER:-postgres}@${POSTGRES_EXPORTER_HOST:-host.docker.internal}:${POSTGRES_EXPORTER_PORT:-5432}/${POSTGRES_EXPORTER_DB:-postgres}?sslmode=${POSTGRES_SSL_MODE:-disable}
         extra_hosts:
             - "host.docker.internal:host-gateway"
 
