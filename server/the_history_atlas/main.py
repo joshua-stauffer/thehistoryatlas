@@ -22,10 +22,8 @@ def get_app() -> FastAPI:
         should_ignore_untemplated=False,
         should_group_untemplated=False,
         excluded_handlers=[".*admin.*", "/metrics"],
+        should_round_latency_decimals=True,
         round_latency_decimals=4,
-        should_include_handler=True,
-        should_include_method=True,
-        should_include_status=True,
     )
     instrumentator.instrument(fastapi_app).expose(fastapi_app, endpoint="/metrics")
 
