@@ -16,14 +16,9 @@ def get_app() -> FastAPI:
 
     fastapi_app = FastAPI()
 
-    # Add Prometheus metrics instrumentation with route-specific labels
+    # Add Prometheus metrics instrumentation with default settings
     instrumentator = Instrumentator(
-        should_group_status_codes=False,
-        should_ignore_untemplated=False,
-        should_group_untemplated=False,
         excluded_handlers=[".*admin.*", "/metrics"],
-        should_round_latency_decimals=True,
-        round_latency_decimals=4,
     )
     instrumentator.instrument(fastapi_app).expose(fastapi_app, endpoint="/metrics")
 
