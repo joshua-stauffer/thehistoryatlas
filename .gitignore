@@ -3,7 +3,8 @@ __pycache__
 env
 test_env
 venv
-.env
+.env.prod
+.env.local
 *.js.map
 *.egg-info
 .pytest_cache
