@@ -44,7 +44,6 @@ from the_history_atlas.apps.history.errors import (
     DuplicateEventError,
 )
 from the_history_atlas.apps.history.trie import Trie
-from the_history_atlas.apps.history.tracing import trace_method, trace_block
 
 logging.basicConfig(level="DEBUG")
 log = logging.getLogger(__name__)
@@ -63,6 +62,20 @@ class HistoryApp:
         self._source_trie = source_trie.build(
             entity_tuples=repository.get_all_source_titles_and_authors()
         )
+
+    def prime_cache(self, cache_size=100):
+        """Prime the default story and event cache"""
+        self._repository.prime_default_story_cache(cache_size=cache_size)
+
+    def start_cache_refresh(self, refresh_interval_seconds=3600):
+        """Start the background cache refresh thread"""
+        self._repository.start_cache_refresh_thread(
+            refresh_interval_seconds=refresh_interval_seconds
+        )
+
+    def stop_cache_refresh(self):
+        """Stop the background cache refresh thread"""
+        self._repository.stop_cache_refresh_thread()
 
     def create_person(self, person: PersonInput) -> Person:
         if self._repository.get_tag_id_by_wikidata_id(wikidata_id=person.wikidata_id):
@@ -183,7 +196,6 @@ class HistoryApp:
             for story_id, story_info in story_names.items()
         ]
 
-    @trace_method("create_wikidata_event")
     def create_wikidata_event(
         self,
         text: str,
@@ -191,65 +203,60 @@ class HistoryApp:
         citation: CitationInput,
         after: list[UUID],
     ):
-        with trace_block("get_or_create_source"):
-            source = self._repository.get_source_by_title(title="Wikidata")
-            if source:
-                source_id = UUID(source.id)
-            else:
-                source_id = uuid4()
-                self._repository.create_source(
-                    id=source_id,
-                    title="Wikidata",
-                    author="Wikidata Contributors",
-                    publisher="Wikimedia Foundation",
-                    pub_date=None,
-                )
+        source = self._repository.get_source_by_title(title="Wikidata")
+        if source:
+            source_id = UUID(source.id)
+        else:
+            source_id = uuid4()
+            self._repository.create_source(
+                id=source_id,
+                title="Wikidata",
+                author="Wikidata Contributors",
+                publisher="Wikimedia Foundation",
+                pub_date=None,
+            )
         summary_id = uuid4()
 
         with self._repository.Session() as session:
-            with trace_block("create_summary"):
-                try:
-                    self._repository.create_summary(
-                        id=summary_id,
-                        text=text,
-                    )
-                except IntegrityError:
-                    raise DuplicateEventError
+            try:
+                self._repository.create_summary(
+                    id=summary_id,
+                    text=text,
+                )
+            except IntegrityError:
+                raise DuplicateEventError
 
-            with trace_block("create_citation"):
-                citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
-                citation_id = uuid4()
-                # Use the optimized citation creation method that handles all relationships
-                self._repository.create_citation_complete(
-                    id=citation_id,
-                    session=session,
-                    citation_text=citation_text,
-                    source_id=source_id,
+            citation_text = f"Wikidata. ({citation.access_date}). {citation.wikidata_item_title} ({citation.wikidata_item_id}). Wikimedia Foundation. {citation.wikidata_item_url}"
+            citation_id = uuid4()
+            # Use the optimized citation creation method that handles all relationships
+            self._repository.create_citation_complete(
+                id=citation_id,
+                session=session,
+                citation_text=citation_text,
+                source_id=source_id,
+                summary_id=summary_id,
+                access_date=str(citation.access_date),
+            )
+
+            # Convert tags to dictionaries for bulk processing
+            tag_instances = [
+                TagInstanceInput(
+                    start_char=tag.start_char,
+                    stop_char=tag.stop_char,
                     summary_id=summary_id,
-                    access_date=str(citation.access_date),
+                    tag_id=tag.id,
                 )
+                for tag in tags
+            ]
 
-            with trace_block("create_tag_instances"):
-                # Convert tags to dictionaries for bulk processing
-                tag_instances = [
-                    TagInstanceInput(
-                        start_char=tag.start_char,
-                        stop_char=tag.stop_char,
-                        summary_id=summary_id,
-                        tag_id=tag.id,
-                    )
-                    for tag in tags
-                ]
+            # Use the bulk operation instead of individual inserts
+            self._repository.bulk_create_tag_instances(
+                tag_instances=tag_instances,
+                after=after,
+                session=session,
+            )
 
-                # Use the bulk operation instead of individual inserts
-                self._repository.bulk_create_tag_instances(
-                    tag_instances=tag_instances,
-                    after=after,
-                    session=session,
-                )
-
-            with trace_block("commit_transaction"):
-                session.commit()
+            session.commit()
 
         return summary_id
 

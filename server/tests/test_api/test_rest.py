@@ -665,7 +665,8 @@ class TestGetHistory:
         assert response.status_code == 200
         story = Story.model_validate(response.json())
         time_tags = sorted([time.date for time in times])
-        for event, time in zip(story.events, time_tags):
+        start_index = time_tags.index(story.events[0].date.datetime)
+        for event, time in zip(story.events, time_tags[start_index:]):
             assert event.date.datetime == time
 
     def test_with_params(

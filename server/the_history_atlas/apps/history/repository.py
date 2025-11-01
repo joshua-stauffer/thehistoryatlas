@@ -1,5 +1,7 @@
 import json
 import logging
+import threading
+import time
 from collections import defaultdict
 from datetime import datetime
 from typing import (
@@ -7,6 +9,7 @@ from typing import (
     Optional,
     List,
     Literal,
+    Dict,
 )
 from uuid import uuid4, UUID
 
@@ -60,7 +63,6 @@ from the_history_atlas.apps.history.schema import (
     Source,
 )
 from the_history_atlas.apps.history.trie import Trie
-from the_history_atlas.apps.history.tracing import trace_db, trace_block
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +83,139 @@ class Repository:
 
         self.Session = sessionmaker(bind=database_client)
         Base.metadata.create_all(self._engine)
+
+        # Cache for default story and event
+        self._default_story_cache = []
+        self._cache_lock = threading.RLock()
+        self._cache_refresh_thread = None
+        self._stop_cache_refresh = threading.Event()
+
+    def start_cache_refresh_thread(self, refresh_interval_seconds=3600):
+        """Start a background thread to periodically refresh the cache"""
+        if (
+            self._cache_refresh_thread is not None
+            and self._cache_refresh_thread.is_alive()
+        ):
+            log.warning("Cache refresh thread is already running")
+            return
+
+        self._stop_cache_refresh.clear()
+        self._cache_refresh_thread = threading.Thread(
+            target=self._cache_refresh_worker,
+            args=(refresh_interval_seconds,),
+            daemon=True,
+            name="DefaultStoryCacheRefresher",
+        )
+        self._cache_refresh_thread.start()
+        log.info(
+            f"Started cache refresh thread with interval {refresh_interval_seconds} seconds"
+        )
+
+    def stop_cache_refresh_thread(self):
+        """Stop the background cache refresh thread"""
+        if (
+            self._cache_refresh_thread is not None
+            and self._cache_refresh_thread.is_alive()
+        ):
+            log.info("Stopping cache refresh thread")
+            self._stop_cache_refresh.set()
+            self._cache_refresh_thread.join(timeout=5.0)
+            if self._cache_refresh_thread.is_alive():
+                log.warning("Cache refresh thread did not stop within timeout")
+            else:
+                log.info("Cache refresh thread stopped successfully")
+        self._cache_refresh_thread = None
+
+    def _cache_refresh_worker(self, refresh_interval_seconds):
+        """Worker function for the cache refresh thread"""
+        log.info("Cache refresh thread started")
+        while not self._stop_cache_refresh.is_set():
+            try:
+                self.prime_default_story_cache()
+                # Sleep for the refresh interval, but check for stop signal every second
+                for _ in range(refresh_interval_seconds):
+                    if self._stop_cache_refresh.is_set():
+                        break
+                    time.sleep(1)
+            except Exception as e:
+                log.error(f"Error refreshing default story cache: {e}")
+                # Sleep for a shorter period after error
+                time.sleep(60)
+
+    def prime_default_story_cache(self, cache_size=100):
+        """Prime the cache with default story and event combinations"""
+        log.info(f"Priming default story cache with {cache_size} entries")
+        with Session(self._engine, future=True) as session:
+            try:
+                # Get random person stories with valid story_order
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT summary_id as event_id, tag_id as story_id
+                        FROM tag_instances
+                        JOIN tags ON tag_instances.tag_id = tags.id
+                        WHERE tag_instances.story_order IS NOT NULL
+                        AND tags.type = 'PERSON'
+                        ORDER BY RANDOM()
+                        LIMIT :limit;
+                        """
+                    ),
+                    {"limit": cache_size},
+                ).all()
+
+                with self._cache_lock:
+                    self._default_story_cache = [
+                        {"event_id": row.event_id, "story_id": row.story_id}
+                        for row in rows
+                    ]
+                log.info(
+                    f"Default story cache primed with {len(self._default_story_cache)} entries"
+                )
+            except Exception as e:
+                log.error(f"Failed to prime default story cache: {e}")
+                # Keep the existing cache if there was an error
+
+    def get_default_story_and_event(
+        self,
+    ) -> StoryPointer:
+        """Get a default story and event, using the cache if available"""
+        with self._cache_lock:
+            if not self._default_story_cache:
+                # Cache is empty, build it now
+                log.info("Default story cache is empty, building it now")
+                self.prime_default_story_cache()
+
+            if self._default_story_cache:
+                # Use a random entry from the cache
+                import random
+
+                cache_entry = random.choice(self._default_story_cache)
+                return StoryPointer(
+                    event_id=cache_entry["event_id"],
+                    story_id=cache_entry["story_id"],
+                )
+
+        # Fallback to direct database query if cache is still empty
+        log.warning("Using fallback direct database query for default story and event")
+        with Session(self._engine, future=True) as session:
+            # get the beginning of a person's life
+            row = session.execute(
+                text(
+                    """
+                    SELECT summary_id as event_id, tag_id as story_id
+                    FROM tag_instances
+                    JOIN tags ON tag_instances.tag_id = tags.id
+                    AND tag_instances.story_order IS NOT NULL
+                    AND tags.type = 'PERSON'
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+                    """
+                )
+            ).one()
+            return StoryPointer(
+                event_id=row.event_id,
+                story_id=row.story_id,
+            )
 
     def get_tag_ids_with_null_orders(
         self,
@@ -174,29 +309,6 @@ class Repository:
                 )
                 for row in results
             ]
-
-    def get_default_story_and_event(
-        self,
-    ) -> StoryPointer:
-        with Session(self._engine, future=True) as session:
-            # get the beginning of a person's life
-            row = session.execute(
-                text(
-                    """
-                    SELECT summary_id as event_id, tag_id as story_id
-                    FROM tag_instances
-                    JOIN tags ON tag_instances.tag_id = tags.id
-                    AND tag_instances.story_order IS NOT NULL
-                    AND tags.type = 'PERSON'
-                    ORDER BY tag_instances.story_order
-                    LIMIT 1;
-                """
-                )
-            ).one()
-            return StoryPointer(
-                event_id=row.event_id,
-                story_id=row.story_id,
-            )
 
     def get_default_event_by_story(self, story_id: UUID) -> StoryPointer:
         # given a story, return the first event
@@ -593,7 +705,6 @@ class Repository:
             for row in rows
         }
 
-    @trace_db("create_summary")
     def create_summary(self, id: UUID, text: str) -> None:
         """Creates a new summary"""
         log.info(f"Creating a new summary: {text[:50]}...")
@@ -602,7 +713,6 @@ class Repository:
             session.add(summary)
             session.commit()
 
-    @trace_db("create_citation")
     def create_citation(
         self,
         session: Session,
@@ -627,7 +737,6 @@ class Repository:
             },
         )
 
-    @trace_db("create_citation_source_fkey")
     def create_citation_source_fkey(
         self,
         session: Session,
@@ -642,7 +751,6 @@ class Repository:
             text(stmt), {"source_id": source_id, "citation_id": citation_id}
         )
 
-    @trace_db("create_citation_summary_fkey")
     def create_citation_summary_fkey(
         self,
         session: Session,
@@ -657,7 +765,6 @@ class Repository:
             text(stmt), {"summary_id": summary_id, "citation_id": citation_id}
         )
 
-    @trace_db("create_citation_complete")
     def create_citation_complete(
         self,
         session: Session,
@@ -1114,7 +1221,6 @@ class Repository:
 
         return row
 
-    @trace_db("bulk_create_tag_instances")
     def bulk_create_tag_instances(
         self,
         tag_instances: list[TagInstanceInput],

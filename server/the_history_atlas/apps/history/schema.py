@@ -1,6 +1,5 @@
 from sqlalchemy import Column, String, TIMESTAMP, Index
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table, UniqueConstraint
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
 

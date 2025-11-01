@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Literal, Callable
 from uuid import uuid4, UUID
+import time
 
 import pytest
 from sqlalchemy import text
@@ -1087,3 +1088,111 @@ class TestGetTagIdsWithNullOrders:
                 {"id": tag_id},
             )
             session.commit()
+
+
+class TestDefaultStoryCache:
+    def setup_test_data(self, history_db):
+        """Set up test data for the cache tests"""
+        with history_db.Session() as session:
+            # Create a person tag
+            person_id = uuid4()
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tags (id, type)
+                    VALUES (:id, 'PERSON')
+                    """
+                ),
+                {"id": person_id},
+            )
+
+            # Create a summary
+            summary_id = uuid4()
+            session.execute(
+                text(
+                    """
+                    INSERT INTO summaries (id, text)
+                    VALUES (:id, 'Test summary')
+                    """
+                ),
+                {"id": summary_id},
+            )
+
+            # Create a tag instance with story_order
+            session.execute(
+                text(
+                    """
+                    INSERT INTO tag_instances (id, tag_id, summary_id, start_char, stop_char, story_order)
+                    VALUES (:id, :tag_id, :summary_id, 0, 10, 100000)
+                    """
+                ),
+                {"id": uuid4(), "tag_id": person_id, "summary_id": summary_id},
+            )
+
+            session.commit()
+            return person_id, summary_id
+
+    def test_cache_priming(self, history_db):
+        """Test that the cache can be primed and used"""
+        # Set up test data
+        self.setup_test_data(history_db)
+
+        # Ensure the cache is empty initially
+        with history_db._cache_lock:
+            history_db._default_story_cache = []
+
+        # Prime the cache
+        history_db.prime_default_story_cache(cache_size=5)
+
+        # Check that the cache has been populated
+        with history_db._cache_lock:
+            assert len(history_db._default_story_cache) > 0
+
+        # Get a default story and event from the cache
+        story_pointer = history_db.get_default_story_and_event()
+        assert story_pointer is not None
+        assert story_pointer.event_id is not None
+        assert story_pointer.story_id is not None
+
+    def test_cache_refresh_thread(self, history_db):
+        """Test that the cache refresh thread works correctly"""
+        # Set up test data
+        self.setup_test_data(history_db)
+
+        # Start the cache refresh thread with a short interval
+        history_db.start_cache_refresh_thread(refresh_interval_seconds=2)
+
+        # Wait for the thread to run at least once
+        time.sleep(3)
+
+        # Check that the cache has been populated
+        with history_db._cache_lock:
+            assert len(history_db._default_story_cache) > 0
+
+        # Stop the thread
+        history_db.stop_cache_refresh_thread()
+
+        # Verify the thread has stopped
+        assert (
+            not history_db._cache_refresh_thread
+            or not history_db._cache_refresh_thread.is_alive()
+        )
+
+    def test_fallback_to_direct_query(self, history_db):
+        """Test that the system falls back to direct query if cache is empty"""
+        # Set up test data
+        self.setup_test_data(history_db)
+
+        # Ensure the cache is empty
+        with history_db._cache_lock:
+            history_db._default_story_cache = []
+
+        # Get a default story - should use direct query
+        story_pointer = history_db.get_default_story_and_event()
+        assert story_pointer is not None
+        assert story_pointer.event_id is not None
+        assert story_pointer.story_id is not None
+
+        # Cache should now be populated
+        with history_db._cache_lock:
+            assert len(history_db._default_story_cache) > 0

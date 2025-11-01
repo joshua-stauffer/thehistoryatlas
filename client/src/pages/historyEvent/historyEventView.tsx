@@ -2,10 +2,21 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
-import { InputAdornment, TextField, Typography } from "@mui/material";
+import { 
+  InputAdornment, 
+  TextField, 
+  Typography, 
+  Button, 
+  CircularProgress, 
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ClickAwayListener
+} from "@mui/material";
 import { EventView } from "./eventView";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
@@ -21,6 +32,10 @@ export const HistoryEventView = () => {
     useLoaderData() as HistoryEventData;
   const [searchResults, setSearchResults] = useState<StorySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const {
     historyEvents,
@@ -50,18 +65,31 @@ export const HistoryEventView = () => {
   const handleSearch = async (value: string) => {
     if (!value) {
       setSearchResults([]);
+      setHasSearched(false);
       return;
     }
     setLoading(true);
+    setHasSearched(true);
     try {
       const response = await debouncedSearchStories(value);
       setSearchResults(response?.results || []);
+      setDropdownOpen(true);
     } catch (error) {
       console.error("Failed to search stories:", error);
       setSearchResults([]);
+      setDropdownOpen(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchButtonClick = () => {
+    handleSearch(searchValue);
+  };
+  
+  const handleResultClick = (result: StorySearchResult) => {
+    navigate(`/stories/${result.id}`);
+    setDropdownOpen(false);
   };
 
   return (
@@ -98,42 +126,89 @@ export const HistoryEventView = () => {
               width: "100%",
             }}
           >
-            <Autocomplete
-              sx={{ fontFamily: sansSerifFont }}
-              id="story-search"
-              freeSolo
-              options={searchResults}
-              loading={loading}
-              onInputChange={(_, value) => handleSearch(value)}
-              getOptionLabel={(option) =>
-                typeof option === "string" ? option : option.name
-              }
-              onChange={(_, value) => {
-                if (value && typeof value !== 'string') {
-                  navigate(`/stories/${value.id}`);
-                }
-              }}
-              renderOption={(props, option) => (
-                <li {...props}>
-                  {option.name}
-                </li>
-              )}
-              renderInput={(params) => (
+            <ClickAwayListener onClickAway={() => setDropdownOpen(false)}>
+              <Box sx={{ position: 'relative', width: '100%' }}>
                 <TextField
-                  {...params}
+                  fullWidth
+                  inputRef={searchInputRef}
                   label="Search for a story"
-                  variant={"outlined"}
+                  variant="outlined"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onFocus={() => {
+                    if (hasSearched) {
+                      setDropdownOpen(true);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearch(searchValue);
+                    }
+                  }}
                   InputProps={{
-                    ...params.InputProps,
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon />
+                        {loading ? <CircularProgress size={20} /> : <SearchIcon />}
                       </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <Button 
+                        onClick={handleSearchButtonClick}
+                        disabled={loading || !searchValue}
+                        sx={{ minWidth: '64px', ml: 1 }}
+                        variant="contained"
+                        color="primary"
+                      >
+                        Search
+                      </Button>
                     ),
                   }}
                 />
-              )}
-            />
+                
+                {dropdownOpen && (
+                  <Paper 
+                    elevation={3} 
+                    sx={{ 
+                      position: 'absolute', 
+                      width: '100%', 
+                      zIndex: 9999,
+                      maxHeight: '300px',
+                      overflow: 'auto'
+                    }}
+                  >
+                    <List>
+                      {searchResults.length > 0 ? (
+                        searchResults.map((result) => (
+                          <ListItem 
+                            key={result.id} 
+                            button 
+                            onClick={() => handleResultClick(result)}
+                            sx={{ fontFamily: sansSerifFont }}
+                          >
+                            <ListItemText primary={result.name} />
+                          </ListItem>
+                        ))
+                      ) : (
+                        <ListItem sx={{ pointerEvents: 'none' }}>
+                          <ListItemText 
+                            primary="No results found." 
+                            primaryTypographyProps={{ 
+                              sx: { 
+                                fontStyle: 'italic', 
+                                color: 'text.disabled',
+                                fontFamily: sansSerifFont 
+                              } 
+                            }} 
+                          />
+                        </ListItem>
+                      )}
+                    </List>
+                  </Paper>
+                )}
+              </Box>
+            </ClickAwayListener>
+            
             <Typography
               variant={"h1"}
               sx={{
