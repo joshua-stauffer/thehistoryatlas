@@ -29,6 +29,8 @@ from the_history_atlas.api.types.history import (
     TimeExistsRequest,
     TimeExistsResponse,
     StorySearchResponse,
+    MapStory,
+    MapStoryRequest,
 )
 from the_history_atlas.api.types.tags import (
     WikiDataPersonOutput,
@@ -51,6 +53,7 @@ from the_history_atlas.apps.domain.models.accounts import UserDetails, GetUserPa
 from the_history_atlas.apps.domain.models.accounts.get_user import (
     GetUserResponsePayload,
 )
+from the_history_atlas.apps.domain import core as domain
 
 fake = Faker()
 Faker.seed(872)
@@ -180,6 +183,26 @@ def register_rest_endpoints(
 
     AuthenticatedUser = Annotated[GetUserResponsePayload, Depends(auth_required)]
 
+    def convert_map_story_to_api(story: domain.MapStory) -> MapStory:
+        """Convert the internal MapStory model to the API MapStory model."""
+        return MapStory(
+            eventId=story.event_id,
+            storyId=story.story_id,
+            title=story.title,
+            description=story.description,
+            point=Point(
+                id=story.story_id,  # Use story_id as point id since we don't have a separate point id
+                latitude=story.point.latitude,
+                longitude=story.point.longitude,
+                name=story.title,  # Use story title as point name since we don't have a separate point name
+            ),
+            date=CalendarDate(
+                datetime=story.date.datetime,
+                calendar=story.date.calendar,
+                precision=story.date.precision,
+            ),
+        )
+
     # API Endpoints
     @fastapi_app.get("/history", response_model=Story)
     def get_history(
@@ -258,5 +281,28 @@ def register_rest_endpoints(
         """Search for stories using fuzzy text matching."""
         results = apps.history_app.fuzzy_search_stories(search_string=query)
         return StorySearchResponse(results=results)
+
+    @fastapi_app.post("/map/stories", response_model=list[MapStory])
+    def get_map_stories(
+        request: MapStoryRequest,
+        apps: Apps,
+    ) -> list[MapStory]:
+        """Get stories that have events within the given geographic bounds and time window."""
+        stories = apps.history_app.get_map_stories(
+            northwest_bound=domain.LatLong(
+                latitude=request.northwest_bound.latitude,
+                longitude=request.northwest_bound.longitude,
+            ),
+            southeast_bound=domain.LatLong(
+                latitude=request.southeast_bound.latitude,
+                longitude=request.southeast_bound.longitude,
+            ),
+            date=domain.CalendarDate(
+                datetime=request.date.datetime,
+                calendar=request.date.calendar,
+                precision=request.date.precision,
+            ),
+        )
+        return [convert_map_story_to_api(story) for story in stories]
 
     return fastapi_app
