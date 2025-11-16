@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from the_history_atlas.api import mount_api
 from the_history_atlas.apps.app_manager import AppManager
@@ -14,6 +15,12 @@ def get_app() -> FastAPI:
         return app_manager
 
     fastapi_app = FastAPI()
+
+    # Add Prometheus metrics instrumentation with default settings
+    instrumentator = Instrumentator(
+        excluded_handlers=[".*admin.*", "/metrics"],
+    )
+    instrumentator.instrument(fastapi_app).expose(fastapi_app, endpoint="/metrics")
 
     mount_api(
         fastapi_app=fastapi_app,

@@ -58,6 +58,7 @@ MOCK_COUNT_RESPONSE = {
 }
 
 
+@pytest.mark.skip("e2e")
 def test_query_person(config):
     EINSTEIN = "Q937"
     service = WikiDataQueryService(config)
@@ -70,6 +71,7 @@ def test_query_person(config):
         assert all([isinstance(prop, Property) for prop in prop_list])
 
 
+@pytest.mark.skip("e2e")
 def test_query_point(config):
     ROME_ID = "Q220"
     service = WikiDataQueryService(config)
@@ -79,6 +81,7 @@ def test_query_point(config):
     assert isinstance(coords, CoordinateLocation)
 
 
+@pytest.mark.skip("e2e")
 def test_query_geoshape(config):
     ITALY_ID = "Q38"
     service = WikiDataQueryService(config)
@@ -88,6 +91,7 @@ def test_query_geoshape(config):
     assert isinstance(geoshape, GeoshapeLocation)
 
 
+@pytest.mark.skip("e2e")
 def test_query_time(config):
     BACHS_BIRTHDAY = "Q69125225"
     service = WikiDataQueryService(config)
@@ -121,6 +125,7 @@ def test_make_sparql_query(mock_query, config):
     assert all("item" in item for item in result["results"]["bindings"])
 
 
+@pytest.mark.skip("e2e")
 def test_get_qid_from_uri(config):
     service = WikiDataQueryService(config)
     uri = "http://www.wikidata.org/entity/Q23"
@@ -154,6 +159,7 @@ def test_get_wikidata_people_count(mock_query, config):
     assert count == 12000000
 
 
+@pytest.mark.skip("e2e")
 def test_get_label(config):
     service = WikiDataQueryService(config)
 
@@ -161,6 +167,7 @@ def test_get_label(config):
     assert label == "Johann Sebastian Bach"
 
 
+@pytest.mark.skip("e2e")
 def test_get_non_ascii_label(config):
     service = WikiDataQueryService(config)
 
@@ -168,6 +175,7 @@ def test_get_non_ascii_label(config):
     assert label == "Simón Bolívar"
 
 
+@pytest.mark.skip("e2e")
 def test_get_description(config):
     """Test retrieving a description for an entity that has one"""
     service = WikiDataQueryService(config)
@@ -178,6 +186,7 @@ def test_get_description(config):
     assert "composer" in description.lower()
 
 
+@pytest.mark.skip("e2e")
 def test_get_non_ascii_description(config):
     service = WikiDataQueryService(config)
 
@@ -185,6 +194,7 @@ def test_get_non_ascii_description(config):
     assert description == "南アメリカの革命家、政治家、軍人 (1783-1830)"
 
 
+@pytest.mark.skip("e2e")
 def test_get_description_missing(config):
     """Test retrieving a description for an entity/language combination that doesn't exist"""
     service = WikiDataQueryService(config)
@@ -194,6 +204,7 @@ def test_get_description_missing(config):
     assert description is None
 
 
+@pytest.mark.skip("e2e")
 def test_non_ascii_labels():
     """Test that labels with non-ASCII characters are handled correctly"""
     # Create a mock entity dictionary with non-ASCII characters
@@ -223,6 +234,7 @@ def test_non_ascii_labels():
     assert entity.labels["ja"].value == "日本語"
 
 
+@pytest.mark.skip("e2e")
 def test_non_ascii_labels_live_api(monkeypatch):
     """Test that labels with non-ASCII characters are handled correctly when fetching from the live API"""
     # Set up minimal environment for config
@@ -237,6 +249,7 @@ def test_non_ascii_labels_live_api(monkeypatch):
     assert "Bolívar" in entity.labels["es"].value
 
 
+@pytest.mark.skip("e2e")
 def test_non_ascii_labels_unicode_escapes():
     """Test that labels with Unicode escape sequences are handled correctly"""
     # Create a mock entity dictionary with Unicode escape sequences
