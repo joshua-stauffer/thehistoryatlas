@@ -217,6 +217,7 @@ class HistoryApp:
 
         with self._repository.Session() as session:
             try:
+                # todo: update cached time/place specific values
                 self._repository.create_summary(
                     id=summary_id,
                     text=text,
