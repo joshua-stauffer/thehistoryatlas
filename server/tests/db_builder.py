@@ -28,10 +28,10 @@ class DBBuilder:
 
     def insert_summaries(self, summaries: list[SummaryModel]):
         stmt = """
-            insert into summaries 
-            (id, text)
-            values 
-            (:id, :text);
+            insert into summaries
+            (id, text, datetime, calendar_model, precision, latitude, longitude)
+            values
+            (:id, :text, :datetime, :calendar_model, :precision, :latitude, :longitude);
         """
         self._session.execute(text(stmt), [summary.dict() for summary in summaries])
 

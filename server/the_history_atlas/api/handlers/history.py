@@ -123,6 +123,46 @@ def convert_point_to_api(point: Point) -> api_types.Point:
     )
 
 
+def get_nearby_events_handler(
+    apps: AppManager,
+    event_id: UUID,
+    calendar_model: str,
+    precision: int,
+    datetime: str,
+    min_lat: float,
+    max_lat: float,
+    min_lng: float,
+    max_lng: float,
+) -> api_types.NearbyEventsResponse:
+    rows = apps.history_app.get_nearby_events(
+        event_id=event_id,
+        calendar_model=calendar_model,
+        precision=precision,
+        datetime=datetime,
+        min_lat=min_lat,
+        max_lat=max_lat,
+        min_lng=min_lng,
+        max_lng=max_lng,
+    )
+    return api_types.NearbyEventsResponse(
+        events=[
+            api_types.NearbyEventResult(
+                eventId=row.event_id,
+                storyId=row.story_id,
+                personName=row.person_name,
+                personDescription=row.person_description,
+                placeName=row.place_name,
+                latitude=row.latitude,
+                longitude=row.longitude,
+                datetime=row.datetime,
+                precision=row.precision,
+                calendarModel=row.calendar_model,
+            )
+            for row in rows
+        ]
+    )
+
+
 def check_time_exists_handler(
     apps: AppManager,
     request: api_types.TimeExistsRequest,

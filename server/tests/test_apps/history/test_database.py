@@ -1090,6 +1090,437 @@ class TestGetTagIdsWithNullOrders:
             session.commit()
 
 
+class TestGetNearbyEvents:
+    def _setup_nearby_data(self, history_db, session):
+        """Create test data for nearby event queries.
+
+        Returns dict with IDs and entities created.
+        """
+        # Create person tag + name + story_name
+        person_id = uuid4()
+        person_name_id = uuid4()
+        session.execute(
+            text("INSERT INTO tags (id, type) VALUES (:id, 'PERSON')"),
+            {"id": person_id},
+        )
+        session.execute(
+            text("INSERT INTO people (id) VALUES (:id)"),
+            {"id": person_id},
+        )
+        session.execute(
+            text("INSERT INTO names (id, name) VALUES (:id, :name)"),
+            {"id": person_name_id, "name": "Test Person"},
+        )
+        session.execute(
+            text("INSERT INTO tag_names (tag_id, name_id) VALUES (:tag_id, :name_id)"),
+            {"tag_id": person_id, "name_id": person_name_id},
+        )
+        session.execute(
+            text(
+                "INSERT INTO story_names (id, tag_id, name, lang, description) VALUES (:id, :tag_id, :name, :lang, :desc)"
+            ),
+            {
+                "id": uuid4(),
+                "tag_id": person_id,
+                "name": "The Life of Test Person",
+                "lang": "en",
+                "desc": "A test person",
+            },
+        )
+
+        # Create place tag + name
+        place_id = uuid4()
+        place_name_id = uuid4()
+        session.execute(
+            text("INSERT INTO tags (id, type) VALUES (:id, 'PLACE')"),
+            {"id": place_id},
+        )
+        session.execute(
+            text(
+                "INSERT INTO places (id, latitude, longitude) VALUES (:id, :lat, :lng)"
+            ),
+            {"id": place_id, "lat": 51.0, "lng": 10.0},
+        )
+        session.execute(
+            text("INSERT INTO names (id, name) VALUES (:id, :name)"),
+            {"id": place_name_id, "name": "Test Place"},
+        )
+        session.execute(
+            text("INSERT INTO tag_names (tag_id, name_id) VALUES (:tag_id, :name_id)"),
+            {"tag_id": place_id, "name_id": place_name_id},
+        )
+
+        return {
+            "person_id": person_id,
+            "person_name_id": person_name_id,
+            "place_id": place_id,
+            "place_name_id": place_name_id,
+        }
+
+    def _create_summary_with_tags(
+        self, session, person_id, place_id, text_val, dt, cal, prec, lat, lng
+    ):
+        """Create a summary with denormalized fields and tag instances."""
+        summary_id = uuid4()
+        session.execute(
+            text(
+                """INSERT INTO summaries (id, text, datetime, calendar_model, precision, latitude, longitude)
+                VALUES (:id, :text, :dt, :cal, :prec, :lat, :lng)"""
+            ),
+            {
+                "id": summary_id,
+                "text": text_val,
+                "dt": dt,
+                "cal": cal,
+                "prec": prec,
+                "lat": lat,
+                "lng": lng,
+            },
+        )
+        # Person tag instance
+        session.execute(
+            text(
+                """INSERT INTO tag_instances (id, summary_id, tag_id, start_char, stop_char)
+                VALUES (:id, :sid, :tid, 0, 5)"""
+            ),
+            {"id": uuid4(), "sid": summary_id, "tid": person_id},
+        )
+        # Place tag instance
+        session.execute(
+            text(
+                """INSERT INTO tag_instances (id, summary_id, tag_id, start_char, stop_char)
+                VALUES (:id, :sid, :tid, 6, 10)"""
+            ),
+            {"id": uuid4(), "sid": summary_id, "tid": place_id},
+        )
+        return summary_id
+
+    def test_returns_matching_events(self, history_db):
+        with history_db.Session() as session:
+            data = self._setup_nearby_data(history_db, session)
+            # Create two summaries in the same time/location
+            s1 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Event one nearby",
+                "+1685-03-21T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                51.0,
+                10.0,
+            )
+            s2 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Event two nearby",
+                "+1685-06-15T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                51.5,
+                10.5,
+            )
+            session.commit()
+
+            results = history_db.get_nearby_events(
+                event_id=s1,
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                datetime_prefix="+1685",
+                min_lat=50.0,
+                max_lat=52.0,
+                min_lng=9.0,
+                max_lng=11.0,
+                session=session,
+            )
+            assert len(results) >= 1
+            event_ids = [r.event_id for r in results]
+            assert s2 in event_ids
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE summary_id IN (:s1, :s2)"),
+                {"s1": s1, "s2": s2},
+            )
+            session.execute(
+                text("DELETE FROM summaries WHERE id IN (:s1, :s2)"),
+                {"s1": s1, "s2": s2},
+            )
+            session.execute(
+                text("DELETE FROM story_names WHERE tag_id = :tid"),
+                {"tid": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tag_names WHERE tag_id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM names WHERE id IN (:n1, :n2)"),
+                {"n1": data["person_name_id"], "n2": data["place_name_id"]},
+            )
+            session.execute(
+                text("DELETE FROM places WHERE id = :id"),
+                {"id": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM people WHERE id = :id"),
+                {"id": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.commit()
+
+    def test_excludes_current_event(self, history_db):
+        with history_db.Session() as session:
+            data = self._setup_nearby_data(history_db, session)
+            s1 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Current event exclude test",
+                "+1685-03-21T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                51.0,
+                10.0,
+            )
+            session.commit()
+
+            results = history_db.get_nearby_events(
+                event_id=s1,
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                datetime_prefix="+1685",
+                min_lat=50.0,
+                max_lat=52.0,
+                min_lng=9.0,
+                max_lng=11.0,
+                session=session,
+            )
+            event_ids = [r.event_id for r in results]
+            assert s1 not in event_ids
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE summary_id = :s1"),
+                {"s1": s1},
+            )
+            session.execute(text("DELETE FROM summaries WHERE id = :s1"), {"s1": s1})
+            session.execute(
+                text("DELETE FROM story_names WHERE tag_id = :tid"),
+                {"tid": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tag_names WHERE tag_id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM names WHERE id IN (:n1, :n2)"),
+                {"n1": data["person_name_id"], "n2": data["place_name_id"]},
+            )
+            session.execute(
+                text("DELETE FROM places WHERE id = :id"),
+                {"id": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM people WHERE id = :id"),
+                {"id": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.commit()
+
+    def test_respects_spatial_bounds(self, history_db):
+        with history_db.Session() as session:
+            data = self._setup_nearby_data(history_db, session)
+            # Create an event outside the spatial bounds
+            s1 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Inside bounds event",
+                "+1685-03-21T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                51.0,
+                10.0,
+            )
+            s_outside = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Outside bounds event",
+                "+1685-06-15T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                80.0,
+                80.0,
+            )
+            session.commit()
+
+            results = history_db.get_nearby_events(
+                event_id=s1,
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                datetime_prefix="+1685",
+                min_lat=50.0,
+                max_lat=52.0,
+                min_lng=9.0,
+                max_lng=11.0,
+                session=session,
+            )
+            event_ids = [r.event_id for r in results]
+            assert s_outside not in event_ids
+
+            # Cleanup
+            session.execute(
+                text("DELETE FROM tag_instances WHERE summary_id IN (:s1, :s2)"),
+                {"s1": s1, "s2": s_outside},
+            )
+            session.execute(
+                text("DELETE FROM summaries WHERE id IN (:s1, :s2)"),
+                {"s1": s1, "s2": s_outside},
+            )
+            session.execute(
+                text("DELETE FROM story_names WHERE tag_id = :tid"),
+                {"tid": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tag_names WHERE tag_id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM names WHERE id IN (:n1, :n2)"),
+                {"n1": data["person_name_id"], "n2": data["place_name_id"]},
+            )
+            session.execute(
+                text("DELETE FROM places WHERE id = :id"),
+                {"id": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM people WHERE id = :id"),
+                {"id": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.commit()
+
+    def test_respects_time_matching(self, history_db):
+        with history_db.Session() as session:
+            data = self._setup_nearby_data(history_db, session)
+            # Year-level query (precision 9) should match month-level events (precision 10)
+            s1 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Year reference event",
+                "+1685-03-21T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                51.0,
+                10.0,
+            )
+            # Month-precision event in same year
+            s2 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Month precision event",
+                "+1685-07-01T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                10,
+                51.0,
+                10.0,
+            )
+            # Different year event
+            s3 = self._create_summary_with_tags(
+                session,
+                data["person_id"],
+                data["place_id"],
+                "Different year event",
+                "+1700-03-21T00:00:00Z",
+                "http://www.wikidata.org/entity/Q1985727",
+                9,
+                51.0,
+                10.0,
+            )
+            session.commit()
+
+            # Query at year precision for 1685
+            results = history_db.get_nearby_events(
+                event_id=s1,
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                datetime_prefix="+1685",
+                min_lat=50.0,
+                max_lat=52.0,
+                min_lng=9.0,
+                max_lng=11.0,
+                session=session,
+            )
+            event_ids = [r.event_id for r in results]
+            assert s2 in event_ids  # month-level in same year matches
+            assert s3 not in event_ids  # different year excluded
+
+            # Cleanup
+            for sid in (s1, s2, s3):
+                session.execute(
+                    text("DELETE FROM tag_instances WHERE summary_id = :s"),
+                    {"s": sid},
+                )
+                session.execute(
+                    text("DELETE FROM summaries WHERE id = :s"),
+                    {"s": sid},
+                )
+            session.execute(
+                text("DELETE FROM story_names WHERE tag_id = :tid"),
+                {"tid": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tag_names WHERE tag_id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM names WHERE id IN (:n1, :n2)"),
+                {"n1": data["person_name_id"], "n2": data["place_name_id"]},
+            )
+            session.execute(
+                text("DELETE FROM places WHERE id = :id"),
+                {"id": data["place_id"]},
+            )
+            session.execute(
+                text("DELETE FROM people WHERE id = :id"),
+                {"id": data["person_id"]},
+            )
+            session.execute(
+                text("DELETE FROM tags WHERE id IN (:p, :pl)"),
+                {"p": data["person_id"], "pl": data["place_id"]},
+            )
+            session.commit()
+
+    def test_empty_results(self, history_db):
+        with history_db.Session() as session:
+            results = history_db.get_nearby_events(
+                event_id=uuid4(),
+                calendar_model="nonexistent",
+                precision=9,
+                datetime_prefix="+9999",
+                min_lat=0,
+                max_lat=1,
+                min_lng=0,
+                max_lng=1,
+                session=session,
+            )
+            assert results == []
+
+
 class TestDefaultStoryCache:
     def setup_test_data(self, history_db):
         """Set up test data for the cache tests"""

@@ -1,6 +1,10 @@
 import { Skeleton } from "@mui/material";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { mapTiles } from "../map/mapTiles";
+import L from "leaflet";
+import React, { useState, useCallback, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { NearbyEvent } from "../../api/nearbyEvents";
 
 type Size = "SM" | "MD" | "LG";
 
@@ -22,6 +26,13 @@ const mapDimensions = {
   },
 };
 
+export interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
 export interface SingleEntityMapProps {
   latitude?: number;
   longitude?: number;
@@ -32,18 +43,28 @@ export interface SingleEntityMapProps {
   zoom: number;
   size: Size;
   title: string;
+  nearbyEvents?: NearbyEvent[];
+  onBoundsChange?: (bounds: MapBounds) => void;
 }
 
+const nearbyEventIcon = L.divIcon({
+  className: "nearby-event-flag",
+  html: '<div style="width: 12px; height: 12px; background-color: #E53E3E; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.4);"></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  popupAnchor: [0, -8],
+});
+
 export const SingleEntityMap = (props: SingleEntityMapProps) => {
-  const { size, latitude, longitude, coords, title, zoom } = props;
+  const { size, latitude, longitude, coords, title, zoom, nearbyEvents, onBoundsChange } = props;
   let lat: number, long: number;
   let markers;
   if (!latitude || !longitude) {
     if (!coords) {
       return <Skeleton></Skeleton>;
     }
-    markers = coords.map(({ latitude, longitude }) => (
-      <Marker position={[latitude, longitude]}>
+    markers = coords.map(({ latitude, longitude }, i) => (
+      <Marker key={`main-${i}`} position={[latitude, longitude]}>
         <Popup>{title}</Popup>
       </Marker>
     ));
@@ -71,8 +92,19 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
         attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community"
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
       />
-      <MapInsides latitude={lat} longitude={long} />
+      <MapInsides latitude={lat} longitude={long} onBoundsChange={onBoundsChange} />
       {markers}
+      {nearbyEvents?.map((event) => (
+        <Marker
+          key={`${event.eventId}-${event.storyId}`}
+          position={[event.latitude, event.longitude]}
+          icon={nearbyEventIcon}
+        >
+          <Popup>
+            <NearbyEventPopup event={event} />
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 };
@@ -80,15 +112,71 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
 interface MapProps {
   latitude: number;
   longitude: number;
+  onBoundsChange?: (bounds: MapBounds) => void;
 }
 
 const MapInsides = (props: MapProps) => {
   // if new data is provided, update the map
-  const { latitude, longitude } = props;
+  const { latitude, longitude, onBoundsChange } = props;
   const map = useMap();
   map.flyTo([latitude, longitude], undefined, {
     animate: false,
     duration: 0.5,
   });
+
+  const reportBounds = useCallback(() => {
+    if (!onBoundsChange) return;
+    const bounds = map.getBounds();
+    onBoundsChange({
+      minLat: bounds.getSouth(),
+      maxLat: bounds.getNorth(),
+      minLng: bounds.getWest(),
+      maxLng: bounds.getEast(),
+    });
+  }, [map, onBoundsChange]);
+
+  useMapEvents({
+    moveend: reportBounds,
+    load: reportBounds,
+  });
+
+  // Report initial bounds
+  useEffect(() => {
+    reportBounds();
+  }, [reportBounds]);
+
   return null;
+};
+
+interface NearbyEventPopupProps {
+  event: NearbyEvent;
+}
+
+const NearbyEventPopup = ({ event }: NearbyEventPopupProps) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div style={{ minWidth: 150, maxWidth: 250 }}>
+      <div
+        style={{ cursor: "pointer", fontWeight: "bold", marginBottom: 4 }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        {event.personName}
+      </div>
+      {expanded && event.personDescription && (
+        <div style={{ fontSize: "0.85em", color: "#555", marginBottom: 4 }}>
+          {event.personDescription}
+        </div>
+      )}
+      <div style={{ fontSize: "0.85em", color: "#666" }}>{event.placeName}</div>
+      <div style={{ marginTop: 6 }}>
+        <Link
+          to={`/stories/${event.storyId}/events/${event.eventId}`}
+          style={{ fontSize: "0.85em" }}
+        >
+          View story
+        </Link>
+      </div>
+    </div>
+  );
 };

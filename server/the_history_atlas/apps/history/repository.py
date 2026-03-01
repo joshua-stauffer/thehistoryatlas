@@ -39,6 +39,9 @@ from the_history_atlas.apps.domain.models.history.get_events import (
     LocationRow,
     TagNames,
 )
+from the_history_atlas.apps.domain.models.history.get_nearby_events import (
+    NearbyEventRow,
+)
 from the_history_atlas.apps.domain.models.history.tables import (
     PersonModel,
     TagInstanceModel,
@@ -702,13 +705,35 @@ class Repository:
             for row in rows
         }
 
-    def create_summary(self, id: UUID, text: str) -> None:
+    def create_summary(
+        self,
+        id: UUID,
+        text: str,
+        datetime: str | None = None,
+        calendar_model: str | None = None,
+        precision: int | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        session: Session | None = None,
+    ) -> None:
         """Creates a new summary"""
         log.info(f"Creating a new summary: {text[:50]}...")
-        summary = Summary(id=id, text=text)
-        with Session(self._engine, future=True) as session:
+        summary = Summary(
+            id=id,
+            text=text,
+            datetime=datetime,
+            calendar_model=calendar_model,
+            precision=precision,
+            latitude=latitude,
+            longitude=longitude,
+        )
+        if session:
             session.add(summary)
-            session.commit()
+            session.flush()
+        else:
+            with Session(self._engine, future=True) as s:
+                s.add(summary)
+                s.commit()
 
     def create_citation(
         self,
@@ -1475,3 +1500,88 @@ class Repository:
             session.execute(text(update_stmt), params)
             session.commit()
         return result
+
+    def get_nearby_events(
+        self,
+        event_id: UUID,
+        calendar_model: str,
+        precision: int,
+        datetime_prefix: str,
+        min_lat: float,
+        max_lat: float,
+        min_lng: float,
+        max_lng: float,
+        session: Session | None = None,
+    ) -> list[NearbyEventRow]:
+        """Find events near the given event based on time and location."""
+        stmt = text(
+            """
+            SELECT DISTINCT
+                s.id AS event_id,
+                person_tag.id AS story_id,
+                person_name.name AS person_name,
+                sn.description AS person_description,
+                place_name.name AS place_name,
+                s.latitude,
+                s.longitude,
+                s.datetime,
+                s.precision,
+                s.calendar_model
+            FROM summaries s
+            -- join to person tag via tag_instances
+            JOIN tag_instances person_ti ON person_ti.summary_id = s.id
+            JOIN tags person_tag ON person_tag.id = person_ti.tag_id AND person_tag.type = 'PERSON'
+            JOIN tag_names person_tn ON person_tn.tag_id = person_tag.id
+            JOIN names person_name ON person_name.id = person_tn.name_id
+            -- person description from story_names
+            LEFT JOIN story_names sn ON sn.tag_id = person_tag.id
+            -- join to place tag via tag_instances
+            JOIN tag_instances place_ti ON place_ti.summary_id = s.id
+            JOIN tags place_tag ON place_tag.id = place_ti.tag_id AND place_tag.type = 'PLACE'
+            JOIN tag_names place_tn ON place_tn.tag_id = place_tag.id
+            JOIN names place_name ON place_name.id = place_tn.name_id
+            WHERE s.id != :event_id
+                AND s.calendar_model = :calendar_model
+                AND s.precision >= :precision
+                AND s.datetime LIKE :datetime_prefix
+                AND s.latitude BETWEEN :min_lat AND :max_lat
+                AND s.longitude BETWEEN :min_lng AND :max_lng
+        """
+        )
+
+        params = {
+            "event_id": event_id,
+            "calendar_model": calendar_model,
+            "precision": precision,
+            "datetime_prefix": datetime_prefix + "%",
+            "min_lat": min_lat,
+            "max_lat": max_lat,
+            "min_lng": min_lng,
+            "max_lng": max_lng,
+        }
+
+        should_close = False
+        if session is None:
+            session = Session(self._engine, future=True)
+            should_close = True
+
+        try:
+            rows = session.execute(stmt, params).all()
+            return [
+                NearbyEventRow(
+                    event_id=row.event_id,
+                    story_id=row.story_id,
+                    person_name=row.person_name,
+                    person_description=row.person_description,
+                    place_name=row.place_name,
+                    latitude=row.latitude,
+                    longitude=row.longitude,
+                    datetime=row.datetime,
+                    precision=row.precision,
+                    calendar_model=row.calendar_model,
+                )
+                for row in rows
+            ]
+        finally:
+            if should_close:
+                session.close()

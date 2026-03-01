@@ -62,6 +62,19 @@ jest.mock("../carousel", () => ({
   ),
 }));
 
+// Mock the SingleEntityMap to avoid leaflet issues
+jest.mock("../../../components/singleEntityMap", () => ({
+  SingleEntityMap: (props: any) => (
+    <div data-testid="mock-map">
+      {props.nearbyEvents?.length > 0 && (
+        <span data-testid="nearby-events-count">
+          {props.nearbyEvents.length}
+        </span>
+      )}
+    </div>
+  ),
+}));
+
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
@@ -77,13 +90,22 @@ const mockFetch = (events: HistoryEvent[] = [], index = 0) => {
   });
 };
 
+const mockNearbyFetch = () => {
+  return Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ events: [] }),
+  });
+};
+
 describe("HistoryEventView Integration Tests", () => {
   let router: ReturnType<typeof createMemoryRouter>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
-      if (url.includes("eventId=f423a520-006c-40d3-837f-a802fe299742")) {
+      if (url.includes("/history/nearby")) {
+        return mockNearbyFetch();
+      } else if (url.includes("eventId=f423a520-006c-40d3-837f-a802fe299742")) {
         return mockFetch([bachIsBorn, bachArrivesInLuneburg], 0);
       } else if (url.includes("eventId=7f78b709-9037-45cb-b68c-e43894be7de0")) {
         return mockFetch([bachArrivesInLuneburg, bachDedicatesMass], 0);

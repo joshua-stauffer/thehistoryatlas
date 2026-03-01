@@ -83,3 +83,20 @@ class StorySearchResponse(BaseModel):
     """Response model for story search results."""
 
     results: List[StorySearchResult]
+
+
+class NearbyEventResult(BaseModel):
+    eventId: UUID
+    storyId: UUID
+    personName: str
+    personDescription: Optional[str] = None
+    placeName: str
+    latitude: float
+    longitude: float
+    datetime: str
+    precision: int
+    calendarModel: str
+
+
+class NearbyEventsResponse(BaseModel):
+    events: List[NearbyEventResult]

@@ -2,15 +2,16 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import React, { useState, useRef, useEffect } from "react";
+import { MapBounds } from "../../components/singleEntityMap/singleEntityMap";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
-import { 
-  InputAdornment, 
-  TextField, 
-  Typography, 
-  Button, 
-  CircularProgress, 
+import {
+  InputAdornment,
+  TextField,
+  Typography,
+  Button,
+  CircularProgress,
   Paper,
   List,
   ListItem,
@@ -26,6 +27,7 @@ import EmblaCarousel from "./carousel";
 import { useCarouselState } from "./useCarouselState";
 import { StorySearchResult } from "../../api/stories";
 import { debouncedSearchStories } from "../../api/stories";
+import { useNearbyEvents } from "./useNearbyEvents";
 
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
@@ -47,6 +49,15 @@ export const HistoryEventView = () => {
   const navigate = useNavigate();
 
   const currentEvent = historyEvents[currentEventIndex];
+
+  const { nearbyEvents, loadNearbyEvents } = useNearbyEvents(currentEvent);
+
+  const handleBoundsChange = useCallback(
+    (bounds: MapBounds) => {
+      loadNearbyEvents(bounds);
+    },
+    [loadNearbyEvents],
+  );
 
   if (!currentEvent) {
     // Show a fallback UI or spinner during state transitions
@@ -253,6 +264,8 @@ export const HistoryEventView = () => {
                 size={"SM"}
                 title={currentEvent.map.locations[0].name}
                 zoom={6}
+                nearbyEvents={nearbyEvents}
+                onBoundsChange={handleBoundsChange}
               />
             </Hidden>
           </Box>
@@ -267,6 +280,8 @@ export const HistoryEventView = () => {
               size={"MD"}
               title={currentEvent.map.locations[0].name}
               zoom={7}
+              nearbyEvents={nearbyEvents}
+              onBoundsChange={handleBoundsChange}
             />
           </Hidden>
         </Grid>
