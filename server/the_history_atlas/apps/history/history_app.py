@@ -641,6 +641,8 @@ class HistoryApp:
         11: 11,
     }
 
+    MIN_NEARBY_PRECISION = 9
+
     def get_nearby_events(
         self,
         event_id: UUID,
@@ -652,24 +654,29 @@ class HistoryApp:
         min_lng: float,
         max_lng: float,
     ):
-        """Find events near the given event based on time prefix and spatial bounds."""
-        from the_history_atlas.apps.domain.models.history.get_nearby_events import (
-            NearbyEventRow,
-        )
+        """Find events near the given event based on time prefix and spatial bounds.
 
-        prefix_length = self.PRECISION_TO_PREFIX_LENGTH.get(precision, 5)
-        datetime_prefix = datetime[:prefix_length]
-
-        return self._repository.get_nearby_events(
-            event_id=event_id,
-            calendar_model=calendar_model,
-            precision=precision,
-            datetime_prefix=datetime_prefix,
-            min_lat=min_lat,
-            max_lat=max_lat,
-            min_lng=min_lng,
-            max_lng=max_lng,
-        )
+        If no results are found, reduces precision by 1 (broadening the time window)
+        and retries until precision reaches MIN_NEARBY_PRECISION (year), at which
+        point results are returned regardless.
+        """
+        current_precision = precision
+        while True:
+            prefix_length = self.PRECISION_TO_PREFIX_LENGTH.get(current_precision, 5)
+            datetime_prefix = datetime[:prefix_length]
+            results = self._repository.get_nearby_events(
+                event_id=event_id,
+                calendar_model=calendar_model,
+                precision=current_precision,
+                datetime_prefix=datetime_prefix,
+                min_lat=min_lat,
+                max_lat=max_lat,
+                min_lng=min_lng,
+                max_lng=max_lng,
+            )
+            if results or current_precision <= self.MIN_NEARBY_PRECISION:
+                return results
+            current_precision -= 1
 
     def check_time_exists(
         self, datetime: str, calendar_model: str, precision: int
