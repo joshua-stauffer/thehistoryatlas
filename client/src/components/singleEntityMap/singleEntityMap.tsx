@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "re
 import { mapTiles } from "../map/mapTiles";
 import L from "leaflet";
 import React, { useCallback, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { NearbyEvent } from "../../api/nearbyEvents";
 
 type Size = "SM" | "MD" | "LG";
@@ -163,6 +163,7 @@ const MapInsides = (props: MapProps) => {
 const NearbyEventMarker = ({ event }: { event: NearbyEvent }) => {
   const markerRef = useRef<L.Marker | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigate = useNavigate();
 
   const cancelClose = useCallback(() => {
     if (closeTimerRef.current) {
@@ -186,6 +187,7 @@ const NearbyEventMarker = ({ event }: { event: NearbyEvent }) => {
       eventHandlers={{
         mouseover: () => { cancelClose(); markerRef.current?.openPopup(); },
         mouseout: scheduleClose,
+        click: () => navigate(`/stories/${event.storyId}/events/${event.eventId}`),
       }}
     >
       <Popup>
