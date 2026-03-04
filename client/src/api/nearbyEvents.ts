@@ -5,6 +5,7 @@ export interface NearbyEvent {
   storyId: string;
   personName: string;
   personDescription: string | null;
+  summaryText: string | null;
   placeName: string;
   latitude: number;
   longitude: number;

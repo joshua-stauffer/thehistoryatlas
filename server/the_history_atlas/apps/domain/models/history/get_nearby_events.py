@@ -8,6 +8,7 @@ class NearbyEventRow(ConfiguredBaseModel):
     story_id: UUID
     person_name: str
     person_description: str | None
+    summary_text: str | None
     place_name: str
     latitude: float
     longitude: float

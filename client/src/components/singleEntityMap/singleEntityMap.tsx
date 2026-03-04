@@ -1,8 +1,10 @@
 import { Skeleton } from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import PlaceIcon from "@mui/icons-material/Place";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { mapTiles } from "../map/mapTiles";
 import L from "leaflet";
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { NearbyEvent } from "../../api/nearbyEvents";
 
@@ -199,31 +201,31 @@ interface NearbyEventPopupProps {
   event: NearbyEvent;
 }
 
-const NearbyEventPopup = ({ event }: NearbyEventPopupProps) => {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div style={{ minWidth: 150, maxWidth: 250 }}>
-      <div
-        style={{ cursor: "pointer", fontWeight: "bold", marginBottom: 4 }}
-        onClick={() => setExpanded(!expanded)}
-      >
-        {event.personName}
-      </div>
-      {expanded && event.personDescription && (
-        <div style={{ fontSize: "0.85em", color: "#555", marginBottom: 4 }}>
-          {event.personDescription}
-        </div>
-      )}
-      <div style={{ fontSize: "0.85em", color: "#666" }}>{event.placeName}</div>
-      <div style={{ marginTop: 6 }}>
-        <Link
-          to={`/stories/${event.storyId}/events/${event.eventId}`}
-          style={{ fontSize: "0.85em" }}
-        >
-          View story
-        </Link>
-      </div>
+const NearbyEventPopup = ({ event }: NearbyEventPopupProps) => (
+  <div style={{ minWidth: 160, maxWidth: 260 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+      <PersonIcon style={{ fontSize: 14, color: "#555" }} />
+      <span style={{ fontWeight: "bold", fontSize: "0.9em" }}>{event.personName}</span>
     </div>
-  );
-};
+    {event.personDescription && (
+      <div style={{ fontSize: "0.82em", color: "#555", marginBottom: 6, marginLeft: 18 }}>
+        {event.personDescription}
+      </div>
+    )}
+    {event.summaryText && (
+      <div style={{ fontSize: "0.82em", color: "#444", marginBottom: 6 }}>
+        {event.summaryText}
+      </div>
+    )}
+    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+      <PlaceIcon style={{ fontSize: 14, color: "#555" }} />
+      <span style={{ fontSize: "0.85em", color: "#555" }}>{event.placeName}</span>
+    </div>
+    <Link
+      to={`/stories/${event.storyId}/events/${event.eventId}`}
+      style={{ fontSize: "0.82em" }}
+    >
+      View story
+    </Link>
+  </div>
+);

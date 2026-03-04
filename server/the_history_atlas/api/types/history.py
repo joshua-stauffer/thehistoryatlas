@@ -90,6 +90,7 @@ class NearbyEventResult(BaseModel):
     storyId: UUID
     personName: str
     personDescription: Optional[str] = None
+    summaryText: Optional[str] = None
     placeName: str
     latitude: float
     longitude: float

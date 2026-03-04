@@ -151,6 +151,7 @@ def get_nearby_events_handler(
                 storyId=row.story_id,
                 personName=row.person_name,
                 personDescription=row.person_description,
+                summaryText=row.summary_text,
                 placeName=row.place_name,
                 latitude=row.latitude,
                 longitude=row.longitude,
