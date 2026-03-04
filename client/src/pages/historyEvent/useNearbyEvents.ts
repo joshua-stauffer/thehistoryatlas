@@ -27,10 +27,6 @@ export const useNearbyEvents = (currentEvent: HistoryEvent | undefined) => {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
     }
   }, [currentEvent?.id]);
 
