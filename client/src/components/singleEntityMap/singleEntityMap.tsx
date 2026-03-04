@@ -2,7 +2,7 @@ import { Skeleton } from "@mui/material";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { mapTiles } from "../map/mapTiles";
 import L from "leaflet";
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { NearbyEvent } from "../../api/nearbyEvents";
 
@@ -119,10 +119,20 @@ const MapInsides = (props: MapProps) => {
   // if new data is provided, update the map
   const { latitude, longitude, onBoundsChange } = props;
   const map = useMap();
-  map.flyTo([latitude, longitude], undefined, {
-    animate: false,
-    duration: 0.5,
-  });
+  const prevCoords = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  useEffect(() => {
+    if (
+      prevCoords.current?.latitude !== latitude ||
+      prevCoords.current?.longitude !== longitude
+    ) {
+      prevCoords.current = { latitude, longitude };
+      map.flyTo([latitude, longitude], undefined, {
+        animate: false,
+        duration: 0.5,
+      });
+    }
+  }, [map, latitude, longitude]);
 
   const reportBounds = useCallback(() => {
     if (!onBoundsChange) return;
