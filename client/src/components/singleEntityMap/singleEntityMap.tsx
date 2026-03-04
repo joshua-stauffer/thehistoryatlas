@@ -95,15 +95,7 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
       <MapInsides latitude={lat} longitude={long} onBoundsChange={onBoundsChange} />
       {markers}
       {nearbyEvents?.map((event) => (
-        <Marker
-          key={`${event.eventId}-${event.storyId}`}
-          position={[event.latitude, event.longitude]}
-          icon={nearbyEventIcon}
-        >
-          <Popup>
-            <NearbyEventPopup event={event} />
-          </Popup>
-        </Marker>
+        <NearbyEventMarker key={`${event.eventId}-${event.storyId}`} event={event} />
       ))}
     </MapContainer>
   );
@@ -156,6 +148,43 @@ const MapInsides = (props: MapProps) => {
   }, [reportBounds]);
 
   return null;
+};
+
+const NearbyEventMarker = ({ event }: { event: NearbyEvent }) => {
+  const markerRef = useRef<L.Marker | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelClose = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleClose = useCallback(() => {
+    cancelClose();
+    closeTimerRef.current = setTimeout(() => {
+      markerRef.current?.closePopup();
+    }, 200);
+  }, [cancelClose]);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[event.latitude, event.longitude]}
+      icon={nearbyEventIcon}
+      eventHandlers={{
+        mouseover: () => { cancelClose(); markerRef.current?.openPopup(); },
+        mouseout: scheduleClose,
+      }}
+    >
+      <Popup>
+        <div onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
+          <NearbyEventPopup event={event} />
+        </div>
+      </Popup>
+    </Marker>
+  );
 };
 
 interface NearbyEventPopupProps {
