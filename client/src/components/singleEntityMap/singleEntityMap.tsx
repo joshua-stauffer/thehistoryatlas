@@ -49,9 +49,9 @@ export interface SingleEntityMapProps {
 
 const nearbyEventIcon = L.divIcon({
   className: "nearby-event-flag",
-  html: '<div style="width: 12px; height: 12px; background-color: #E53E3E; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.4);"></div>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
+  html: '<div></div>',
+  iconSize: [10, 10],
+  iconAnchor: [5, 5],
   popupAnchor: [0, -8],
 });
 
