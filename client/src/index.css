@@ -9,6 +9,16 @@
   }
 }
 
+.primary-event-flag div {
+  width: 14px;
+  height: 14px;
+  background-color: rgba(60, 120, 200, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  box-shadow: 0 0 6px 2px rgba(60, 120, 200, 0.55),
+              0 0 14px 5px rgba(60, 120, 200, 0.2);
+}
+
 .nearby-event-flag div {
   width: 10px;
   height: 10px;

@@ -47,6 +47,14 @@ export interface SingleEntityMapProps {
   onBoundsChange?: (bounds: MapBounds) => void;
 }
 
+const primaryEventIcon = L.divIcon({
+  className: "primary-event-flag",
+  html: '<div></div>',
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+  popupAnchor: [0, -10],
+});
+
 const nearbyEventIcon = L.divIcon({
   className: "nearby-event-flag",
   html: '<div></div>',
@@ -64,7 +72,7 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
       return <Skeleton></Skeleton>;
     }
     markers = coords.map(({ latitude, longitude }, i) => (
-      <Marker key={`main-${i}`} position={[latitude, longitude]}>
+      <Marker key={`main-${i}`} position={[latitude, longitude]} icon={primaryEventIcon}>
         <Popup>{title}</Popup>
       </Marker>
     ));
