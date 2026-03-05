@@ -39,6 +39,7 @@ const mockNearbyEvents: NearbyEvent[] = [
     storyId: "story-1",
     personName: "Johann Sebastian Bach",
     personDescription: "German composer",
+    summaryText: "Bach was born in Eisenach.",
     placeName: "Eisenach",
     latitude: 50.97,
     longitude: 10.32,
@@ -51,6 +52,7 @@ const mockNearbyEvents: NearbyEvent[] = [
     storyId: "story-2",
     personName: "Georg Friedrich Händel",
     personDescription: null,
+    summaryText: null,
     placeName: "Halle",
     latitude: 51.48,
     longitude: 11.97,
@@ -93,21 +95,16 @@ describe("SingleEntityMap with nearby events", () => {
     expect(screen.getByText("Halle")).toBeInTheDocument();
   });
 
-  it("expand shows description when clicking person name", () => {
+  it("popup shows description and summary text always visible", () => {
     render(
       <MemoryRouter>
         <SingleEntityMap {...defaultProps} nearbyEvents={mockNearbyEvents} />
       </MemoryRouter>,
     );
 
-    // Description should not be visible initially
-    expect(screen.queryByText("German composer")).not.toBeInTheDocument();
-
-    // Click person name to expand
-    fireEvent.click(screen.getByText("Johann Sebastian Bach"));
-
-    // Description should now be visible
+    // Description and summary are always visible (no expand/collapse)
     expect(screen.getByText("German composer")).toBeInTheDocument();
+    expect(screen.getByText("Bach was born in Eisenach.")).toBeInTheDocument();
   });
 
   it("shows view story link for each nearby event", () => {
