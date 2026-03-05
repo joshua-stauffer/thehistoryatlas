@@ -31,9 +31,7 @@ def upgrade() -> None:
 
     # story_names is LEFT JOINed on tag_id but has no index, causing a full table scan
     # for every person tag resolved by the query.
-    op.execute(
-        text("CREATE INDEX idx_story_names_tag_id ON story_names (tag_id);")
-    )
+    op.execute(text("CREATE INDEX idx_story_names_tag_id ON story_names (tag_id);"))
 
 
 def downgrade() -> None:
