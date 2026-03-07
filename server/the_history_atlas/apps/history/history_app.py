@@ -216,11 +216,21 @@ class HistoryApp:
         summary_id = uuid4()
 
         with self._repository.Session() as session:
+            # Look up time and place data from tag IDs for denormalized summary fields
+            tag_ids = [tag.id for tag in tags]
+            time_data = self._resolve_time_data(tag_ids, session)
+            place_data = self._resolve_place_data(tag_ids, session)
+
             try:
-                # todo: update cached time/place specific values
                 self._repository.create_summary(
                     id=summary_id,
                     text=text,
+                    datetime=time_data.get("datetime"),
+                    calendar_model=time_data.get("calendar_model"),
+                    precision=time_data.get("precision"),
+                    latitude=place_data.get("latitude"),
+                    longitude=place_data.get("longitude"),
+                    session=session,
                 )
             except IntegrityError:
                 raise DuplicateEventError
@@ -258,6 +268,51 @@ class HistoryApp:
             session.commit()
 
         return summary_id
+
+    def _resolve_time_data(self, tag_ids: list[UUID], session: Session) -> dict:
+        """Look up time data from tag IDs for denormalized summary fields."""
+        from sqlalchemy import text
+
+        if not tag_ids:
+            return {}
+        stmt = text(
+            """
+            SELECT t.datetime, t.calendar_model, t.precision
+            FROM times t
+            WHERE t.id = ANY(:tag_ids)
+            LIMIT 1
+        """
+        )
+        row = session.execute(stmt, {"tag_ids": tag_ids}).first()
+        if row:
+            return {
+                "datetime": row[0],
+                "calendar_model": row[1],
+                "precision": row[2],
+            }
+        return {}
+
+    def _resolve_place_data(self, tag_ids: list[UUID], session: Session) -> dict:
+        """Look up place data from tag IDs for denormalized summary fields."""
+        from sqlalchemy import text
+
+        if not tag_ids:
+            return {}
+        stmt = text(
+            """
+            SELECT p.latitude, p.longitude
+            FROM places p
+            WHERE p.id = ANY(:tag_ids)
+            LIMIT 1
+        """
+        )
+        row = session.execute(stmt, {"tag_ids": tag_ids}).first()
+        if row:
+            return {
+                "latitude": row[0],
+                "longitude": row[1],
+            }
+        return {}
 
     def calculate_story_order(
         self,
@@ -574,6 +629,54 @@ class HistoryApp:
                 description=time.description,
             ),
         ]
+
+    # Precision → datetime prefix length mapping
+    # 6=millennium(2), 7=century(3), 8=decade(4), 9=year(5), 10=month(8), 11=day(11)
+    PRECISION_TO_PREFIX_LENGTH = {
+        6: 2,
+        7: 3,
+        8: 4,
+        9: 5,
+        10: 8,
+        11: 11,
+    }
+
+    MIN_NEARBY_PRECISION = 9
+
+    def get_nearby_events(
+        self,
+        event_id: UUID,
+        calendar_model: str,
+        precision: int,
+        datetime: str,
+        min_lat: float,
+        max_lat: float,
+        min_lng: float,
+        max_lng: float,
+    ):
+        """Find events near the given event based on time prefix and spatial bounds.
+
+        If no results are found, reduces precision by 1 (broadening the time window)
+        and retries until precision reaches MIN_NEARBY_PRECISION (year), at which
+        point results are returned regardless.
+        """
+        current_precision = precision
+        while True:
+            prefix_length = self.PRECISION_TO_PREFIX_LENGTH.get(current_precision, 5)
+            datetime_prefix = datetime[:prefix_length]
+            results = self._repository.get_nearby_events(
+                event_id=event_id,
+                calendar_model=calendar_model,
+                precision=current_precision,
+                datetime_prefix=datetime_prefix,
+                min_lat=min_lat,
+                max_lat=max_lat,
+                min_lng=min_lng,
+                max_lng=max_lng,
+            )
+            if results or current_precision <= self.MIN_NEARBY_PRECISION:
+                return results
+            current_precision -= 1
 
     def check_time_exists(
         self, datetime: str, calendar_model: str, precision: int

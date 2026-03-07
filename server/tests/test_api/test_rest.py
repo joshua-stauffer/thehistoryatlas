@@ -1483,3 +1483,114 @@ def test_null_story_order(
 
     summaries = [event.text for event in story.events]
     assert null_summary not in summaries
+
+
+class TestGetNearbyEvents:
+    def test_endpoint_returns_results(
+        self, client: TestClient, auth_headers: dict
+    ) -> None:
+        """Create two events at the same place/time and verify nearby returns the other."""
+        # Create shared entities
+        person = create_person(client, auth_headers)
+        place_input = WikiDataPlaceInput(
+            wikidata_id=generate_wikidata_id(),
+            wikidata_url=generate_wikidata_url("Q999"),
+            name="Nearby Test City",
+            latitude=51.0,
+            longitude=10.0,
+        )
+        place_resp = client.post(
+            "/wikidata/places",
+            data=place_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        place = WikiDataPlaceOutput.model_validate(place_resp.json())
+
+        time1_input = WikiDataTimeInput(
+            wikidata_id=generate_wikidata_id(),
+            wikidata_url=generate_wikidata_url("Q888"),
+            name="March 21, 1685",
+            date="+1685-03-21T00:00:00Z",
+            calendar_model="https://www.wikidata.org/wiki/Q12138",
+            precision=9,
+        )
+        time1_resp = client.post(
+            "/wikidata/times",
+            data=time1_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        time1 = WikiDataTimeOutput.model_validate(time1_resp.json())
+
+        time2_input = WikiDataTimeInput(
+            wikidata_id=generate_wikidata_id(),
+            wikidata_url=generate_wikidata_url("Q777"),
+            name="June 15, 1685",
+            date="+1685-06-15T00:00:00Z",
+            calendar_model="https://www.wikidata.org/wiki/Q12138",
+            precision=9,
+        )
+        time2_resp = client.post(
+            "/wikidata/times",
+            data=time2_input.model_dump_json(),
+            headers=auth_headers,
+        )
+        time2 = WikiDataTimeOutput.model_validate(time2_resp.json())
+
+        # Create two events
+        event1 = create_event(
+            client=client,
+            person=person,
+            place=place,
+            time=time1,
+            auth_headers=auth_headers,
+        )
+        event2 = create_event(
+            client=client,
+            person=person,
+            place=place,
+            time=time2,
+            auth_headers=auth_headers,
+        )
+
+        # Query nearby events
+        response = client.get(
+            "/history/nearby",
+            params={
+                "eventId": str(event1.id),
+                "calendarModel": "https://www.wikidata.org/wiki/Q12138",
+                "precision": 9,
+                "datetime": "+1685-03-21T00:00:00Z",
+                "minLat": 50.0,
+                "maxLat": 52.0,
+                "minLng": 9.0,
+                "maxLng": 11.0,
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert "events" in data
+        event_ids = [e["eventId"] for e in data["events"]]
+        assert str(event2.id) in event_ids
+
+    def test_missing_params_returns_422(self, client: TestClient) -> None:
+        """Verify that missing required params returns validation error."""
+        response = client.get("/history/nearby")
+        assert response.status_code == 422
+
+    def test_no_results(self, client: TestClient) -> None:
+        """Querying with no matching data returns empty list."""
+        response = client.get(
+            "/history/nearby",
+            params={
+                "eventId": str(uuid4()),
+                "calendarModel": "nonexistent",
+                "precision": 9,
+                "datetime": "+9999-01-01T00:00:00Z",
+                "minLat": 0.0,
+                "maxLat": 1.0,
+                "minLng": 0.0,
+                "maxLng": 1.0,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json() == {"events": []}

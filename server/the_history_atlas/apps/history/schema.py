@@ -13,6 +13,13 @@ class Summary(Base):
     id = Column(UUID(as_uuid=True), primary_key=True)
     text = Column(VARCHAR, unique=True)
 
+    # denormalized time/place fields for spatial-temporal queries
+    datetime = Column(VARCHAR, nullable=True)
+    calendar_model = Column(VARCHAR, nullable=True)
+    precision = Column(INTEGER, nullable=True)
+    latitude = Column(FLOAT, nullable=True)
+    longitude = Column(FLOAT, nullable=True)
+
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
 

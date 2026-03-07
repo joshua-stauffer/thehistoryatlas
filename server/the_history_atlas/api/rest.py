@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 
 from the_history_atlas.api.handlers.history import (
     get_history_handler,
+    get_nearby_events_handler,
     check_time_exists_handler,
 )
 from the_history_atlas.api.handlers.tags import (
@@ -29,6 +30,7 @@ from the_history_atlas.api.types.history import (
     TimeExistsRequest,
     TimeExistsResponse,
     StorySearchResponse,
+    NearbyEventsResponse,
 )
 from the_history_atlas.api.types.tags import (
     WikiDataPersonOutput,
@@ -190,6 +192,30 @@ def register_rest_endpoints(
     ) -> Story:
         return get_history_handler(
             apps=apps, event_id=eventId, story_id=storyId, direction=direction
+        )
+
+    @fastapi_app.get("/history/nearby", response_model=NearbyEventsResponse)
+    def get_nearby_events(
+        apps: Apps,
+        eventId: Annotated[UUID, Query()],
+        calendarModel: Annotated[str, Query()],
+        precision: Annotated[int, Query()],
+        datetime: Annotated[str, Query()],
+        minLat: Annotated[float, Query()],
+        maxLat: Annotated[float, Query()],
+        minLng: Annotated[float, Query()],
+        maxLng: Annotated[float, Query()],
+    ) -> NearbyEventsResponse:
+        return get_nearby_events_handler(
+            apps=apps,
+            event_id=eventId,
+            calendar_model=calendarModel,
+            precision=precision,
+            datetime=datetime,
+            min_lat=minLat,
+            max_lat=maxLat,
+            min_lng=minLng,
+            max_lng=maxLng,
         )
 
     @fastapi_app.post(path="/wikidata/people", response_model=WikiDataPersonOutput)

@@ -2,15 +2,17 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import React, { useState, useRef, useEffect } from "react";
+import { MapBounds } from "../../components/singleEntityMap/singleEntityMap";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
-import { 
-  InputAdornment, 
-  TextField, 
-  Typography, 
-  Button, 
-  CircularProgress, 
+import {
+  InputAdornment,
+  TextField,
+  Typography,
+  Button,
+  CircularProgress,
+  LinearProgress,
   Paper,
   List,
   ListItem,
@@ -26,6 +28,7 @@ import EmblaCarousel from "./carousel";
 import { useCarouselState } from "./useCarouselState";
 import { StorySearchResult } from "../../api/stories";
 import { debouncedSearchStories } from "../../api/stories";
+import { useNearbyEvents } from "./useNearbyEvents";
 
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
@@ -47,6 +50,15 @@ export const HistoryEventView = () => {
   const navigate = useNavigate();
 
   const currentEvent = historyEvents[currentEventIndex];
+
+  const { nearbyEvents, isLoading, loadNearbyEvents } = useNearbyEvents(currentEvent);
+
+  const handleBoundsChange = useCallback(
+    (bounds: MapBounds) => {
+      loadNearbyEvents(bounds);
+    },
+    [loadNearbyEvents],
+  );
 
   if (!currentEvent) {
     // Show a fallback UI or spinner during state transitions
@@ -248,12 +260,17 @@ export const HistoryEventView = () => {
 
             <Hidden mdUp>
               {/* Inline map for mobile */}
-              <SingleEntityMap
-                coords={coords}
-                size={"SM"}
-                title={currentEvent.map.locations[0].name}
-                zoom={6}
-              />
+              <Box sx={{ position: "relative" }}>
+                {isLoading && <MapLoadingBar />}
+                <SingleEntityMap
+                  coords={coords}
+                  size={"SM"}
+                  title={currentEvent.map.locations[0].name}
+                  zoom={6}
+                  nearbyEvents={nearbyEvents}
+                  onBoundsChange={handleBoundsChange}
+                />
+              </Box>
             </Hidden>
           </Box>
         </Grid>
@@ -262,18 +279,48 @@ export const HistoryEventView = () => {
           {/* right box desktop, bottom box mobile */}
           <Hidden smDown>
             {/* Standalone map for desktop */}
-            <SingleEntityMap
-              coords={coords}
-              size={"MD"}
-              title={currentEvent.map.locations[0].name}
-              zoom={7}
-            />
+            <Box sx={{ position: "relative", height: "100%" }}>
+              {isLoading && <MapLoadingBar />}
+              <SingleEntityMap
+                coords={coords}
+                size={"MD"}
+                title={currentEvent.map.locations[0].name}
+                zoom={7}
+                nearbyEvents={nearbyEvents}
+                onBoundsChange={handleBoundsChange}
+              />
+            </Box>
           </Hidden>
         </Grid>
       </Grid>
     </Box>
   );
 };
+
+const MapLoadingBar = () => (
+  <LinearProgress
+    sx={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "3px",
+      zIndex: 1000,
+      backgroundColor: "transparent",
+      "& .MuiLinearProgress-bar": {
+        backgroundColor: "rgba(52, 73, 94, 0.9)",
+        boxShadow:
+          "0 0 8px 3px rgba(52, 73, 94, 0.5), 0 0 18px 6px rgba(52, 73, 94, 0.2)",
+      },
+      "& .MuiLinearProgress-bar1Indeterminate": {
+        backgroundColor: "rgba(52, 73, 94, 0.9)",
+      },
+      "& .MuiLinearProgress-bar2Indeterminate": {
+        backgroundColor: "rgba(52, 73, 94, 0.7)",
+      },
+    }}
+  />
+);
 
 const buildUrlFor = (pointer: EventPointer) => {
   return `/stories/${pointer.storyId}/events/${pointer.id}`;

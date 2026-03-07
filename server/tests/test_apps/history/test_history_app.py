@@ -430,3 +430,158 @@ class TestCalculateStoryOrderRange:
             # Clean up all created tags
             for tag_id in cleanup_ids:
                 cleanup_tag(tag_id)
+
+
+class TestGetNearbyEvents:
+    def test_precision_to_prefix_mapping(self, history_app) -> None:
+        """Test that precision values map to correct datetime prefix lengths."""
+        mapping = history_app.PRECISION_TO_PREFIX_LENGTH
+        assert mapping[6] == 2  # millennium
+        assert mapping[7] == 3  # century
+        assert mapping[8] == 4  # decade
+        assert mapping[9] == 5  # year
+        assert mapping[10] == 8  # month
+        assert mapping[11] == 11  # day
+
+    def test_integration(self, history_app, cleanup_tag) -> None:
+        """Integration test: create events and query nearby."""
+        from the_history_atlas.apps.domain.core import (
+            TimeInput,
+            PlaceInput,
+            PersonInput,
+            TagInstance,
+            CitationInput,
+        )
+        import uuid as uuid_mod
+
+        cleanup_ids = []
+
+        try:
+            # Create a person
+            person = PersonInput(
+                wikidata_id=f"Q{uuid_mod.uuid4().hex[:8]}",
+                wikidata_url=f"https://www.wikidata.org/wiki/Q{uuid_mod.uuid4().hex[:8]}",
+                name="Nearby Test Person",
+                description="Person for nearby events test",
+            )
+            created_person = history_app.create_person(person=person)
+            cleanup_ids.append(created_person.id)
+
+            # Create a place
+            place = PlaceInput(
+                wikidata_id=f"Q{uuid_mod.uuid4().hex[:8]}",
+                wikidata_url=f"https://www.wikidata.org/wiki/Q{uuid_mod.uuid4().hex[:8]}",
+                name="Nearby Test Place",
+                latitude=51.0,
+                longitude=10.0,
+                description="Place for nearby events test",
+            )
+            created_place = history_app.create_place(place=place)
+            cleanup_ids.append(created_place.id)
+
+            # Create two times in the same year
+            time1 = TimeInput(
+                datetime=datetime(1685, 3, 21, tzinfo=timezone.utc),
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                name="March 21, 1685",
+                wikidata_id=None,
+                wikidata_url=None,
+                date="+1685-03-21T00:00:00Z",
+            )
+            created_time1 = history_app.create_time(time=time1)
+            cleanup_ids.append(created_time1.id)
+
+            time2 = TimeInput(
+                datetime=datetime(1685, 6, 15, tzinfo=timezone.utc),
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                name="June 15, 1685",
+                wikidata_id=None,
+                wikidata_url=None,
+                date="+1685-06-15T00:00:00Z",
+            )
+            created_time2 = history_app.create_time(time=time2)
+            cleanup_ids.append(created_time2.id)
+
+            # Create citation
+            citation = CitationInput(
+                wikidata_item_id="Q12345",
+                wikidata_item_title="Test Item",
+                wikidata_item_url="https://www.wikidata.org/wiki/Q12345",
+                access_date="2023-01-01",
+            )
+
+            # Create two events
+            event1_id = history_app.create_wikidata_event(
+                text="Nearby Test Person was at Nearby Test Place in March 1685",
+                tags=[
+                    TagInstance(
+                        id=created_person.id,
+                        start_char=0,
+                        stop_char=10,
+                        name="Nearby Test Person",
+                    ),
+                    TagInstance(
+                        id=created_time1.id,
+                        start_char=15,
+                        stop_char=25,
+                        name="March 21, 1685",
+                    ),
+                    TagInstance(
+                        id=created_place.id,
+                        start_char=30,
+                        stop_char=40,
+                        name="Nearby Test Place",
+                    ),
+                ],
+                citation=citation,
+                after=[],
+            )
+
+            event2_id = history_app.create_wikidata_event(
+                text="Nearby Test Person was at Nearby Test Place in June 1685",
+                tags=[
+                    TagInstance(
+                        id=created_person.id,
+                        start_char=0,
+                        stop_char=10,
+                        name="Nearby Test Person",
+                    ),
+                    TagInstance(
+                        id=created_time2.id,
+                        start_char=15,
+                        stop_char=25,
+                        name="June 15, 1685",
+                    ),
+                    TagInstance(
+                        id=created_place.id,
+                        start_char=30,
+                        stop_char=40,
+                        name="Nearby Test Place",
+                    ),
+                ],
+                citation=citation,
+                after=[],
+            )
+
+            # Query nearby events from event1's perspective
+            results = history_app.get_nearby_events(
+                event_id=event1_id,
+                calendar_model="http://www.wikidata.org/entity/Q1985727",
+                precision=9,
+                datetime="+1685-03-21T00:00:00Z",
+                min_lat=50.0,
+                max_lat=52.0,
+                min_lng=9.0,
+                max_lng=11.0,
+            )
+
+            assert len(results) >= 1
+            event_ids = [r.event_id for r in results]
+            assert event2_id in event_ids
+            assert event1_id not in event_ids
+
+        finally:
+            for tag_id in cleanup_ids:
+                cleanup_tag(tag_id)
