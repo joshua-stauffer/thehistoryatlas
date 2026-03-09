@@ -190,6 +190,8 @@ class HistoryApp:
                 "id": str(story_id),
                 "name": story_info["name"],
                 "description": story_info["description"],
+                "earliestYear": story_info["earliest_year"],
+                "latestYear": story_info["latest_year"],
             }
             for story_id, story_info in story_names.items()
         ]

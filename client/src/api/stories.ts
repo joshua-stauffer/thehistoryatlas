@@ -3,6 +3,9 @@ import { API_BASE_URL } from '../config';
 export interface StorySearchResult {
   name: string;
   id: string;
+  description?: string;
+  earliestYear?: number;
+  latestYear?: number;
 }
 
 export interface StorySearchResponse {

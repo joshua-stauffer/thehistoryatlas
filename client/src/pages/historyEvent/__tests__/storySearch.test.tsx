@@ -106,8 +106,8 @@ global.fetch = jest.fn();
 
 const mockSearchResults = {
   results: [
-    { id: "1", name: "The Life of Bach" },
-    { id: "2", name: "Classical Music History" },
+    { id: "1", name: "The Life of Bach", description: "Composer", earliestYear: 1685, latestYear: 1750 },
+    { id: "2", name: "Classical Music History", description: null, earliestYear: null, latestYear: null },
     { id: "3", name: "German Composers" },
   ],
 };
@@ -232,34 +232,36 @@ describe("Story Search Integration Tests", () => {
   it("displays search results when search button is clicked", async () => {
     // Mock the debounced search response
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "1", name: "The Life of Bach" }] as StorySearchResult[],
+      results: [{ id: "1", name: "The Life of Bach", description: "Composer", earliestYear: 1685, latestYear: 1750 }] as StorySearchResult[],
     } as StorySearchResponse);
-    
+
     const router = createRouter();
     render(<RouterProvider router={router} />);
 
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Bach" } });
-    
+
     // Click the search button
     const searchButton = screen.getByRole('button', { name: 'Search' });
     fireEvent.click(searchButton);
 
-    // Wait for the option to appear
+    // Wait for the primary name to appear
     await waitFor(
       () => {
-        const option = screen.getByText("The Life of Bach");
-        expect(option).toBeInTheDocument();
+        expect(screen.getByText("The Life of Bach")).toBeInTheDocument();
       },
       { timeout: 1000 },
     );
+
+    // Verify description and year range are shown as subtitle
+    expect(screen.getByText("Composer · 1685 – 1750")).toBeInTheDocument();
   });
 
   it("navigates to the correct story when selecting a search result", async () => {
-    // Mock the debounced search response
+    // Mock the debounced search response with a name distinct from the mock event title
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "1", name: "The Life of Bach" }] as StorySearchResult[],
+      results: [{ id: "42", name: "Mozart Piano Sonatas", description: "Composer", earliestYear: 1756, latestYear: 1791 }] as StorySearchResult[],
     } as StorySearchResponse);
 
     const router = createRouter();
@@ -268,24 +270,23 @@ describe("Story Search Integration Tests", () => {
     // Type in the search box and focus it
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.focus(searchInput);
-    fireEvent.change(searchInput, { target: { value: "Bach" } });
-    
+    fireEvent.change(searchInput, { target: { value: "Mozart" } });
+
     // Click the search button
     const searchButton = screen.getByRole('button', { name: 'Search' });
     fireEvent.click(searchButton);
 
-    // Wait for the search results to be populated and click the list item
-    await waitFor(async () => {
-      // Find the ListItem by its role (button) and text content
-      const listItem = await screen.findByRole('button', { name: "The Life of Bach" });
-      expect(listItem).toBeInTheDocument();
-      
-      // Click the list item
-      fireEvent.click(listItem);
-      
-      // Verify navigation happened
-      expect(mockNavigate).toHaveBeenCalledWith("/stories/1");
-    }, { timeout: 3000 });
+    // Wait for the primary text to appear in the dropdown
+    const primaryText = await screen.findByText("Mozart Piano Sonatas", {}, { timeout: 3000 });
+    expect(primaryText).toBeInTheDocument();
+
+    // Find the enclosing list item (has role="button" in MUI ListItem)
+    const listItem = primaryText.closest('[role="button"]') as HTMLElement;
+    expect(listItem).toBeInTheDocument();
+    fireEvent.click(listItem);
+
+    // Verify navigation happened
+    expect(mockNavigate).toHaveBeenCalledWith("/stories/42");
   });
 
   it("disables search button when input is empty", async () => {
@@ -320,7 +321,7 @@ describe("Story Search Integration Tests", () => {
       return new Promise(resolve => {
         setTimeout(() => {
           resolve({
-            results: [{ id: "1", name: "The Life of Bach" }] as StorySearchResult[],
+            results: [{ id: "1", name: "The Life of Bach", description: "Composer", earliestYear: 1685, latestYear: 1750 }] as StorySearchResult[],
           } as StorySearchResponse);
         }, 500);
       });
@@ -350,6 +351,62 @@ describe("Story Search Integration Tests", () => {
       },
       { timeout: 1000 },
     );
+  });
+
+  it("shows only year range when description is absent", async () => {
+    mockDebouncedSearchStories.mockResolvedValueOnce({
+      results: [{ id: "1", name: "Beethoven Symphonies", earliestYear: 1770, latestYear: 1827 }] as StorySearchResult[],
+    } as StorySearchResponse);
+
+    const router = createRouter();
+    render(<RouterProvider router={router} />);
+
+    const searchInput = await screen.findByLabelText("Search for a story");
+    fireEvent.change(searchInput, { target: { value: "Beethoven" } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Beethoven Symphonies")).toBeInTheDocument();
+      expect(screen.getByText("1770 – 1827")).toBeInTheDocument();
+    });
+  });
+
+  it("shows only description when year range is absent", async () => {
+    mockDebouncedSearchStories.mockResolvedValueOnce({
+      results: [{ id: "1", name: "Beethoven Symphonies", description: "German Classical composer" }] as StorySearchResult[],
+    } as StorySearchResponse);
+
+    const router = createRouter();
+    render(<RouterProvider router={router} />);
+
+    const searchInput = await screen.findByLabelText("Search for a story");
+    fireEvent.change(searchInput, { target: { value: "Beethoven" } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Beethoven Symphonies")).toBeInTheDocument();
+      expect(screen.getByText("German Classical composer")).toBeInTheDocument();
+    });
+  });
+
+  it("shows no subtitle when description and year range are both absent", async () => {
+    mockDebouncedSearchStories.mockResolvedValueOnce({
+      results: [{ id: "1", name: "Beethoven Symphonies" }] as StorySearchResult[],
+    } as StorySearchResponse);
+
+    const router = createRouter();
+    render(<RouterProvider router={router} />);
+
+    const searchInput = await screen.findByLabelText("Search for a story");
+    fireEvent.change(searchInput, { target: { value: "Beethoven" } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Beethoven Symphonies")).toBeInTheDocument();
+    });
+    // No subtitle text should appear
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/–/)).not.toBeInTheDocument();
   });
 
   it("handles empty search results", async () => {

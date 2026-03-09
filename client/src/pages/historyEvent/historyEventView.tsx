@@ -30,6 +30,15 @@ import { StorySearchResult } from "../../api/stories";
 import { debouncedSearchStories } from "../../api/stories";
 import { useNearbyEvents } from "./useNearbyEvents";
 
+const buildSearchResultSubtitle = (result: StorySearchResult): string | undefined => {
+  const parts: string[] = [];
+  if (result.description) parts.push(result.description);
+  if (result.earliestYear != null || result.latestYear != null) {
+    parts.push(`${result.earliestYear ?? '?'} – ${result.latestYear ?? '?'}`);
+  }
+  return parts.length > 0 ? parts.join(' · ') : undefined;
+};
+
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
     useLoaderData() as HistoryEventData;
@@ -192,13 +201,16 @@ export const HistoryEventView = () => {
                     <List>
                       {searchResults.length > 0 ? (
                         searchResults.map((result) => (
-                          <ListItem 
-                            key={result.id} 
-                            button 
+                          <ListItem
+                            key={result.id}
+                            button
                             onClick={() => handleResultClick(result)}
                             sx={{ fontFamily: sansSerifFont }}
                           >
-                            <ListItemText primary={result.name} />
+                            <ListItemText
+                              primary={result.name}
+                              secondary={buildSearchResultSubtitle(result)}
+                            />
                           </ListItem>
                         ))
                       ) : (
