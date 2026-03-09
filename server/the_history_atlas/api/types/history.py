@@ -73,10 +73,13 @@ class TimeExistsResponse(BaseModel):
 
 
 class StorySearchResult(BaseModel):
-    """A story search result containing the story's ID and name."""
+    """A story search result containing the story's ID, name, description, and year range."""
 
     id: str
     name: str
+    description: Optional[str] = None
+    earliestYear: Optional[int] = None
+    latestYear: Optional[int] = None
 
 
 class StorySearchResponse(BaseModel):

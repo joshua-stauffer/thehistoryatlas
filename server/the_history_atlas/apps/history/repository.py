@@ -686,22 +686,44 @@ class Repository:
 
     def get_story_names(
         self, story_ids: tuple[UUID, ...], session: Session
-    ) -> dict[UUID, dict[str, str]]:
+    ) -> dict[UUID, dict]:
         rows = session.execute(
             text(
                 """
-                select
-                    tag_id as story_id,
-                    name as story_name,
-                    description
-                from story_names
-                where tag_id in :story_ids;
+                SELECT
+                    sn.tag_id AS story_id,
+                    sn.name AS story_name,
+                    sn.description,
+                    MIN(
+                        CASE
+                            WHEN s.datetime LIKE '+%' THEN CAST(SUBSTRING(s.datetime, 2, 4) AS INTEGER)
+                            WHEN s.datetime LIKE '-%' THEN -CAST(SUBSTRING(s.datetime, 2, 4) AS INTEGER)
+                            ELSE NULL
+                        END
+                    ) AS earliest_year,
+                    MAX(
+                        CASE
+                            WHEN s.datetime LIKE '+%' THEN CAST(SUBSTRING(s.datetime, 2, 4) AS INTEGER)
+                            WHEN s.datetime LIKE '-%' THEN -CAST(SUBSTRING(s.datetime, 2, 4) AS INTEGER)
+                            ELSE NULL
+                        END
+                    ) AS latest_year
+                FROM story_names sn
+                LEFT JOIN tag_instances ti ON ti.tag_id = sn.tag_id
+                LEFT JOIN summaries s ON s.id = ti.summary_id AND s.datetime IS NOT NULL
+                WHERE sn.tag_id IN :story_ids
+                GROUP BY sn.tag_id, sn.name, sn.description;
             """
             ),
             {"story_ids": story_ids},
         ).all()
         return {
-            row.story_id: {"name": row.story_name, "description": row.description}
+            row.story_id: {
+                "name": row.story_name,
+                "description": row.description,
+                "earliest_year": row.earliest_year,
+                "latest_year": row.latest_year,
+            }
             for row in rows
         }
 

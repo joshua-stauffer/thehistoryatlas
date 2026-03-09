@@ -1360,6 +1360,7 @@ class TestStorySearch:
             wikidata_id="Q123456",
             wikidata_url="https://www.wikidata.org/wiki/Q123456",
             name="Test Person For Search",
+            description="A person used for search testing",
         )
         person_response = client.post(
             "/wikidata/people",
@@ -1381,9 +1382,16 @@ class TestStorySearch:
         result = data["results"][0]
         assert "id" in result
         assert "name" in result
+        assert "description" in result
+        assert "earliestYear" in result
+        assert "latestYear" in result
         assert isinstance(result["id"], str)
         assert isinstance(result["name"], str)
         assert "test person" in result["name"].lower()
+        assert result["description"] == "A person used for search testing"
+        # No events created, so year range should be null
+        assert result["earliestYear"] is None
+        assert result["latestYear"] is None
 
     def test_partial_match(self, client: TestClient, auth_headers: dict) -> None:
         """Test that partial text matches return results."""
@@ -1409,6 +1417,11 @@ class TestStorySearch:
         data = response.json()
         assert len(data["results"]) > 0
         assert any("humboldt" in result["name"].lower() for result in data["results"])
+        # All results should include the new fields
+        for result in data["results"]:
+            assert "description" in result
+            assert "earliestYear" in result
+            assert "latestYear" in result
 
 
 @pytest.mark.parametrize("EVENT_COUNT", [3])
