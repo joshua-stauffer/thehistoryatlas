@@ -229,7 +229,7 @@ class TestSearchTagsByNameAndType:
         )
 
         match = next(r for r in result if r["id"] == tag_id)
-        assert set(match.keys()) == {"id", "name", "type"}
+        assert set(match.keys()) == {"id", "name", "type", "description", "earliest_date", "latest_date"}
 
     def test_filters_by_type(self, repo, engine):
         with Session(engine, future=True) as session:
