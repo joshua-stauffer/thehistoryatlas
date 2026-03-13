@@ -1609,3 +1609,356 @@ class Repository:
         finally:
             if should_close:
                 session.close()
+
+    # --- Text Reader methods ---
+
+    def search_tags_by_name_and_type(self, name: str, tag_type: str) -> list[dict]:
+        """Fuzzy search tags by name filtered by type (PERSON, PLACE, TIME).
+
+        Also returns description (from story_names) and earliest/latest summary
+        dates (from tag_instances → summaries) to aid entity disambiguation.
+        """
+        if not name:
+            return []
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    WITH matches AS (
+                        SELECT DISTINCT
+                            tags.id,
+                            names.name,
+                            tags.type,
+                            similarity(names.name, :search_term) AS sim
+                        FROM tags
+                        JOIN tag_names ON tags.id = tag_names.tag_id
+                        JOIN names ON names.id = tag_names.name_id
+                        WHERE tags.type = :tag_type
+                          AND (similarity(names.name, :search_term) > 0.3
+                               OR names.name ILIKE :like_pattern)
+                        ORDER BY sim DESC
+                        LIMIT 20
+                    )
+                    SELECT
+                        m.id,
+                        m.name,
+                        m.type,
+                        m.sim,
+                        (SELECT sn.description
+                           FROM story_names sn
+                          WHERE sn.tag_id = m.id
+                            AND sn.description IS NOT NULL
+                          LIMIT 1) AS description,
+                        (SELECT MIN(s.datetime)
+                           FROM tag_instances ti
+                           JOIN summaries s ON s.id = ti.summary_id
+                          WHERE ti.tag_id = m.id) AS earliest_date,
+                        (SELECT MAX(s.datetime)
+                           FROM tag_instances ti
+                           JOIN summaries s ON s.id = ti.summary_id
+                          WHERE ti.tag_id = m.id) AS latest_date
+                    FROM matches m
+                    ORDER BY m.sim DESC
+                    """
+                ),
+                {
+                    "tag_type": tag_type,
+                    "search_term": name,
+                    "like_pattern": f"%{name}%",
+                },
+            ).all()
+            return [
+                {
+                    "id": row.id,
+                    "name": row.name,
+                    "type": row.type,
+                    "description": row.description,
+                    "earliest_date": row.earliest_date,
+                    "latest_date": row.latest_date,
+                }
+                for row in rows
+            ]
+
+    def search_places_by_name_and_coordinates(
+        self,
+        name: str = "",
+        latitude: float | None = None,
+        longitude: float | None = None,
+        radius: float = 1.0,
+    ) -> list[dict]:
+        """Search places by name and/or coordinates."""
+        results = []
+
+        with Session(self._engine, future=True) as session:
+            if name:
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT DISTINCT
+                            tags.id,
+                            names.name,
+                            places.latitude,
+                            places.longitude,
+                            similarity(names.name, :search_term) AS sim
+                        FROM tags
+                        JOIN tag_names ON tags.id = tag_names.tag_id
+                        JOIN names ON names.id = tag_names.name_id
+                        JOIN places ON places.id = tags.id
+                        WHERE tags.type = 'PLACE'
+                          AND (similarity(names.name, :search_term) > 0.3
+                               OR names.name ILIKE :like_pattern)
+                        ORDER BY sim DESC
+                        LIMIT 20
+                        """
+                    ),
+                    {
+                        "search_term": name,
+                        "like_pattern": f"%{name}%",
+                    },
+                ).all()
+                results.extend(
+                    [
+                        {
+                            "id": row.id,
+                            "name": row.name,
+                            "latitude": row.latitude,
+                            "longitude": row.longitude,
+                        }
+                        for row in rows
+                    ]
+                )
+
+            if latitude is not None and longitude is not None:
+                rows = session.execute(
+                    text(
+                        """
+                        SELECT DISTINCT
+                            tags.id,
+                            names.name,
+                            places.latitude,
+                            places.longitude
+                        FROM tags
+                        JOIN tag_names ON tags.id = tag_names.tag_id
+                        JOIN names ON names.id = tag_names.name_id
+                        JOIN places ON places.id = tags.id
+                        WHERE tags.type = 'PLACE'
+                          AND places.latitude BETWEEN :min_lat AND :max_lat
+                          AND places.longitude BETWEEN :min_lng AND :max_lng
+                        LIMIT 20
+                        """
+                    ),
+                    {
+                        "min_lat": latitude - radius,
+                        "max_lat": latitude + radius,
+                        "min_lng": longitude - radius,
+                        "max_lng": longitude + radius,
+                    },
+                ).all()
+                existing_ids = {r["id"] for r in results}
+                results.extend(
+                    [
+                        {
+                            "id": row.id,
+                            "name": row.name,
+                            "latitude": row.latitude,
+                            "longitude": row.longitude,
+                        }
+                        for row in rows
+                        if row.id not in existing_ids
+                    ]
+                )
+
+        return results
+
+    def find_matching_summary(
+        self,
+        person_ids: list[UUID],
+        place_id: UUID,
+        datetime_val: str,
+        calendar_model: str,
+        precision: int,
+    ) -> dict | None:
+        """Find a summary that matches the given person, place, and time."""
+        with Session(self._engine, future=True) as session:
+            # Find summaries that have tag_instances for ALL given person_ids and the place_id
+            all_tag_ids = list(person_ids) + [place_id]
+            row = session.execute(
+                text(
+                    """
+                    SELECT s.id as summary_id, s.text as summary_text,
+                           BOOL_OR(c.wikidata_item_id IS NOT NULL) as has_wikidata_citation
+                    FROM summaries s
+                    JOIN tag_instances ti ON ti.summary_id = s.id
+                    LEFT JOIN citations c ON c.summary_id = s.id
+                    WHERE s.datetime = :datetime_val
+                      AND s.calendar_model = :calendar_model
+                      AND s.precision = :precision
+                      AND ti.tag_id = ANY(:tag_ids)
+                    GROUP BY s.id, s.text
+                    HAVING COUNT(DISTINCT ti.tag_id) = :tag_count
+                    LIMIT 1
+                    """
+                ),
+                {
+                    "datetime_val": datetime_val,
+                    "calendar_model": calendar_model,
+                    "precision": precision,
+                    "tag_ids": all_tag_ids,
+                    "tag_count": len(all_tag_ids),
+                },
+            ).one_or_none()
+            if row:
+                return {
+                    "summary_id": row.summary_id,
+                    "summary_text": row.summary_text,
+                    "has_wikidata_citation": row.has_wikidata_citation,
+                }
+            return None
+
+    def create_text_reader_story(
+        self,
+        id: UUID,
+        name: str,
+        description: str | None = None,
+        source_id: UUID | None = None,
+    ) -> None:
+        """Create a new text-reader story."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    INSERT INTO stories (id, name, description, source_id, created_at)
+                    VALUES (:id, :name, :description, :source_id, now())
+                    """
+                ),
+                {
+                    "id": id,
+                    "name": name,
+                    "description": description,
+                    "source_id": source_id,
+                },
+            )
+            session.commit()
+
+    def add_summary_to_story(
+        self, story_id: UUID, summary_id: UUID, position: int
+    ) -> None:
+        """Add a summary to a text-reader story at a given position."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    INSERT INTO story_summaries (id, story_id, summary_id, position)
+                    VALUES (:id, :story_id, :summary_id, :position)
+                    """
+                ),
+                {
+                    "id": uuid4(),
+                    "story_id": story_id,
+                    "summary_id": summary_id,
+                    "position": position,
+                },
+            )
+            session.commit()
+
+    def get_story_by_source_id(self, source_id: UUID) -> dict | None:
+        """Get a text-reader story by its source_id."""
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    SELECT id, name, description, source_id
+                    FROM stories WHERE source_id = :source_id
+                    LIMIT 1
+                    """
+                ),
+                {"source_id": source_id},
+            ).one_or_none()
+            if row:
+                return {
+                    "id": row.id,
+                    "name": row.name,
+                    "description": row.description,
+                    "source_id": row.source_id,
+                }
+            return None
+
+    def get_next_story_position(self, story_id: UUID) -> int:
+        """Get the next available position for a story."""
+        with Session(self._engine, future=True) as session:
+            max_pos = session.execute(
+                text(
+                    """
+                    SELECT COALESCE(MAX(position), -1) + 1
+                    FROM story_summaries WHERE story_id = :story_id
+                    """
+                ),
+                {"story_id": story_id},
+            ).scalar()
+            return max_pos
+
+    def update_summary_text(self, summary_id: UUID, new_text: str) -> None:
+        """Update the text of an existing summary."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    UPDATE summaries SET text = :new_text
+                    WHERE id = :summary_id
+                    """
+                ),
+                {"summary_id": summary_id, "new_text": new_text},
+            )
+            session.commit()
+
+    def add_citation_to_summary(
+        self,
+        summary_id: UUID,
+        source_id: UUID,
+        citation_text: str,
+        page_num: int | None = None,
+        access_date: str | None = None,
+    ) -> UUID:
+        """Add a new citation to an existing summary."""
+        citation_id = uuid4()
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    INSERT INTO citations (id, text, source_id, summary_id, page_num, access_date)
+                    VALUES (:id, :text, :source_id, :summary_id, :page_num, :access_date)
+                    """
+                ),
+                {
+                    "id": citation_id,
+                    "text": citation_text,
+                    "source_id": source_id,
+                    "summary_id": summary_id,
+                    "page_num": page_num,
+                    "access_date": access_date,
+                },
+            )
+            session.commit()
+        return citation_id
+
+    def create_source_with_session(
+        self,
+        id: UUID,
+        title: str,
+        author: str,
+        publisher: str,
+        pub_date: str | None,
+    ) -> None:
+        """Create a source and return immediately (no citation linking)."""
+        with Session(self._engine, future=True) as session:
+            source = Source(
+                id=id,
+                title=title,
+                author=author,
+                publisher=publisher,
+                pub_date=pub_date,
+                kwargs={},
+            )
+            session.add(source)
+            session.commit()
+            self._add_to_source_trie(source)

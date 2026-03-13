@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP, Index
+from sqlalchemy import Column, String, TIMESTAMP, Index, Boolean
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql.schema import ForeignKey, Table, UniqueConstraint
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, FLOAT, UUID, JSONB
@@ -206,4 +206,52 @@ class Name(Base):
             postgresql_using="gin",
             postgresql_ops={"name": "gin_trgm_ops"},
         ),
+    )
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    key_hash = Column(VARCHAR, nullable=False, unique=True)
+    user_id = Column(VARCHAR, ForeignKey("users.id"), nullable=False)
+    name = Column(VARCHAR, nullable=False)
+    created_at = Column(TIMESTAMP, nullable=False)
+    last_used_at = Column(TIMESTAMP, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+
+    __table_args__ = (Index("idx_api_keys_key_hash", key_hash),)
+
+
+class TextReaderStory(Base):
+    """A curated story grouping summaries from a text source."""
+
+    __tablename__ = "stories"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    name = Column(VARCHAR, nullable=False)
+    description = Column(VARCHAR, nullable=True)
+    source_id = Column(UUID(as_uuid=True), ForeignKey("sources.id"), nullable=True)
+    created_at = Column(TIMESTAMP, nullable=False)
+
+    summaries = relationship("StorySummary", back_populates="story")
+
+    __table_args__ = (Index("idx_stories_source_id", source_id),)
+
+
+class StorySummary(Base):
+    """Links a summary to a text-reader story with ordering."""
+
+    __tablename__ = "story_summaries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    story_id = Column(UUID(as_uuid=True), ForeignKey("stories.id"), nullable=False)
+    summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False)
+    position = Column(INTEGER, nullable=False)
+
+    story = relationship("TextReaderStory", back_populates="summaries")
+
+    __table_args__ = (
+        UniqueConstraint("story_id", "summary_id", name="uq_story_summary"),
+        UniqueConstraint("story_id", "position", name="uq_story_position"),
     )
