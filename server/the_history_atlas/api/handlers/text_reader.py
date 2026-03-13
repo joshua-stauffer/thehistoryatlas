@@ -42,7 +42,14 @@ def search_people_handler(apps: AppManager, name: str) -> PeopleSearchResult:
     candidates = apps.history_app.search_people_by_name(name=name)
     return PeopleSearchResult(
         candidates=[
-            PersonSearchCandidate(id=c["id"], name=c["name"], type=c["type"])
+            PersonSearchCandidate(
+                id=c["id"],
+                name=c["name"],
+                type=c["type"],
+                description=c.get("description"),
+                earliest_date=c.get("earliest_date"),
+                latest_date=c.get("latest_date"),
+            )
             for c in candidates
         ]
     )

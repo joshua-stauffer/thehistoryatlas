@@ -4,7 +4,7 @@ import fitz  # PyMuPDF
 
 log = logging.getLogger(__name__)
 
-TARGET_CHUNK_SIZE = 100_000  # ~25K tokens
+TARGET_CHUNK_SIZE = 25_000  # ~6K tokens — keeps output volume manageable for dense text
 
 
 class PageText:
@@ -14,10 +14,36 @@ class PageText:
 
 
 class Chunk:
-    def __init__(self, text: str, start_page: int, end_page: int):
+    def __init__(
+        self,
+        text: str,
+        start_page: int,
+        end_page: int,
+        page_starts: list[tuple[int, int]] | None = None,
+    ):
         self.text = text
         self.start_page = start_page
         self.end_page = end_page
+        # (char_offset_within_chunk, page_num) sorted ascending
+        self._page_starts: list[tuple[int, int]] = page_starts or []
+
+    def page_for_char(self, char_offset: int) -> int:
+        """Return the page number for the given char offset within this chunk."""
+        page = self.start_page
+        for offset, page_num in self._page_starts:
+            if offset <= char_offset:
+                page = page_num
+            else:
+                break
+        return page
+
+    def page_for_excerpt(self, excerpt: str) -> int:
+        """Find the page number for an excerpt string within this chunk.
+        Falls back to start_page if the excerpt is not found."""
+        idx = self.text.find(excerpt[:80])  # match on first 80 chars to handle truncation
+        if idx != -1:
+            return self.page_for_char(idx)
+        return self.start_page
 
     def __repr__(self):
         return (
@@ -110,16 +136,26 @@ def chunk_pages(
 
         chunk_text = full_text[pos:end]
 
-        # Determine page range for this chunk
+        # Determine page range and per-page offsets within this chunk
         start_page = pages[0].page_num
         end_page = pages[-1].page_num
+        chunk_page_starts: list[tuple[int, int]] = []
         for offset, page_num in page_boundaries:
             if offset <= pos:
                 start_page = page_num
             if offset < end:
                 end_page = page_num
+            if pos < offset < end:
+                chunk_page_starts.append((offset - pos, page_num))
 
-        chunks.append(Chunk(text=chunk_text, start_page=start_page, end_page=end_page))
+        chunks.append(
+            Chunk(
+                text=chunk_text,
+                start_page=start_page,
+                end_page=end_page,
+                page_starts=chunk_page_starts,
+            )
+        )
         pos = end
 
     log.info(f"Created {len(chunks)} chunks from {len(pages)} pages")

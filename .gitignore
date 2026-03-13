@@ -60,3 +60,4 @@ secrets.yaml
 
 
 text_reader/sources
+text_reader/logs/

@@ -127,6 +127,9 @@ class PersonSearchCandidate(BaseModel):
     id: UUID
     name: str
     type: str
+    description: str | None = None
+    earliest_date: str | None = None
+    latest_date: str | None = None
 
 
 class PeopleSearchResult(BaseModel):

@@ -36,14 +36,17 @@ class EntityResolver:
         place = self._resolve_place(event.place)
         time = self._resolve_time(event.time)
 
-        # Check for duplicate summary
-        match = self._rest.find_matching_summary(
-            person_ids=[p.id for p in people],
-            place_id=place.id,
-            datetime=time.date,
-            calendar_model=time.calendar_model,
-            precision=time.precision,
-        )
+        # Check for duplicate summary (requires at least one person)
+        if people:
+            match = self._rest.find_matching_summary(
+                person_ids=[p.id for p in people],
+                place_id=place.id,
+                datetime=time.date,
+                calendar_model=time.calendar_model,
+                precision=time.precision,
+            )
+        else:
+            match = {}
 
         is_duplicate = match.get("found", False)
         duplicate_has_wikidata = match.get("has_wikidata_citation", False)

@@ -3,11 +3,14 @@
 
 import argparse
 import logging
+import re
 import sys
+from datetime import datetime
+from pathlib import Path
 
 from text_reader.claude_client import ClaudeClient
 from text_reader.config import Config
-from text_reader.extractor import run_pipeline
+from text_reader.extractor import run_batch_pipeline, run_pipeline
 from text_reader.geonames import GeoNamesClient
 from text_reader.rest_client import RestClient
 
@@ -54,6 +57,11 @@ def main():
         help="Server URL (overrides THA_SERVER_URL env var)",
     )
     parser.add_argument(
+        "--batch",
+        action="store_true",
+        help="Use the Anthropic Message Batches API (50%% discount, no interactive review)",
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true", help="Verbose logging"
     )
 
@@ -61,10 +69,23 @@ def main():
 
     # Configure logging
     log_level = logging.DEBUG if args.verbose else logging.INFO
+    log_format = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+
+    slug = re.sub(r"[^\w]+", "_", args.title.lower()).strip("_")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_dir = Path(__file__).parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    log_path = log_dir / f"{timestamp}_{slug}.log"
+
     logging.basicConfig(
         level=log_level,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+        format=log_format,
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(log_path, encoding="utf-8"),
+        ],
     )
+    logging.getLogger(__name__).info(f"Logging to {log_path}")
 
     # Load config
     try:
@@ -93,7 +114,7 @@ def main():
     print()
 
     # Run pipeline
-    run_pipeline(
+    pipeline_kwargs = dict(
         file_path=args.file,
         title=args.title,
         author=args.author,
@@ -102,11 +123,14 @@ def main():
         model=args.model,
         start_page=args.start_page,
         end_page=args.end_page,
-        skip_review=args.skip_review,
         rest_client=rest_client,
         claude_client=claude_client,
         geonames_client=geonames_client,
     )
+    if args.batch:
+        run_batch_pipeline(**pipeline_kwargs)
+    else:
+        run_pipeline(skip_review=args.skip_review, **pipeline_kwargs)
 
 
 if __name__ == "__main__":

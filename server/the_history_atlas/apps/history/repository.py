@@ -1613,26 +1613,52 @@ class Repository:
     # --- Text Reader methods ---
 
     def search_tags_by_name_and_type(self, name: str, tag_type: str) -> list[dict]:
-        """Fuzzy search tags by name filtered by type (PERSON, PLACE, TIME)."""
+        """Fuzzy search tags by name filtered by type (PERSON, PLACE, TIME).
+
+        Also returns description (from story_names) and earliest/latest summary
+        dates (from tag_instances → summaries) to aid entity disambiguation.
+        """
         if not name:
             return []
         with Session(self._engine, future=True) as session:
             rows = session.execute(
                 text(
                     """
-                    SELECT DISTINCT
-                        tags.id,
-                        names.name,
-                        tags.type,
-                        similarity(names.name, :search_term) AS sim
-                    FROM tags
-                    JOIN tag_names ON tags.id = tag_names.tag_id
-                    JOIN names ON names.id = tag_names.name_id
-                    WHERE tags.type = :tag_type
-                      AND (similarity(names.name, :search_term) > 0.3
-                           OR names.name ILIKE :like_pattern)
-                    ORDER BY sim DESC
-                    LIMIT 20
+                    WITH matches AS (
+                        SELECT DISTINCT
+                            tags.id,
+                            names.name,
+                            tags.type,
+                            similarity(names.name, :search_term) AS sim
+                        FROM tags
+                        JOIN tag_names ON tags.id = tag_names.tag_id
+                        JOIN names ON names.id = tag_names.name_id
+                        WHERE tags.type = :tag_type
+                          AND (similarity(names.name, :search_term) > 0.3
+                               OR names.name ILIKE :like_pattern)
+                        ORDER BY sim DESC
+                        LIMIT 20
+                    )
+                    SELECT
+                        m.id,
+                        m.name,
+                        m.type,
+                        m.sim,
+                        (SELECT sn.description
+                           FROM story_names sn
+                          WHERE sn.tag_id = m.id
+                            AND sn.description IS NOT NULL
+                          LIMIT 1) AS description,
+                        (SELECT MIN(s.datetime)
+                           FROM tag_instances ti
+                           JOIN summaries s ON s.id = ti.summary_id
+                          WHERE ti.tag_id = m.id) AS earliest_date,
+                        (SELECT MAX(s.datetime)
+                           FROM tag_instances ti
+                           JOIN summaries s ON s.id = ti.summary_id
+                          WHERE ti.tag_id = m.id) AS latest_date
+                    FROM matches m
+                    ORDER BY m.sim DESC
                     """
                 ),
                 {
@@ -1641,7 +1667,17 @@ class Repository:
                     "like_pattern": f"%{name}%",
                 },
             ).all()
-            return [{"id": row.id, "name": row.name, "type": row.type} for row in rows]
+            return [
+                {
+                    "id": row.id,
+                    "name": row.name,
+                    "type": row.type,
+                    "description": row.description,
+                    "earliest_date": row.earliest_date,
+                    "latest_date": row.latest_date,
+                }
+                for row in rows
+            ]
 
     def search_places_by_name_and_coordinates(
         self,

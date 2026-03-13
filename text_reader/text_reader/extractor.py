@@ -27,6 +27,8 @@ def review_event(event: ResolvedEvent, index: int) -> str:
     if event.page_num:
         print(f"Page:    {event.page_num}")
     print(f"Confidence: {event.confidence:.0%}")
+    if event.excerpt:
+        print(f"\nExcerpt: {event.excerpt[:300]}")
 
     if event.is_duplicate:
         if event.duplicate_has_wikidata:
@@ -112,14 +114,19 @@ def run_pipeline(
             chunk_text=chunk.text,
             source_title=title,
             source_author=author,
+            start_page=chunk.start_page,
+            end_page=chunk.end_page,
         )
         total_extracted += len(events)
         print(f"  Extracted {len(events)} events")
 
         for event_idx, event in enumerate(events):
-            # Set page number from chunk
+            # Set page number from chunk (use excerpt position for precision)
             if event.page_num is None:
-                event.page_num = chunk.start_page
+                if event.excerpt:
+                    event.page_num = chunk.page_for_excerpt(event.excerpt)
+                else:
+                    event.page_num = chunk.start_page
 
             # Resolve entities
             try:
@@ -149,6 +156,109 @@ def run_pipeline(
                     continue
 
             # Publish
+            try:
+                summary_id = publisher.publish_event(
+                    event=resolved,
+                    source_id=source_id,
+                    story_id=story_id,
+                )
+                if summary_id:
+                    total_published += 1
+                    print(f"  Published: {event.summary[:60]}...")
+                else:
+                    total_skipped += 1
+            except Exception as e:
+                log.error(f"Failed to publish: {e}")
+                total_skipped += 1
+
+    _print_summary(total_extracted, total_published, total_skipped)
+
+
+def run_batch_pipeline(
+    file_path: str,
+    title: str,
+    author: str,
+    publisher_name: str,
+    pub_date: str | None,
+    model: str,
+    start_page: int,
+    end_page: int | None,
+    rest_client: RestClient,
+    claude_client: ClaudeClient,
+    geonames_client: GeoNamesClient,
+):
+    """Batch extraction pipeline — submits all chunks at once, waits for results.
+
+    Uses the Anthropic Message Batches API (50% cost discount). Interactive review
+    is not available in batch mode; all qualifying events are published automatically.
+    """
+    print(f"Creating source: {title} by {author}")
+    source = rest_client.create_source(
+        title=title,
+        author=author,
+        publisher=publisher_name,
+        pub_date=pub_date,
+    )
+    source_id = UUID(source["id"])
+    print(f"  Source ID: {source_id}")
+
+    publisher = Publisher(rest_client=rest_client)
+    story_id = publisher.ensure_story(source_id=source_id, source_title=title)
+    print(f"  Story ID: {story_id}")
+
+    print(f"\nReading PDF: {file_path}")
+    pages = extract_pages(file_path=file_path, start_page=start_page, end_page=end_page)
+    if not pages:
+        print("No text extracted from PDF.")
+        return
+
+    chunks = chunk_pages(pages)
+    print(f"  {len(pages)} pages -> {len(chunks)} chunks")
+
+    chunk_tuples = [(c.text, c.start_page, c.end_page) for c in chunks]
+    batch_id = claude_client.submit_extraction_batch(chunk_tuples, title, author)
+    print(f"\nBatch submitted: {batch_id}")
+    print("Polling for results (check logs for progress)...")
+
+    batch_results = claude_client.poll_extraction_batch(batch_id)
+
+    chunk_map = {
+        f"chunk-{i:04d}-p{c.start_page}-{c.end_page}": c
+        for i, c in enumerate(chunks)
+    }
+
+    resolver = EntityResolver(
+        rest_client=rest_client,
+        claude_client=claude_client,
+        geonames_client=geonames_client,
+    )
+
+    total_extracted = 0
+    total_published = 0
+    total_skipped = 0
+
+    for custom_id, events in batch_results:
+        chunk = chunk_map.get(custom_id)
+        total_extracted += len(events)
+
+        for event in events:
+            if event.page_num is None and chunk:
+                if event.excerpt:
+                    event.page_num = chunk.page_for_excerpt(event.excerpt)
+                else:
+                    event.page_num = chunk.start_page
+
+            try:
+                resolved = resolver.resolve_event(event)
+            except Exception as e:
+                log.error(f"Failed to resolve event: {e}")
+                total_skipped += 1
+                continue
+
+            if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
+                total_skipped += 1
+                continue
+
             try:
                 summary_id = publisher.publish_event(
                     event=resolved,
