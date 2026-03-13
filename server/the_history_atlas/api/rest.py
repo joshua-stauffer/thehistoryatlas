@@ -84,6 +84,7 @@ from the_history_atlas.api.types.text_reader import (
 from the_history_atlas.api.types.user import LoginResponse
 from the_history_atlas.apps.accounts.errors import (
     DeactivatedUserError,
+    InvalidTokenError,
     MissingUserError,
 )
 from the_history_atlas.apps.app_manager import AppManager
@@ -227,7 +228,7 @@ def register_rest_endpoints(
         if token:
             try:
                 return apps.accounts_app.get_user(data=GetUserPayload(token=token))
-            except (MissingUserError, DeactivatedUserError):
+            except (MissingUserError, DeactivatedUserError, InvalidTokenError):
                 pass
 
         raise HTTPException(
@@ -243,7 +244,7 @@ def register_rest_endpoints(
         """JWT-only auth for sensitive operations like API key management."""
         try:
             return apps.accounts_app.get_user(data=GetUserPayload(token=token))
-        except (MissingUserError, DeactivatedUserError):
+        except (MissingUserError, DeactivatedUserError, InvalidTokenError):
             raise HTTPException(
                 status_code=401,
                 detail="Incorrect username or password",

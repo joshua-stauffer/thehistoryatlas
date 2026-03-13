@@ -57,3 +57,6 @@ secrets.yaml
 *.swo
 .legacy_env
 .test_env
+
+
+text_reader/sources
