@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from uuid import UUID
 
 from text_reader.rest_client import RestClient
@@ -43,6 +44,7 @@ class Publisher:
         citation = {
             "text": event.excerpt,
             "page_num": event.page_num,
+            "access_date": datetime.now(timezone.utc).isoformat(),
         }
 
         try:
