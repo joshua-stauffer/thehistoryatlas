@@ -24,6 +24,9 @@ def config():
 
 def truncate_db(session: Session):
     truncate_stmt = """
+        truncate story_summaries cascade;
+        truncate stories cascade;
+        truncate api_keys cascade;
         truncate users cascade;
         truncate citations cascade;
         truncate names cascade;

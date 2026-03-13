@@ -1,6 +1,7 @@
 import logging
 from dataclasses import asdict
-from typing import Dict
+from typing import Dict, Optional
+from uuid import UUID
 
 from sqlalchemy.engine import Engine
 
@@ -12,6 +13,7 @@ from the_history_atlas.apps.accounts.errors import (
 )
 from the_history_atlas.apps.config import Config
 
+from the_history_atlas.apps.accounts.api_keys import ApiKeyRepository
 from the_history_atlas.apps.accounts.repository import Repository
 from the_history_atlas.apps.domain.models.accounts import (
     LoginResponse,
@@ -52,6 +54,7 @@ class AccountsApp:
     def __init__(self, config: Config, database_client: Engine):
         self._config = config
         self._repository = Repository(engine=database_client)
+        self._api_key_repo = ApiKeyRepository(engine=database_client)
 
     def login(self, data: Credentials) -> LoginResponse:
         """Attempt to verify user credentials and return token if successful"""
@@ -121,3 +124,27 @@ class AccountsApp:
         return ConfirmAccountResponsePayload(
             token=token, user_details=UserDetails(**user_details)
         )
+
+    def get_user_by_id(self, user_id: str) -> GetUserResponsePayload:
+        """Get user details by user ID (for API key auth)."""
+        _, user_details = self._repository.get_user_by_id(user_id=user_id)
+        return GetUserResponsePayload(
+            token="api-key-auth",
+            user_details=UserDetails(**user_details),
+        )
+
+    def get_user_id_from_token(self, token: str) -> str:
+        """Extract user_id from a JWT token."""
+        return self._repository.get_user_id_by_token(token=token)
+
+    def create_api_key(self, user_id: str, name: str) -> tuple[str, dict]:
+        """Create a new API key for a user. Returns (raw_key, record)."""
+        return self._api_key_repo.create_api_key(user_id=user_id, name=name)
+
+    def validate_api_key(self, raw_key: str) -> Optional[str]:
+        """Validate an API key. Returns user_id if valid, None otherwise."""
+        return self._api_key_repo.validate_api_key(raw_key=raw_key)
+
+    def deactivate_api_key(self, key_id: UUID, user_id: str) -> bool:
+        """Deactivate an API key. Returns True if deactivated."""
+        return self._api_key_repo.deactivate_api_key(key_id=key_id, user_id=user_id)

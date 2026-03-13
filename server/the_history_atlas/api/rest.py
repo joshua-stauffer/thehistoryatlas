@@ -1,11 +1,15 @@
-from fastapi import FastAPI, Depends, Query, HTTPException, BackgroundTasks
-from typing import Callable, Annotated, Literal
+from fastapi import FastAPI, Depends, Query, HTTPException, BackgroundTasks, Header
+from typing import Callable, Annotated, Literal, Optional
 from faker import Faker
 import random
 from uuid import uuid4, UUID
 
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 
+from the_history_atlas.api.handlers.api_keys import (
+    create_api_key_handler,
+    deactivate_api_key_handler,
+)
 from the_history_atlas.api.handlers.history import (
     get_history_handler,
     get_nearby_events_handler,
@@ -18,7 +22,24 @@ from the_history_atlas.api.handlers.tags import (
     get_tags_handler,
     create_event_handler,
 )
+from the_history_atlas.api.handlers.text_reader import (
+    create_source_handler,
+    search_people_handler,
+    create_person_without_wikidata_handler,
+    search_places_handler,
+    create_place_without_wikidata_handler,
+    create_time_without_wikidata_handler,
+    create_text_reader_event_handler,
+    find_matching_summary_handler,
+    create_text_reader_story_handler,
+    get_story_by_source_handler,
+)
 from the_history_atlas.api.handlers.users import login_handler
+from the_history_atlas.api.types.api_keys import (
+    CreateApiKeyRequest,
+    CreateApiKeyResponse,
+    DeactivateApiKeyResponse,
+)
 from the_history_atlas.api.types.history import (
     Source,
     CalendarDate,
@@ -42,6 +63,23 @@ from the_history_atlas.api.types.tags import (
     WikiDataTagsOutput,
     WikiDataEventOutput,
     WikiDataEventInput,
+)
+from the_history_atlas.api.types.text_reader import (
+    TextReaderSourceInput,
+    TextReaderSourceOutput,
+    TextReaderPersonInput,
+    TextReaderPersonOutput,
+    TextReaderPlaceInput,
+    TextReaderPlaceOutput,
+    TextReaderTimeInput,
+    TextReaderTimeOutput,
+    TextReaderEventInput,
+    TextReaderEventOutput,
+    TextReaderStoryInput,
+    TextReaderStoryOutput,
+    PeopleSearchResult,
+    PlaceSearchResult,
+    SummaryMatchResult,
 )
 from the_history_atlas.api.types.user import LoginResponse
 from the_history_atlas.apps.accounts.errors import (
@@ -165,12 +203,44 @@ def register_rest_endpoints(
 ) -> FastAPI:
 
     Apps = Annotated[AppManager, Depends(app_manager)]
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
     def auth_required(
-        token: Annotated[str, Depends(oauth2_scheme)],
+        token: Annotated[Optional[str], Depends(oauth2_scheme)],
+        apps: Apps,
+        x_api_key: Annotated[Optional[str], Header()] = None,
+    ) -> GetUserResponsePayload:
+        # Try API key auth first
+        if x_api_key:
+            user_id = apps.accounts_app.validate_api_key(raw_key=x_api_key)
+            if user_id:
+                try:
+                    return apps.accounts_app.get_user_by_id(user_id=user_id)
+                except (MissingUserError, DeactivatedUserError):
+                    pass
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid API key",
+            )
+
+        # Fall back to JWT Bearer token
+        if token:
+            try:
+                return apps.accounts_app.get_user(data=GetUserPayload(token=token))
+            except (MissingUserError, DeactivatedUserError):
+                pass
+
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    def jwt_auth_required(
+        token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="token"))],
         apps: Apps,
     ) -> GetUserResponsePayload:
+        """JWT-only auth for sensitive operations like API key management."""
         try:
             return apps.accounts_app.get_user(data=GetUserPayload(token=token))
         except (MissingUserError, DeactivatedUserError):
@@ -181,6 +251,7 @@ def register_rest_endpoints(
             )
 
     AuthenticatedUser = Annotated[GetUserResponsePayload, Depends(auth_required)]
+    JWTAuthenticatedUser = Annotated[GetUserResponsePayload, Depends(jwt_auth_required)]
 
     # API Endpoints
     @fastapi_app.get("/history", response_model=Story)
@@ -284,5 +355,142 @@ def register_rest_endpoints(
         """Search for stories using fuzzy text matching."""
         results = apps.history_app.fuzzy_search_stories(search_string=query)
         return StorySearchResponse(results=results)
+
+    # --- API Key Management (JWT-only) ---
+
+    @fastapi_app.post("/api-keys", response_model=CreateApiKeyResponse)
+    def create_api_key(
+        request: CreateApiKeyRequest,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> CreateApiKeyResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return create_api_key_handler(apps=apps, request=request, user_id=user_id)
+
+    @fastapi_app.delete("/api-keys/{key_id}", response_model=DeactivateApiKeyResponse)
+    def deactivate_api_key(
+        key_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> DeactivateApiKeyResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return deactivate_api_key_handler(apps=apps, key_id=key_id, user_id=user_id)
+
+    # --- Text Reader Endpoints ---
+
+    @fastapi_app.post("/text-reader/sources", response_model=TextReaderSourceOutput)
+    def create_text_reader_source(
+        source: TextReaderSourceInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TextReaderSourceOutput:
+        return create_source_handler(apps=apps, source=source)
+
+    @fastapi_app.get(
+        "/text-reader/people/search",
+        response_model=PeopleSearchResult,
+    )
+    def search_text_reader_people(
+        apps: Apps,
+        user: AuthenticatedUser,
+        name: Annotated[str, Query()],
+    ) -> PeopleSearchResult:
+        return search_people_handler(apps=apps, name=name)
+
+    @fastapi_app.post("/text-reader/people", response_model=TextReaderPersonOutput)
+    def create_text_reader_person(
+        person: TextReaderPersonInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TextReaderPersonOutput:
+        return create_person_without_wikidata_handler(apps=apps, person=person)
+
+    @fastapi_app.get(
+        "/text-reader/places/search",
+        response_model=PlaceSearchResult,
+    )
+    def search_text_reader_places(
+        apps: Apps,
+        user: AuthenticatedUser,
+        name: Annotated[str, Query()] = "",
+        latitude: Annotated[float | None, Query()] = None,
+        longitude: Annotated[float | None, Query()] = None,
+        radius: Annotated[float, Query()] = 1.0,
+    ) -> PlaceSearchResult:
+        return search_places_handler(
+            apps=apps,
+            name=name,
+            latitude=latitude,
+            longitude=longitude,
+            radius=radius,
+        )
+
+    @fastapi_app.post("/text-reader/places", response_model=TextReaderPlaceOutput)
+    def create_text_reader_place(
+        place: TextReaderPlaceInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TextReaderPlaceOutput:
+        return create_place_without_wikidata_handler(apps=apps, place=place)
+
+    @fastapi_app.post("/text-reader/times", response_model=TextReaderTimeOutput)
+    def create_text_reader_time(
+        time_input: TextReaderTimeInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TextReaderTimeOutput:
+        return create_time_without_wikidata_handler(apps=apps, time_input=time_input)
+
+    @fastapi_app.post("/text-reader/events", response_model=TextReaderEventOutput)
+    def create_text_reader_event(
+        event: TextReaderEventInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+        background_tasks: BackgroundTasks,
+    ) -> TextReaderEventOutput:
+        return create_text_reader_event_handler(
+            apps=apps, event=event, background_tasks=background_tasks
+        )
+
+    @fastapi_app.get(
+        "/text-reader/summaries/match",
+        response_model=SummaryMatchResult,
+    )
+    def find_matching_summary(
+        apps: Apps,
+        user: AuthenticatedUser,
+        personIds: Annotated[list[UUID], Query()],
+        placeId: Annotated[UUID, Query()],
+        datetime: Annotated[str, Query()],
+        calendarModel: Annotated[str, Query()],
+        precision: Annotated[int, Query()],
+    ) -> SummaryMatchResult:
+        return find_matching_summary_handler(
+            apps=apps,
+            person_ids=personIds,
+            place_id=placeId,
+            datetime=datetime,
+            calendar_model=calendarModel,
+            precision=precision,
+        )
+
+    @fastapi_app.post("/text-reader/stories", response_model=TextReaderStoryOutput)
+    def create_text_reader_story(
+        story: TextReaderStoryInput,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TextReaderStoryOutput:
+        return create_text_reader_story_handler(apps=apps, story=story)
+
+    @fastapi_app.get(
+        "/text-reader/stories/by-source/{source_id}",
+        response_model=TextReaderStoryOutput | None,
+    )
+    def get_story_by_source(
+        source_id: UUID,
+        apps: Apps,
+        user: AuthenticatedUser,
+    ) -> TextReaderStoryOutput | None:
+        return get_story_by_source_handler(apps=apps, source_id=source_id)
 
     return fastapi_app

@@ -162,6 +162,19 @@ class Repository:
             token = get_token(user.id)
             return token
 
+    def get_user_by_id(self, user_id: str) -> tuple[str, UserDetailsDict]:
+        """Get user details by user ID. Returns (user_id, user_details_dict)."""
+        with Session(self._engine, future=True) as session:
+            user = self._get_user_by_id(user_id=user_id, session=session)
+            return user.id, user.to_dict()
+
+    def get_user_id_by_token(self, token: str) -> str:
+        """Extract user_id from a valid token."""
+        from the_history_atlas.apps.accounts.encryption import validate_token
+
+        user_id, _ = validate_token(token)
+        return user_id
+
     def check_if_username_is_unique(self, username) -> bool:
         """Returns True if a username is unique else False."""
 
