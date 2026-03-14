@@ -20,8 +20,8 @@ class Publisher:
             return UUID(existing["id"])
 
         story = self._rest.create_story(
-            name=f"From: {source_title}",
-            description=f"Events extracted from {source_title}",
+            name=f"{source_title}",
+            description=f"Events from the source {source_title}",
             source_id=str(source_id),
         )
         log.info(f"Created new story: {story['name']}")

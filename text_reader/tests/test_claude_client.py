@@ -182,18 +182,20 @@ class TestExtractEvents:
         extract_response.content = [MagicMock(text=json.dumps([bad_event]))]
 
         fix_response = MagicMock()
+        fix_response.stop_reason = "end_turn"
         fix_response.content = [MagicMock(text=json.dumps([[fixed_event]]))]
 
-        mock_client.messages.stream.return_value = _make_stream_ctx(extract_response)
-        mock_client.messages.create.return_value = fix_response
+        mock_client.messages.stream.side_effect = [
+            _make_stream_ctx(extract_response),
+            _make_stream_ctx(fix_response),
+        ]
 
         client = ClaudeClient(api_key="fake-key")
         result = client.extract_events("text", "Source", "Author")
 
         assert len(result) == 1
         assert result[0].summary == "George Frideric Handel performed in London in 1711."
-        assert mock_client.messages.stream.call_count == 1
-        assert mock_client.messages.create.call_count == 1
+        assert mock_client.messages.stream.call_count == 2
 
     @patch("text_reader.claude_client.anthropic.Anthropic")
     def test_date_range_event_split_into_two(self, mock_anthropic_cls):
@@ -228,10 +230,13 @@ class TestExtractEvents:
         extract_response.content = [MagicMock(text=json.dumps([range_event]))]
 
         fix_response = MagicMock()
+        fix_response.stop_reason = "end_turn"
         fix_response.content = [MagicMock(text=json.dumps([[split_a, split_b]]))]
 
-        mock_client.messages.stream.return_value = _make_stream_ctx(extract_response)
-        mock_client.messages.create.return_value = fix_response
+        mock_client.messages.stream.side_effect = [
+            _make_stream_ctx(extract_response),
+            _make_stream_ctx(fix_response),
+        ]
 
         client = ClaudeClient(api_key="fake-key")
         result = client.extract_events("text", "Source", "Author")
@@ -266,10 +271,13 @@ class TestExtractEvents:
         extract_response.content = [MagicMock(text=json.dumps([bad_event]))]
 
         fix_response = MagicMock()
+        fix_response.stop_reason = "end_turn"
         fix_response.content = [MagicMock(text=json.dumps([[still_bad]]))]
 
-        mock_client.messages.stream.return_value = _make_stream_ctx(extract_response)
-        mock_client.messages.create.return_value = fix_response
+        mock_client.messages.stream.side_effect = [
+            _make_stream_ctx(extract_response),
+            _make_stream_ctx(fix_response),
+        ]
 
         client = ClaudeClient(api_key="fake-key")
         result = client.extract_events("text", "Source", "Author")
@@ -303,10 +311,13 @@ class TestExtractEvents:
         extract_response.content = [MagicMock(text=json.dumps([valid, bad]))]
 
         fix_response = MagicMock()
+        fix_response.stop_reason = "end_turn"
         fix_response.content = [MagicMock(text=json.dumps([[fixed]]))]
 
-        mock_client.messages.stream.return_value = _make_stream_ctx(extract_response)
-        mock_client.messages.create.return_value = fix_response
+        mock_client.messages.stream.side_effect = [
+            _make_stream_ctx(extract_response),
+            _make_stream_ctx(fix_response),
+        ]
 
         client = ClaudeClient(api_key="fake-key")
         result = client.extract_events("text", "Source", "Author")

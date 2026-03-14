@@ -33,7 +33,7 @@ For each distinct historical event described in the text, extract:
    - description: Brief identifying description (e.g., "English composer", "King of France")
 
 3. **Place**: The location where the event occurred. Include:
-   - name: Place name
+   - name: Place name — if the source qualifies the place with a state, country, or region (e.g. "Ephrata, Pa.", "Leipzig, Germany", "New York, N.Y."), include that qualifier in the name (e.g. "Ephrata, Pennsylvania", "Leipzig, Germany", "New York, New York"). Spell out common abbreviations (Pa. → Pennsylvania, N.Y. → New York, etc.). This is critical for distinguishing places with the same name in different regions.
    - latitude/longitude: Approximate coordinates if you can determine them (null if unknown)
    - description: Brief description
 
@@ -68,26 +68,26 @@ Return a JSON array of events. Example showing multiple events from one biograph
 ```json
 [
   {
-    "summary": "John W. Bischoff was born in Chicago in 1850.",
+    "summary": "John W. Bischoff was born in Chicago, Illinois in 1850.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Chicago", "latitude": 41.8781, "longitude": -87.6298, "description": "City in Illinois"},
+    "place": {"name": "Chicago, Illinois", "latitude": 41.8781, "longitude": -87.6298, "description": "City in Illinois"},
     "time": {"name": "1850", "date": "+1850-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   },
   {
-    "summary": "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington from 1875.",
+    "summary": "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington, D.C. from 1875.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Washington", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
+    "place": {"name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
     "time": {"name": "1875", "date": "+1875-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   },
   {
-    "summary": "John W. Bischoff died in Washington in 1909.",
+    "summary": "John W. Bischoff died in Washington, D.C. in 1909.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Washington", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
+    "place": {"name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
     "time": {"name": "1909", "date": "+1909-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   }
@@ -379,6 +379,8 @@ class ClaudeClient:
             missing.append(event.time.name)
         return missing
 
+    _FIX_BATCH_SIZE = 15
+
     def _fix_summaries(
         self, invalid: list[tuple[ExtractedEvent, list[str]]]
     ) -> list[list[ExtractedEvent]]:
@@ -387,7 +389,20 @@ class ClaudeClient:
         Returns a list of replacement lists — one per input event. An event may be
         replaced by multiple events (e.g. when a date range is split into two).
         An empty inner list means the event could not be fixed and should be dropped.
+
+        Events are processed in batches of _FIX_BATCH_SIZE to keep output tokens
+        manageable and avoid truncation.
         """
+        results: list[list[ExtractedEvent]] = []
+        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            results.extend(self._fix_summaries_batch(batch))
+        return results
+
+    def _fix_summaries_batch(
+        self, invalid: list[tuple[ExtractedEvent, list[str]]]
+    ) -> list[list[ExtractedEvent]]:
+        """Fix a single batch of invalid events."""
         payload = []
         for event, missing in invalid:
             d = event.model_dump(mode="json")
@@ -401,14 +416,22 @@ class ClaudeClient:
         )
 
         try:
-            response = self._client.messages.create(
+            with self._client.messages.stream(
                 model=self._model,
-                max_tokens=4096,
+                max_tokens=16384,
                 system=FIX_SUMMARIES_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_message}],
-            )
+            ) as stream:
+                response = stream.get_final_message()
         except anthropic.APIError as e:
             log.error(f"Claude API error during summary fix: {e}")
+            return [[] for _ in invalid]
+
+        if response.stop_reason == "max_tokens":
+            log.warning(
+                f"Summary fix response truncated for batch of {len(invalid)} events; "
+                f"all will be dropped"
+            )
             return [[] for _ in invalid]
 
         content = response.content[0].text.strip()
