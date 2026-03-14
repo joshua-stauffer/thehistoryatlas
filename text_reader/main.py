@@ -10,7 +10,7 @@ from pathlib import Path
 
 from text_reader.claude_client import ClaudeClient
 from text_reader.config import Config
-from text_reader.extractor import run_batch_pipeline, run_pipeline
+from text_reader.extractor import run_batch_pipeline, run_pipeline, run_resume_pipeline
 from text_reader.geonames import GeoNamesClient
 from text_reader.rest_client import RestClient
 
@@ -20,10 +20,10 @@ def main():
         description="Extract historical events from PDFs using Claude"
     )
     parser.add_argument(
-        "--file", required=True, help="Path to the PDF file"
+        "--file", default=None, help="Path to the PDF file (required unless --resume-batch)"
     )
     parser.add_argument(
-        "--title", required=True, help="Book title"
+        "--title", default=None, help="Book title (required unless --resume-batch)"
     )
     parser.add_argument(
         "--author", required=True, help="Book author"
@@ -60,6 +60,12 @@ def main():
         "--batch",
         action="store_true",
         help="Use the Anthropic Message Batches API (50%% discount, no interactive review)",
+    )
+    parser.add_argument(
+        "--resume-batch",
+        metavar="STATE_FILE",
+        default=None,
+        help="Resume a batch run from a saved state file (created automatically on batch submission)",
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Verbose logging"
@@ -114,6 +120,20 @@ def main():
     print()
 
     # Run pipeline
+    if args.resume_batch:
+        pass  # file/title not needed for resume
+    elif not args.file or not args.title:
+        parser.error("--file and --title are required unless --resume-batch is used")
+
+    if args.resume_batch:
+        run_resume_pipeline(
+            state_file=args.resume_batch,
+            rest_client=rest_client,
+            claude_client=claude_client,
+            geonames_client=geonames_client,
+        )
+        return
+
     pipeline_kwargs = dict(
         file_path=args.file,
         title=args.title,

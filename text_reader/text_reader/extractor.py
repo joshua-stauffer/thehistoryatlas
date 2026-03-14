@@ -1,5 +1,7 @@
+import json
 import logging
 import sys
+from pathlib import Path
 from uuid import UUID
 
 from text_reader.claude_client import ClaudeClient
@@ -218,14 +220,58 @@ def run_batch_pipeline(
     chunk_tuples = [(c.text, c.start_page, c.end_page) for c in chunks]
     batch_id = claude_client.submit_extraction_batch(chunk_tuples, title, author)
     print(f"\nBatch submitted: {batch_id}")
+
+    # Save state file so the run can be resumed if it crashes during polling/publishing
+    state = {
+        "batch_id": batch_id,
+        "source_id": str(source_id),
+        "story_id": str(story_id),
+        "chunk_pages": {
+            f"chunk-{i:04d}-p{c.start_page}-{c.end_page}": c.start_page
+            for i, c in enumerate(chunks)
+        },
+    }
+    log_dir = Path(__file__).parent.parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    state_path = log_dir / f"{batch_id}.json"
+    with open(state_path, "w") as f:
+        json.dump(state, f, indent=2)
+    print(f"State saved: {state_path}")
+    print(f"To resume if interrupted: python main.py --resume-batch {state_path}")
     print("Polling for results (check logs for progress)...")
 
-    batch_results = claude_client.poll_extraction_batch(batch_id)
+    batch_results, all_invalid = claude_client.poll_extraction_batch(
+        batch_id, fix_inline=False
+    )
 
     chunk_map = {
         f"chunk-{i:04d}-p{c.start_page}-{c.end_page}": c
         for i, c in enumerate(chunks)
     }
+
+    # Fix invalid events via a second batch
+    if all_invalid:
+        print(f"\nSubmitting fix batch for {len(all_invalid)} invalid events...")
+        fix_batch_id = claude_client.submit_fix_batch(all_invalid)
+        print(f"Fix batch submitted: {fix_batch_id}")
+        fixed_groups = claude_client.poll_fix_batch(fix_batch_id, all_invalid)
+        fixed_events: list = []
+        for (original, _), replacements in zip(all_invalid, fixed_groups):
+            if not replacements:
+                log.warning(f"Could not fix event, dropping: {original.summary[:80]!r}")
+                continue
+            for fixed in replacements:
+                still_missing = claude_client._validate_event(fixed)
+                if still_missing:
+                    log.warning(
+                        f"Fixed event still missing {still_missing!r}, dropping: "
+                        f"{fixed.summary[:80]!r}"
+                    )
+                else:
+                    fixed_events.append(fixed)
+        if fixed_events:
+            print(f"  Recovered {len(fixed_events)} events from fix batch")
+            batch_results.append(("__fixed__", fixed_events))
 
     resolver = EntityResolver(
         rest_client=rest_client,
@@ -247,6 +293,106 @@ def run_batch_pipeline(
                     event.page_num = chunk.page_for_excerpt(event.excerpt)
                 else:
                     event.page_num = chunk.start_page
+
+            try:
+                resolved = resolver.resolve_event(event)
+            except Exception as e:
+                log.error(f"Failed to resolve event: {e}")
+                total_skipped += 1
+                continue
+
+            if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
+                total_skipped += 1
+                continue
+
+            try:
+                summary_id = publisher.publish_event(
+                    event=resolved,
+                    source_id=source_id,
+                    story_id=story_id,
+                )
+                if summary_id:
+                    total_published += 1
+                    print(f"  Published: {event.summary[:60]}...")
+                else:
+                    total_skipped += 1
+            except Exception as e:
+                log.error(f"Failed to publish: {e}")
+                total_skipped += 1
+
+    _print_summary(total_extracted, total_published, total_skipped)
+
+
+def run_resume_pipeline(
+    state_file: str,
+    rest_client: RestClient,
+    claude_client: ClaudeClient,
+    geonames_client: GeoNamesClient,
+):
+    """Resume a batch pipeline from a saved state file.
+
+    Use when polling or publishing was interrupted after batch submission. The
+    batch results are re-fetched (or waited for if still processing), invalid
+    events are fixed via a second batch, and all events are published.
+    """
+    with open(state_file) as f:
+        state = json.load(f)
+
+    batch_id = state["batch_id"]
+    source_id = UUID(state["source_id"])
+    story_id = UUID(state["story_id"])
+    chunk_start_pages: dict[str, int] = state.get("chunk_pages", {})
+
+    print(f"Resuming batch: {batch_id}")
+    print(f"  Source: {source_id}")
+    print(f"  Story:  {story_id}")
+    print("Polling for results (check logs for progress)...")
+
+    batch_results, all_invalid = claude_client.poll_extraction_batch(
+        batch_id, fix_inline=False
+    )
+
+    if all_invalid:
+        print(f"\nSubmitting fix batch for {len(all_invalid)} invalid events...")
+        fix_batch_id = claude_client.submit_fix_batch(all_invalid)
+        print(f"Fix batch submitted: {fix_batch_id}")
+        fixed_groups = claude_client.poll_fix_batch(fix_batch_id, all_invalid)
+        fixed_events: list = []
+        for (original, _), replacements in zip(all_invalid, fixed_groups):
+            if not replacements:
+                log.warning(f"Could not fix event, dropping: {original.summary[:80]!r}")
+                continue
+            for fixed in replacements:
+                still_missing = claude_client._validate_event(fixed)
+                if still_missing:
+                    log.warning(
+                        f"Fixed event still missing {still_missing!r}, dropping: "
+                        f"{fixed.summary[:80]!r}"
+                    )
+                else:
+                    fixed_events.append(fixed)
+        if fixed_events:
+            print(f"  Recovered {len(fixed_events)} events from fix batch")
+            batch_results.append(("__fixed__", fixed_events))
+
+    publisher = Publisher(rest_client=rest_client)
+    resolver = EntityResolver(
+        rest_client=rest_client,
+        claude_client=claude_client,
+        geonames_client=geonames_client,
+    )
+
+    total_extracted = 0
+    total_published = 0
+    total_skipped = 0
+
+    for custom_id, events in batch_results:
+        start_page = chunk_start_pages.get(custom_id)
+        total_extracted += len(events)
+
+        for event in events:
+            if event.page_num is None and start_page is not None:
+                event.page_num = start_page
 
             try:
                 resolved = resolver.resolve_event(event)

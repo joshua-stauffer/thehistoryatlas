@@ -4,6 +4,7 @@ import time
 from uuid import UUID
 
 import anthropic
+import httpx
 
 from text_reader.types import (
     ExtractedEvent,
@@ -201,17 +202,25 @@ class ClaudeClient:
                 f"--start-page {start_page} --end-page {end_page}"
             )
 
-        return self._parse_and_validate_events(
+        valid, _ = self._parse_and_validate_events(
             response.content[0].text.strip(), start_page, end_page
         )
+        return valid
 
     def _parse_and_validate_events(
         self,
         content: str,
         start_page: int | None,
         end_page: int | None,
-    ) -> list[ExtractedEvent]:
-        """Parse a raw JSON response into validated ExtractedEvents."""
+        fix_inline: bool = True,
+    ) -> tuple[list[ExtractedEvent], list[tuple[ExtractedEvent, list[str]]]]:
+        """Parse a raw JSON response into validated ExtractedEvents.
+
+        Returns (valid_events, invalid_events). When fix_inline=True the invalid
+        events are fixed before returning and the second element is always empty.
+        When fix_inline=False the invalid events are returned for the caller to
+        handle (e.g. via a deferred batch fix).
+        """
         page_ctx = (
             f"pages {start_page}-{end_page}"
             if start_page is not None and end_page is not None
@@ -234,7 +243,7 @@ class ClaudeClient:
                 f"— to retry: --start-page {start_page} --end-page {end_page}; "
                 f"response prefix: {content[:200]}"
             )
-            return []
+            return [], []
 
         events = []
         for raw in raw_events:
@@ -274,7 +283,7 @@ class ClaudeClient:
             else:
                 valid.append(event)
 
-        if to_fix:
+        if to_fix and fix_inline:
             log.info(f"Batch-fixing {len(to_fix)} events with invalid summaries")
             fixed_list = self._fix_summaries(to_fix)
             for (original, _), replacements in zip(to_fix, fixed_list):
@@ -287,9 +296,10 @@ class ClaudeClient:
                         log.warning(f"Fixed event still missing {still_missing!r}, dropping: {fixed.summary[:80]!r}")
                     else:
                         valid.append(fixed)
+            to_fix = []
 
         log.info(f"Extracted {len(valid)} events [{page_ctx}]")
-        return valid
+        return valid, to_fix
 
     def submit_extraction_batch(
         self,
@@ -328,12 +338,39 @@ class ClaudeClient:
         log.info(f"Submitted batch {batch.id} with {len(requests)} chunks")
         return batch.id
 
+    def _fetch_batch_results_with_retry(
+        self, batch_id: str, max_retries: int = 3
+    ) -> list:
+        """Fetch all batch results, retrying on network errors."""
+        for attempt in range(max_retries):
+            try:
+                return list(self._client.messages.batches.results(batch_id))
+            except (httpx.RemoteProtocolError, httpx.ReadError, httpx.ConnectError) as e:
+                if attempt < max_retries - 1:
+                    wait = 5 * (2 ** attempt)
+                    log.warning(
+                        f"Batch results stream dropped ({e}); retrying in {wait}s "
+                        f"(attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(wait)
+                else:
+                    raise
+
     def poll_extraction_batch(
         self,
         batch_id: str,
         poll_interval: int = 60,
-    ) -> list[tuple[str, list[ExtractedEvent]]]:
-        """Poll until the batch completes. Returns (custom_id, events) pairs in chunk order."""
+        fix_inline: bool = True,
+    ) -> tuple[list[tuple[str, list[ExtractedEvent]]], list[tuple[ExtractedEvent, list[str]]]]:
+        """Poll until the batch completes.
+
+        Returns (chunk_results, all_invalid) where chunk_results is a list of
+        (custom_id, valid_events) pairs in chunk order.
+
+        When fix_inline=True (default), invalid events are fixed immediately and
+        all_invalid is always empty. When fix_inline=False, invalid events are
+        returned for the caller to handle via a deferred batch fix.
+        """
         while True:
             status = self._client.messages.batches.retrieve(batch_id)
             counts = status.request_counts
@@ -346,8 +383,9 @@ class ClaudeClient:
                 break
             time.sleep(poll_interval)
 
+        all_invalid: list[tuple[ExtractedEvent, list[str]]] = []
         results = []
-        for result in self._client.messages.batches.results(batch_id):
+        for result in self._fetch_batch_results_with_retry(batch_id):
             custom_id = result.custom_id
             # Decode page range from custom_id: "chunk-0001-p5-10"
             try:
@@ -365,9 +403,15 @@ class ClaudeClient:
                         f"Batch chunk {custom_id} was truncated — "
                         f"to retry: --start-page {start_page} --end-page {end_page}"
                     )
-                events = self._parse_and_validate_events(
-                    message.content[0].text.strip(), start_page, end_page
+                events, invalid = self._parse_and_validate_events(
+                    message.content[0].text.strip(), start_page, end_page,
+                    fix_inline=fix_inline,
                 )
+                # Stamp page_num on invalid events now so it survives through the fix batch
+                for event, _ in invalid:
+                    if event.page_num is None:
+                        event.page_num = start_page
+                all_invalid.extend(invalid)
             else:
                 log.error(
                     f"Batch chunk {custom_id} failed ({result.result.type}) — "
@@ -378,6 +422,125 @@ class ClaudeClient:
             results.append((custom_id, events))
 
         results.sort(key=lambda x: x[0])
+        return results, all_invalid
+
+    def submit_fix_batch(
+        self,
+        invalid: list[tuple[ExtractedEvent, list[str]]],
+    ) -> str:
+        """Submit all invalid events as a Message Batch for fixing.
+
+        Events are grouped into sub-requests of _FIX_BATCH_SIZE. Returns batch ID.
+        """
+        requests = []
+        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            payload = []
+            for event, missing in batch:
+                d = event.model_dump(mode="json")
+                d["_missing"] = missing
+                payload.append(d)
+            user_message = (
+                "Fix the events so every name listed in '_missing' appears verbatim "
+                "in the summary. Split date-range events into separate events:\n\n"
+                + json.dumps(payload, indent=2)
+            )
+            requests.append({
+                "custom_id": f"fix-{batch_start:05d}",
+                "params": {
+                    "model": self._model,
+                    "max_tokens": 16384,
+                    "system": FIX_SUMMARIES_SYSTEM_PROMPT,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            })
+
+        batch = self._client.messages.batches.create(requests=requests)
+        log.info(f"Submitted fix batch {batch.id} with {len(requests)} sub-requests")
+        return batch.id
+
+    def poll_fix_batch(
+        self,
+        batch_id: str,
+        invalid: list[tuple[ExtractedEvent, list[str]]],
+        poll_interval: int = 60,
+    ) -> list[list[ExtractedEvent]]:
+        """Poll until the fix batch completes. Returns replacement lists parallel to invalid."""
+        while True:
+            status = self._client.messages.batches.retrieve(batch_id)
+            counts = status.request_counts
+            log.info(
+                f"Fix batch {batch_id}: {status.processing_status} — "
+                f"{counts.processing} processing, {counts.succeeded} succeeded, "
+                f"{counts.errored} errored"
+            )
+            if status.processing_status == "ended":
+                break
+            time.sleep(poll_interval)
+
+        # Collect by batch_start index
+        batch_outputs: dict[int, list[list[ExtractedEvent]]] = {}
+        for result in self._fetch_batch_results_with_retry(batch_id):
+            batch_start = int(result.custom_id.split("-")[1])
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            if result.result.type == "succeeded":
+                content = result.result.message.content[0].text.strip()
+                batch_outputs[batch_start] = self._parse_fix_response(content, batch)
+            else:
+                log.error(f"Fix batch sub-request {result.custom_id} failed")
+                batch_outputs[batch_start] = [[] for _ in batch]
+
+        # Reassemble in original order
+        results: list[list[ExtractedEvent]] = []
+        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            results.extend(batch_outputs.get(batch_start, [[] for _ in batch]))
+        return results
+
+    def _parse_fix_response(
+        self,
+        content: str,
+        invalid: list[tuple[ExtractedEvent, list[str]]],
+    ) -> list[list[ExtractedEvent]]:
+        """Parse a fix-batch response into replacement event groups."""
+        if content.startswith("```"):
+            lines = content.split("\n")
+            content = (
+                "\n".join(lines[1:-1])
+                if lines[-1].strip() == "```"
+                else "\n".join(lines[1:])
+            )
+
+        try:
+            raw_outer = json.loads(content)
+        except json.JSONDecodeError:
+            log.error(f"Failed to parse fix response: {content[:200]}")
+            return [[] for _ in invalid]
+
+        results: list[list[ExtractedEvent]] = []
+        for i, (original, _) in enumerate(invalid):
+            if i >= len(raw_outer):
+                results.append([])
+                continue
+            raw_group = raw_outer[i]
+            if not isinstance(raw_group, list):
+                raw_group = [raw_group]
+            group: list[ExtractedEvent] = []
+            for raw in raw_group:
+                raw.pop("_missing", None)
+                try:
+                    group.append(ExtractedEvent(
+                        summary=raw["summary"],
+                        excerpt=raw.get("excerpt", original.excerpt),
+                        people=[ExtractedPerson(**p) for p in raw.get("people", [])],
+                        place=ExtractedPlace(**raw["place"]),
+                        time=ExtractedTime(**raw["time"]),
+                        confidence=raw.get("confidence", original.confidence),
+                        page_num=original.page_num,
+                    ))
+                except (KeyError, TypeError, ValueError) as e:
+                    log.warning(f"Skipping malformed fixed event: {e}")
+            results.append(group)
         return results
 
     def _validate_event(self, event: ExtractedEvent) -> list[str]:
@@ -447,46 +610,7 @@ class ClaudeClient:
             )
             return [[] for _ in invalid]
 
-        content = response.content[0].text.strip()
-        if content.startswith("```"):
-            lines = content.split("\n")
-            content = (
-                "\n".join(lines[1:-1])
-                if lines[-1].strip() == "```"
-                else "\n".join(lines[1:])
-            )
-
-        try:
-            raw_outer = json.loads(content)
-        except json.JSONDecodeError:
-            log.error(f"Failed to parse summary fix response: {content[:200]}")
-            return [[] for _ in invalid]
-
-        results: list[list[ExtractedEvent]] = []
-        for i, (original, _) in enumerate(invalid):
-            if i >= len(raw_outer):
-                results.append([])
-                continue
-            raw_group = raw_outer[i]
-            if not isinstance(raw_group, list):
-                raw_group = [raw_group]
-            group: list[ExtractedEvent] = []
-            for raw in raw_group:
-                raw.pop("_missing", None)
-                try:
-                    group.append(ExtractedEvent(
-                        summary=raw["summary"],
-                        excerpt=raw.get("excerpt", original.excerpt),
-                        people=[ExtractedPerson(**p) for p in raw.get("people", [])],
-                        place=ExtractedPlace(**raw["place"]),
-                        time=ExtractedTime(**raw["time"]),
-                        confidence=raw.get("confidence", original.confidence),
-                        page_num=original.page_num,
-                    ))
-                except (KeyError, TypeError, ValueError) as e:
-                    log.warning(f"Skipping malformed fixed event: {e}")
-            results.append(group)
-        return results
+        return self._parse_fix_response(response.content[0].text.strip(), invalid)
 
     def pick_best_entity_match(
         self,
