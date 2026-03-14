@@ -96,19 +96,21 @@ class EntityResolver:
         return result
 
     def _resolve_place(self, place) -> ResolvedPlace:
-        cache_key = place.name.lower().strip()
+        # Use qualified_name for search/create when available; fall back to name
+        search_name = place.qualified_name or place.name
+        cache_key = search_name.lower().strip()
         if cache_key in self._place_cache:
             return self._place_cache[cache_key]
 
-        # Search by name and coordinates
+        # Search by qualified name and coordinates
         candidates = self._rest.search_places(
-            name=place.name,
+            name=search_name,
             latitude=place.latitude,
             longitude=place.longitude,
         )
         if candidates:
             match_id = self._claude.pick_best_entity_match(
-                entity_name=place.name,
+                entity_name=search_name,
                 entity_type="PLACE",
                 candidates=candidates,
             )
@@ -123,6 +125,7 @@ class EntityResolver:
                         name=matched["name"],
                         latitude=matched.get("latitude", 0.0),
                         longitude=matched.get("longitude", 0.0),
+                        summary_name=place.name,
                     )
                     self._place_cache[cache_key] = result
                     return result
@@ -133,7 +136,7 @@ class EntityResolver:
         geonames_id = None
 
         if self._geonames.available:
-            geo_result = self._geonames.search(place.name)
+            geo_result = self._geonames.search(search_name)
             if geo_result:
                 lat = geo_result["latitude"]
                 lng = geo_result["longitude"]
@@ -146,7 +149,7 @@ class EntityResolver:
             lng = 0.0
 
         created = self._rest.create_place(
-            name=place.name,
+            name=search_name,
             latitude=lat,
             longitude=lng,
             geonames_id=geonames_id,
@@ -154,9 +157,10 @@ class EntityResolver:
         )
         result = ResolvedPlace(
             id=UUID(created["id"]),
-            name=place.name,
+            name=search_name,
             latitude=lat,
             longitude=lng,
+            summary_name=place.name,
         )
         self._place_cache[cache_key] = result
         return result

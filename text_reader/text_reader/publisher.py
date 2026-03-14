@@ -79,17 +79,18 @@ class Publisher:
                 }
             )
 
-        # Place
-        place_start = summary.find(event.place.name)
+        # Place — use summary_name (natural form) for char offset, not canonical DB name
+        place_text = event.place.summary_name
+        place_start = summary.find(place_text)
         if place_start == -1:
-            log.warning(f"Place '{event.place.name}' not found in summary text")
+            log.warning(f"Place '{place_text}' not found in summary text")
             return []
         tags.append(
             {
                 "id": str(event.place.id),
-                "name": event.place.name,
+                "name": place_text,
                 "start_char": place_start,
-                "stop_char": place_start + len(event.place.name),
+                "stop_char": place_start + len(place_text),
             }
         )
 

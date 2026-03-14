@@ -26,14 +26,15 @@ A single passage may yield multiple events — extract each discrete occurrence 
 
 For each distinct historical event described in the text, extract:
 
-1. **Summary**: A single sentence describing the event, written in third person past tense. The summary MUST contain the person's name, the place name, and a time reference as substrings (these will be tagged). Include meaningful detail — do not strip out occupations, roles, or qualifications that appear in the source. For example, prefer "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington from 1875" over a bare "John W. Bischoff was in Washington in 1875."
+1. **Summary**: A single sentence describing the event, written in third person past tense, using natural language. The summary MUST contain the person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text. Include meaningful detail — do not strip out occupations, roles, or qualifications that appear in the source. For example, prefer "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington from 1875" over a bare "John W. Bischoff was in Washington in 1875."
 
 2. **People**: Each person mentioned in the event. Include:
    - name: Full name as it appears (or the most complete form used)
    - description: Brief identifying description (e.g., "English composer", "King of France")
 
 3. **Place**: The location where the event occurred. Include:
-   - name: Place name — if the source qualifies the place with a state, country, or region (e.g. "Ephrata, Pa.", "Leipzig, Germany", "New York, N.Y."), include that qualifier in the name (e.g. "Ephrata, Pennsylvania", "Leipzig, Germany", "New York, New York"). Spell out common abbreviations (Pa. → Pennsylvania, N.Y. → New York, etc.). This is critical for distinguishing places with the same name in different regions.
+   - name: The place name exactly as you write it in the summary — use natural, concise language (e.g. "New York", "Boston", "Paris"). This must match the summary verbatim.
+   - qualified_name: The fully qualified name for disambiguation, including state or country. Spell out abbreviations (Pa. → Pennsylvania, N.Y. → New York, Mass. → Massachusetts, etc.). Examples: "New York, New York"; "Boston, Massachusetts"; "Ephrata, Pennsylvania"; "Leipzig, Germany". If the source gives a qualifier (e.g. "Ephrata, Pa."), always populate this field.
    - latitude/longitude: Approximate coordinates if you can determine them (null if unknown)
    - description: Brief description
 
@@ -57,7 +58,7 @@ Valid event types include (but are not limited to):
 
 Rules:
 - Only extract events with concrete individual people, places, AND times. Skip truly vague references with no specific date or location. Organizations and publishers are not acceptable substitutes for a named person.
-- The summary text must literally contain the person/organization name, the place name, and the time name as substrings.
+- The summary must contain the person's name, the `place.name` value, and the `time.name` value as exact literal substrings. The `place.name` should be whatever natural form you used in the sentence (e.g. "New York", "Boston") — not the qualified form. The `place.qualified_name` is for disambiguation only and does not need to appear in the summary.
 - Use the most specific date precision available (day > month > year).
 - For BCE dates, use negative years (e.g., "-0500-00-00T00:00:00Z").
 - Each event must have a single, discrete point in time — never a range. A date range like "1756-1762" or "1885-92" indicates two events: one at the start and one at the end. Extract them separately (e.g., "appointed organist in 1756" and "left the position in 1762"). The time name must be a single year, month, or day — never "1756-1762".
@@ -68,26 +69,26 @@ Return a JSON array of events. Example showing multiple events from one biograph
 ```json
 [
   {
-    "summary": "John W. Bischoff was born in Chicago, Illinois in 1850.",
+    "summary": "John W. Bischoff was born in Chicago in 1850.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Chicago, Illinois", "latitude": 41.8781, "longitude": -87.6298, "description": "City in Illinois"},
+    "place": {"name": "Chicago", "qualified_name": "Chicago, Illinois", "latitude": 41.8781, "longitude": -87.6298, "description": "City in Illinois"},
     "time": {"name": "1850", "date": "+1850-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   },
   {
-    "summary": "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington, D.C. from 1875.",
+    "summary": "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington from 1875.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
+    "place": {"name": "Washington", "qualified_name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
     "time": {"name": "1875", "date": "+1875-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   },
   {
-    "summary": "John W. Bischoff died in Washington, D.C. in 1909.",
+    "summary": "John W. Bischoff died in Washington in 1909.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
+    "place": {"name": "Washington", "qualified_name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
     "time": {"name": "1909", "date": "+1909-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   }
@@ -237,13 +238,25 @@ class ClaudeClient:
 
         events = []
         for raw in raw_events:
+            place_data = raw.get("place")
+            time_data = raw.get("time")
+            if not place_data:
+                log.warning(
+                    f"Skipping event with null place: {raw.get('summary', '')[:80]!r}"
+                )
+                continue
+            if not time_data:
+                log.warning(
+                    f"Skipping event with null time: {raw.get('summary', '')[:80]!r}"
+                )
+                continue
             try:
                 event = ExtractedEvent(
                     summary=raw["summary"],
                     excerpt=raw["excerpt"],
                     people=[ExtractedPerson(**p) for p in raw.get("people", [])],
-                    place=ExtractedPlace(**raw["place"]),
-                    time=ExtractedTime(**raw["time"]),
+                    place=ExtractedPlace(**place_data),
+                    time=ExtractedTime(**time_data),
                     confidence=raw.get("confidence", 0.5),
                 )
                 events.append(event)

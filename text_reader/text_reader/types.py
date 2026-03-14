@@ -9,7 +9,8 @@ class ExtractedPerson(BaseModel):
 
 
 class ExtractedPlace(BaseModel):
-    name: str
+    name: str  # natural form used verbatim in the summary (e.g. "New York")
+    qualified_name: str | None = None  # full form for disambiguation (e.g. "New York, New York")
     latitude: float | None = None
     longitude: float | None = None
     description: str | None = None
@@ -39,9 +40,10 @@ class ResolvedPerson(BaseModel):
 
 class ResolvedPlace(BaseModel):
     id: UUID
-    name: str
+    name: str  # canonical name stored in DB
     latitude: float
     longitude: float
+    summary_name: str  # form used in the summary text (for tag char-offset building)
 
 
 class ResolvedTime(BaseModel):
