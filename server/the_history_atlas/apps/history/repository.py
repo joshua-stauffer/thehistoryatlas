@@ -325,11 +325,24 @@ class Repository:
                 """
                 ),
                 {"story_id": story_id},
+            ).one_or_none()
+            if row:
+                return StoryPointer(event_id=row.event_id, story_id=row.story_id)
+
+            # Fall back to text-reader story (story_summaries table)
+            row = session.execute(
+                text(
+                    """
+                    SELECT summary_id as event_id, story_id
+                    FROM story_summaries
+                    WHERE story_id = :story_id
+                    ORDER BY position
+                    LIMIT 1;
+                """
+                ),
+                {"story_id": story_id},
             ).one()
-            return StoryPointer(
-                event_id=row.event_id,
-                story_id=row.story_id,
-            )
+            return StoryPointer(event_id=row.event_id, story_id=row.story_id)
 
     def get_default_story_by_event(self, event_id: UUID) -> StoryPointer:
         with Session(self._engine, future=True) as session:
@@ -653,7 +666,7 @@ class Repository:
         tag_name_query = session.execute(
             text(
                 """
-                select 
+                select
                     tags.id as tag_id,
                     array_agg(names.name) as names
                 from tags
@@ -717,7 +730,7 @@ class Repository:
             ),
             {"story_ids": story_ids},
         ).all()
-        return {
+        result = {
             row.story_id: {
                 "name": row.story_name,
                 "description": row.description,
@@ -726,6 +739,147 @@ class Repository:
             }
             for row in rows
         }
+
+        # Also look up text-reader stories for any IDs not found in story_names
+        missing_ids = tuple(sid for sid in story_ids if sid not in result)
+        if missing_ids:
+            tr_rows = session.execute(
+                text(
+                    """
+                    SELECT
+                        s.id AS story_id,
+                        s.name AS story_name,
+                        s.description,
+                        MIN(
+                            CASE
+                                WHEN su.datetime LIKE '+%' THEN CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                WHEN su.datetime LIKE '-%' THEN -CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                ELSE NULL
+                            END
+                        ) AS earliest_year,
+                        MAX(
+                            CASE
+                                WHEN su.datetime LIKE '+%' THEN CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                WHEN su.datetime LIKE '-%' THEN -CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                ELSE NULL
+                            END
+                        ) AS latest_year
+                    FROM stories s
+                    LEFT JOIN story_summaries ss ON ss.story_id = s.id
+                    LEFT JOIN summaries su ON su.id = ss.summary_id AND su.datetime IS NOT NULL
+                    WHERE s.id IN :missing_ids
+                    GROUP BY s.id, s.name, s.description;
+                """
+                ),
+                {"missing_ids": missing_ids},
+            ).all()
+            for row in tr_rows:
+                result[row.story_id] = {
+                    "name": row.story_name,
+                    "description": row.description,
+                    "earliest_year": row.earliest_year,
+                    "latest_year": row.latest_year,
+                }
+
+        return result
+
+    def is_text_reader_story(self, story_id: UUID, session: Session) -> bool:
+        """Return True if story_id belongs to a text-reader story (stories table)."""
+        row = session.execute(
+            text("SELECT 1 FROM stories WHERE id = :story_id"),
+            {"story_id": story_id},
+        ).one_or_none()
+        return row is not None
+
+    def get_text_reader_story_pointers(
+        self,
+        story_id: UUID,
+        summary_id: UUID,
+        direction: Literal["next", "prev"] | None,
+        session: Session,
+    ) -> list[StoryPointer]:
+        """Return story pointers from story_summaries for a text-reader story."""
+        match direction:
+            case "next":
+                operator = ">"
+                order_by = "asc"
+                offset_clause = ""
+            case "prev":
+                operator = "<"
+                order_by = "desc"
+                offset_clause = ""
+            case _:
+                operator = ">"
+                order_by = "asc"
+                offset_clause = "- 5"
+
+        query = f"""
+            SELECT ss.summary_id AS event_id, ss.story_id
+            FROM story_summaries ss
+            WHERE ss.story_id = :story_id
+            AND ss.position {operator} (
+                SELECT position FROM story_summaries
+                WHERE story_id = :story_id AND summary_id = :summary_id
+            ) {offset_clause}
+            ORDER BY ss.position {order_by}
+            LIMIT 10
+        """
+        rows = session.execute(
+            text(query), {"story_id": story_id, "summary_id": summary_id}
+        ).all()
+        pointers = [
+            StoryPointer(event_id=row.event_id, story_id=row.story_id) for row in rows
+        ]
+        if direction == "prev":
+            pointers.reverse()
+        return pointers
+
+    def search_stories_by_name(self, name: str) -> list[dict]:
+        """Search text-reader stories by name using fuzzy matching."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    SELECT
+                        s.id,
+                        s.name,
+                        s.description,
+                        MIN(
+                            CASE
+                                WHEN su.datetime LIKE '+%' THEN CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                WHEN su.datetime LIKE '-%' THEN -CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                ELSE NULL
+                            END
+                        ) AS earliest_year,
+                        MAX(
+                            CASE
+                                WHEN su.datetime LIKE '+%' THEN CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                WHEN su.datetime LIKE '-%' THEN -CAST(SUBSTRING(su.datetime, 2, 4) AS INTEGER)
+                                ELSE NULL
+                            END
+                        ) AS latest_year
+                    FROM stories s
+                    LEFT JOIN story_summaries ss ON ss.story_id = s.id
+                    LEFT JOIN summaries su ON su.id = ss.summary_id AND su.datetime IS NOT NULL
+                    WHERE s.name ILIKE :like_pattern
+                       OR similarity(s.name, :search_term) > 0.3
+                    GROUP BY s.id, s.name, s.description
+                    ORDER BY similarity(s.name, :search_term) DESC
+                    LIMIT 10
+                """
+                ),
+                {"search_term": name, "like_pattern": f"%{name}%"},
+            ).all()
+            return [
+                {
+                    "id": str(row.id),
+                    "name": row.name,
+                    "description": row.description,
+                    "earliestYear": row.earliest_year,
+                    "latestYear": row.latest_year,
+                }
+                for row in rows
+            ]
 
     def create_summary(
         self,
@@ -1254,6 +1408,7 @@ class Repository:
                 where datetime = :datetime
                 and calendar_model = :calendar_model
                 and precision = :precision
+                limit 1
             """
             ),
             {

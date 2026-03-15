@@ -165,36 +165,46 @@ class HistoryApp:
     def fuzzy_search_stories(self, search_string: str) -> list[dict[str, str]]:
         """
         Search for stories that match the given search string.
-        Returns a list of dictionaries containing story IDs and names.
+        Returns a list of dicts containing story IDs and names.
+        Text-reader stories are returned first and preferred over wikidata stories
+        when both match equivalently.
         """
-        # Get matching IDs from fuzzy search
+        # Text-reader stories (stories table) — preferred
+        text_reader_results = self._repository.search_stories_by_name(search_string)
+
+        # Wikidata stories (names/tags tables)
         matches = self._repository.get_name_by_fuzzy_search(search_string)
-        if not matches:
-            return []
+        wikidata_results: list[dict] = []
+        if matches:
+            all_ids: set = set()
+            for match in matches:
+                all_ids.update(match.ids)
+            with self._repository.Session() as session:
+                story_names = self._repository.get_story_names(tuple(all_ids), session)
+            wikidata_results = [
+                {
+                    "id": str(story_id),
+                    "name": story_info["name"],
+                    "description": story_info["description"],
+                    "earliestYear": story_info["earliest_year"],
+                    "latestYear": story_info["latest_year"],
+                }
+                for story_id, story_info in story_names.items()
+            ]
 
-        # Extract all unique IDs from the matches
-        all_ids = set()
-        for match in matches:
-            all_ids.update(match.ids)
-
-        # Convert set to tuple for SQL query
-        story_ids = tuple(all_ids)
-
-        # Get story names for the matching IDs
-        with self._repository.Session() as session:
-            story_names = self._repository.get_story_names(story_ids, session)
-
-        # Format results as list of dicts
-        return [
-            {
-                "id": str(story_id),
-                "name": story_info["name"],
-                "description": story_info["description"],
-                "earliestYear": story_info["earliest_year"],
-                "latestYear": story_info["latest_year"],
-            }
-            for story_id, story_info in story_names.items()
-        ]
+        # Merge: text-reader first, then wikidata — deduplicate by normalised name
+        seen_names: set[str] = set()
+        merged: list[dict] = []
+        for result in text_reader_results:
+            key = result["name"].lower().strip()
+            seen_names.add(key)
+            merged.append(result)
+        for result in wikidata_results:
+            key = result["name"].lower().strip()
+            if key not in seen_names:
+                seen_names.add(key)
+                merged.append(result)
+        return merged
 
     def create_wikidata_event(
         self,
@@ -502,12 +512,39 @@ class HistoryApp:
         self, event_id: UUID, story_id: UUID, direction: Literal["next", "prev"] | None
     ) -> Story:
         with self._repository.Session() as session:
-            story_pointers = self.get_story_pointers(
-                event_id=event_id,
-                story_id=story_id,
-                direction=direction,
-                session=session,
-            )
+            if self._repository.is_text_reader_story(story_id, session):
+                if direction is None:
+                    prev_pointers = self._repository.get_text_reader_story_pointers(
+                        story_id=story_id,
+                        summary_id=event_id,
+                        direction="prev",
+                        session=session,
+                    )
+                    next_pointers = self._repository.get_text_reader_story_pointers(
+                        story_id=story_id,
+                        summary_id=event_id,
+                        direction="next",
+                        session=session,
+                    )
+                    story_pointers = (
+                        prev_pointers
+                        + [StoryPointer(story_id=story_id, event_id=event_id)]
+                        + next_pointers
+                    )
+                else:
+                    story_pointers = self._repository.get_text_reader_story_pointers(
+                        story_id=story_id,
+                        summary_id=event_id,
+                        direction=direction,
+                        session=session,
+                    )
+            else:
+                story_pointers = self.get_story_pointers(
+                    event_id=event_id,
+                    story_id=story_id,
+                    direction=direction,
+                    session=session,
+                )
             events = self._repository.get_events(
                 event_ids=tuple([story.event_id for story in story_pointers]),
                 session=session,
@@ -755,9 +792,24 @@ class HistoryApp:
         precision: int,
         description: str | None = None,
     ) -> dict:
-        """Create a time tag without wikidata_id."""
-        id = uuid4()
+        """Get or create a time tag without wikidata_id."""
         with self._repository.Session() as session:
+            existing_id = self._repository.time_exists(
+                datetime=date,
+                calendar_model=calendar_model,
+                precision=precision,
+                session=session,
+            )
+            if existing_id:
+                return {
+                    "id": existing_id,
+                    "name": name,
+                    "date": date,
+                    "calendar_model": calendar_model,
+                    "precision": precision,
+                    "description": description,
+                }
+            id = uuid4()
             self._repository.create_time(
                 id=id,
                 session=session,
