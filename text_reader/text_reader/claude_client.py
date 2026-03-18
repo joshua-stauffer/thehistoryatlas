@@ -27,9 +27,26 @@ A single passage may yield multiple events — extract each discrete occurrence 
 
 For each distinct historical event described in the text, extract:
 
-1. **Summary**: A single sentence describing the event, written in third person past tense, using natural language. The summary MUST contain the person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text. Include meaningful detail — do not strip out occupations, roles, or qualifications that appear in the source. For example, prefer "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington from 1875" over a bare "John W. Bischoff was in Washington in 1875."
+1. **Summary**: One or two sentences describing the event, written in third person past tense, using natural language. The summary MUST contain the person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text.
 
-2. **People**: Each person mentioned in the event. Include:
+   **Enrich each summary** by weaving in a contextual detail from the source text that answers one of these questions:
+   - What circumstances surrounded this event? (e.g., war, illness, patronage, rivalry, exile)
+   - What stage of the person's life or career was this? (e.g., debut, peak fame, late career, childhood)
+   - What was the significance or reception? (e.g., acclaim, controversy, landmark achievement)
+   - What was the consequence or outcome? (e.g., new appointment, health decline, lasting influence)
+
+   Prefer weaving the enrichment into the main sentence as a phrase or clause. Use a second sentence only when the enrichment doesn't fit naturally inline. Examples:
+   - GOOD (inline): "Felix Mendelssohn, at the height of his fame, conducted the premiere of his oratorio Elijah to thunderous acclaim at the Birmingham Festival on August 26, 1846."
+   - GOOD (two sentences): "The outbreak of war caught Benjamin James Dale in Germany, where he was interned at Ruhleben in 1914. He remained imprisoned until March 1918, when he was exchanged and removed to Holland, returning home just before the Armistice with his health gravely impaired."
+   - TOO BARE: "Felix Mendelssohn conducted Elijah in Birmingham in 1846."
+
+   **CRITICAL — full names in every summary**: Use each person's FULL name (exactly as given in the `people` array) in every summary, even when writing about the same person repeatedly. Write "Felix Mendelssohn conducted..." not "Mendelssohn conducted...". Write "George Frideric Handel composed..." not "Handel composed...". Each summary is processed independently — there is no prior context, so the full name must always appear. This is the single most common extraction error.
+
+   **CRITICAL — the time `name` must appear verbatim in the summary**: Write the date in the summary exactly as you set time.name. If time.name is "March 1834", the summary must contain the substring "March 1834". Never write a date range in the summary (e.g. "May 18-20" or "June 7-9" or "February and March" or "1885-92") — use only the single date from time.name.
+
+   **CRITICAL — the place `name` must appear verbatim in the summary**: Every event happens somewhere. Even if the source text implies the location from context, state it explicitly in the summary. Biographical entries often mention a city once in the header (e.g., "Dale, Benjamin James, b. London, 1885") and then list achievements without repeating it. You must still weave the place name into every summary derived from that entry.
+
+2. **People**: Each person **directly involved** in the event. Include only people who are the subject or a named participant — not people merely mentioned in passing or whose works are being performed. For example, if Mendelssohn conducts Beethoven's Ninth Symphony, the person is Mendelssohn (the conductor), not Beethoven (the composer, who is merely referenced). Include:
    - name: Full name as it appears (or the most complete form used)
    - description: Brief identifying description (e.g., "English composer", "King of France")
 
@@ -40,7 +57,7 @@ For each distinct historical event described in the text, extract:
    - description: Brief description
 
 4. **Time**: When the event occurred. Include:
-   - name: Human-readable date (e.g., "1759", "March 1685", "14 June 1770")
+   - name: Human-readable date (e.g., "1759", "March 1685", "14 June 1770"). Never use seasonal terms ("Spring 1834") — use the month or year instead. Never use a date range.
    - date: ISO-8601 formatted with leading +/- (e.g., "+1759-00-00T00:00:00Z", "+1685-03-00T00:00:00Z")
    - precision: 9 for year, 10 for month, 11 for day
    - calendar_model: "http://www.wikidata.org/entity/Q1985727" (Gregorian)
@@ -62,35 +79,30 @@ Rules:
 - The summary must contain the person's name, the `place.name` value, and the `time.name` value as exact literal substrings. The `place.name` should be whatever natural form you used in the sentence (e.g. "New York", "Boston") — not the qualified form. The `place.qualified_name` is for disambiguation only and does not need to appear in the summary.
 - Use the most specific date precision available (day > month > year).
 - For BCE dates, use negative years (e.g., "-0500-00-00T00:00:00Z").
-- Each event must have a single, discrete point in time — never a range. A date range like "1756-1762" or "1885-92" indicates two events: one at the start and one at the end. Extract them separately (e.g., "appointed organist in 1756" and "left the position in 1762"). The time name must be a single year, month, or day — never "1756-1762".
+- Each event must have a single, discrete point in time — never a range. Any time span must be split into separate events for the start and end:
+  - Multi-day: "June 7-9, 1835" → one event for "June 7, 1835" (start) and one for "June 9, 1835" (end)
+  - Multi-month: "February and March 1838" → one event for "February 1838" and one for "March 1838"
+  - Multi-year: "1885-92" → one event for "1885" and one for "1892"
+  The time name must always be a single year, month, or day.
 - Birth and death dates with locations (e.g., "b. Chicago, 1850" or "d. Paris, 1903") are valid events — extract them.
 - Extract every qualifying event present in the passage, even if the passage is primarily a preface, table of contents, or bibliography. Do not skip a chunk just because most of it is vague — extract whatever specific events are present.
 
-Return a JSON array of events. Example showing multiple events from one biographical entry:
+**Self-check before returning**: For each event, verify that:
+1. Every person's full name appears as a literal substring of the summary
+2. The place name appears as a literal substring of the summary
+3. The time name appears as a literal substring of the summary
+4. The time name is a single date (not a range, not a season)
+If any check fails, rewrite the summary (or adjust the time/place name) before returning.
+
+Return a JSON array of events. Example:
 ```json
 [
   {
-    "summary": "John W. Bischoff was born in Chicago in 1850.",
-    "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
-    "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Chicago", "qualified_name": "Chicago, Illinois", "latitude": 41.8781, "longitude": -87.6298, "description": "City in Illinois"},
-    "time": {"name": "1850", "date": "+1850-00-00T00:00:00Z", "precision": 9},
-    "confidence": 0.90
-  },
-  {
-    "summary": "John W. Bischoff worked as organist, singing-teacher, and song-writer in Washington from 1875.",
+    "summary": "John W. Bischoff, having trained at the Wisconsin Institute for the Blind and later in London, took up a new life as organist, singing-teacher, and song-writer in Washington in 1875.",
     "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
     "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
     "place": {"name": "Washington", "qualified_name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
     "time": {"name": "1875", "date": "+1875-00-00T00:00:00Z", "precision": 9},
-    "confidence": 0.90
-  },
-  {
-    "summary": "John W. Bischoff died in Washington in 1909.",
-    "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
-    "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Washington", "qualified_name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
-    "time": {"name": "1909", "date": "+1909-00-00T00:00:00Z", "precision": 9},
     "confidence": 0.90
   }
 ]
@@ -100,7 +112,12 @@ Return ONLY the JSON array, no other text."""
 
 ENTITY_MATCH_SYSTEM_PROMPT = """You are helping match extracted historical entities to existing database records.
 
-Given an entity name and type, and a list of candidate matches from the database, determine if any candidate is the same entity. Consider name variations, historical spelling differences, and alternative forms.
+Given an entity name, type, context, and a list of candidate matches from the database, determine if any candidate is the same entity. Consider:
+- Name variations, historical spelling differences, and alternative forms
+- Historical and geographic context: if the context indicates a specific nationality or region (e.g. "Italian composer"), strongly prefer candidates from that country or region (e.g. Florence, Italy over Florence, Nebraska)
+- Description match: nationalities, roles, time periods
+
+If no candidate is a confident match given the context, return no match — do not force a match when the context contradicts the candidate.
 
 Return a JSON object:
 - If a match is found: {"match": true, "id": "<the matching candidate's id>"}
@@ -128,10 +145,16 @@ Return ONLY the JSON array of arrays, no other text."""
 
 
 class ClaudeClient:
-    def __init__(self, api_key: str, model: str = "haiku"):
+    _FIX_BATCH_SIZE = 15
+
+    def __init__(self, api_key: str, model: str = "sonnet"):
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = MODEL_MAP.get(model, model)
         log.info(f"Using Claude model: {self._model}")
+
+    # -------------------------------------------------------------------------
+    # Extraction
+    # -------------------------------------------------------------------------
 
     def extract_events(
         self,
@@ -142,12 +165,7 @@ class ClaudeClient:
         end_page: int | None = None,
         _depth: int = 0,
     ) -> list[ExtractedEvent]:
-        """Extract historical events from a text chunk.
-
-        If the response is truncated (max_tokens hit), the chunk is split in half
-        and each half is reprocessed recursively. Splitting stops at depth 2 (quarters
-        of the original chunk) to bound API usage.
-        """
+        """Extract historical events from a text chunk (synchronous, non-batch)."""
         page_ctx = (
             f"pages {start_page}-{end_page}"
             if start_page is not None and end_page is not None
@@ -207,6 +225,334 @@ class ClaudeClient:
         )
         return valid
 
+    def submit_extraction_batch(
+        self,
+        chunks: list[tuple[str, int | None, int | None]],
+        source_title: str,
+        source_author: str,
+    ) -> str:
+        """Submit all chunks as a Message Batch. Returns the batch ID."""
+        requests = []
+        for i, (chunk_text, start_page, end_page) in enumerate(chunks):
+            user_message = (
+                f"Extract historical events from this passage of "
+                f'"{source_title}" by {source_author}:\n\n{chunk_text}'
+            )
+            requests.append({
+                "custom_id": f"chunk-{i:04d}-p{start_page}-{end_page}",
+                "params": {
+                    "model": self._model,
+                    "max_tokens": 32768,
+                    "system": [
+                        {
+                            "type": "text",
+                            "text": EXTRACTION_SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            })
+
+        batch = self._client.messages.batches.create(requests=requests)
+        log.info(f"Submitted batch {batch.id} with {len(requests)} chunks")
+        return batch.id
+
+    def poll_extraction_batch(
+        self,
+        batch_id: str,
+        poll_interval: int = 60,
+        fix_inline: bool = True,
+    ) -> tuple[list[tuple[str, list[ExtractedEvent]]], list[tuple[ExtractedEvent, list[str]]]]:
+        """Poll until the extraction batch completes.
+
+        Returns (chunk_results, all_invalid). When fix_inline=False, invalid
+        events are returned for the caller to handle via a deferred batch fix.
+        """
+        while True:
+            status = self._client.messages.batches.retrieve(batch_id)
+            counts = status.request_counts
+            log.info(
+                f"Batch {batch_id}: {status.processing_status} — "
+                f"{counts.processing} processing, {counts.succeeded} succeeded, "
+                f"{counts.errored} errored"
+            )
+            if status.processing_status == "ended":
+                break
+            time.sleep(poll_interval)
+
+        all_invalid: list[tuple[ExtractedEvent, list[str]]] = []
+        results = []
+        for result in self._fetch_batch_results_with_retry(batch_id):
+            custom_id = result.custom_id
+            try:
+                page_part = custom_id.split("-p", 1)[1]
+                start_str, _, end_str = page_part.partition("-")
+                start_page: int | None = int(start_str)
+                end_page: int | None = int(end_str)
+            except (IndexError, ValueError):
+                start_page = end_page = None
+
+            if result.result.type == "succeeded":
+                message = result.result.message
+                if message.stop_reason == "max_tokens":
+                    log.warning(
+                        f"Batch chunk {custom_id} was truncated — "
+                        f"to retry: --start-page {start_page} --end-page {end_page}"
+                    )
+                events, invalid = self._parse_and_validate_events(
+                    message.content[0].text.strip(), start_page, end_page,
+                    fix_inline=fix_inline,
+                )
+                for event, _ in invalid:
+                    if event.page_num is None:
+                        event.page_num = start_page
+                all_invalid.extend(invalid)
+            else:
+                log.error(
+                    f"Batch chunk {custom_id} failed ({result.result.type}) — "
+                    f"to retry: --start-page {start_page} --end-page {end_page}"
+                )
+                events = []
+
+            results.append((custom_id, events))
+
+        results.sort(key=lambda x: x[0])
+        return results, all_invalid
+
+    # -------------------------------------------------------------------------
+    # Fix batch
+    # -------------------------------------------------------------------------
+
+    def submit_fix_batch(
+        self,
+        invalid: list[tuple[ExtractedEvent, list[str]]],
+    ) -> str:
+        """Submit all invalid events as a Message Batch for fixing."""
+        requests = []
+        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            payload = []
+            for event, missing in batch:
+                d = event.model_dump(mode="json")
+                d["_missing"] = missing
+                payload.append(d)
+            user_message = (
+                "Fix the events so every name listed in '_missing' appears verbatim "
+                "in the summary. Split date-range events into separate events:\n\n"
+                + json.dumps(payload, indent=2)
+            )
+            requests.append({
+                "custom_id": f"fix-{batch_start:05d}",
+                "params": {
+                    "model": self._model,
+                    "max_tokens": 16384,
+                    "system": FIX_SUMMARIES_SYSTEM_PROMPT,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            })
+
+        batch = self._client.messages.batches.create(requests=requests)
+        log.info(f"Submitted fix batch {batch.id} with {len(requests)} sub-requests")
+        return batch.id
+
+    def poll_fix_batch(
+        self,
+        batch_id: str,
+        invalid: list[tuple[ExtractedEvent, list[str]]],
+        poll_interval: int = 60,
+    ) -> list[list[ExtractedEvent]]:
+        """Poll until the fix batch completes. Returns replacement lists parallel to invalid."""
+        while True:
+            status = self._client.messages.batches.retrieve(batch_id)
+            counts = status.request_counts
+            log.info(
+                f"Fix batch {batch_id}: {status.processing_status} — "
+                f"{counts.processing} processing, {counts.succeeded} succeeded, "
+                f"{counts.errored} errored"
+            )
+            if status.processing_status == "ended":
+                break
+            time.sleep(poll_interval)
+
+        batch_outputs: dict[int, list[list[ExtractedEvent]]] = {}
+        for result in self._fetch_batch_results_with_retry(batch_id):
+            batch_start = int(result.custom_id.split("-")[1])
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            if result.result.type == "succeeded":
+                content = result.result.message.content[0].text.strip()
+                batch_outputs[batch_start] = self._parse_fix_response(content, batch)
+            else:
+                log.error(f"Fix batch sub-request {result.custom_id} failed")
+                batch_outputs[batch_start] = [[] for _ in batch]
+
+        results: list[list[ExtractedEvent]] = []
+        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
+            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
+            results.extend(batch_outputs.get(batch_start, [[] for _ in batch]))
+        return results
+
+    # -------------------------------------------------------------------------
+    # Entity match batch
+    # -------------------------------------------------------------------------
+
+    def submit_entity_match_batch(self, entity_requests: list[dict]) -> str:
+        """Submit all entity-matching decisions as a single Message Batch.
+
+        entity_requests: list of dicts with keys:
+          key (str), entity_name (str), entity_type (str),
+          context (str | None), candidates (list[dict])
+
+        Returns the batch ID.
+        """
+        requests = []
+        for req in entity_requests:
+            user_message = self._build_entity_match_message(
+                req["entity_name"],
+                req["entity_type"],
+                req["candidates"],
+                req.get("context"),
+            )
+            requests.append({
+                "custom_id": req["key"],
+                "params": {
+                    "model": self._model,
+                    "max_tokens": 256,
+                    "system": ENTITY_MATCH_SYSTEM_PROMPT,
+                    "messages": [{"role": "user", "content": user_message}],
+                },
+            })
+
+        batch = self._client.messages.batches.create(requests=requests)
+        log.info(f"Submitted entity match batch {batch.id} with {len(requests)} requests")
+        return batch.id
+
+    def poll_entity_match_batch(
+        self,
+        batch_id: str,
+        poll_interval: int = 30,
+    ) -> dict[str, UUID | None]:
+        """Poll until the entity match batch completes.
+
+        Returns a dict mapping custom_id → matched UUID (or None if no match).
+        """
+        while True:
+            status = self._client.messages.batches.retrieve(batch_id)
+            counts = status.request_counts
+            log.info(
+                f"Entity match batch {batch_id}: {status.processing_status} — "
+                f"{counts.processing} processing, {counts.succeeded} succeeded, "
+                f"{counts.errored} errored"
+            )
+            if status.processing_status == "ended":
+                break
+            time.sleep(poll_interval)
+
+        results: dict[str, UUID | None] = {}
+        for result in self._fetch_batch_results_with_retry(batch_id):
+            key = result.custom_id
+            if result.result.type == "succeeded":
+                content = result.result.message.content[0].text.strip()
+                results[key] = self._parse_entity_match_result(content)
+            else:
+                log.warning(f"Entity match batch request {key} failed")
+                results[key] = None
+        return results
+
+    def pick_best_entity_match(
+        self,
+        entity_name: str,
+        entity_type: str,
+        candidates: list[dict],
+        context: str | None = None,
+    ) -> UUID | None:
+        """Use Claude to pick the best matching entity from candidates (synchronous).
+
+        context: optional string describing the historical/geographic context
+        to help Claude disambiguate between candidates from different regions.
+        """
+        if not candidates:
+            return None
+
+        user_message = self._build_entity_match_message(
+            entity_name, entity_type, candidates, context
+        )
+
+        try:
+            response = self._client.messages.create(
+                model=self._model,
+                max_tokens=256,
+                system=ENTITY_MATCH_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_message}],
+            )
+        except anthropic.APIError as e:
+            log.error(f"Claude API error during entity matching: {e}")
+            return None
+
+        return self._parse_entity_match_result(response.content[0].text.strip())
+
+    # -------------------------------------------------------------------------
+    # Shared helpers
+    # -------------------------------------------------------------------------
+
+    def _build_entity_match_message(
+        self,
+        entity_name: str,
+        entity_type: str,
+        candidates: list[dict],
+        context: str | None = None,
+    ) -> str:
+        candidates_text = "\n".join(self._fmt_candidate(c) for c in candidates)
+        msg = f"Entity to match:\n- Name: {entity_name}\n- Type: {entity_type}\n"
+        if context:
+            msg += f"- Context: {context}\n"
+        msg += f"\nCandidates:\n{candidates_text}"
+        return msg
+
+    def _fmt_candidate(self, c: dict) -> str:
+        parts = [f"- id: {c['id']}, name: {c['name']}"]
+        if c.get("description"):
+            parts.append(f"  description: {c['description']}")
+        if c.get("earliest_date") or c.get("latest_date"):
+            parts.append(
+                f"  dates: {c.get('earliest_date', '?')} – {c.get('latest_date', '?')}"
+            )
+        return "\n".join(parts)
+
+    def _parse_entity_match_result(self, content: str) -> UUID | None:
+        if content.startswith("```"):
+            lines = content.split("\n")
+            content = (
+                "\n".join(lines[1:-1])
+                if lines[-1].strip() == "```"
+                else "\n".join(lines[1:])
+            )
+        try:
+            result, _ = json.JSONDecoder().raw_decode(content)
+            if result.get("match") and result.get("id"):
+                return UUID(result["id"])
+        except (json.JSONDecodeError, ValueError) as e:
+            log.warning(f"Failed to parse entity match response: {e}")
+        return None
+
+    def _fetch_batch_results_with_retry(
+        self, batch_id: str, max_retries: int = 3
+    ) -> list:
+        """Fetch all batch results, retrying on network errors."""
+        for attempt in range(max_retries):
+            try:
+                return list(self._client.messages.batches.results(batch_id))
+            except (httpx.RemoteProtocolError, httpx.ReadError, httpx.ConnectError) as e:
+                if attempt < max_retries - 1:
+                    wait = 5 * (2 ** attempt)
+                    log.warning(
+                        f"Batch results stream dropped ({e}); retrying in {wait}s "
+                        f"(attempt {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(wait)
+                else:
+                    raise
+
     def _parse_and_validate_events(
         self,
         content: str,
@@ -214,13 +560,7 @@ class ClaudeClient:
         end_page: int | None,
         fix_inline: bool = True,
     ) -> tuple[list[ExtractedEvent], list[tuple[ExtractedEvent, list[str]]]]:
-        """Parse a raw JSON response into validated ExtractedEvents.
-
-        Returns (valid_events, invalid_events). When fix_inline=True the invalid
-        events are fixed before returning and the second element is always empty.
-        When fix_inline=False the invalid events are returned for the caller to
-        handle (e.g. via a deferred batch fix).
-        """
+        """Parse a raw JSON response into validated ExtractedEvents."""
         page_ctx = (
             f"pages {start_page}-{end_page}"
             if start_page is not None and end_page is not None
@@ -301,201 +641,64 @@ class ClaudeClient:
         log.info(f"Extracted {len(valid)} events [{page_ctx}]")
         return valid, to_fix
 
-    def submit_extraction_batch(
-        self,
-        chunks: list[tuple[str, int | None, int | None]],
-        source_title: str,
-        source_author: str,
-    ) -> str:
-        """Submit all chunks as a Message Batch. Returns the batch ID.
+    def _validate_event(self, event: ExtractedEvent) -> list[str]:
+        """Return entity names not present as verbatim substrings in the summary."""
+        missing = []
+        for person in event.people:
+            if person.name not in event.summary:
+                missing.append(person.name)
+        if event.place.name not in event.summary:
+            missing.append(event.place.name)
+        if event.time.name not in event.summary:
+            missing.append(event.time.name)
+        return missing
 
-        Each tuple in chunks is (chunk_text, start_page, end_page).
-        50% cost discount vs synchronous calls; results arrive asynchronously.
-        """
-        requests = []
-        for i, (chunk_text, start_page, end_page) in enumerate(chunks):
-            user_message = (
-                f"Extract historical events from this passage of "
-                f'"{source_title}" by {source_author}:\n\n{chunk_text}'
-            )
-            requests.append({
-                "custom_id": f"chunk-{i:04d}-p{start_page}-{end_page}",
-                "params": {
-                    "model": self._model,
-                    "max_tokens": 32768,
-                    "system": [
-                        {
-                            "type": "text",
-                            "text": EXTRACTION_SYSTEM_PROMPT,
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                    "messages": [{"role": "user", "content": user_message}],
-                },
-            })
-
-        batch = self._client.messages.batches.create(requests=requests)
-        log.info(f"Submitted batch {batch.id} with {len(requests)} chunks")
-        return batch.id
-
-    def _fetch_batch_results_with_retry(
-        self, batch_id: str, max_retries: int = 3
-    ) -> list:
-        """Fetch all batch results, retrying on network errors."""
-        for attempt in range(max_retries):
-            try:
-                return list(self._client.messages.batches.results(batch_id))
-            except (httpx.RemoteProtocolError, httpx.ReadError, httpx.ConnectError) as e:
-                if attempt < max_retries - 1:
-                    wait = 5 * (2 ** attempt)
-                    log.warning(
-                        f"Batch results stream dropped ({e}); retrying in {wait}s "
-                        f"(attempt {attempt + 1}/{max_retries})"
-                    )
-                    time.sleep(wait)
-                else:
-                    raise
-
-    def poll_extraction_batch(
-        self,
-        batch_id: str,
-        poll_interval: int = 60,
-        fix_inline: bool = True,
-    ) -> tuple[list[tuple[str, list[ExtractedEvent]]], list[tuple[ExtractedEvent, list[str]]]]:
-        """Poll until the batch completes.
-
-        Returns (chunk_results, all_invalid) where chunk_results is a list of
-        (custom_id, valid_events) pairs in chunk order.
-
-        When fix_inline=True (default), invalid events are fixed immediately and
-        all_invalid is always empty. When fix_inline=False, invalid events are
-        returned for the caller to handle via a deferred batch fix.
-        """
-        while True:
-            status = self._client.messages.batches.retrieve(batch_id)
-            counts = status.request_counts
-            log.info(
-                f"Batch {batch_id}: {status.processing_status} — "
-                f"{counts.processing} processing, {counts.succeeded} succeeded, "
-                f"{counts.errored} errored"
-            )
-            if status.processing_status == "ended":
-                break
-            time.sleep(poll_interval)
-
-        all_invalid: list[tuple[ExtractedEvent, list[str]]] = []
-        results = []
-        for result in self._fetch_batch_results_with_retry(batch_id):
-            custom_id = result.custom_id
-            # Decode page range from custom_id: "chunk-0001-p5-10"
-            try:
-                page_part = custom_id.split("-p", 1)[1]
-                start_str, _, end_str = page_part.partition("-")
-                start_page: int | None = int(start_str)
-                end_page: int | None = int(end_str)
-            except (IndexError, ValueError):
-                start_page = end_page = None
-
-            if result.result.type == "succeeded":
-                message = result.result.message
-                if message.stop_reason == "max_tokens":
-                    log.warning(
-                        f"Batch chunk {custom_id} was truncated — "
-                        f"to retry: --start-page {start_page} --end-page {end_page}"
-                    )
-                events, invalid = self._parse_and_validate_events(
-                    message.content[0].text.strip(), start_page, end_page,
-                    fix_inline=fix_inline,
-                )
-                # Stamp page_num on invalid events now so it survives through the fix batch
-                for event, _ in invalid:
-                    if event.page_num is None:
-                        event.page_num = start_page
-                all_invalid.extend(invalid)
-            else:
-                log.error(
-                    f"Batch chunk {custom_id} failed ({result.result.type}) — "
-                    f"to retry: --start-page {start_page} --end-page {end_page}"
-                )
-                events = []
-
-            results.append((custom_id, events))
-
-        results.sort(key=lambda x: x[0])
-        return results, all_invalid
-
-    def submit_fix_batch(
-        self,
-        invalid: list[tuple[ExtractedEvent, list[str]]],
-    ) -> str:
-        """Submit all invalid events as a Message Batch for fixing.
-
-        Events are grouped into sub-requests of _FIX_BATCH_SIZE. Returns batch ID.
-        """
-        requests = []
-        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
-            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
-            payload = []
-            for event, missing in batch:
-                d = event.model_dump(mode="json")
-                d["_missing"] = missing
-                payload.append(d)
-            user_message = (
-                "Fix the events so every name listed in '_missing' appears verbatim "
-                "in the summary. Split date-range events into separate events:\n\n"
-                + json.dumps(payload, indent=2)
-            )
-            requests.append({
-                "custom_id": f"fix-{batch_start:05d}",
-                "params": {
-                    "model": self._model,
-                    "max_tokens": 16384,
-                    "system": FIX_SUMMARIES_SYSTEM_PROMPT,
-                    "messages": [{"role": "user", "content": user_message}],
-                },
-            })
-
-        batch = self._client.messages.batches.create(requests=requests)
-        log.info(f"Submitted fix batch {batch.id} with {len(requests)} sub-requests")
-        return batch.id
-
-    def poll_fix_batch(
-        self,
-        batch_id: str,
-        invalid: list[tuple[ExtractedEvent, list[str]]],
-        poll_interval: int = 60,
+    def _fix_summaries(
+        self, invalid: list[tuple[ExtractedEvent, list[str]]]
     ) -> list[list[ExtractedEvent]]:
-        """Poll until the fix batch completes. Returns replacement lists parallel to invalid."""
-        while True:
-            status = self._client.messages.batches.retrieve(batch_id)
-            counts = status.request_counts
-            log.info(
-                f"Fix batch {batch_id}: {status.processing_status} — "
-                f"{counts.processing} processing, {counts.succeeded} succeeded, "
-                f"{counts.errored} errored"
-            )
-            if status.processing_status == "ended":
-                break
-            time.sleep(poll_interval)
-
-        # Collect by batch_start index
-        batch_outputs: dict[int, list[list[ExtractedEvent]]] = {}
-        for result in self._fetch_batch_results_with_retry(batch_id):
-            batch_start = int(result.custom_id.split("-")[1])
-            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
-            if result.result.type == "succeeded":
-                content = result.result.message.content[0].text.strip()
-                batch_outputs[batch_start] = self._parse_fix_response(content, batch)
-            else:
-                log.error(f"Fix batch sub-request {result.custom_id} failed")
-                batch_outputs[batch_start] = [[] for _ in batch]
-
-        # Reassemble in original order
+        """Batch-send events with invalid summaries to Claude for correction."""
         results: list[list[ExtractedEvent]] = []
         for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
             batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
-            results.extend(batch_outputs.get(batch_start, [[] for _ in batch]))
+            results.extend(self._fix_summaries_batch(batch))
         return results
+
+    def _fix_summaries_batch(
+        self, invalid: list[tuple[ExtractedEvent, list[str]]]
+    ) -> list[list[ExtractedEvent]]:
+        """Fix a single batch of invalid events (synchronous)."""
+        payload = []
+        for event, missing in invalid:
+            d = event.model_dump(mode="json")
+            d["_missing"] = missing
+            payload.append(d)
+
+        user_message = (
+            "Fix the events so every name listed in '_missing' appears verbatim "
+            "in the summary. Split date-range events into separate events:\n\n"
+            + json.dumps(payload, indent=2)
+        )
+
+        try:
+            with self._client.messages.stream(
+                model=self._model,
+                max_tokens=16384,
+                system=FIX_SUMMARIES_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_message}],
+            ) as stream:
+                response = stream.get_final_message()
+        except anthropic.APIError as e:
+            log.error(f"Claude API error during summary fix: {e}")
+            return [[] for _ in invalid]
+
+        if response.stop_reason == "max_tokens":
+            log.warning(
+                f"Summary fix response truncated for batch of {len(invalid)} events; "
+                f"all will be dropped"
+            )
+            return [[] for _ in invalid]
+
+        return self._parse_fix_response(response.content[0].text.strip(), invalid)
 
     def _parse_fix_response(
         self,
@@ -542,130 +745,3 @@ class ClaudeClient:
                     log.warning(f"Skipping malformed fixed event: {e}")
             results.append(group)
         return results
-
-    def _validate_event(self, event: ExtractedEvent) -> list[str]:
-        """Return entity names that are not present as verbatim substrings in the summary."""
-        missing = []
-        for person in event.people:
-            if person.name not in event.summary:
-                missing.append(person.name)
-        if event.place.name not in event.summary:
-            missing.append(event.place.name)
-        if event.time.name not in event.summary:
-            missing.append(event.time.name)
-        return missing
-
-    _FIX_BATCH_SIZE = 15
-
-    def _fix_summaries(
-        self, invalid: list[tuple[ExtractedEvent, list[str]]]
-    ) -> list[list[ExtractedEvent]]:
-        """Batch-send events with invalid summaries to Claude for correction.
-
-        Returns a list of replacement lists — one per input event. An event may be
-        replaced by multiple events (e.g. when a date range is split into two).
-        An empty inner list means the event could not be fixed and should be dropped.
-
-        Events are processed in batches of _FIX_BATCH_SIZE to keep output tokens
-        manageable and avoid truncation.
-        """
-        results: list[list[ExtractedEvent]] = []
-        for batch_start in range(0, len(invalid), self._FIX_BATCH_SIZE):
-            batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
-            results.extend(self._fix_summaries_batch(batch))
-        return results
-
-    def _fix_summaries_batch(
-        self, invalid: list[tuple[ExtractedEvent, list[str]]]
-    ) -> list[list[ExtractedEvent]]:
-        """Fix a single batch of invalid events."""
-        payload = []
-        for event, missing in invalid:
-            d = event.model_dump(mode="json")
-            d["_missing"] = missing
-            payload.append(d)
-
-        user_message = (
-            "Fix the events so every name listed in '_missing' appears verbatim "
-            "in the summary. Split date-range events into separate events:\n\n"
-            + json.dumps(payload, indent=2)
-        )
-
-        try:
-            with self._client.messages.stream(
-                model=self._model,
-                max_tokens=16384,
-                system=FIX_SUMMARIES_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-            ) as stream:
-                response = stream.get_final_message()
-        except anthropic.APIError as e:
-            log.error(f"Claude API error during summary fix: {e}")
-            return [[] for _ in invalid]
-
-        if response.stop_reason == "max_tokens":
-            log.warning(
-                f"Summary fix response truncated for batch of {len(invalid)} events; "
-                f"all will be dropped"
-            )
-            return [[] for _ in invalid]
-
-        return self._parse_fix_response(response.content[0].text.strip(), invalid)
-
-    def pick_best_entity_match(
-        self,
-        entity_name: str,
-        entity_type: str,
-        candidates: list[dict],
-    ) -> UUID | None:
-        """Use Claude to pick the best matching entity from candidates."""
-        if not candidates:
-            return None
-
-        def _fmt_candidate(c: dict) -> str:
-            parts = [f"- id: {c['id']}, name: {c['name']}"]
-            if c.get("description"):
-                parts.append(f"  description: {c['description']}")
-            if c.get("earliest_date") or c.get("latest_date"):
-                parts.append(
-                    f"  dates: {c.get('earliest_date', '?')} – {c.get('latest_date', '?')}"
-                )
-            return "\n".join(parts)
-
-        candidates_text = "\n".join(_fmt_candidate(c) for c in candidates)
-
-        user_message = (
-            f"Entity to match:\n"
-            f"- Name: {entity_name}\n"
-            f"- Type: {entity_type}\n\n"
-            f"Candidates:\n{candidates_text}"
-        )
-
-        try:
-            response = self._client.messages.create(
-                model=self._model,
-                max_tokens=256,
-                system=ENTITY_MATCH_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
-            )
-        except anthropic.APIError as e:
-            log.error(f"Claude API error during entity matching: {e}")
-            return None
-
-        content = response.content[0].text.strip()
-        if content.startswith("```"):
-            lines = content.split("\n")
-            content = (
-                "\n".join(lines[1:-1])
-                if lines[-1].strip() == "```"
-                else "\n".join(lines[1:])
-            )
-
-        try:
-            result, _ = json.JSONDecoder().raw_decode(content)
-            if result.get("match") and result.get("id"):
-                return UUID(result["id"])
-        except (json.JSONDecodeError, ValueError) as e:
-            log.warning(f"Failed to parse entity match response: {e}")
-
-        return None

@@ -66,16 +66,18 @@ class Publisher:
         summary = event.summary
 
         for person in event.people:
-            start = summary.find(person.name)
+            # Use summary_name (extracted form) for char offset, not canonical DB name
+            person_text = person.summary_name
+            start = summary.find(person_text)
             if start == -1:
-                log.warning(f"Person '{person.name}' not found in summary text")
+                log.warning(f"Person '{person_text}' not found in summary text")
                 continue
             tags.append(
                 {
                     "id": str(person.id),
-                    "name": person.name,
+                    "name": person_text,
                     "start_char": start,
-                    "stop_char": start + len(person.name),
+                    "stop_char": start + len(person_text),
                 }
             )
 

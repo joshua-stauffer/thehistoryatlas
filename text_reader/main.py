@@ -36,9 +36,9 @@ def main():
     )
     parser.add_argument(
         "--model",
-        default="haiku",
+        default="sonnet",
         choices=["haiku", "sonnet", "opus"],
-        help="Claude model to use (default: haiku)",
+        help="Claude model to use (default: sonnet)",
     )
     parser.add_argument(
         "--start-page", type=int, default=1, help="Start page (default: 1)"

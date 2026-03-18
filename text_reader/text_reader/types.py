@@ -35,7 +35,8 @@ class ExtractedEvent(BaseModel):
 
 class ResolvedPerson(BaseModel):
     id: UUID
-    name: str
+    name: str  # canonical name stored in DB
+    summary_name: str  # form used in the summary text (for tag char-offset building)
 
 
 class ResolvedPlace(BaseModel):

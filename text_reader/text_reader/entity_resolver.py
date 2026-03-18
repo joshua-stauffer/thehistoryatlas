@@ -30,13 +30,168 @@ class EntityResolver:
         self._place_cache: dict[str, ResolvedPlace] = {}
         self._time_cache: dict[str, ResolvedTime] = {}
 
+    def pre_resolve(self, events: list[ExtractedEvent]) -> None:
+        """Pre-resolve all unique entities using a batched Message Batch.
+
+        Searches the DB for candidates for every unique person and place across
+        all events, then submits a single entity-match batch to Claude. Results
+        are stored in the entity caches so the subsequent publishing loop makes
+        no additional Claude API calls for entity resolution.
+        """
+        # Step 1: Collect unique entities with event context
+        person_info: dict[str, dict] = {}  # cache_key -> info dict
+        place_info: dict[str, dict] = {}   # cache_key -> info dict
+
+        for event in events:
+            event_context = self._build_event_context(event)
+
+            for person in event.people:
+                key = person.name.lower().strip()
+                if key not in person_info:
+                    person_info[key] = {
+                        "name": person.name,
+                        "description": person.description,
+                        "context": event_context,
+                    }
+
+            search_name = event.place.qualified_name or event.place.name
+            key = search_name.lower().strip()
+            if key not in place_info:
+                place_info[key] = {
+                    "place": event.place,
+                    "search_name": search_name,
+                    "context": event_context,
+                }
+
+        log.info(
+            f"Pre-resolving {len(person_info)} unique people "
+            f"and {len(place_info)} unique places"
+        )
+
+        # Step 2: Search DB for candidates; collect entity-match requests
+        entity_requests: list[dict] = []
+
+        for key, info in person_info.items():
+            if key in self._person_cache:
+                continue
+            candidates = self._rest.search_people(name=info["name"])
+            if candidates:
+                entity_requests.append({
+                    "key": f"entity-{len(entity_requests):05d}",
+                    "entity_type": "PERSON",
+                    "cache_key": key,
+                    "entity_name": info["name"],
+                    "context": info["context"],
+                    "candidates": candidates,
+                    "info": info,
+                })
+            else:
+                created = self._rest.create_person(
+                    name=info["name"], description=info["description"]
+                )
+                self._person_cache[key] = ResolvedPerson(
+                    id=UUID(created["id"]), name=info["name"],
+                    summary_name=info["name"],
+                )
+
+        for key, info in place_info.items():
+            if key in self._place_cache:
+                continue
+            place = info["place"]
+            candidates = self._rest.search_places(
+                name=info["search_name"],
+                latitude=place.latitude,
+                longitude=place.longitude,
+            )
+            if candidates:
+                entity_requests.append({
+                    "key": f"entity-{len(entity_requests):05d}",
+                    "entity_type": "PLACE",
+                    "cache_key": key,
+                    "entity_name": info["search_name"],
+                    "context": info["context"],
+                    "candidates": candidates,
+                    "info": info,
+                })
+            else:
+                self._place_cache[key] = self._create_place(
+                    place, info["search_name"]
+                )
+
+        if not entity_requests:
+            log.info("No entity matching needed — all entities resolved from cache or created")
+            return
+
+        # Step 3: Submit a single batch for all entity-matching decisions
+        log.info(f"Submitting entity match batch for {len(entity_requests)} entities")
+        batch_id = self._claude.submit_entity_match_batch(entity_requests)
+        match_results = self._claude.poll_entity_match_batch(batch_id)
+
+        # Step 4: Populate caches from batch results
+        for req in entity_requests:
+            key = req["cache_key"]
+            match_id = match_results.get(req["key"])
+
+            if req["entity_type"] == "PERSON":
+                info = req["info"]
+                if match_id:
+                    matched = next(
+                        (c for c in req["candidates"] if UUID(c["id"]) == match_id), None
+                    )
+                    if matched:
+                        self._person_cache[key] = ResolvedPerson(
+                            id=match_id, name=matched["name"],
+                            summary_name=info["name"],
+                        )
+                        continue
+                # No match → create new person
+                created = self._rest.create_person(
+                    name=info["name"], description=info["description"]
+                )
+                self._person_cache[key] = ResolvedPerson(
+                    id=UUID(created["id"]), name=info["name"],
+                    summary_name=info["name"],
+                )
+
+            else:  # PLACE
+                place = req["info"]["place"]
+                if match_id:
+                    matched = next(
+                        (c for c in req["candidates"] if UUID(c["id"]) == match_id), None
+                    )
+                    if matched:
+                        self._place_cache[key] = ResolvedPlace(
+                            id=match_id,
+                            name=matched["name"],
+                            latitude=matched.get("latitude", 0.0),
+                            longitude=matched.get("longitude", 0.0),
+                            summary_name=place.name,
+                        )
+                        continue
+                # No match → create new place
+                self._place_cache[key] = self._create_place(
+                    place, req["info"]["search_name"]
+                )
+
     def resolve_event(self, event: ExtractedEvent) -> ResolvedEvent:
         """Resolve all entities in an extracted event against the DB."""
-        people = [self._resolve_person(p.name, p.description) for p in event.people]
-        place = self._resolve_place(event.place)
+        event_context = self._build_event_context(event)
+        people = []
+        for p in event.people:
+            resolved = self._resolve_person(p.name, p.description, context=event_context)
+            # Override summary_name with THIS event's extracted name — the cache
+            # may hold a different form from the first event (e.g., "Benjamin Dale"
+            # vs "Benjamin James Dale").
+            resolved = resolved.model_copy(update={"summary_name": p.name})
+            people.append(resolved)
+        place = self._resolve_place(event.place, context=event_context)
+        # Override summary_name with THIS event's place.name — the cache may
+        # store a different summary_name from the first event that created
+        # the entry (e.g., "Lambeth" vs "St. Paul's Cathedral" when both
+        # share qualified_name "Lambeth, London").
+        place = place.model_copy(update={"summary_name": event.place.name})
         time = self._resolve_time(event.time)
 
-        # Check for duplicate summary (requires at least one person)
         if people:
             match = self._rest.find_matching_summary(
                 person_ids=[p.id for p in people],
@@ -67,7 +222,20 @@ class EntityResolver:
             existing_summary_id=existing_summary_id,
         )
 
-    def _resolve_person(self, name: str, description: str | None) -> ResolvedPerson:
+    # -------------------------------------------------------------------------
+    # Private helpers
+    # -------------------------------------------------------------------------
+
+    def _build_event_context(self, event: ExtractedEvent) -> str | None:
+        """Build a context string for entity matching from an event's people + excerpt."""
+        parts = [p.description for p in event.people if p.description]
+        if event.excerpt:
+            parts.append(f"Excerpt: {event.excerpt[:200]}")
+        return "; ".join(parts) or None
+
+    def _resolve_person(
+        self, name: str, description: str | None, context: str | None = None
+    ) -> ResolvedPerson:
         cache_key = name.lower().strip()
         if cache_key in self._person_cache:
             return self._person_cache[cache_key]
@@ -78,31 +246,33 @@ class EntityResolver:
                 entity_name=name,
                 entity_type="PERSON",
                 candidates=candidates,
+                context=context,
             )
             if match_id:
                 matched = next(
-                    (c for c in candidates if UUID(c["id"]) == match_id),
-                    None,
+                    (c for c in candidates if UUID(c["id"]) == match_id), None
                 )
                 if matched:
-                    result = ResolvedPerson(id=match_id, name=matched["name"])
+                    result = ResolvedPerson(
+                        id=match_id, name=matched["name"],
+                        summary_name=name,
+                    )
                     self._person_cache[cache_key] = result
                     return result
 
-        # No match found — create new person
         created = self._rest.create_person(name=name, description=description)
-        result = ResolvedPerson(id=UUID(created["id"]), name=name)
+        result = ResolvedPerson(
+            id=UUID(created["id"]), name=name, summary_name=name,
+        )
         self._person_cache[cache_key] = result
         return result
 
-    def _resolve_place(self, place) -> ResolvedPlace:
-        # Use qualified_name for search/create when available; fall back to name
+    def _resolve_place(self, place, context: str | None = None) -> ResolvedPlace:
         search_name = place.qualified_name or place.name
         cache_key = search_name.lower().strip()
         if cache_key in self._place_cache:
             return self._place_cache[cache_key]
 
-        # Search by qualified name and coordinates
         candidates = self._rest.search_places(
             name=search_name,
             latitude=place.latitude,
@@ -113,11 +283,11 @@ class EntityResolver:
                 entity_name=search_name,
                 entity_type="PLACE",
                 candidates=candidates,
+                context=context,
             )
             if match_id:
                 matched = next(
-                    (c for c in candidates if UUID(c["id"]) == match_id),
-                    None,
+                    (c for c in candidates if UUID(c["id"]) == match_id), None
                 )
                 if matched:
                     result = ResolvedPlace(
@@ -130,38 +300,7 @@ class EntityResolver:
                     self._place_cache[cache_key] = result
                     return result
 
-        # No match — try GeoNames for structured data
-        lat = place.latitude
-        lng = place.longitude
-        geonames_id = None
-
-        if self._geonames.available:
-            geo_result = self._geonames.search(search_name)
-            if geo_result:
-                lat = geo_result["latitude"]
-                lng = geo_result["longitude"]
-                geonames_id = geo_result["geonames_id"]
-
-        # Fall back to Claude's approximate coordinates
-        if lat is None:
-            lat = 0.0
-        if lng is None:
-            lng = 0.0
-
-        created = self._rest.create_place(
-            name=search_name,
-            latitude=lat,
-            longitude=lng,
-            geonames_id=geonames_id,
-            description=place.description,
-        )
-        result = ResolvedPlace(
-            id=UUID(created["id"]),
-            name=search_name,
-            latitude=lat,
-            longitude=lng,
-            summary_name=place.name,
-        )
+        result = self._create_place(place, search_name)
         self._place_cache[cache_key] = result
         return result
 
@@ -170,7 +309,6 @@ class EntityResolver:
         if cache_key in self._time_cache:
             return self._time_cache[cache_key]
 
-        # Check if time already exists
         existing_id = self._rest.check_time_exists(
             datetime=time.date,
             calendar_model=time.calendar_model,
@@ -187,7 +325,6 @@ class EntityResolver:
             self._time_cache[cache_key] = result
             return result
 
-        # Create new time
         created = self._rest.create_time(
             name=time.name,
             date=time.date,
@@ -203,3 +340,36 @@ class EntityResolver:
         )
         self._time_cache[cache_key] = result
         return result
+
+    def _create_place(self, place, search_name: str) -> ResolvedPlace:
+        """Create a new place, trying GeoNames for coordinates first."""
+        lat = place.latitude
+        lng = place.longitude
+        geonames_id = None
+
+        if self._geonames.available:
+            geo_result = self._geonames.search(search_name)
+            if geo_result:
+                lat = geo_result["latitude"]
+                lng = geo_result["longitude"]
+                geonames_id = geo_result["geonames_id"]
+
+        if lat is None:
+            lat = 0.0
+        if lng is None:
+            lng = 0.0
+
+        created = self._rest.create_place(
+            name=search_name,
+            latitude=lat,
+            longitude=lng,
+            geonames_id=geonames_id,
+            description=place.description,
+        )
+        return ResolvedPlace(
+            id=UUID(created["id"]),
+            name=search_name,
+            latitude=lat,
+            longitude=lng,
+            summary_name=place.name,
+        )

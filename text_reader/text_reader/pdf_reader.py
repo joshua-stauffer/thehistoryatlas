@@ -4,7 +4,7 @@ import fitz  # PyMuPDF
 
 log = logging.getLogger(__name__)
 
-TARGET_CHUNK_SIZE = 25_000  # ~6K tokens — keeps output volume manageable for dense text
+TARGET_CHUNK_SIZE = 20_000  # ~5K tokens — keeps output well within max_tokens for multi-sentence summaries
 
 
 class PageText:

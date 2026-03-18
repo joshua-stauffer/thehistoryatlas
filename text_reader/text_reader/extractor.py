@@ -279,46 +279,54 @@ def run_batch_pipeline(
         geonames_client=geonames_client,
     )
 
-    total_extracted = 0
-    total_published = 0
-    total_skipped = 0
-
+    # Assign page numbers and flatten all events before pre-resolution
+    all_events = []
     for custom_id, events in batch_results:
         chunk = chunk_map.get(custom_id)
-        total_extracted += len(events)
-
         for event in events:
             if event.page_num is None and chunk:
                 if event.excerpt:
                     event.page_num = chunk.page_for_excerpt(event.excerpt)
                 else:
                     event.page_num = chunk.start_page
+            all_events.append(event)
 
-            try:
-                resolved = resolver.resolve_event(event)
-            except Exception as e:
-                log.error(f"Failed to resolve event: {e}")
-                total_skipped += 1
-                continue
+    # Pre-resolve all entities in a single batch before publishing
+    if all_events:
+        print(f"\nPre-resolving entities for {len(all_events)} events...")
+        resolver.pre_resolve(all_events)
+        print("Entity pre-resolution complete.")
 
-            if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
-                total_skipped += 1
-                continue
+    total_extracted = len(all_events)
+    total_published = 0
+    total_skipped = 0
 
-            try:
-                summary_id = publisher.publish_event(
-                    event=resolved,
-                    source_id=source_id,
-                    story_id=story_id,
-                )
-                if summary_id:
-                    total_published += 1
-                    print(f"  Published: {event.summary[:60]}...")
-                else:
-                    total_skipped += 1
-            except Exception as e:
-                log.error(f"Failed to publish: {e}")
+    for event in all_events:
+        try:
+            resolved = resolver.resolve_event(event)
+        except Exception as e:
+            log.error(f"Failed to resolve event: {e}")
+            total_skipped += 1
+            continue
+
+        if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
+            total_skipped += 1
+            continue
+
+        try:
+            summary_id = publisher.publish_event(
+                event=resolved,
+                source_id=source_id,
+                story_id=story_id,
+            )
+            if summary_id:
+                total_published += 1
+                print(f"  Published: {event.summary[:60]}...")
+            else:
                 total_skipped += 1
+        except Exception as e:
+            log.error(f"Failed to publish: {e}")
+            total_skipped += 1
 
     _print_summary(total_extracted, total_published, total_skipped)
 
@@ -382,43 +390,51 @@ def run_resume_pipeline(
         geonames_client=geonames_client,
     )
 
-    total_extracted = 0
-    total_published = 0
-    total_skipped = 0
-
+    # Assign page numbers and flatten all events before pre-resolution
+    all_events = []
     for custom_id, events in batch_results:
         start_page = chunk_start_pages.get(custom_id)
-        total_extracted += len(events)
-
         for event in events:
             if event.page_num is None and start_page is not None:
                 event.page_num = start_page
+            all_events.append(event)
 
-            try:
-                resolved = resolver.resolve_event(event)
-            except Exception as e:
-                log.error(f"Failed to resolve event: {e}")
-                total_skipped += 1
-                continue
+    # Pre-resolve all entities in a single batch before publishing
+    if all_events:
+        print(f"\nPre-resolving entities for {len(all_events)} events...")
+        resolver.pre_resolve(all_events)
+        print("Entity pre-resolution complete.")
 
-            if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
-                total_skipped += 1
-                continue
+    total_extracted = len(all_events)
+    total_published = 0
+    total_skipped = 0
 
-            try:
-                summary_id = publisher.publish_event(
-                    event=resolved,
-                    source_id=source_id,
-                    story_id=story_id,
-                )
-                if summary_id:
-                    total_published += 1
-                    print(f"  Published: {event.summary[:60]}...")
-                else:
-                    total_skipped += 1
-            except Exception as e:
-                log.error(f"Failed to publish: {e}")
+    for event in all_events:
+        try:
+            resolved = resolver.resolve_event(event)
+        except Exception as e:
+            log.error(f"Failed to resolve event: {e}")
+            total_skipped += 1
+            continue
+
+        if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
+            total_skipped += 1
+            continue
+
+        try:
+            summary_id = publisher.publish_event(
+                event=resolved,
+                source_id=source_id,
+                story_id=story_id,
+            )
+            if summary_id:
+                total_published += 1
+                print(f"  Published: {event.summary[:60]}...")
+            else:
                 total_skipped += 1
+        except Exception as e:
+            log.error(f"Failed to publish: {e}")
+            total_skipped += 1
 
     _print_summary(total_extracted, total_published, total_skipped)
 
