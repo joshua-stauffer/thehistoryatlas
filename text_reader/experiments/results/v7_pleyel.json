@@ -1,0 +1,62 @@
+{
+  "label": "v7_pleyel",
+  "runs": [
+    {
+      "run_id": "v7_pleyel-run-000",
+      "total": 103,
+      "valid": 83,
+      "invalid": 20,
+      "valid_pct": 80.58252427184466,
+      "missing_categories": {
+        "place": 15,
+        "time": 6
+      }
+    },
+    {
+      "run_id": "v7_pleyel-run-001",
+      "total": 83,
+      "valid": 74,
+      "invalid": 9,
+      "valid_pct": 89.1566265060241,
+      "missing_categories": {
+        "place": 7,
+        "time": 2
+      }
+    },
+    {
+      "run_id": "v7_pleyel-run-002",
+      "total": 106,
+      "valid": 76,
+      "invalid": 30,
+      "valid_pct": 71.69811320754717,
+      "missing_categories": {
+        "place": 29,
+        "person": 1,
+        "time": 1
+      }
+    },
+    {
+      "run_id": "v7_pleyel-run-003",
+      "total": 89,
+      "valid": 89,
+      "invalid": 0,
+      "valid_pct": 100.0,
+      "missing_categories": {}
+    },
+    {
+      "run_id": "v7_pleyel-run-004",
+      "total": 101,
+      "valid": 75,
+      "invalid": 26,
+      "valid_pct": 74.25742574257426,
+      "missing_categories": {
+        "place": 14,
+        "person": 10,
+        "time": 3
+      }
+    }
+  ],
+  "cost": 0.232582,
+  "input_tokens": 59425,
+  "output_tokens": 104406
+}

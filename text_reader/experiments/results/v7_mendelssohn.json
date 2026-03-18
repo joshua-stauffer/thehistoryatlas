@@ -1,0 +1,56 @@
+{
+  "label": "v7_mendelssohn",
+  "runs": [
+    {
+      "run_id": "v7_mendelssohn-run-000",
+      "total": 0,
+      "valid": 0,
+      "invalid": 0,
+      "valid_pct": 0,
+      "missing_categories": {}
+    },
+    {
+      "run_id": "v7_mendelssohn-run-001",
+      "total": 48,
+      "valid": 46,
+      "invalid": 2,
+      "valid_pct": 95.83333333333334,
+      "missing_categories": {
+        "time": 1,
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v7_mendelssohn-run-002",
+      "total": 48,
+      "valid": 46,
+      "invalid": 2,
+      "valid_pct": 95.83333333333334,
+      "missing_categories": {
+        "time": 2
+      }
+    },
+    {
+      "run_id": "v7_mendelssohn-run-003",
+      "total": 45,
+      "valid": 41,
+      "invalid": 4,
+      "valid_pct": 91.11111111111111,
+      "missing_categories": {
+        "place": 2,
+        "time": 2
+      }
+    },
+    {
+      "run_id": "v7_mendelssohn-run-004",
+      "total": 0,
+      "valid": 0,
+      "invalid": 0,
+      "valid_pct": 0,
+      "missing_categories": {}
+    }
+  ],
+  "cost": 0.14866600000000002,
+  "input_tokens": 63070,
+  "output_tokens": 61719
+}

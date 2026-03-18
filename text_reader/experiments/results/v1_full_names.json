@@ -1,0 +1,62 @@
+{
+  "label": "v1_full_names",
+  "runs": [
+    {
+      "run_id": "v1_full_names-run-000",
+      "total": 49,
+      "valid": 44,
+      "invalid": 5,
+      "valid_pct": 89.79591836734694,
+      "missing_categories": {
+        "time": 4,
+        "place": 1
+      }
+    },
+    {
+      "run_id": "v1_full_names-run-001",
+      "total": 44,
+      "valid": 41,
+      "invalid": 3,
+      "valid_pct": 93.18181818181817,
+      "missing_categories": {
+        "time": 2,
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v1_full_names-run-002",
+      "total": 43,
+      "valid": 35,
+      "invalid": 8,
+      "valid_pct": 81.3953488372093,
+      "missing_categories": {
+        "place": 4,
+        "time": 4
+      }
+    },
+    {
+      "run_id": "v1_full_names-run-003",
+      "total": 47,
+      "valid": 43,
+      "invalid": 4,
+      "valid_pct": 91.48936170212765,
+      "missing_categories": {
+        "person": 1,
+        "time": 3
+      }
+    },
+    {
+      "run_id": "v1_full_names-run-004",
+      "total": 41,
+      "valid": 37,
+      "invalid": 4,
+      "valid_pct": 90.2439024390244,
+      "missing_categories": {
+        "place": 4
+      }
+    }
+  ],
+  "cost": 0.1293,
+  "input_tokens": 62250,
+  "output_tokens": 52200
+}

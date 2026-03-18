@@ -1,0 +1,58 @@
+{
+  "label": "v8_sonnet_pleyel",
+  "runs": [
+    {
+      "run_id": "v8_sonnet_pleyel-run-000",
+      "total": 79,
+      "valid": 78,
+      "invalid": 1,
+      "valid_pct": 98.73417721518987,
+      "missing_categories": {
+        "time": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_pleyel-run-001",
+      "total": 87,
+      "valid": 83,
+      "invalid": 4,
+      "valid_pct": 95.40229885057471,
+      "missing_categories": {
+        "place": 4
+      }
+    },
+    {
+      "run_id": "v8_sonnet_pleyel-run-002",
+      "total": 81,
+      "valid": 78,
+      "invalid": 3,
+      "valid_pct": 96.29629629629629,
+      "missing_categories": {
+        "place": 3
+      }
+    },
+    {
+      "run_id": "v8_sonnet_pleyel-run-003",
+      "total": 81,
+      "valid": 80,
+      "invalid": 1,
+      "valid_pct": 98.76543209876543,
+      "missing_categories": {
+        "place": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_pleyel-run-004",
+      "total": 76,
+      "valid": 72,
+      "invalid": 4,
+      "valid_pct": 94.73684210526315,
+      "missing_categories": {
+        "place": 4
+      }
+    }
+  ],
+  "cost": 0.196978,
+  "input_tokens": 48145,
+  "output_tokens": 88860
+}

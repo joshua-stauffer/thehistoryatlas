@@ -1,0 +1,676 @@
+# Norwich (pp. 432-436) — Summary Comparison
+# v4/Haiku: 45 events | v8/Haiku: 52 events | v8/Sonnet: 51 events
+
+Matched by all 3: 21 | Matched by 2: 19 | Unique to 1: 47
+
+
+================================================================================
+  ALL THREE CONFIGURATIONS
+================================================================================
+
+--- Event 1: Daniel Norcome / Windsor / 1576 ---
+
+  [v4/Haiku] ✓
+  Daniel Norcome was born at St. George's Chapel, Windsor in 1576.
+
+  [v8/Haiku] ✓
+  Daniel Norcome, a lay-clerk of St. George's Chapel, Windsor, was born there in 1576.
+
+  [v8/Sonnet] ✓
+  Daniel Norcome was born at Windsor in 1576, the son of a lay-clerk of St. George's Chapel, Windsor, and was himself a lay-clerk there before his religious conversion led to his departure.
+
+--- Event 2: Anthony van Noordt / Amsterdam / 1659 ---
+
+  [v4/Haiku] ✓
+  Anthony van Noordt or Noorth was organist of the Nieuwe Kerk at Amsterdam in 1659.
+
+  [v8/Haiku] ✓
+  Anthony van Noordt was organist of the Nieuwe Kerk at Amsterdam in 1659, when he published a Tabulatur-Boeck for the organ.
+
+  [v8/Sonnet] ✓
+  Anthony van Noordt published a Tabulatur-Boeck for the organ in Amsterdam in 1659, while serving as organist of the Nieuwe Kerk, containing French Psalm tunes with variations and six Fantasias in fugue-form.
+
+--- Event 3: Barak Norman, Nathaniel Cross / London / 1715 ---
+
+  [v4/Haiku] ✓
+  Barak Norman went into partnership with Nathaniel Cross in London in 1715.
+
+  [v8/Haiku] ✓
+  Barak Norman, an English viol and violoncello maker, went into partnership with Nathaniel Cross at London in 1715.
+
+  [v8/Sonnet] ✓
+  Barak Norman went into partnership with Nathaniel Cross in London in 1715, carrying on a joint business at the sign of the Bass Viol in St. Paul's Churchyard.
+
+--- Event 4: Thomas Norris / Worcester / 1761 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris appeared as one of the principal soprani at the Worcester Festival in 1761.
+
+  [v8/Haiku] ✓
+  Thomas Norris appeared as one of the principal soprani at the Worcester Festival in 1761.
+
+  [v8/Sonnet] ✓
+  Thomas Norris appeared as one of the principal soprani at the Worcester Festival in 1761, early in his career as a celebrated vocal performer.
+
+--- Event 5: Thomas Norris / Hereford / 1762 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris appeared at the Hereford Festival in 1762.
+
+  [v8/Haiku] ✓
+  Thomas Norris appeared at the Hereford Festival in 1762.
+
+  [v8/Sonnet] ✓
+  Thomas Norris appeared as one of the principal soprani at the Hereford Festival in 1762, continuing his early career as a celebrated vocal performer.
+
+--- Event 6: Thomas Norris / Oxford / 1765 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris was appointed organist of Christ Church Cathedral in Oxford in 1765.
+
+  [v8/Haiku] ✓
+  Thomas Norris was appointed organist of Christ Church Cathedral in Oxford in 1765.
+
+  [v8/Sonnet] ✓
+  Thomas Norris was appointed organist of Christ Church Cathedral in Oxford in 1765, marking the beginning of a long association with the university city.
+
+--- Event 7: Thomas Norris / Gloucester / 1766 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris appeared at the Gloucester Festival in 1766 as a tenor singer.
+
+  [v8/Haiku] ✓
+  Thomas Norris appeared at the Gloucester Festival in 1766 as a tenor singer.
+
+  [v8/Sonnet] ✓
+  Thomas Norris appeared at the Gloucester Festival in 1766 as a tenor singer, transitioning from soprano roles and beginning a long association with the Three Choirs Meetings that lasted until 1788.
+
+--- Event 8: Thomas Norris / London / 1784 ---
+
+  [v4/Haiku] ✗
+  Thomas Norris sang at the Commemoration of Handel in 1784 in Westminster Abbey.
+  MISSING: ['London']
+
+  [v8/Haiku] ✗
+  Thomas Norris sang at the Commemoration of Handel in 1784, where his delivery of the final recitatives in 'Israel in Egypt' and of 'Thy rebuke' and 'Behold and see' in 'Messiah' was greatly admired.
+  MISSING: ['London']
+
+  [v8/Sonnet] ✓
+  Thomas Norris sang at the Commemoration of Handel in London in 1784, where his delivery of final recitatives in 'Israel in Egypt' and of 'Thy rebuke' and 'Behold and see' in 'Messiah' was greatly admired.
+
+--- Event 9: Thomas Norris / Birmingham / 1790 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris was engaged at the Birmingham Festival in 1790.
+
+  [v8/Haiku] ✓
+  Thomas Norris was engaged at the Birmingham Festival in 1790.
+
+  [v8/Sonnet] ✓
+  Thomas Norris was engaged at the Birmingham Festival in 1790, but the effort proved fatal, and he expired ten days later at Himley Hall near Stourbridge on Sept. 3, 1790.
+
+--- Event 10: Carl Friedrich Ludwig Nohl / Bonn / 1850 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl entered the University of Bonn in 1850.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl entered the University of Bonn in 1850.
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl entered the University of Bonn in 1850, having been educated at the Gymnasium of Duisburg, as part of his father's plan for him to pursue a legal career.
+
+--- Event 11: Carl Friedrich Ludwig Nohl / Berlin / 1857 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl returned to Berlin in 1857 and continued his musical studies under Professor Kiel.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl returned to Berlin in 1857 and continued his musical studies under Professor Kiel.
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl returned to Berlin in 1857 and continued his musical studies under Professor Kiel after his health had necessitated a journey to France and Italy.
+
+--- Event 12: Carl Friedrich Ludwig Nohl / Heidelberg / 1858 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl settled at Heidelberg in 1858, finally abandoning the legal profession.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl finally abandoned the legal profession and settled at Heidelberg in 1858.
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl finally abandoned the legal profession and settled at Heidelberg in 1858, marking a decisive turn toward his career as a music scholar.
+
+--- Event 13: Carl Friedrich Ludwig Nohl / Heidelberg / 1860 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl received the degree of Doctor of Philosophy from the University of Heidelberg in 1860.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl received the degree of Doctor of Philosophy from the University of Heidelberg in 1860.
+
+  [v8/Sonnet] ✓
+  The University of Heidelberg conferred upon Carl Friedrich Ludwig Nohl the degree of Doctor of Philosophy in 1860, recognizing his scholarly pursuits after he had settled there and abandoned the legal profession.
+
+--- Event 14: Carl Friedrich Ludwig Nohl, King Ludwig II / Munich / 1865 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl went to Munich in 1861, where King Ludwig II appointed him an Honorary Professor in the University in 1865.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl went to Munich in 1861, where in 1865 King Ludwig II appointed him an Honorary Professor in the University.
+
+  [v8/Sonnet] ✓
+  King Ludwig II appointed Carl Friedrich Ludwig Nohl an Honorary Professor in the University of Munich in 1865, a royal recognition of his growing reputation as a music scholar.
+
+--- Event 15: Lillian Nordica / St. Petersburg / 1881 ---
+
+  [v4/Haiku] ✓
+  Lilian Nordica was engaged at St. Petersburg in 1881 and sang as Philine and Amalia in 'Un Ballo'.
+
+  [v8/Haiku] ✓
+  Lilian Nordica was engaged in 1881 at St. Petersburg and sang as Philine and Amalia in 'Un Ballo.'
+
+  [v8/Sonnet] ✓
+  Lillian Nordica was engaged in 1881 at St. Petersburg, where she sang as Philine and Amalia in 'Un Ballo' among other roles.
+
+--- Event 16: Lillian Nordica / Boston / 1885 ---
+
+  [v4/Haiku] ✓
+  Lilian Nordica reappeared on the stage at Boston in 1885.
+
+  [v8/Haiku] ✓
+  Lilian Nordica reappeared on the stage at Boston in 1885.
+
+  [v8/Sonnet] ✓
+  Lillian Nordica reappeared on the stage at Boston in 1885 after retiring into private life following the balloon-accident death of her first husband, going on to make a long tour with Mapleson.
+
+--- Event 17: Lillian Nordica / Bayreuth / 1894 ---
+
+  [v4/Haiku] ✓
+  Lilian Nordica sang Elsa in 'Lohengrin' at Bayreuth in 1894.
+
+  [v8/Haiku] ✓
+  Lilian Nordica sang Elsa in 'Lohengrin' at Bayreuth in 1894.
+
+  [v8/Sonnet] ✓
+  Lillian Nordica sang Elsa in 'Lohengrin' at Bayreuth in 1894, marking her entry into Wagnerian roles which she would expand at Covent Garden.
+
+--- Event 18: Lillian Nordica / Brescia / April 30, 1879 ---
+
+  [v4/Haiku] ✓
+  Lilian Nordica made her operatic debut on April 30, 1879, at Brescia as Violetta in 'Traviata'.
+
+  [v8/Haiku] ✓
+  Lilian Nordica made her successful debut under the name of Nordica at Brescia on April 30, 1879, as Violetta in 'Traviata.'
+
+  [v8/Sonnet] ✓
+  Lillian Nordica made a successful début under the name of Nordica at Brescia as Violetta in 'Traviata' on April 30, 1879, after studying singing at Milan with Sangiovanni.
+
+--- Event 19: Richard Nordraak / Christiania / June 12, 1842 ---
+
+  [v4/Haiku] ✓
+  Richard Nordraak was born at Christiania on June 12, 1842.
+
+  [v8/Haiku] ✓
+  Richard Nordraak was born at Christiania on June 12, 1842.
+
+  [v8/Sonnet] ✓
+  Richard Nordraak was born at Christiania on June 12, 1842, and would go on to exert an important influence on Grieg's career through their shared work in Norwegian national music.
+
+--- Event 20: Lillian Nordica / London / March 24, 1887 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica sang at the Philharmonic on March 24, 1887.
+  MISSING: ['London']
+
+  [v8/Haiku] ✗
+  Lilian Nordica sang at the Philharmonic on March 24, 1887.
+  MISSING: ['London']
+
+  [v8/Sonnet] ✓
+  Lillian Nordica sang at the Philharmonic in London on March 24, 1887, building on her successful Covent Garden début earlier that month.
+
+--- Event 21: Lillian Nordica / Farmington, Maine / May 12, 1859 ---
+
+  [v4/Haiku] ✓
+  Lilian Nordica, born Lilian Norton, was born at Farmington, Maine on May 12, 1859.
+
+  [v8/Haiku] ✗
+  Lillian Nordica, born Lillian Norton, was born on May 12, 1859, at Farmington, Maine, United States.
+  MISSING: ['Lilian Nordica']
+
+  [v8/Sonnet] ✓
+  Lillian Nordica was born on May 12, 1859, at Farmington, Maine, U.S.A., at the start of what would become a celebrated international operatic career.
+
+
+================================================================================
+  TWO OF THREE CONFIGURATIONS
+================================================================================
+
+--- Event 22: Daniel Norcome / London / 1601 ---
+
+  [v4/Haiku] ✗
+  Daniel Norcome contributed a madrigal, 'With angel's face and brightness,' to 'The Triumphs of Oriana' in 1601.
+  MISSING: ['London']
+
+  [v8/Sonnet] ✗
+  Daniel Norcome contributed the madrigal 'With angel's face and brightness' to 'The Triumphs of Oriana' in 1601, a landmark collection of English madrigals.
+  MISSING: ['London']
+
+--- Event 23: Barak Norman / London / 1688 ---
+
+  [v4/Haiku] ✓
+  Barak Norman, a viol and violoncello maker, was working in London from 1688 to 1740.
+
+  [v8/Sonnet] ✓
+  Barak Norman, one of the best of the old English school of viol-makers and possibly the first to manufacture violoncellos in England, was active as a viol and violoncello maker in London from 1688.
+
+--- Event 24: Thomas Norris / Drury Lane / 1762 ---
+
+  [v8/Haiku] ✓
+  Thomas Norris appeared at Drury Lane in 'The Spring,' a pasticcio, in 1762.
+
+  [v8/Sonnet] ✓
+  Thomas Norris appeared at Drury Lane in London in 1762 in 'The Spring,' a pasticcio, marking one of his early appearances on the London stage.
+
+--- Event 25: Carl Friedrich Ludwig Nohl / Berlin / 1853 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl entered the Prussian Civil Service as Referendarius in Berlin in 1853.
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl entered the Prussian Civil Service as Referendarius in Berlin in 1853, having continued the study of jurisprudence there while also receiving musical instruction from Professor Dehn.
+
+--- Event 26: Carl Friedrich Ludwig Nohl / Heidelberg / 1872 ---
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl returned to Heidelberg in 1872, where he resided as teacher of musical history and aesthetics until his death on December 16, 1885.
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl returned to Heidelberg in 1872, where he resided as teacher of musical history and aesthetics until his death.
+
+--- Event 27: Thomas Norris / Mere / August 1741 ---
+
+  [v4/Haiku] ✗
+  Thomas Norris was born near Salisbury in August 1741.
+  MISSING: ['Mere']
+
+  [v8/Haiku] ✓
+  Thomas Norris, Mus.B., was born at Mere near Salisbury in August 1741.
+
+--- Event 28: Thomas Norris / Oxford / December 15, 1765 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris was chosen organist of St. John's College in Oxford on December 15, 1765.
+
+  [v8/Haiku] ✓
+  Thomas Norris was chosen organist of St. John's College, Oxford on December 15, 1765.
+
+--- Event 29: Lilian Nordica / St. Petersburg / December 15, 1882 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica sang in 'Hamlet' on December 15, 1882.
+  MISSING: ['St. Petersburg']
+
+  [v8/Haiku] ✓
+  Lilian Nordica sang in 'Hamlet' at St. Petersburg on December 15, 1882.
+
+--- Event 30: Carl Friedrich Ludwig Nohl / Heidelberg / December 16, 1885 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl returned to Heidelberg in 1872, where he resided as teacher of musical history and aesthetics until his death on December 16, 1885.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl died in Heidelberg on December 16, 1885.
+
+--- Event 31: Vincenzo Bellini / Milan / December 26, 1831 ---
+
+  [v4/Haiku] ✓
+  Vincenzo Bellini's opera Norma was produced at Milan on December 26, 1831.
+
+  [v8/Haiku] ✗
+  Bellini's opera Norma, with words by Romani, was produced at Milan on December 26, 1831.
+  MISSING: ['Vincenzo Bellini']
+
+--- Event 32: Carl Friedrich Ludwig Nohl / Iserlohn / December 5, 1831 ---
+
+  [v4/Haiku] ✓
+  Carl Friedrich Ludwig Nohl, a prominent writer on music and musical subjects, was born at Iserlohn in Westphalia on December 5, 1831.
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl, a well-known writer on music and musical subjects, was born at Iserlohn in Westphalia on December 5, 1831.
+
+--- Event 33: Vincenzo Bellini / Paris / December 8, 1835 ---
+
+  [v4/Haiku] ✓
+  Vincenzo Bellini's opera Norma was produced in Paris at the Théâtre des Italiens on December 8, 1835.
+
+  [v8/Haiku] ✗
+  Bellini's opera Norma was produced at the Paris Italiens theatre on December 8, 1835.
+  MISSING: ['Vincenzo Bellini']
+
+--- Event 34: Lilian Nordica / St. Petersburg / July 21, 1882 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica made her debut in 'Faust' on July 21, 1882, and sang in 'Hamlet' on December 15, 1882.
+  MISSING: ['St. Petersburg']
+
+  [v8/Haiku] ✓
+  Lilian Nordica made her debut in 'Faust' at St. Petersburg on July 21, 1882.
+
+--- Event 35: Lilian Nordica / London / July 26, 1893 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica created the part of Zelioa in Edward Stanford's 'Veiled Prophet' on July 26, 1893.
+  MISSING: ['London']
+
+  [v8/Haiku] ✗
+  Lilian Nordica created the part of Zelioa in Stanford's 'Veiled Prophet' on July 26, 1893.
+  MISSING: ['Charles Villiers Stanford', 'London']
+
+--- Event 36: Lillian Nordica / Covent Garden / March 12, 1887 ---
+
+  [v8/Haiku] ✓
+  Lilian Nordica made her debut at Covent Garden under Mapleson on March 12, 1887, as Violetta.
+
+  [v8/Sonnet] ✓
+  Lillian Nordica made her début at Covent Garden as Violetta on March 12, 1887, under Mapleson, and later appeared as Gilda and Margaret with instant success on account of the purity of her style.
+
+--- Event 37: Richard Nordraak / Norway / March 20, 1866 ---
+
+  [v4/Haiku] ✗
+  Richard Nordraak died on March 20, 1866.
+  MISSING: ['Norway']
+
+  [v8/Haiku] ✗
+  Richard Nordraak died on March 20, 1866.
+  MISSING: ['Norway']
+
+--- Event 38: Lillian Nordica / Crystal Palace / May 21, 1878 ---
+
+  [v8/Haiku] ✗
+  Lilian Nordica sang at the Crystal Palace with Gilmore's American band on May 21 and 22, 1878.
+  MISSING: ['May 21, 1878']
+
+  [v8/Sonnet] ✓
+  Lillian Nordica came to England and sang at the Crystal Palace on May 21, 1878, performing with Gilmore's American band early in her international career.
+
+--- Event 39: Thomas Norris / Oxford / November 12, 1765 ---
+
+  [v4/Haiku] ✗
+  Thomas Norris graduated at Oxford as Mus.B. in November 1765, his exercise being performed in the Music School on November 12.
+  MISSING: ['November 12, 1765']
+
+  [v8/Haiku] ✗
+  Thomas Norris graduated at Oxford as Mus.B. in November 1765, with his exercise performed on November 12.
+  MISSING: ['November 12, 1765']
+
+--- Event 40: Thomas Norris / Oxford / November 5, 1771 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris was admitted a lay clerk of Magdalen College in Oxford on November 5, 1771.
+
+  [v8/Haiku] ✓
+  Thomas Norris was admitted a lay clerk of Magdalen College, Oxford on November 5, 1771.
+
+
+================================================================================
+  SINGLE CONFIG CONFIGURATIONS
+================================================================================
+
+--- Event 41: Domenico da Nola / Nola / 1500-1524 ---
+
+  [v4/Haiku] ✗
+  Domenico da Nola was born at Nola in the kingdom of Naples in the first quarter of the 16th century.
+  MISSING: ['1500-1524']
+
+--- Event 42: Domenico da Nola / Nola / 1510 ---
+
+  [v8/Haiku] ✗
+  Domenico da Nola was born in Nola in the kingdom of Naples in the first quarter of the 16th century.
+  MISSING: ['1510']
+
+--- Event 43: Vynkyn de Worde / London / 1521 ---
+
+  [v4/Haiku] ✓
+  Vynkyn de Worde issued the first known printed collection of carols in London in 1521.
+
+--- Event 44: Domenico da Nola / Naples / 1541 ---
+
+  [v8/Haiku] ✗
+  Domenico da Nola served as Maestro di Cappella of the Church of the Annunziata in Naples.
+  MISSING: ['1541']
+
+--- Event 45: Claudio Merulo / Venice / 1567 ---
+
+  [v8/Haiku] ✗
+  Claudio Merulo re-edited the Villanelle of Domenico da Nola in 1567.
+  MISSING: ['Venice']
+
+--- Event 46: Daniel Norcome / England / 1601 ---
+
+  [v8/Haiku] ✗
+  Daniel Norcome contributed a madrigal, 'With angel's face and brightness,' to 'The Triumphs of Oriana' in 1601.
+  MISSING: ['England']
+
+--- Event 47: Daniel Norcome / Brussels / 1641 ---
+
+  [v8/Sonnet] ✓
+  Daniel Norcome, having embraced Roman Catholicism and been deprived of his lay clerkship, went to Brussels where he became one of the instrumentalists in the Viceregal Chapel, with his name appearing in a chapel list in 1641.
+
+--- Event 48: Thomas Norris / London / 1762 ---
+
+  [v4/Haiku] ✗
+  Thomas Norris appeared at Drury Lane in 'The Spring,' a pasticcio, in 1762.
+  MISSING: ['London']
+
+--- Event 49: Carl Friedrich Ludwig Nohl / Prussia / 1853 ---
+
+  [v8/Haiku] ✓
+  Carl Friedrich Ludwig Nohl entered the Prussian Civil Service as Referendarius in 1853.
+
+--- Event 50: Carl Friedrich Ludwig Nohl / Berlin / 1856 ---
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl's health broke down in Berlin in 1856, forcing him to undertake a recuperative journey to France and Italy.
+
+--- Event 51: Lillian Nordica, John O'Neill / Boston / 1859 ---
+
+  [v8/Sonnet] ✗
+  Lillian Nordica was taught singing by John O'Neill at the New England Conservatory in Boston as part of her early musical training before embarking on a concert career.
+  MISSING: ['1859']
+
+--- Event 52: Carl Friedrich Ludwig Nohl / Munich / 1861 ---
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl went to Munich in 1861, where King Ludwig II would later appoint him an Honorary Professor in the University.
+
+--- Event 53: Lilian Nordica / London / 1897 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica sang again at the Handel Festival in 1897.
+  MISSING: ['London']
+
+--- Event 54: Lilian Nordica / England / 1897 ---
+
+  [v8/Haiku] ✗
+  Lilian Nordica sang again at the Handel Festival in 1897.
+  MISSING: ['England']
+
+--- Event 55: Lilian Nordica / Covent Garden / 1898 ---
+
+  [v8/Haiku] ✓
+  Lilian Nordica returned to Covent Garden in 1898.
+
+--- Event 56: Lilian Nordica / Covent Garden / 1899 ---
+
+  [v8/Haiku] ✓
+  Lilian Nordica returned to Covent Garden in 1899.
+
+--- Event 57: Lilian Nordica / Covent Garden / 1902 ---
+
+  [v8/Haiku] ✓
+  Lilian Nordica returned to Covent Garden in 1902.
+
+--- Event 58: Thomas Norris / Mere near Salisbury / August 1741 ---
+
+  [v8/Sonnet] ✓
+  Thomas Norris was born at Mere near Salisbury in August 1741, later becoming a chorister of Salisbury Cathedral under Dr. Stephens.
+
+--- Event 59: Thomas Norris / Oxford / Dec. 15, 1765 ---
+
+  [v8/Sonnet] ✓
+  Thomas Norris was chosen organist of St. John's College in Oxford on Dec. 15, 1765, adding to his appointment as organist of Christ Church Cathedral earlier that year.
+
+--- Event 60: Lillian Nordica / Paris / Dec. 15, 1882 ---
+
+  [v8/Sonnet] ✗
+  Lillian Nordica sang in 'Hamlet' on Dec. 15, 1882, having studied leading soprano parts under Gounod and Thomas.
+  MISSING: ['Paris']
+
+--- Event 61: Carl Friedrich Ludwig Nohl / Heidelberg / Dec. 16, 1885 ---
+
+  [v8/Sonnet] ✓
+  Carl Friedrich Ludwig Nohl died at Heidelberg on Dec. 16, 1885, having spent his final years as a teacher of musical history and aesthetics and leaving behind many valuable works on Mozart and Beethoven.
+
+--- Event 62: Bellini / Milan / Dec. 26, 1831 ---
+
+  [v8/Sonnet] ✓
+  Bellini's opera Norma, with words by Romani, was produced at Milan on Dec. 26, 1831, with Donzelli, Pasta, and Grisi in the cast.
+
+--- Event 63: Carl Friedrich Ludwig Nohl / Iserlohn / Dec. 5, 1831 ---
+
+  [v8/Sonnet] ✗
+  Ludwig Nohl was born at Iserlohn in Westphalia on Dec. 5, 1831, the son of a legal functionary who intended his son to follow the same profession, though Nohl showed a taste for music from childhood.
+  MISSING: ['Carl Friedrich Ludwig Nohl']
+
+--- Event 64: Bellini / Paris / Dec. 8, 1835 ---
+
+  [v8/Sonnet] ✓
+  Bellini's opera Norma was produced at the Théâtre des Italiens in Paris on Dec. 8, 1835, bringing the celebrated work to French audiences.
+
+--- Event 65: F. Corder / Liverpool / Jan. 26, 1887 ---
+
+  [v8/Sonnet] ✓
+  Nordica, a romantic opera in three acts with words and music by F. Corder, was produced by the Carl Rosa Company at Liverpool on Jan. 26, 1887.
+
+--- Event 66: Frederick Corder / Liverpool / January 26, 1887 ---
+
+  [v8/Haiku] ✗
+  F. Corder's opera Nordisa, with words and music by the composer, was produced by the Carl Rosa Company at Liverpool on January 26, 1887.
+  MISSING: ['Frederick Corder']
+
+--- Event 67: Lillian Nordica / Paris / July 21, 1882 ---
+
+  [v8/Sonnet] ✗
+  Lillian Nordica made her début in 'Faust' on July 21, 1882, having studied the leading soprano parts under Gounod and Thomas.
+  MISSING: ['Paris']
+
+--- Event 68: Lillian Nordica / Covent Garden / July 26, 1893 ---
+
+  [v8/Sonnet] ✓
+  Lillian Nordica created the part of Zelioa in Stanford's 'Veiled Prophet' at Covent Garden on July 26, 1893, a world premiere that added to her distinguished repertory.
+
+--- Event 69: Bellini / London / June 20, 1833 ---
+
+  [v8/Sonnet] ✓
+  Bellini's opera Norma was performed in Italian at the King's Theatre in London on June 20, 1833, marking its London premiere.
+
+--- Event 70: Vincenzo Bellini / London / June 20, 1833 ---
+
+  [v4/Haiku] ✓
+  Vincenzo Bellini's opera Norma was produced in London in Italian at the King's Theatre on June 20, 1833.
+
+--- Event 71: Vincenzo Bellini / King's Theatre / June 20, 1833 ---
+
+  [v8/Haiku] ✗
+  Bellini's opera Norma was produced at the King's Theatre in London on June 20, 1833, in Italian.
+  MISSING: ['Vincenzo Bellini']
+
+--- Event 72: Bellini / Drury Lane / June 24, 1837 ---
+
+  [v8/Sonnet] ✓
+  Bellini's opera Norma was performed in English at Drury Lane in London on June 24, 1837, making the work accessible to English-speaking audiences.
+
+--- Event 73: Vincenzo Bellini / London / June 24, 1837 ---
+
+  [v4/Haiku] ✓
+  Vincenzo Bellini's opera Norma was produced in London in English at Drury Lane on June 24, 1837.
+
+--- Event 74: Vincenzo Bellini / Drury Lane / June 24, 1837 ---
+
+  [v8/Haiku] ✗
+  Bellini's opera Norma was produced at Drury Lane in English on June 24, 1837.
+  MISSING: ['Vincenzo Bellini']
+
+--- Event 75: Lilian Nordica / London / March 12, 1887 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica made her debut at Covent Garden as Violetta on March 12, 1887.
+  MISSING: ['London']
+
+--- Event 76: Richard Nordraak / Christiania / March 20, 1866 ---
+
+  [v8/Sonnet] ✗
+  Richard Nordraak died on March 20, 1866, depriving his friend Grieg and his country of an enthusiastic supporter of Norwegian national music, having written incidental music to Bjørnson's plays and collected folk-songs.
+  MISSING: ['Christiania']
+
+--- Event 77: Lilian Nordica / London / May 21, 1878 ---
+
+  [v4/Haiku] ✗
+  Lilian Nordica sang at the Crystal Palace with Gilmore's American Band on May 21, 1878.
+  MISSING: ['London']
+
+--- Event 78: F. Corder / Drury Lane / May 4, 1887 ---
+
+  [v8/Sonnet] ✓
+  F. Corder's opera Nordisa was produced by the Carl Rosa Company at Drury Lane in London on May 4, 1887, following its Liverpool premiere earlier that year.
+
+--- Event 79: Frederick Corder / Drury Lane / May 4, 1887 ---
+
+  [v8/Haiku] ✗
+  F. Corder's opera Nordisa was produced at Drury Lane on May 4, 1887.
+  MISSING: ['Frederick Corder']
+
+--- Event 80: Thomas Norris / Oxford / Nov. 5, 1771 ---
+
+  [v8/Sonnet] ✓
+  Thomas Norris was admitted a lay clerk of Magdalen College in Oxford on Nov. 5, 1771, adding to his existing roles as organist at Christ Church Cathedral and St. John's College.
+
+--- Event 81: Thomas Norris / Oxford / November 1765 ---
+
+  [v8/Sonnet] ✓
+  Thomas Norris graduated at Oxford as Mus.B. in November 1765, with his exercise consisting of two anthems performed in the Music School on Nov. 12.
+
+--- Event 82: Gounod, Scribe, Delavigne / Paris / Oct. 18, 1854 ---
+
+  [v8/Sonnet] ✓
+  La Nonne Sanglante, an opera in five acts with words by Scribe and Delavigne and music by Gounod, was produced at the Paris Grand Opéra on Oct. 18, 1854.
+
+--- Event 83: Charles Gounod / Paris / October 18, 1854 ---
+
+  [v8/Haiku] ✗
+  Gounod's opera La Nonne Sanglante, with words by Scribe and Delavigne, was produced at the Paris Grand Opéra on October 18, 1854.
+  MISSING: ['Charles Gounod']
+
+--- Event 84: Thomas Norris / Himley Hall / Sept. 3, 1790 ---
+
+  [v8/Sonnet] ✓
+  Thomas Norris died at Himley Hall near Stourbridge on Sept. 3, 1790, ten days after performing at the Birmingham Festival, his health fatally overtaxed by the effort.
+
+--- Event 85: Thomas Norris / Himley Hall / September 3, 1790 ---
+
+  [v4/Haiku] ✓
+  Thomas Norris died at Himley Hall near Stourbridge on September 3, 1790.
+
+--- Event 86: Thomas Norris / Stourbridge / September 3, 1790 ---
+
+  [v8/Haiku] ✓
+  Thomas Norris died at Himley Hall, near Stourbridge, on September 3, 1790.
+
+--- Event 87: Domenico da Nola / Nola / first quarter of the 16th century ---
+
+  [v8/Sonnet] ✓
+  Domenico da Nola was born at Nola in the kingdom of Naples in the first quarter of the 16th century, later becoming Maestro di Cappella of the Church of the Annunziata, Naples.

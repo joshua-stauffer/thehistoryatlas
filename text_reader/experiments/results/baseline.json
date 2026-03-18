@@ -1,0 +1,66 @@
+{
+  "label": "baseline",
+  "runs": [
+    {
+      "run_id": "baseline-run-000",
+      "total": 49,
+      "valid": 37,
+      "invalid": 12,
+      "valid_pct": 75.51020408163265,
+      "missing_categories": {
+        "person": 2,
+        "place": 7,
+        "time": 3
+      }
+    },
+    {
+      "run_id": "baseline-run-001",
+      "total": 51,
+      "valid": 27,
+      "invalid": 24,
+      "valid_pct": 52.94117647058824,
+      "missing_categories": {
+        "place": 15,
+        "time": 7,
+        "person": 2
+      }
+    },
+    {
+      "run_id": "baseline-run-002",
+      "total": 47,
+      "valid": 40,
+      "invalid": 7,
+      "valid_pct": 85.1063829787234,
+      "missing_categories": {
+        "time": 4,
+        "person": 5
+      }
+    },
+    {
+      "run_id": "baseline-run-003",
+      "total": 48,
+      "valid": 40,
+      "invalid": 8,
+      "valid_pct": 83.33333333333334,
+      "missing_categories": {
+        "person": 6,
+        "time": 3
+      }
+    },
+    {
+      "run_id": "baseline-run-004",
+      "total": 54,
+      "valid": 44,
+      "invalid": 10,
+      "valid_pct": 81.48148148148148,
+      "missing_categories": {
+        "time": 5,
+        "person": 2,
+        "place": 5
+      }
+    }
+  ],
+  "cost": 0.14666200000000001,
+  "input_tokens": 61435,
+  "output_tokens": 61044
+}
