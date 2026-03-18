@@ -27,7 +27,7 @@ A single passage may yield multiple events — extract each discrete occurrence 
 
 For each distinct historical event described in the text, extract:
 
-1. **Summary**: One or two sentences describing the event, written in third person past tense, using natural language. The summary MUST contain the person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text.
+1. **Summary**: One or two sentences describing the event, written in third person past tense, using natural language. The summary MUST contain the primary person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text.
 
    **Enrich each summary** by weaving in a contextual detail from the source text that answers one of these questions:
    - What circumstances surrounded this event? (e.g., war, illness, patronage, rivalry, exile)
@@ -40,24 +40,36 @@ For each distinct historical event described in the text, extract:
    - GOOD (two sentences): "The outbreak of war caught Benjamin James Dale in Germany, where he was interned at Ruhleben in 1914. He remained imprisoned until March 1918, when he was exchanged and removed to Holland, returning home just before the Armistice with his health gravely impaired."
    - TOO BARE: "Felix Mendelssohn conducted Elijah in Birmingham in 1846."
 
-   **CRITICAL — full names in every summary**: Use each person's FULL name (exactly as given in the `people` array) in every summary, even when writing about the same person repeatedly. Write "Felix Mendelssohn conducted..." not "Mendelssohn conducted...". Write "George Frideric Handel composed..." not "Handel composed...". Each summary is processed independently — there is no prior context, so the full name must always appear. This is the single most common extraction error.
+   **Enrichment boundaries**: Contextual detail should not introduce *other specific places or dates* that deserve their own events. If the context naturally references a different time or place (e.g., a death date, a prior city), extract that as a separate event instead. For example:
+   - GOOD: "Thomas Norris was engaged at the Birmingham Festival in 1790, but the effort proved fatal and he expired ten days later." (The death is a separate event.)
+   - BAD: "Thomas Norris was engaged at the Birmingham Festival in 1790, and he expired ten days later at Himley Hall near Stourbridge on Sept. 3, 1790." (The death's date and place belong in their own event.)
+   - GOOD: "Thomas Norris was appointed organist of Christ Church Cathedral in Oxford in 1765, marking the beginning of a long association with the university city." (The vague reference to the future is fine — it's not a concrete second event.)
+   - BORDERLINE BUT OK: "Carl Friedrich Ludwig Nohl returned to Berlin in 1857 after his health had necessitated a journey to France and Italy." (France and Italy are mentioned only as vague context, not as concrete events.)
+
+   **CRITICAL — full names in every summary**: The primary subject of each event MUST be referred to by their FULL name (exactly as given in the `people` array). Write "Felix Mendelssohn conducted..." not "Mendelssohn conducted...". Write "George Frideric Handel composed..." not "Handel composed...". Each summary is processed independently — there is no prior context, so the full name must always appear. This is the single most common extraction error.
+
+   **Other people mentioned in the summary** may use whatever name form is natural — full name, surname only, or any commonly used variant. For example: "Bellini's opera Norma, with words by Romani, was produced at Milan on Dec. 26, 1831, with Donzelli, Pasta, and Grisi in the cast." Here "Romani", "Donzelli", "Pasta", and "Grisi" are acceptable name forms, and each should appear in the `people` array with their full name and a description.
 
    **CRITICAL — the time `name` must appear verbatim in the summary**: Write the date in the summary exactly as you set time.name. If time.name is "March 1834", the summary must contain the substring "March 1834". Never write a date range in the summary (e.g. "May 18-20" or "June 7-9" or "February and March" or "1885-92") — use only the single date from time.name.
 
    **CRITICAL — the place `name` must appear verbatim in the summary**: Every event happens somewhere. Even if the source text implies the location from context, state it explicitly in the summary. Biographical entries often mention a city once in the header (e.g., "Dale, Benjamin James, b. London, 1885") and then list achievements without repeating it. You must still weave the place name into every summary derived from that entry.
 
-2. **People**: Each person **directly involved** in the event. Include only people who are the subject or a named participant — not people merely mentioned in passing or whose works are being performed. For example, if Mendelssohn conducts Beethoven's Ninth Symphony, the person is Mendelssohn (the conductor), not Beethoven (the composer, who is merely referenced). Include:
-   - name: Full name as it appears (or the most complete form used)
-   - description: Brief identifying description (e.g., "English composer", "King of France")
+2. **People**: Every named person who appears in the summary text. This includes the primary subject AND any other people mentioned — collaborators, librettists, performers, dedicatees, patrons, teachers, etc.
+   - The primary subject's name in the `people` array must exactly match how their full name appears in the summary.
+   - For other people who appear by surname only in the summary, still provide their **full name** and description in the `people` array. The `name` field should be the form used in the summary (e.g., "Romani"), but add a `full_name` field with the complete name (e.g., "Felice Romani"). If you don't know the full name, omit `full_name`.
+   - Include:
+     - name: The name as it appears in the summary text (must be a verbatim substring of the summary)
+     - full_name: The person's full name, if different from `name` (optional — omit if `name` is already the full name)
+     - description: Brief identifying description (e.g., "Italian librettist", "English soprano")
 
 3. **Place**: The location where the event occurred. Include:
    - name: The place name exactly as you write it in the summary — use natural, concise language (e.g. "New York", "Boston", "Paris"). This must match the summary verbatim.
-   - qualified_name: The fully qualified name for disambiguation, including state or country. Spell out abbreviations (Pa. → Pennsylvania, N.Y. → New York, Mass. → Massachusetts, etc.). Examples: "New York, New York"; "Boston, Massachusetts"; "Ephrata, Pennsylvania"; "Leipzig, Germany". If the source gives a qualifier (e.g. "Ephrata, Pa."), always populate this field.
+   - qualified_name: The fully qualified name for disambiguation, including state or country. Spell out abbreviations (Pa. -> Pennsylvania, N.Y. -> New York, Mass. -> Massachusetts, etc.). Examples: "New York, New York"; "Boston, Massachusetts"; "Ephrata, Pennsylvania"; "Leipzig, Germany". If the source gives a qualifier (e.g. "Ephrata, Pa."), always populate this field.
    - latitude/longitude: Approximate coordinates if you can determine them (null if unknown)
    - description: Brief description
 
 4. **Time**: When the event occurred. Include:
-   - name: Human-readable date (e.g., "1759", "March 1685", "14 June 1770"). Never use seasonal terms ("Spring 1834") — use the month or year instead. Never use a date range.
+   - name: Human-readable date (e.g., "1759", "March 1685", "14 June 1770"). Never use seasonal terms ("Spring 1834") — use the month or year instead. Never use a date range. Never use vague period descriptions ("first quarter of the 16th century") — use the best available specific year instead.
    - date: ISO-8601 formatted with leading +/- (e.g., "+1759-00-00T00:00:00Z", "+1685-03-00T00:00:00Z")
    - precision: 9 for year, 10 for month, 11 for day
    - calendar_model: "http://www.wikidata.org/entity/Q1985727" (Gregorian)
@@ -69,41 +81,49 @@ For each distinct historical event described in the text, extract:
 Valid event types include (but are not limited to):
 - Births, deaths, and relocations
 - Career appointments, performances, teaching positions
-- Publications: books, dictionaries, journals, sheet music — these are historical events. For a publication, the author or editor is the person; for example, "Waldo Selden Pratt edited Grove's Dictionary American Supplement in New York in November 1920" not "The Macmillan Company published…". Do not use a publishing house or organization as the person.
+- Publications: books, dictionaries, journals, sheet music — these are historical events. For a publication, the author or editor is the person; for example, "Waldo Selden Pratt edited Grove's Dictionary American Supplement in New York in November 1920" not "The Macmillan Company published...". Do not use a publishing house or organization as the person.
 - Compositions, premieres, and recordings
 - Instrument-making and manufacturing (e.g., a craftsman building the first piano of a type in a city)
 - Institutional founding (conservatories, orchestras, music schools) — use the founder as the person
 
 Rules:
 - Only extract events with concrete individual people, places, AND times. Skip truly vague references with no specific date or location. Organizations and publishers are not acceptable substitutes for a named person.
-- The summary must contain the person's name, the `place.name` value, and the `time.name` value as exact literal substrings. The `place.name` should be whatever natural form you used in the sentence (e.g. "New York", "Boston") — not the qualified form. The `place.qualified_name` is for disambiguation only and does not need to appear in the summary.
+- The summary must contain the primary person's full name, the `place.name` value, and the `time.name` value as exact literal substrings. The `place.name` should be whatever natural form you used in the sentence (e.g. "New York", "Boston") — not the qualified form. The `place.qualified_name` is for disambiguation only and does not need to appear in the summary.
+- Every person name in the `people` array must appear as a verbatim substring in the summary.
 - Use the most specific date precision available (day > month > year).
 - For BCE dates, use negative years (e.g., "-0500-00-00T00:00:00Z").
 - Each event must have a single, discrete point in time — never a range. Any time span must be split into separate events for the start and end:
-  - Multi-day: "June 7-9, 1835" → one event for "June 7, 1835" (start) and one for "June 9, 1835" (end)
-  - Multi-month: "February and March 1838" → one event for "February 1838" and one for "March 1838"
-  - Multi-year: "1885-92" → one event for "1885" and one for "1892"
+  - Multi-day: "June 7-9, 1835" -> one event for "June 7, 1835" (start) and one for "June 9, 1835" (end)
+  - Multi-month: "February and March 1838" -> one event for "February 1838" and one for "March 1838"
+  - Multi-year: "1885-92" -> one event for "1885" and one for "1892"
   The time name must always be a single year, month, or day.
 - Birth and death dates with locations (e.g., "b. Chicago, 1850" or "d. Paris, 1903") are valid events — extract them.
 - Extract every qualifying event present in the passage, even if the passage is primarily a preface, table of contents, or bibliography. Do not skip a chunk just because most of it is vague — extract whatever specific events are present.
 
 **Self-check before returning**: For each event, verify that:
-1. Every person's full name appears as a literal substring of the summary
-2. The place name appears as a literal substring of the summary
-3. The time name appears as a literal substring of the summary
-4. The time name is a single date (not a range, not a season)
-If any check fails, rewrite the summary (or adjust the time/place name) before returning.
+1. The primary person's full name appears as a literal substring of the summary
+2. Every person `name` in the people array appears as a literal substring of the summary
+3. The place name appears as a literal substring of the summary
+4. The time name appears as a literal substring of the summary
+5. The time name is a single specific date (not a range, not a season, not a vague period)
+If any check fails, rewrite the summary (or adjust the names) before returning.
 
 Return a JSON array of events. Example:
 ```json
 [
   {
-    "summary": "John W. Bischoff, having trained at the Wisconsin Institute for the Blind and later in London, took up a new life as organist, singing-teacher, and song-writer in Washington in 1875.",
-    "excerpt": "Bischoff, John W. (Chicago, 1850-1909, Washington), trained at the Wisconsin Institute for the Blind and in London, from 1875 was organist, singing-teacher and song-writer at Washington.",
-    "people": [{"name": "John W. Bischoff", "description": "American organist, singing-teacher, and song-writer"}],
-    "place": {"name": "Washington", "qualified_name": "Washington, D.C.", "latitude": 38.9072, "longitude": -77.0369, "description": "Capital of the United States"},
-    "time": {"name": "1875", "date": "+1875-00-00T00:00:00Z", "precision": 9},
-    "confidence": 0.90
+    "summary": "Bellini's opera Norma, with words by Romani, was produced at Milan on Dec. 26, 1831, with Donzelli, Pasta, and Grisi in the cast.",
+    "excerpt": "Norma. Opera in two acts; words by Romani, music by Bellini. Produced at Milan, December 26, 1831, with Donzelli, Pasta, and Grisi.",
+    "people": [
+      {"name": "Bellini", "full_name": "Vincenzo Bellini", "description": "Italian opera composer"},
+      {"name": "Romani", "full_name": "Felice Romani", "description": "Italian librettist"},
+      {"name": "Donzelli", "full_name": "Domenico Donzelli", "description": "Italian tenor"},
+      {"name": "Pasta", "full_name": "Giuditta Pasta", "description": "Italian soprano"},
+      {"name": "Grisi", "full_name": "Giulia Grisi", "description": "Italian soprano"}
+    ],
+    "place": {"name": "Milan", "qualified_name": "Milan, Italy", "latitude": 45.4642, "longitude": 9.1900, "description": "City in northern Italy"},
+    "time": {"name": "Dec. 26, 1831", "date": "+1831-12-26T00:00:00Z", "precision": 11},
+    "confidence": 0.95
   }
 ]
 ```

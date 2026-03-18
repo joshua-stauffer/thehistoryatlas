@@ -178,7 +178,12 @@ class EntityResolver:
         event_context = self._build_event_context(event)
         people = []
         for p in event.people:
-            resolved = self._resolve_person(p.name, p.description, context=event_context)
+            resolved = self._resolve_person(
+                name=p.name,
+                full_name=p.full_name,
+                description=p.description,
+                context=event_context,
+            )
             # Override summary_name with THIS event's extracted name — the cache
             # may hold a different form from the first event (e.g., "Benjamin Dale"
             # vs "Benjamin James Dale").
@@ -234,16 +239,26 @@ class EntityResolver:
         return "; ".join(parts) or None
 
     def _resolve_person(
-        self, name: str, description: str | None, context: str | None = None
+        self,
+        name: str,
+        full_name: str | None = None,
+        description: str | None = None,
+        context: str | None = None,
     ) -> ResolvedPerson:
-        cache_key = name.lower().strip()
+        # Use full_name for search/create; fall back to name (summary form)
+        canonical = full_name or name
+        cache_key = canonical.lower().strip()
         if cache_key in self._person_cache:
             return self._person_cache[cache_key]
+        # Also check cache by summary name in case it was cached under that
+        summary_key = name.lower().strip()
+        if summary_key in self._person_cache:
+            return self._person_cache[summary_key]
 
-        candidates = self._rest.search_people(name=name)
+        candidates = self._rest.search_people(name=canonical)
         if candidates:
             match_id = self._claude.pick_best_entity_match(
-                entity_name=name,
+                entity_name=canonical,
                 entity_type="PERSON",
                 candidates=candidates,
                 context=context,
@@ -258,13 +273,15 @@ class EntityResolver:
                         summary_name=name,
                     )
                     self._person_cache[cache_key] = result
+                    self._person_cache[summary_key] = result
                     return result
 
-        created = self._rest.create_person(name=name, description=description)
+        created = self._rest.create_person(name=canonical, description=description)
         result = ResolvedPerson(
-            id=UUID(created["id"]), name=name, summary_name=name,
+            id=UUID(created["id"]), name=canonical, summary_name=name,
         )
         self._person_cache[cache_key] = result
+        self._person_cache[summary_key] = result
         return result
 
     def _resolve_place(self, place, context: str | None = None) -> ResolvedPlace:

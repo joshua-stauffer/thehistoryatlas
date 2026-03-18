@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class ExtractedPerson(BaseModel):
     name: str
+    full_name: str | None = None
     description: str | None = None
 
 
