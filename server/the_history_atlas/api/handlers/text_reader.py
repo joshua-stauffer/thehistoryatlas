@@ -118,6 +118,19 @@ def create_text_reader_event_handler(
     event: TextReaderEventInput,
     background_tasks: BackgroundTasks,
 ) -> TextReaderEventOutput:
+    # Validate that every tag name appears in the summary at the declared position
+    for tag in event.tags:
+        actual = event.summary[tag.start_char : tag.stop_char]
+        if actual != tag.name:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Tag '{tag.name}' not found at position "
+                    f"{tag.start_char}:{tag.stop_char} in summary "
+                    f"(found '{actual}')"
+                ),
+            )
+
     tags = [
         TagInstance(
             id=tag.id,
