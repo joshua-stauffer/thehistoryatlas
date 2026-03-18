@@ -281,6 +281,22 @@ class HistoryApp:
 
         return summary_id
 
+    def _resolve_tag_types(self, tag_ids: list[UUID], session: Session) -> set[str]:
+        """Look up the set of tag types present among the given tag IDs."""
+        from sqlalchemy import text
+
+        if not tag_ids:
+            return set()
+        stmt = text(
+            """
+            SELECT DISTINCT t.type
+            FROM tags t
+            WHERE t.id = ANY(:tag_ids)
+        """
+        )
+        rows = session.execute(stmt, {"tag_ids": tag_ids}).fetchall()
+        return {row[0] for row in rows}
+
     def _resolve_time_data(self, tag_ids: list[UUID], session: Session) -> dict:
         """Look up time data from tag IDs for denormalized summary fields."""
         from sqlalchemy import text
@@ -881,6 +897,15 @@ class HistoryApp:
 
         with self._repository.Session() as session:
             tag_ids = [tag.id for tag in tags]
+
+            # Validate that all three entity types are present
+            tag_types = self._resolve_tag_types(tag_ids, session)
+            missing_types = {"PERSON", "PLACE", "TIME"} - tag_types
+            if missing_types:
+                from the_history_atlas.apps.history.errors import MissingTagTypesError
+
+                raise MissingTagTypesError(missing_types)
+
             time_data = self._resolve_time_data(tag_ids, session)
             place_data = self._resolve_place_data(tag_ids, session)
 

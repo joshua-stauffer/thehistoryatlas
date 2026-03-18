@@ -44,14 +44,14 @@ def insert_person(session, tag_id: UUID):
 def insert_place(session, tag_id: UUID, latitude: float, longitude: float):
     insert_tag(session, tag_id, "PLACE")
     session.execute(
-        text(
-            "INSERT INTO places (id, latitude, longitude) VALUES (:id, :lat, :lng)"
-        ),
+        text("INSERT INTO places (id, latitude, longitude) VALUES (:id, :lat, :lng)"),
         {"id": tag_id, "lat": latitude, "lng": longitude},
     )
 
 
-def insert_time(session, tag_id: UUID, datetime_val: str, calendar_model: str, precision: int):
+def insert_time(
+    session, tag_id: UUID, datetime_val: str, calendar_model: str, precision: int
+):
     insert_tag(session, tag_id, "TIME")
     session.execute(
         text(
@@ -213,9 +213,7 @@ class TestSearchTagsByNameAndType:
             tag_id = create_person_with_name(session, "Wolfgang Amadeus Mozart")
             session.commit()
 
-        result = repo.search_tags_by_name_and_type(
-            name="Mozart", tag_type="PERSON"
-        )
+        result = repo.search_tags_by_name_and_type(name="Mozart", tag_type="PERSON")
 
         assert any(r["id"] == tag_id for r in result)
 
@@ -229,7 +227,14 @@ class TestSearchTagsByNameAndType:
         )
 
         match = next(r for r in result if r["id"] == tag_id)
-        assert set(match.keys()) == {"id", "name", "type", "description", "earliest_date", "latest_date"}
+        assert set(match.keys()) == {
+            "id",
+            "name",
+            "type",
+            "description",
+            "earliest_date",
+            "latest_date",
+        }
 
     def test_filters_by_type(self, repo, engine):
         with Session(engine, future=True) as session:
@@ -322,7 +327,9 @@ class TestFindMatchingSummary:
             insert_place(session, place_id, 48.2, 16.4)
             insert_source(session, source_id)
             insert_summary(
-                session, summary_id, "Bach visited Vienna in 1720.",
+                session,
+                summary_id,
+                "Bach visited Vienna in 1720.",
                 datetime_val="+1720-00-00T00:00:00Z",
                 calendar_model="Q1985727",
                 precision=9,
@@ -363,7 +370,9 @@ class TestFindMatchingSummary:
             insert_person(session, person_id)
             insert_place(session, place_id, 41.0, 28.9)
             insert_summary(
-                session, summary_id, "Handel traveled to Constantinople.",
+                session,
+                summary_id,
+                "Handel traveled to Constantinople.",
                 datetime_val="+1700-00-00T00:00:00Z",
                 calendar_model="Q1985727",
                 precision=9,
@@ -393,7 +402,9 @@ class TestFindMatchingSummary:
             insert_place(session, place_id, 48.2, 16.4)
             insert_source(session, source_id)
             insert_summary(
-                session, summary_id, "Vivaldi performed in Vienna.",
+                session,
+                summary_id,
+                "Vivaldi performed in Vienna.",
                 datetime_val="+1730-00-00T00:00:00Z",
                 calendar_model="Q1985727",
                 precision=9,
@@ -401,7 +412,10 @@ class TestFindMatchingSummary:
             insert_tag_instance(session, uuid4(), summary_id, person_id)
             insert_tag_instance(session, uuid4(), summary_id, place_id)
             insert_citation(
-                session, uuid4(), summary_id, source_id,
+                session,
+                uuid4(),
+                summary_id,
+                source_id,
                 wikidata_item_id="Q12345",
             )
             session.commit()
@@ -427,7 +441,9 @@ class TestFindMatchingSummary:
             insert_place(session, place_id, 48.2, 16.4)
             insert_source(session, source_id)
             insert_summary(
-                session, summary_id, "Mozart played in Vienna.",
+                session,
+                summary_id,
+                "Mozart played in Vienna.",
                 datetime_val="+1760-00-00T00:00:00Z",
                 calendar_model="Q1985727",
                 precision=9,
@@ -458,7 +474,9 @@ class TestFindMatchingSummary:
             insert_person(session, person2_id)
             insert_place(session, place_id, 48.2, 16.4)
             insert_summary(
-                session, summary_id, "Only one person here.",
+                session,
+                summary_id,
+                "Only one person here.",
                 datetime_val="+1750-00-00T00:00:00Z",
                 calendar_model="Q1985727",
                 precision=9,
@@ -529,9 +547,7 @@ class TestCreateTextReaderStory:
             insert_source(session, source_id)
             session.commit()
 
-        repo.create_text_reader_story(
-            id=story_id, name="Story", source_id=source_id
-        )
+        repo.create_text_reader_story(id=story_id, name="Story", source_id=source_id)
 
         with Session(engine, future=True) as session:
             row = session.execute(
@@ -565,9 +581,7 @@ class TestAddSummaryToStory:
             insert_summary(session, summary_id, "Test summary text.")
             session.commit()
 
-        repo.add_summary_to_story(
-            story_id=story_id, summary_id=summary_id, position=0
-        )
+        repo.add_summary_to_story(story_id=story_id, summary_id=summary_id, position=0)
 
         with Session(engine, future=True) as session:
             row = session.execute(
@@ -589,15 +603,12 @@ class TestAddSummaryToStory:
             insert_summary(session, summary_id, "Another summary.")
             session.commit()
 
-        repo.add_summary_to_story(
-            story_id=story_id, summary_id=summary_id, position=5
-        )
+        repo.add_summary_to_story(story_id=story_id, summary_id=summary_id, position=5)
 
         with Session(engine, future=True) as session:
             row = session.execute(
                 text(
-                    "SELECT position FROM story_summaries "
-                    "WHERE story_id = :story_id"
+                    "SELECT position FROM story_summaries " "WHERE story_id = :story_id"
                 ),
                 {"story_id": story_id},
             ).one()
@@ -719,7 +730,9 @@ class TestUpdateSummaryText:
 
         with Session(engine, future=True) as session:
             insert_summary(
-                session, summary_id, "Original.",
+                session,
+                summary_id,
+                "Original.",
                 datetime_val="+1700-00-00T00:00:00Z",
                 calendar_model="Q1985727",
                 precision=9,
@@ -730,7 +743,9 @@ class TestUpdateSummaryText:
 
         with Session(engine, future=True) as session:
             row = session.execute(
-                text("SELECT datetime, calendar_model, precision FROM summaries WHERE id = :id"),
+                text(
+                    "SELECT datetime, calendar_model, precision FROM summaries WHERE id = :id"
+                ),
                 {"id": summary_id},
             ).one()
 

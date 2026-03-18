@@ -70,9 +70,7 @@ class TestDeactivateApiKey:
         assert response.json()["success"] is True
 
     def test_returns_404_for_nonexistent_key(self, client, auth_headers):
-        response = client.delete(
-            f"/api-keys/{uuid4()}", headers=auth_headers
-        )
+        response = client.delete(f"/api-keys/{uuid4()}", headers=auth_headers)
 
         assert response.status_code == 404
 
@@ -398,87 +396,280 @@ class TestGetStoryBySource:
 
 
 class TestCreateTextReaderEvent:
-    def test_end_to_end_event_creation(self, client, auth_headers):
-        # Create source
+    @pytest.fixture
+    def event_scaffolding(self, client, auth_headers):
+        """Create source, story, person, place, and time for event tests."""
         source = client.post(
             "/text-reader/sources",
             json={
-                "title": "E2E Source",
+                "title": "Validation Source",
                 "author": "Author",
                 "publisher": "Publisher",
             },
             headers=auth_headers,
         ).json()
 
-        # Create story
         story = client.post(
             "/text-reader/stories",
-            json={"name": "E2E Story", "source_id": source["id"]},
+            json={"name": "Validation Story", "source_id": source["id"]},
             headers=auth_headers,
         ).json()
 
-        # Create entities
         person = client.post(
             "/text-reader/people",
-            json={"name": "E2E Person"},
+            json={"name": "Felix Mendelssohn"},
             headers=auth_headers,
         ).json()
 
         place = client.post(
             "/text-reader/places",
-            json={"name": "E2E Place", "latitude": 48.2, "longitude": 16.4},
+            json={"name": "Leipzig", "latitude": 51.3, "longitude": 12.4},
             headers=auth_headers,
         ).json()
 
         time = client.post(
             "/text-reader/times",
             json={
-                "name": "1750",
-                "date": "+1750-00-00T00:00:00Z",
+                "name": "1835",
+                "date": "+1835-00-00T00:00:00Z",
                 "calendar_model": "Q1985727",
                 "precision": 9,
             },
             headers=auth_headers,
         ).json()
 
-        # Create event
+        return {
+            "source": source,
+            "story": story,
+            "person": person,
+            "place": place,
+            "time": time,
+        }
+
+    def _make_event_payload(self, scaffolding, summary=None, tags=None):
+        """Build a valid event payload, with optional overrides."""
+        s = scaffolding
+        if summary is None:
+            summary = "Felix Mendelssohn conducted the Gewandhaus Orchestra in Leipzig in 1835."
+        if tags is None:
+            tags = [
+                {
+                    "id": s["person"]["id"],
+                    "name": "Felix Mendelssohn",
+                    "start_char": 0,
+                    "stop_char": 17,
+                },
+                {
+                    "id": s["place"]["id"],
+                    "name": "Leipzig",
+                    "start_char": 56,
+                    "stop_char": 63,
+                },
+                {
+                    "id": s["time"]["id"],
+                    "name": "1835",
+                    "start_char": 67,
+                    "stop_char": 71,
+                },
+            ]
+        return {
+            "summary": summary,
+            "tags": tags,
+            "citation": {
+                "text": "Grove's Dictionary, p. 168",
+                "page_num": 168,
+                "access_date": "2026-03-17",
+            },
+            "source_id": s["source"]["id"],
+            "story_id": s["story"]["id"],
+        }
+
+    def test_end_to_end_event_creation(self, client, auth_headers, event_scaffolding):
+        payload = self._make_event_payload(event_scaffolding)
         response = client.post(
             "/text-reader/events",
-            json={
-                "summary": "E2E Person visited E2E Place in 1750.",
-                "tags": [
-                    {
-                        "id": person["id"],
-                        "name": "E2E Person",
-                        "start_char": 0,
-                        "stop_char": 10,
-                    },
-                    {
-                        "id": place["id"],
-                        "name": "E2E Place",
-                        "start_char": 19,
-                        "stop_char": 28,
-                    },
-                    {
-                        "id": time["id"],
-                        "name": "1750",
-                        "start_char": 32,
-                        "stop_char": 36,
-                    },
-                ],
-                "citation": {
-                    "text": "Burney, vol. 1, p. 42",
-                    "page_num": 42,
-                    "access_date": "2026-03-11",
-                },
-                "source_id": source["id"],
-                "story_id": story["id"],
-            },
+            json=payload,
             headers=auth_headers,
         )
 
         assert response.status_code == 200
         assert response.json()["id"] is not None
+
+    def test_rejects_tag_name_mismatch(self, client, auth_headers, event_scaffolding):
+        """Tag name must match the summary text at declared char positions."""
+        s = event_scaffolding
+        summary = (
+            "Felix Mendelssohn conducted the Gewandhaus Orchestra in Leipzig in 1835."
+        )
+        tags = [
+            {
+                "id": s["person"]["id"],
+                "name": "Felix Mendelssohn",
+                "start_char": 0,
+                "stop_char": 17,
+            },
+            {
+                "id": s["place"]["id"],
+                "name": "Berlin",  # wrong: summary says "Leipzig"
+                "start_char": 56,
+                "stop_char": 63,
+            },
+            {
+                "id": s["time"]["id"],
+                "name": "1835",
+                "start_char": 67,
+                "stop_char": 71,
+            },
+        ]
+        payload = self._make_event_payload(s, summary=summary, tags=tags)
+        response = client.post(
+            "/text-reader/events",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
+        assert "Berlin" in response.json()["detail"]
+
+    def test_rejects_tag_at_wrong_position(
+        self, client, auth_headers, event_scaffolding
+    ):
+        """Tag char offsets must point to the exact location in the summary."""
+        s = event_scaffolding
+        summary = (
+            "Felix Mendelssohn conducted the Gewandhaus Orchestra in Leipzig in 1835."
+        )
+        tags = [
+            {
+                "id": s["person"]["id"],
+                "name": "Felix Mendelssohn",
+                "start_char": 0,
+                "stop_char": 17,
+            },
+            {
+                "id": s["place"]["id"],
+                "name": "Leipzig",
+                "start_char": 10,  # wrong position
+                "stop_char": 17,
+            },
+            {
+                "id": s["time"]["id"],
+                "name": "1835",
+                "start_char": 67,
+                "stop_char": 71,
+            },
+        ]
+        payload = self._make_event_payload(s, summary=summary, tags=tags)
+        response = client.post(
+            "/text-reader/events",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
+        assert "Leipzig" in response.json()["detail"]
+
+    def test_rejects_missing_person_tag(self, client, auth_headers, event_scaffolding):
+        """Event must include at least one PERSON tag."""
+        s = event_scaffolding
+        summary = (
+            "Felix Mendelssohn conducted the Gewandhaus Orchestra in Leipzig in 1835."
+        )
+        tags = [
+            {
+                "id": s["place"]["id"],
+                "name": "Leipzig",
+                "start_char": 56,
+                "stop_char": 63,
+            },
+            {
+                "id": s["time"]["id"],
+                "name": "1835",
+                "start_char": 67,
+                "stop_char": 71,
+            },
+        ]
+        payload = self._make_event_payload(s, summary=summary, tags=tags)
+        response = client.post(
+            "/text-reader/events",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
+        assert "PERSON" in response.json()["detail"]
+
+    def test_rejects_missing_place_tag(self, client, auth_headers, event_scaffolding):
+        """Event must include at least one PLACE tag."""
+        s = event_scaffolding
+        summary = (
+            "Felix Mendelssohn conducted the Gewandhaus Orchestra in Leipzig in 1835."
+        )
+        tags = [
+            {
+                "id": s["person"]["id"],
+                "name": "Felix Mendelssohn",
+                "start_char": 0,
+                "stop_char": 17,
+            },
+            {
+                "id": s["time"]["id"],
+                "name": "1835",
+                "start_char": 67,
+                "stop_char": 71,
+            },
+        ]
+        payload = self._make_event_payload(s, summary=summary, tags=tags)
+        response = client.post(
+            "/text-reader/events",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
+        assert "PLACE" in response.json()["detail"]
+
+    def test_rejects_missing_time_tag(self, client, auth_headers, event_scaffolding):
+        """Event must include at least one TIME tag."""
+        s = event_scaffolding
+        summary = (
+            "Felix Mendelssohn conducted the Gewandhaus Orchestra in Leipzig in 1835."
+        )
+        tags = [
+            {
+                "id": s["person"]["id"],
+                "name": "Felix Mendelssohn",
+                "start_char": 0,
+                "stop_char": 17,
+            },
+            {
+                "id": s["place"]["id"],
+                "name": "Leipzig",
+                "start_char": 56,
+                "stop_char": 63,
+            },
+        ]
+        payload = self._make_event_payload(s, summary=summary, tags=tags)
+        response = client.post(
+            "/text-reader/events",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
+        assert "TIME" in response.json()["detail"]
+
+    def test_rejects_empty_tags(self, client, auth_headers, event_scaffolding):
+        """Event must not have an empty tags list."""
+        s = event_scaffolding
+        payload = self._make_event_payload(s, tags=[])
+        response = client.post(
+            "/text-reader/events",
+            json=payload,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 422
 
 
 # --- Summary Match Endpoint ---

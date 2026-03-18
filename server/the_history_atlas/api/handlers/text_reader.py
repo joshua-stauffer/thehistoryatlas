@@ -23,7 +23,10 @@ from the_history_atlas.api.types.text_reader import (
 )
 from the_history_atlas.apps.app_manager import AppManager
 from the_history_atlas.apps.domain.core import TagInstance
-from the_history_atlas.apps.history.errors import DuplicateEventError
+from the_history_atlas.apps.history.errors import (
+    DuplicateEventError,
+    MissingTagTypesError,
+)
 
 
 def create_source_handler(
@@ -150,6 +153,8 @@ def create_text_reader_event_handler(
             source_id=event.source_id,
             story_id=event.story_id,
         )
+    except MissingTagTypesError as e:
+        raise HTTPException(status_code=422, detail=e.msg)
     except DuplicateEventError:
         raise HTTPException(
             status_code=409,

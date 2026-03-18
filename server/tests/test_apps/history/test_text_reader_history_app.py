@@ -383,23 +383,35 @@ class TestCreateTextReaderEvent:
         )
         cleanup_tag(place["id"])
         time_result = history_app.create_time_without_wikidata(
-            name="1750", date="+1750-00-00T00:00:00Z",
-            calendar_model="Q1985727", precision=9,
+            name="1750",
+            date="+1750-00-00T00:00:00Z",
+            calendar_model="Q1985727",
+            precision=9,
         )
         cleanup_tag(time_result["id"])
         source = history_app.create_text_reader_source(
-            title="Event Source", author="Author", publisher="Pub", pub_date=None,
+            title="Event Source",
+            author="Author",
+            publisher="Pub",
+            pub_date=None,
         )
         story = history_app.create_text_reader_story(
-            name="Event Story", source_id=source["id"],
+            name="Event Story",
+            source_id=source["id"],
         )
 
         summary_id = history_app.create_text_reader_event(
             text="Event Person visited Event Place in 1750.",
             tags=[
-                TagInstance(id=person["id"], start_char=0, stop_char=12, name="Event Person"),
-                TagInstance(id=place["id"], start_char=21, stop_char=32, name="Event Place"),
-                TagInstance(id=time_result["id"], start_char=36, stop_char=40, name="1750"),
+                TagInstance(
+                    id=person["id"], start_char=0, stop_char=12, name="Event Person"
+                ),
+                TagInstance(
+                    id=place["id"], start_char=21, stop_char=32, name="Event Place"
+                ),
+                TagInstance(
+                    id=time_result["id"], start_char=36, stop_char=40, name="1750"
+                ),
             ],
             citation_text="Burney, vol. 1, p. 42",
             citation_page_num=42,
@@ -418,23 +430,35 @@ class TestCreateTextReaderEvent:
         )
         cleanup_tag(place["id"])
         time_result = history_app.create_time_without_wikidata(
-            name="1751", date="+1751-00-00T00:00:00Z",
-            calendar_model="Q1985727", precision=9,
+            name="1751",
+            date="+1751-00-00T00:00:00Z",
+            calendar_model="Q1985727",
+            precision=9,
         )
         cleanup_tag(time_result["id"])
         source = history_app.create_text_reader_source(
-            title="Summary Source", author="A", publisher="P", pub_date=None,
+            title="Summary Source",
+            author="A",
+            publisher="P",
+            pub_date=None,
         )
         story = history_app.create_text_reader_story(
-            name="Summary Story", source_id=source["id"],
+            name="Summary Story",
+            source_id=source["id"],
         )
 
         summary_id = history_app.create_text_reader_event(
             text="Summary Person visited Summary Place in 1751.",
             tags=[
-                TagInstance(id=person["id"], start_char=0, stop_char=14, name="Summary Person"),
-                TagInstance(id=place["id"], start_char=23, stop_char=36, name="Summary Place"),
-                TagInstance(id=time_result["id"], start_char=40, stop_char=44, name="1751"),
+                TagInstance(
+                    id=person["id"], start_char=0, stop_char=14, name="Summary Person"
+                ),
+                TagInstance(
+                    id=place["id"], start_char=23, stop_char=36, name="Summary Place"
+                ),
+                TagInstance(
+                    id=time_result["id"], start_char=40, stop_char=44, name="1751"
+                ),
             ],
             citation_text="citation",
             citation_page_num=None,
@@ -459,23 +483,35 @@ class TestCreateTextReaderEvent:
         )
         cleanup_tag(place["id"])
         time_result = history_app.create_time_without_wikidata(
-            name="1752", date="+1752-00-00T00:00:00Z",
-            calendar_model="Q1985727", precision=9,
+            name="1752",
+            date="+1752-00-00T00:00:00Z",
+            calendar_model="Q1985727",
+            precision=9,
         )
         cleanup_tag(time_result["id"])
         source = history_app.create_text_reader_source(
-            title="Story Event Source", author="A", publisher="P", pub_date=None,
+            title="Story Event Source",
+            author="A",
+            publisher="P",
+            pub_date=None,
         )
         story = history_app.create_text_reader_story(
-            name="Event Story 2", source_id=source["id"],
+            name="Event Story 2",
+            source_id=source["id"],
         )
 
         summary_id = history_app.create_text_reader_event(
             text="Story Person visited Story Place in 1752.",
             tags=[
-                TagInstance(id=person["id"], start_char=0, stop_char=12, name="Story Person"),
-                TagInstance(id=place["id"], start_char=21, stop_char=32, name="Story Place"),
-                TagInstance(id=time_result["id"], start_char=36, stop_char=40, name="1752"),
+                TagInstance(
+                    id=person["id"], start_char=0, stop_char=12, name="Story Person"
+                ),
+                TagInstance(
+                    id=place["id"], start_char=21, stop_char=32, name="Story Place"
+                ),
+                TagInstance(
+                    id=time_result["id"], start_char=36, stop_char=40, name="1752"
+                ),
             ],
             citation_text="citation",
             citation_page_num=None,
@@ -503,23 +539,35 @@ class TestCreateTextReaderEvent:
         )
         cleanup_tag(place["id"])
         time_result = history_app.create_time_without_wikidata(
-            name="1753", date="+1753-00-00T00:00:00Z",
-            calendar_model="Q1985727", precision=9,
+            name="1753",
+            date="+1753-00-00T00:00:00Z",
+            calendar_model="Q1985727",
+            precision=9,
         )
         cleanup_tag(time_result["id"])
         source = history_app.create_text_reader_source(
-            title="Citation Source", author="A", publisher="P", pub_date=None,
+            title="Citation Source",
+            author="A",
+            publisher="P",
+            pub_date=None,
         )
         story = history_app.create_text_reader_story(
-            name="Citation Story", source_id=source["id"],
+            name="Citation Story",
+            source_id=source["id"],
         )
 
         summary_id = history_app.create_text_reader_event(
             text="Citation Person visited Citation Place in 1753.",
             tags=[
-                TagInstance(id=person["id"], start_char=0, stop_char=15, name="Citation Person"),
-                TagInstance(id=place["id"], start_char=24, stop_char=38, name="Citation Place"),
-                TagInstance(id=time_result["id"], start_char=42, stop_char=46, name="1753"),
+                TagInstance(
+                    id=person["id"], start_char=0, stop_char=15, name="Citation Person"
+                ),
+                TagInstance(
+                    id=place["id"], start_char=24, stop_char=38, name="Citation Place"
+                ),
+                TagInstance(
+                    id=time_result["id"], start_char=42, stop_char=46, name="1753"
+                ),
             ],
             citation_text="Burney, vol. 2, p. 100",
             citation_page_num=100,
