@@ -139,12 +139,14 @@ class EntityResolver:
                         (c for c in req["candidates"] if UUID(c["id"]) == match_id), None
                     )
                     if matched:
+                        log.info(f"Matched person {info['name']!r} → {matched['name']!r} ({match_id})")
                         self._person_cache[key] = ResolvedPerson(
                             id=match_id, name=matched["name"],
                             summary_name=info["name"],
                         )
                         continue
                 # No match → create new person
+                log.info(f"Creating new person: {info['name']!r}")
                 created = self._rest.create_person(
                     name=info["name"], description=info["description"]
                 )
@@ -160,6 +162,7 @@ class EntityResolver:
                         (c for c in req["candidates"] if UUID(c["id"]) == match_id), None
                     )
                     if matched:
+                        log.info(f"Matched place {req['entity_name']!r} → {matched['name']!r} ({match_id})")
                         self._place_cache[key] = ResolvedPlace(
                             id=match_id,
                             name=matched["name"],
@@ -169,6 +172,7 @@ class EntityResolver:
                         )
                         continue
                 # No match → create new place
+                log.info(f"Creating new place: {req['entity_name']!r}")
                 self._place_cache[key] = self._create_place(
                     place, req["info"]["search_name"]
                 )

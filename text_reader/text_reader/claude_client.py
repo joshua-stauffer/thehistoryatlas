@@ -21,6 +21,13 @@ MODEL_MAP = {
     "opus": "claude-opus-4-6",
 }
 
+# (input_price_per_1M, output_price_per_1M) in USD
+MODEL_PRICING = {
+    "claude-haiku-4-5-20251001": (0.80, 4.00),
+    "claude-sonnet-4-6": (3.00, 15.00),
+    "claude-opus-4-6": (15.00, 75.00),
+}
+
 EXTRACTION_SYSTEM_PROMPT = """You are a scholarly research assistant specializing in historical text analysis. Your job is to extract structured historical events from source texts.
 
 A single passage may yield multiple events — extract each discrete occurrence separately. Biographical entries commonly contain several distinct events: a birth, a death, career appointments, performances, relocations, publications, and so on. Extract all of them.
@@ -171,6 +178,32 @@ class ClaudeClient:
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = MODEL_MAP.get(model, model)
         log.info(f"Using Claude model: {self._model}")
+        # Token usage accumulators (batch vs standard rate separate)
+        self._batch_input_tokens = 0
+        self._batch_output_tokens = 0
+        self._standard_input_tokens = 0
+        self._standard_output_tokens = 0
+
+    def total_cost(self) -> float:
+        """Return total USD cost based on accumulated token usage."""
+        input_price, output_price = MODEL_PRICING.get(self._model, (3.00, 15.00))
+        standard = (
+            self._standard_input_tokens * input_price
+            + self._standard_output_tokens * output_price
+        ) / 1_000_000
+        batch = (
+            self._batch_input_tokens * input_price * 0.5
+            + self._batch_output_tokens * output_price * 0.5
+        ) / 1_000_000
+        return standard + batch
+
+    def _track_usage(self, usage, batch: bool = False) -> None:
+        if batch:
+            self._batch_input_tokens += usage.input_tokens
+            self._batch_output_tokens += usage.output_tokens
+        else:
+            self._standard_input_tokens += usage.input_tokens
+            self._standard_output_tokens += usage.output_tokens
 
     # -------------------------------------------------------------------------
     # Extraction
@@ -214,6 +247,8 @@ class ClaudeClient:
         except anthropic.APIError as e:
             log.error(f"Claude API error during extraction [{page_ctx}]: {e}")
             return []
+
+        self._track_usage(response.usage, batch=False)
 
         if response.stop_reason == "max_tokens":
             if _depth < 2:
@@ -315,6 +350,7 @@ class ClaudeClient:
 
             if result.result.type == "succeeded":
                 message = result.result.message
+                self._track_usage(message.usage, batch=True)
                 if message.stop_reason == "max_tokens":
                     log.warning(
                         f"Batch chunk {custom_id} was truncated — "
@@ -400,6 +436,7 @@ class ClaudeClient:
             batch_start = int(result.custom_id.split("-")[1])
             batch = invalid[batch_start : batch_start + self._FIX_BATCH_SIZE]
             if result.result.type == "succeeded":
+                self._track_usage(result.result.message.usage, batch=True)
                 content = result.result.message.content[0].text.strip()
                 batch_outputs[batch_start] = self._parse_fix_response(content, batch)
             else:
@@ -472,8 +509,9 @@ class ClaudeClient:
         for result in self._fetch_batch_results_with_retry(batch_id):
             key = result.custom_id
             if result.result.type == "succeeded":
+                self._track_usage(result.result.message.usage, batch=True)
                 content = result.result.message.content[0].text.strip()
-                results[key] = self._parse_entity_match_result(content)
+                results[key] = self._parse_entity_match_result(content, key)
             else:
                 log.warning(f"Entity match batch request {key} failed")
                 results[key] = None
@@ -509,6 +547,7 @@ class ClaudeClient:
             log.error(f"Claude API error during entity matching: {e}")
             return None
 
+        self._track_usage(response.usage, batch=False)
         return self._parse_entity_match_result(response.content[0].text.strip())
 
     # -------------------------------------------------------------------------
@@ -539,7 +578,7 @@ class ClaudeClient:
             )
         return "\n".join(parts)
 
-    def _parse_entity_match_result(self, content: str) -> UUID | None:
+    def _parse_entity_match_result(self, content: str, key: str = "?") -> UUID | None:
         if content.startswith("```"):
             lines = content.split("\n")
             content = (
@@ -552,7 +591,10 @@ class ClaudeClient:
             if result.get("match") and result.get("id"):
                 return UUID(result["id"])
         except (json.JSONDecodeError, ValueError) as e:
-            log.warning(f"Failed to parse entity match response: {e}")
+            log.warning(
+                f"Failed to parse entity match response [{key}]: {e}; "
+                f"content={content[:120]!r}"
+            )
         return None
 
     def _fetch_batch_results_with_retry(
@@ -710,6 +752,8 @@ class ClaudeClient:
         except anthropic.APIError as e:
             log.error(f"Claude API error during summary fix: {e}")
             return [[] for _ in invalid]
+
+        self._track_usage(response.usage, batch=False)
 
         if response.stop_reason == "max_tokens":
             log.warning(

@@ -151,7 +151,7 @@ def run_pipeline(
                 )
                 if choice == "q":
                     print("\nQuitting.")
-                    _print_summary(total_extracted, total_published, total_skipped)
+                    _print_summary(total_extracted, total_published, total_skipped, claude_client, len(pages))
                     return
                 elif choice == "s":
                     total_skipped += 1
@@ -173,7 +173,7 @@ def run_pipeline(
                 log.error(f"Failed to publish: {e}")
                 total_skipped += 1
 
-    _print_summary(total_extracted, total_published, total_skipped)
+    _print_summary(total_extracted, total_published, total_skipped, claude_client, len(pages))
 
 
 def run_batch_pipeline(
@@ -310,6 +310,7 @@ def run_batch_pipeline(
             continue
 
         if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
+            log.info(f"Skipping duplicate: {event.summary[:80]!r}")
             total_skipped += 1
             continue
 
@@ -328,7 +329,7 @@ def run_batch_pipeline(
             log.error(f"Failed to publish: {e}")
             total_skipped += 1
 
-    _print_summary(total_extracted, total_published, total_skipped)
+    _print_summary(total_extracted, total_published, total_skipped, claude_client, len(pages))
 
 
 def run_resume_pipeline(
@@ -418,6 +419,7 @@ def run_resume_pipeline(
             continue
 
         if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
+            log.info(f"Skipping duplicate: {event.summary[:80]!r}")
             total_skipped += 1
             continue
 
@@ -436,13 +438,30 @@ def run_resume_pipeline(
             log.error(f"Failed to publish: {e}")
             total_skipped += 1
 
-    _print_summary(total_extracted, total_published, total_skipped)
+    _print_summary(total_extracted, total_published, total_skipped, claude_client)
 
 
-def _print_summary(extracted: int, published: int, skipped: int):
+def _print_summary(
+    extracted: int, published: int, skipped: int, claude_client: ClaudeClient,
+    pages: int = 0,
+):
+    cost = claude_client.total_cost()
+    cost_per_event = (cost / published) if published else 0.0
+    cost_per_page = (cost / pages) if pages else 0.0
     print(f"\n{'='*60}")
     print("Pipeline Complete")
     print(f"  Events extracted: {extracted}")
     print(f"  Events published: {published}")
     print(f"  Events skipped:   {skipped}")
+    print(f"  Claude cost:      ${cost:.4f}")
+    if published:
+        print(f"  Cost/event:       ${cost_per_event:.4f}")
+    if pages:
+        print(f"  Cost/page:        ${cost_per_page:.4f}  ({pages} pages)")
     print(f"{'='*60}")
+    log.info(
+        f"Pipeline complete — extracted: {extracted}, published: {published}, "
+        f"skipped: {skipped}, cost: ${cost:.4f}"
+        + (f", cost/event: ${cost_per_event:.4f}" if published else "")
+        + (f", cost/page: ${cost_per_page:.4f}" if pages else "")
+    )
