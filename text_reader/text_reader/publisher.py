@@ -64,29 +64,44 @@ class Publisher:
         """Build tag list with character offsets by finding entity names in the summary."""
         tags = []
         summary = event.summary
+        claimed: list[tuple[int, int]] = []  # (start, stop) of already-tagged spans
+
+        def find_unclaimed(search_text: str) -> int:
+            """Return the first occurrence of search_text not inside a claimed range."""
+            search_from = 0
+            while True:
+                pos = summary.find(search_text, search_from)
+                if pos == -1:
+                    return -1
+                if not any(start <= pos < stop for start, stop in claimed):
+                    return pos
+                search_from = pos + 1
 
         for person in event.people:
             # Use summary_name (extracted form) for char offset, not canonical DB name
             person_text = person.summary_name
-            start = summary.find(person_text)
+            start = find_unclaimed(person_text)
             if start == -1:
                 log.warning(f"Person '{person_text}' not found in summary text")
                 continue
+            stop = start + len(person_text)
+            claimed.append((start, stop))
             tags.append(
                 {
                     "id": str(person.id),
                     "name": person_text,
                     "start_char": start,
-                    "stop_char": start + len(person_text),
+                    "stop_char": stop,
                 }
             )
 
         # Place — use summary_name (natural form) for char offset, not canonical DB name
         place_text = event.place.summary_name
-        place_start = summary.find(place_text)
+        place_start = find_unclaimed(place_text)
         if place_start == -1:
             log.warning(f"Place '{place_text}' not found in summary text")
             return []
+        claimed.append((place_start, place_start + len(place_text)))
         tags.append(
             {
                 "id": str(event.place.id),
@@ -97,7 +112,7 @@ class Publisher:
         )
 
         # Time
-        time_start = summary.find(event.time.name)
+        time_start = find_unclaimed(event.time.name)
         if time_start == -1:
             log.warning(f"Time '{event.time.name}' not found in summary text")
             return []

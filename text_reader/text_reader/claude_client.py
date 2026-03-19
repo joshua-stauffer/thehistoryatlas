@@ -572,6 +572,8 @@ class ClaudeClient:
         parts = [f"- id: {c['id']}, name: {c['name']}"]
         if c.get("description"):
             parts.append(f"  description: {c['description']}")
+        if c.get("latitude") is not None and c.get("longitude") is not None:
+            parts.append(f"  coordinates: {c['latitude']:.4f}, {c['longitude']:.4f}")
         if c.get("earliest_date") or c.get("latest_date"):
             parts.append(
                 f"  dates: {c.get('earliest_date', '?')} – {c.get('latest_date', '?')}"

@@ -129,6 +129,9 @@ def run_pipeline(
                     event.page_num = chunk.page_for_excerpt(event.excerpt)
                 else:
                     event.page_num = chunk.start_page
+            # Expand excerpt to include surrounding sentence context
+            if event.excerpt:
+                event.excerpt = _expand_excerpt(event.excerpt, chunk.text)
 
             # Resolve entities
             try:
@@ -279,7 +282,7 @@ def run_batch_pipeline(
         geonames_client=geonames_client,
     )
 
-    # Assign page numbers and flatten all events before pre-resolution
+    # Assign page numbers, expand excerpts, and flatten all events before pre-resolution
     all_events = []
     for custom_id, events in batch_results:
         chunk = chunk_map.get(custom_id)
@@ -289,6 +292,8 @@ def run_batch_pipeline(
                     event.page_num = chunk.page_for_excerpt(event.excerpt)
                 else:
                     event.page_num = chunk.start_page
+            if chunk and event.excerpt:
+                event.excerpt = _expand_excerpt(event.excerpt, chunk.text)
             all_events.append(event)
 
     # Pre-resolve all entities in a single batch before publishing
@@ -439,6 +444,51 @@ def run_resume_pipeline(
             total_skipped += 1
 
     _print_summary(total_extracted, total_published, total_skipped, claude_client)
+
+
+def _expand_excerpt(excerpt: str, chunk_text: str) -> str:
+    """Expand a short excerpt to include one sentence of context before and after.
+
+    Walks backward from the excerpt to find the start of the preceding sentence,
+    and forward to find the end of the following sentence. Falls back to the full
+    chunk text if the excerpt cannot be located (e.g. Claude paraphrased slightly).
+    """
+    pos = chunk_text.find(excerpt)
+    if pos == -1:
+        return chunk_text
+
+    excerpt_end = pos + len(excerpt)
+
+    # Walk backward to find the sentence boundary before the excerpt.
+    # A sentence ends at punctuation (.!?) followed by whitespace, or a blank line.
+    start = 0
+    i = pos - 1
+    while i >= 0:
+        ch = chunk_text[i]
+        if ch in ".!?" and i + 1 < len(chunk_text) and chunk_text[i + 1] in " \t\n\r":
+            start = i + 2
+            break
+        if chunk_text[i : i + 2] == "\n\n":
+            start = i + 2
+            break
+        i -= 1
+
+    # Walk forward to find the end of the sentence following the excerpt.
+    end = len(chunk_text)
+    i = excerpt_end
+    while i < len(chunk_text):
+        ch = chunk_text[i]
+        if ch in ".!?" and (
+            i + 1 >= len(chunk_text) or chunk_text[i + 1] in " \t\n\r"
+        ):
+            end = i + 1
+            break
+        if chunk_text[i : i + 2] == "\n\n":
+            end = i
+            break
+        i += 1
+
+    return chunk_text[start:end].strip()
 
 
 def _print_summary(

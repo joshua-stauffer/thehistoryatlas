@@ -116,13 +116,14 @@ const buildTaggedText = (
           <BiTimeFive />
         );
       const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
+      const tagText = Array.from(event.text).slice(tag.startChar, tag.stopChar).join("");
       return (
         <Link
           key={`${tag.id}-${index}`}
           to={storyUrl}
           style={{ textDecoration: "none" }}
         >
-          <TextButton text={tag.name} />
+          <TextButton text={tagText} />
         </Link>
       );
     } else if (tagIndicesSet.has(index)) {
