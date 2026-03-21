@@ -1863,7 +1863,7 @@ class Repository:
                           AND (similarity(names.name, :search_term) > 0.3
                                OR names.name ILIKE :like_pattern)
                         ORDER BY sim DESC
-                        LIMIT 20
+                        LIMIT 50
                         """
                     ),
                     {

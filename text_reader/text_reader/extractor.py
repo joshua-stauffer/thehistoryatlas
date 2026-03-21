@@ -446,49 +446,160 @@ def run_resume_pipeline(
     _print_summary(total_extracted, total_published, total_skipped, claude_client)
 
 
-def _expand_excerpt(excerpt: str, chunk_text: str) -> str:
-    """Expand a short excerpt to include one sentence of context before and after.
+_ABBREVS = frozenset(
+    [
+        "mr", "mrs", "ms", "dr", "prof", "rev", "lt", "col", "gen", "capt",
+        "sgt", "st", "ave", "blvd", "vol", "no", "op", "pp", "p", "vs",
+        "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
+        "etc", "i.e", "e.g", "viz",
+    ]
+)
 
-    Walks backward from the excerpt to find the start of the preceding sentence,
-    and forward to find the end of the following sentence. Falls back to the full
-    chunk text if the excerpt cannot be located (e.g. Claude paraphrased slightly).
+
+def _normalize_text(text: str) -> str:
+    """Normalize PDF extraction artifacts for reliable substring matching."""
+    # Remove soft hyphens and line-break hyphens
+    text = text.replace("\u00ad", "")  # soft hyphen
+    text = text.replace("-\n", "")
+    # Normalize dashes to ASCII hyphen
+    for ch in "\u2013\u2014\u2012\u2015":  # en-dash, em-dash, figure dash, horz bar
+        text = text.replace(ch, "-")
+    # Normalize quotation marks
+    for ch in "\u2018\u2019\u201b":  # left/right single quote, reversed
+        text = text.replace(ch, "'")
+    for ch in "\u201c\u201d\u201e\u201f":  # left/right double quote variants
+        text = text.replace(ch, '"')
+    return text
+
+
+def _is_sentence_end(text: str, dot_pos: int) -> bool:
+    """Return True if the '.' (or '!' or '?') at dot_pos ends a sentence.
+
+    Filters out abbreviations like "Feb.", "Dr.", "op.", "p.".
     """
-    pos = chunk_text.find(excerpt)
-    if pos == -1:
-        return chunk_text
+    if text[dot_pos] in "!?":
+        return True
+    # Extract the alphabetic word immediately before the dot
+    word_end = dot_pos
+    word_start = word_end - 1
+    while word_start >= 0 and text[word_start].isalpha():
+        word_start -= 1
+    word = text[word_start + 1 : word_end].lower()
+    # No alpha chars before dot (e.g. a year "1843." or close-paren) — treat as sentence end
+    if not word:
+        return True
+    if word in _ABBREVS or len(word) <= 2:
+        return False
+    return True
 
-    excerpt_end = pos + len(excerpt)
 
-    # Walk backward to find the sentence boundary before the excerpt.
-    # A sentence ends at punctuation (.!?) followed by whitespace, or a blank line.
-    start = 0
-    i = pos - 1
+def _find_sentence_end(text: str, start: int) -> int:
+    """Return the index one past the sentence-ending punctuation at or after `start`."""
+    i = start
+    while i < len(text):
+        if text[i] in ".!?" and (i + 1 >= len(text) or text[i + 1] in " \t\n\r"):
+            if _is_sentence_end(text, i):
+                return i + 1
+        if i + 1 < len(text) and text[i] == "\n" and text[i + 1] == "\n":
+            return i
+        i += 1
+    return len(text)
+
+
+def _find_sentence_start(text: str, before: int) -> int:
+    """Return the start of the sentence that ends before position `before`.
+
+    Walks backward past one sentence boundary to find the start of the
+    *preceding* sentence, giving context.  Stops at a paragraph break.
+    """
+    i = before - 1
+    boundaries_found = 0
     while i >= 0:
-        ch = chunk_text[i]
-        if ch in ".!?" and i + 1 < len(chunk_text) and chunk_text[i + 1] in " \t\n\r":
-            start = i + 2
-            break
-        if chunk_text[i : i + 2] == "\n\n":
-            start = i + 2
-            break
+        if i + 1 < len(text) and text[i] == "\n" and text[i + 1] == "\n":
+            return i + 2
+        if text[i] in ".!?" and i + 1 < len(text) and text[i + 1] in " \t\n\r":
+            if _is_sentence_end(text, i):
+                boundaries_found += 1
+                if boundaries_found == 2:
+                    return i + 2
         i -= 1
+    return 0
 
-    # Walk forward to find the end of the sentence following the excerpt.
-    end = len(chunk_text)
-    i = excerpt_end
-    while i < len(chunk_text):
-        ch = chunk_text[i]
-        if ch in ".!?" and (
-            i + 1 >= len(chunk_text) or chunk_text[i + 1] in " \t\n\r"
-        ):
-            end = i + 1
-            break
-        if chunk_text[i : i + 2] == "\n\n":
-            end = i
-            break
+
+def _expand_excerpt(excerpt: str, chunk_text: str) -> str:
+    """Expand a short excerpt to include the preceding sentence and the following sentence.
+
+    Works on a normalized copy of both strings to handle PDF artifacts (soft
+    hyphens, en/em dashes, smart quotes), then maps the result back to the
+    original chunk_text so the citation text is authentic.
+    """
+    norm_chunk = _normalize_text(chunk_text)
+    norm_excerpt = _normalize_text(excerpt)
+
+    pos = norm_chunk.find(norm_excerpt)
+    if pos == -1:
+        return excerpt  # can't locate — return the original short excerpt
+
+    norm_excerpt_end = pos + len(norm_excerpt)
+
+    # Find the start of the sentence *before* the one containing the excerpt.
+    start = _find_sentence_start(norm_chunk, pos)
+
+    # Find the end of the excerpt's own sentence, then the end of the sentence after it.
+    excerpt_sentence_end = _find_sentence_end(norm_chunk, norm_excerpt_end)
+    end = _find_sentence_end(norm_chunk, excerpt_sentence_end)
+
+    # Map positions back to original text.  Since normalization can only
+    # shorten the string, we use a character-by-character walk to find the
+    # corresponding positions in the original.
+    orig_start = _map_position(chunk_text, norm_chunk, start)
+    orig_end = _map_position(chunk_text, norm_chunk, end)
+
+    return chunk_text[orig_start:orig_end].strip()
+
+
+def _map_position(original: str, normalized: str, norm_pos: int) -> int:
+    """Map a position in `normalized` back to a position in `original`.
+
+    The normalization removes characters (hyphens, dashes, quotes) so we walk
+    both strings in parallel, counting only characters that survive in `normalized`.
+    """
+    if norm_pos == 0:
+        return 0
+    if norm_pos >= len(normalized):
+        return len(original)
+
+    norm_idx = 0
+    norm_target = norm_pos
+
+    # Rebuild the normalized string character-by-character from the original
+    # to find the correspondence.
+    i = 0
+    while i < len(original) and norm_idx < norm_target:
+        # Simulate the normalization rules
+        if original[i] == "\u00ad":  # soft hyphen — removed
+            i += 1
+            continue
+        if i + 1 < len(original) and original[i] == "-" and original[i + 1] == "\n":
+            # "-\n" removed
+            i += 2
+            continue
+        if original[i] in "\u2013\u2014\u2012\u2015":  # dash → "-"
+            norm_idx += 1
+            i += 1
+            continue
+        if original[i] in "\u2018\u2019\u201b":  # single quote
+            norm_idx += 1
+            i += 1
+            continue
+        if original[i] in "\u201c\u201d\u201e\u201f":  # double quote
+            norm_idx += 1
+            i += 1
+            continue
+        norm_idx += 1
         i += 1
 
-    return chunk_text[start:end].strip()
+    return i
 
 
 def _print_summary(

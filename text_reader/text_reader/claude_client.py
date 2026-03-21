@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import time
 from uuid import UUID
 
@@ -34,7 +35,9 @@ A single passage may yield multiple events — extract each discrete occurrence 
 
 For each distinct historical event described in the text, extract:
 
-1. **Summary**: One or two sentences describing the event, written in third person past tense, using natural language. The summary MUST contain the primary person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text.
+1. **Summary**: One or two sentences describing the event, written in third person past tense. Use clear, modern prose — avoid archaic constructions and passive voice where a direct sentence reads better. The summary MUST contain the primary person's full name, the place `name` (as defined below), and the time `name` as literal substrings — these will be used to locate tags in the text.
+
+   **Vary your language across events**: even when a passage yields multiple similar events (several appointments, several births), write each summary freshly. Don't reuse the same sentence skeleton with only the names swapped. Vary sentence structure, the detail you foreground, and the phrasing of dates and places.
 
    **Enrich each summary** by weaving in a contextual detail from the source text that answers one of these questions:
    - What circumstances surrounded this event? (e.g., war, illness, patronage, rivalry, exile)
@@ -57,6 +60,8 @@ For each distinct historical event described in the text, extract:
 
    **Other people mentioned in the summary** may use whatever name form is natural — full name, surname only, or any commonly used variant. For example: "Bellini's opera Norma, with words by Romani, was produced at Milan on Dec. 26, 1831, with Donzelli, Pasta, and Grisi in the cast." Here "Romani", "Donzelli", "Pasta", and "Grisi" are acceptable name forms, and each should appear in the `people` array with their full name and a description.
 
+   **Collective references — always name individuals explicitly**: When the source refers to a group by a collective or family label (e.g. "the Milanollo sisters", "the brothers Romberg", "the Hallé family"), identify each member by their personal name and write the summary so that each person is named individually. For example, if the source says "he toured with the Milanollo sisters", write "he toured with Teresa Milanollo and Maria Milanollo" and include both as separate entries in `people`. Never use a collective label as a person name in the summary or `people` array.
+
    **CRITICAL — the time `name` must appear verbatim in the summary**: Write the date in the summary exactly as you set time.name. If time.name is "March 1834", the summary must contain the substring "March 1834". Never write a date range in the summary (e.g. "May 18-20" or "June 7-9" or "February and March" or "1885-92") — use only the single date from time.name.
 
    **CRITICAL — the place `name` must appear verbatim in the summary**: Every event happens somewhere. Even if the source text implies the location from context, state it explicitly in the summary. Biographical entries often mention a city once in the header (e.g., "Dale, Benjamin James, b. London, 1885") and then list achievements without repeating it. You must still weave the place name into every summary derived from that entry.
@@ -72,7 +77,7 @@ For each distinct historical event described in the text, extract:
 3. **Place**: The location where the event occurred. Include:
    - name: The place name exactly as you write it in the summary — use natural, concise language (e.g. "New York", "Boston", "Paris"). This must match the summary verbatim.
    - qualified_name: The fully qualified name for disambiguation, including state or country. Spell out abbreviations (Pa. -> Pennsylvania, N.Y. -> New York, Mass. -> Massachusetts, etc.). Examples: "New York, New York"; "Boston, Massachusetts"; "Ephrata, Pennsylvania"; "Leipzig, Germany". If the source gives a qualifier (e.g. "Ephrata, Pa."), always populate this field.
-   - latitude/longitude: Approximate coordinates if you can determine them (null if unknown)
+   - latitude/longitude: Approximate coordinates. Always provide your best estimate for any recognisable location — use null only if the place is genuinely unidentifiable.
    - description: Brief description
 
 4. **Time**: When the event occurred. Include:
@@ -541,7 +546,10 @@ class ClaudeClient:
                 model=self._model,
                 max_tokens=256,
                 system=ENTITY_MATCH_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}],
+                messages=[
+                    {"role": "user", "content": user_message},
+                    {"role": "assistant", "content": "{"},
+                ],
             )
         except anthropic.APIError as e:
             log.error(f"Claude API error during entity matching: {e}")
@@ -581,6 +589,7 @@ class ClaudeClient:
         return "\n".join(parts)
 
     def _parse_entity_match_result(self, content: str, key: str = "?") -> UUID | None:
+        # Strip code fences if present
         if content.startswith("```"):
             lines = content.split("\n")
             content = (
@@ -588,15 +597,25 @@ class ClaudeClient:
                 if lines[-1].strip() == "```"
                 else "\n".join(lines[1:])
             )
-        try:
-            result, _ = json.JSONDecoder().raw_decode(content)
-            if result.get("match") and result.get("id"):
-                return UUID(result["id"])
-        except (json.JSONDecodeError, ValueError) as e:
-            log.warning(
-                f"Failed to parse entity match response [{key}]: {e}; "
-                f"content={content[:120]!r}"
-            )
+        # Try parsing the response directly, then fall back to regex extraction
+        # in case Claude wrapped the JSON in prose reasoning.
+        candidates = [content]
+        m = re.search(r'\{[^{}]+\}', content, re.DOTALL)
+        if m:
+            candidates.append(m.group())
+        for attempt in candidates:
+            try:
+                result, _ = json.JSONDecoder().raw_decode(attempt.strip())
+                if result.get("match") and result.get("id"):
+                    return UUID(result["id"])
+                if result.get("match") is False or result.get("id") is None:
+                    return None  # explicit no-match
+            except (json.JSONDecodeError, ValueError):
+                continue
+        log.warning(
+            f"Failed to parse entity match response [{key}]; "
+            f"content={content[:120]!r}"
+        )
         return None
 
     def _fetch_batch_results_with_retry(
