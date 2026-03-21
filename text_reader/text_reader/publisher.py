@@ -47,6 +47,10 @@ class Publisher:
             "access_date": datetime.now(timezone.utc).isoformat(),
         }
 
+        canonical_id = (
+            str(event.existing_summary_id) if event.existing_summary_id else None
+        )
+
         try:
             result = self._rest.create_event(
                 summary=event.summary,
@@ -54,6 +58,7 @@ class Publisher:
                 citation=citation,
                 source_id=str(source_id),
                 story_id=str(story_id),
+                canonical_summary_id=canonical_id,
             )
             return UUID(result["id"])
         except Exception as e:

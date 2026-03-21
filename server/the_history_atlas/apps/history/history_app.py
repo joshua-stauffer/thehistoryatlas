@@ -858,7 +858,12 @@ class HistoryApp:
         }
 
     def create_text_reader_source(
-        self, title: str, author: str, publisher: str, pub_date: str | None
+        self,
+        title: str,
+        author: str,
+        publisher: str,
+        pub_date: str | None,
+        pdf_page_offset: int = 0,
     ) -> dict:
         """Create a source for a text reader import."""
         source = self._repository.get_source_by_title(title=title)
@@ -869,10 +874,16 @@ class HistoryApp:
                 "author": source.author,
                 "publisher": source.publisher,
                 "pub_date": source.pub_date,
+                "pdf_page_offset": getattr(source, "pdf_page_offset", 0),
             }
         id = uuid4()
         self._repository.create_source_with_session(
-            id=id, title=title, author=author, publisher=publisher, pub_date=pub_date
+            id=id,
+            title=title,
+            author=author,
+            publisher=publisher,
+            pub_date=pub_date,
+            pdf_page_offset=pdf_page_offset,
         )
         return {
             "id": id,
@@ -880,6 +891,7 @@ class HistoryApp:
             "author": author,
             "publisher": publisher,
             "pub_date": pub_date,
+            "pdf_page_offset": pdf_page_offset,
         }
 
     def create_text_reader_event(
@@ -891,6 +903,7 @@ class HistoryApp:
         citation_access_date: str | None,
         source_id: UUID,
         story_id: UUID,
+        canonical_summary_id: UUID | None = None,
     ) -> UUID:
         """Create an event from the text reader pipeline."""
         summary_id = uuid4()
@@ -918,6 +931,7 @@ class HistoryApp:
                     precision=time_data.get("precision"),
                     latitude=place_data.get("latitude"),
                     longitude=place_data.get("longitude"),
+                    canonical_summary_id=canonical_summary_id,
                     session=session,
                 )
             except IntegrityError:

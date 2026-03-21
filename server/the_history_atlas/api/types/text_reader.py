@@ -12,6 +12,7 @@ class TextReaderSourceInput(BaseModel):
     author: str
     publisher: str
     pub_date: str | None = None
+    pdf_page_offset: int = 0
 
 
 class TextReaderSourceOutput(BaseModel):
@@ -20,6 +21,7 @@ class TextReaderSourceOutput(BaseModel):
     author: str
     publisher: str
     pub_date: str | None = None
+    pdf_page_offset: int = 0
 
 
 # --- Person ---
@@ -98,6 +100,7 @@ class TextReaderEventInput(BaseModel):
     citation: TextReaderCitationInput
     source_id: UUID
     story_id: UUID
+    canonical_summary_id: UUID | None = None
 
 
 class TextReaderEventOutput(BaseModel):

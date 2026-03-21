@@ -41,7 +41,12 @@ class RestClient:
     # --- Sources ---
 
     def create_source(
-        self, title: str, author: str, publisher: str, pub_date: str | None
+        self,
+        title: str,
+        author: str,
+        publisher: str,
+        pub_date: str | None,
+        pdf_page_offset: int = 0,
     ) -> dict:
         return self._post_json(
             "/text-reader/sources",
@@ -50,6 +55,7 @@ class RestClient:
                 "author": author,
                 "publisher": publisher,
                 "pub_date": pub_date,
+                "pdf_page_offset": pdf_page_offset,
             },
         )
 
@@ -149,17 +155,18 @@ class RestClient:
         citation: dict,
         source_id: str,
         story_id: str,
+        canonical_summary_id: str | None = None,
     ) -> dict:
-        return self._post_json(
-            "/text-reader/events",
-            {
-                "summary": summary,
-                "tags": tags,
-                "citation": citation,
-                "source_id": source_id,
-                "story_id": story_id,
-            },
-        )
+        body: dict = {
+            "summary": summary,
+            "tags": tags,
+            "citation": citation,
+            "source_id": source_id,
+            "story_id": story_id,
+        }
+        if canonical_summary_id is not None:
+            body["canonical_summary_id"] = canonical_summary_id
+        return self._post_json("/text-reader/events", body)
 
     # --- Summary Match ---
 

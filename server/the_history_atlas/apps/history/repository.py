@@ -890,6 +890,7 @@ class Repository:
         precision: int | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
+        canonical_summary_id: UUID | None = None,
         session: Session | None = None,
     ) -> None:
         """Creates a new summary"""
@@ -902,6 +903,7 @@ class Repository:
             precision=precision,
             latitude=latitude,
             longitude=longitude,
+            canonical_summary_id=canonical_summary_id,
         )
         if session:
             session.add(summary)
@@ -2103,6 +2105,7 @@ class Repository:
         author: str,
         publisher: str,
         pub_date: str | None,
+        pdf_page_offset: int = 0,
     ) -> None:
         """Create a source and return immediately (no citation linking)."""
         with Session(self._engine, future=True) as session:
@@ -2113,6 +2116,7 @@ class Repository:
                 publisher=publisher,
                 pub_date=pub_date,
                 kwargs={},
+                pdf_page_offset=pdf_page_offset,
             )
             session.add(source)
             session.commit()

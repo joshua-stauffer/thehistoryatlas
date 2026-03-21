@@ -47,6 +47,17 @@ def main():
         "--end-page", type=int, default=None, help="End page (default: all)"
     )
     parser.add_argument(
+        "--pdf-offset",
+        type=int,
+        default=0,
+        help=(
+            "Offset from PDF page number to printed book page number "
+            "(book_page = pdf_page - pdf_offset). "
+            "E.g. if PDF page 15 = book page 1, use --pdf-offset 14. "
+            "Default: 0 (PDF pages match book pages)."
+        ),
+    )
+    parser.add_argument(
         "--skip-review",
         action="store_true",
         help="Skip human review of each event",
@@ -143,6 +154,7 @@ def main():
         model=args.model,
         start_page=args.start_page,
         end_page=args.end_page,
+        pdf_page_offset=args.pdf_offset,
         rest_client=rest_client,
         claude_client=claude_client,
         geonames_client=geonames_client,

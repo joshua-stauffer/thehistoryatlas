@@ -33,12 +33,7 @@ def review_event(event: ResolvedEvent, index: int) -> str:
         print(f"\nExcerpt: {event.excerpt[:300]}")
 
     if event.is_duplicate:
-        if event.duplicate_has_wikidata:
-            print(
-                "  >> DUPLICATE (has Wikidata citation — will replace text & add citation)"
-            )
-        else:
-            print("  >> DUPLICATE (non-Wikidata — will skip)")
+        print("  >> DUPLICATE (same entities already exist — will publish as secondary)")
 
     while True:
         choice = input("\n[A]pprove / [S]kip / [Q]uit: ").strip().lower()
@@ -60,6 +55,7 @@ def run_pipeline(
     rest_client: RestClient,
     claude_client: ClaudeClient,
     geonames_client: GeoNamesClient,
+    pdf_page_offset: int = 0,
 ):
     """Main extraction pipeline."""
     # Step 1: Create or get source
@@ -69,6 +65,7 @@ def run_pipeline(
         author=author,
         publisher=publisher_name,
         pub_date=pub_date,
+        pdf_page_offset=pdf_page_offset,
     )
     source_id = UUID(source["id"])
     print(f"  Source ID: {source_id}")
@@ -141,12 +138,6 @@ def run_pipeline(
                 total_skipped += 1
                 continue
 
-            # Handle duplicates
-            if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
-                print(f"  Skipping duplicate: {event.summary[:60]}...")
-                total_skipped += 1
-                continue
-
             # User review
             if not skip_review:
                 choice = review_event(
@@ -191,6 +182,7 @@ def run_batch_pipeline(
     rest_client: RestClient,
     claude_client: ClaudeClient,
     geonames_client: GeoNamesClient,
+    pdf_page_offset: int = 0,
 ):
     """Batch extraction pipeline — submits all chunks at once, waits for results.
 
@@ -203,6 +195,7 @@ def run_batch_pipeline(
         author=author,
         publisher=publisher_name,
         pub_date=pub_date,
+        pdf_page_offset=pdf_page_offset,
     )
     source_id = UUID(source["id"])
     print(f"  Source ID: {source_id}")
@@ -314,11 +307,6 @@ def run_batch_pipeline(
             total_skipped += 1
             continue
 
-        if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
-            log.info(f"Skipping duplicate: {event.summary[:80]!r}")
-            total_skipped += 1
-            continue
-
         try:
             summary_id = publisher.publish_event(
                 event=resolved,
@@ -420,11 +408,6 @@ def run_resume_pipeline(
             resolved = resolver.resolve_event(event)
         except Exception as e:
             log.error(f"Failed to resolve event: {e}")
-            total_skipped += 1
-            continue
-
-        if resolved.is_duplicate and not resolved.duplicate_has_wikidata:
-            log.info(f"Skipping duplicate: {event.summary[:80]!r}")
             total_skipped += 1
             continue
 

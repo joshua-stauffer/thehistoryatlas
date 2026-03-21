@@ -37,6 +37,7 @@ def create_source_handler(
         author=source.author,
         publisher=source.publisher,
         pub_date=source.pub_date,
+        pdf_page_offset=source.pdf_page_offset,
     )
     return TextReaderSourceOutput(**result)
 
@@ -152,6 +153,7 @@ def create_text_reader_event_handler(
             citation_access_date=event.citation.access_date,
             source_id=event.source_id,
             story_id=event.story_id,
+            canonical_summary_id=event.canonical_summary_id,
         )
     except MissingTagTypesError as e:
         raise HTTPException(status_code=422, detail=e.msg)
