@@ -1490,6 +1490,15 @@ class Repository:
             tag_id: UUID of the tag to update story orders for
             session: SQLAlchemy session to use
         """
+        # Serialize concurrent callers for the same tag_id. Without this,
+        # multiple background tasks publishing events that share a tag (e.g.
+        # the same place or person) can deadlock on tag_instances UPDATE.
+        # pg_advisory_xact_lock is released automatically at transaction end.
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(abs(hashtext(:tag_id_str)))"),
+            {"tag_id_str": str(tag_id)},
+        )
+
         tag_instances = session.execute(
             text(
                 """

@@ -121,10 +121,11 @@ Rules:
 **Self-check before returning**: For each event, verify that:
 1. The primary person's full name appears as a literal substring of the summary
 2. Every person `name` in the people array appears as a literal substring of the summary
-3. The place name appears as a literal substring of the summary
-4. The time name appears as a literal substring of the summary
-5. The time name is a bare year ("1580"), month ("March 1685"), day ("14 June 1770"), decade ("1580s"), or century ("16th century") — never a range, season, or descriptive phrase like "late 16th cent."; and circa forms ("c. 1580") have been stripped to just the year ("1580")
-If any check fails, rewrite the summary (or adjust the names) before returning.
+3. Every person mentioned by name in the summary is included in the `people` array — re-read the summary and add any named individuals you omitted (e.g. "son of Friedrich Conrad Griepenkerl" → Friedrich must be in `people`)
+4. The place name appears as a literal substring of the summary
+5. The time name appears as a literal substring of the summary
+6. The time name is a bare year ("1580"), month ("March 1685"), day ("14 June 1770"), decade ("1580s"), or century ("16th century") — never a range, season, or descriptive phrase like "late 16th cent."; and circa forms ("c. 1580") have been stripped to just the year ("1580")
+If any check fails, rewrite the summary (or adjust the people/names) before returning.
 
 Return a JSON array of events. Example:
 ```json
