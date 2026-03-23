@@ -81,9 +81,15 @@ For each distinct historical event described in the text, extract:
    - description: Brief description
 
 4. **Time**: When the event occurred. Include:
-   - name: Human-readable date (e.g., "1759", "March 1685", "14 June 1770"). Never use seasonal terms ("Spring 1834") — use the month or year instead. Never use a date range. Never use vague period descriptions ("first quarter of the 16th century") — use the best available specific year instead.
-   - date: ISO-8601 formatted with leading +/- (e.g., "+1759-00-00T00:00:00Z", "+1685-03-00T00:00:00Z")
-   - precision: 9 for year, 10 for month, 11 for day
+   - name: Human-readable date that will appear verbatim in the summary. Use the most specific level the source actually supports:
+     - **Day** (e.g., "14 June 1770") — source gives a full date
+     - **Month** (e.g., "March 1685", "Feb. 1759") — source gives month and year
+     - **Year** (e.g., "1759", "1580") — source gives a specific year. Approximate forms ("c. 1580", "about 1550", "ca. 1490", "circa 1490") must be stripped to just the year: name becomes "1580", "1550", "1490". Never include "c.", "ca.", "about", or "circa" in the name — the precision level already encodes the approximation.
+     - **Decade** (e.g., "1580s", "late 1570s") — ONLY when the source explicitly names a decade: "the 1640s", "1580s", "late 1570s". Do NOT use decade precision for century-level qualifiers like "late 16th century" or "early 17th century".
+     - **Century with optional qualifier** (e.g., "16th century", "late 16th century", "mid-17th century", "early 18th century", "first half of the 18th century") — use when the source gives a century reference, with or without a qualifier. Keep the qualifier in the name since it preserves useful information. Set date to the century's opening year.
+   - Never use seasonal terms ("Spring 1834") or date ranges in the name.
+   - date: ISO-8601 with leading +/- (e.g., "+1759-00-00T00:00:00Z"). For a decade like "1580s" use the decade's start: "+1580-00-00T00:00:00Z". For any century reference ("16th century", "late 16th century", "mid-17th century") use the century's opening year: "+1500-00-00T00:00:00Z" for 16th century, "+1600-00-00T00:00:00Z" for 17th, "+1700-00-00T00:00:00Z" for 18th, etc.
+   - precision: 11 for day, 10 for month, 9 for year, 8 for decade, 7 for century (including qualified centuries)
    - calendar_model: "http://www.wikidata.org/entity/Q1985727" (Gregorian)
 
 5. **Excerpt**: The verbatim sentence or short passage from the source text that supports this event. Copy it exactly as it appears in the source — do not paraphrase or summarize.
@@ -108,7 +114,7 @@ Rules:
   - Multi-day: "June 7-9, 1835" -> one event for "June 7, 1835" (start) and one for "June 9, 1835" (end)
   - Multi-month: "February and March 1838" -> one event for "February 1838" and one for "March 1838"
   - Multi-year: "1885-92" -> one event for "1885" and one for "1892"
-  The time name must always be a single year, month, or day.
+  The time name must always be a single year, month, day, decade ("1580s"), or century ("16th century") — never a range or descriptive phrase.
 - Birth and death dates with locations (e.g., "b. Chicago, 1850" or "d. Paris, 1903") are valid events — extract them.
 - Extract every qualifying event present in the passage, even if the passage is primarily a preface, table of contents, or bibliography. Do not skip a chunk just because most of it is vague — extract whatever specific events are present.
 
@@ -117,7 +123,7 @@ Rules:
 2. Every person `name` in the people array appears as a literal substring of the summary
 3. The place name appears as a literal substring of the summary
 4. The time name appears as a literal substring of the summary
-5. The time name is a single specific date (not a range, not a season, not a vague period)
+5. The time name is a bare year ("1580"), month ("March 1685"), day ("14 June 1770"), decade ("1580s"), or century ("16th century") — never a range, season, or descriptive phrase like "late 16th cent."; and circa forms ("c. 1580") have been stripped to just the year ("1580")
 If any check fails, rewrite the summary (or adjust the names) before returning.
 
 Return a JSON array of events. Example:
