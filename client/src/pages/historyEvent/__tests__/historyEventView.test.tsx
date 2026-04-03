@@ -153,10 +153,10 @@ describe("HistoryEventView Integration Tests", () => {
       ).toBeInTheDocument();
     });
 
-    // Find the event text by its content
+    // Find the event text by its content (uses event.text which has "J.S." not "J. S.")
     const eventContainer = screen.getByRole("paragraph");
     expect(eventContainer.textContent).toContain(
-      "J. S. Bach was born in Eisenach on March 21st, 1685",
+      "J.S. Bach was born in Eisenach on March 21st, 1685",
     );
 
     expect(
@@ -232,7 +232,7 @@ describe("HistoryEventView Integration Tests", () => {
     await waitFor(() => {
       const eventContainer = screen.getByRole("paragraph");
       expect(eventContainer.textContent).toContain(
-        "J. S. Bach was born in Eisenach on March 21st, 1685",
+        "J.S. Bach was born in Eisenach on March 21st, 1685",
       );
     });
   });
