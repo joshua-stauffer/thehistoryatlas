@@ -128,6 +128,8 @@ class PersonLeftPosition(EventFactory):
 
     def _create_events(self) -> list[WikiEvent]:
         events = []
+        if "en" not in self._entity.labels:
+            raise UnprocessableEventError("No English label found for entity")
         person_name = self._entity.labels["en"].value
 
         if POSITION_HELD not in self._entity.claims:
