@@ -1,0 +1,68 @@
+{
+  "label": "baseline_norwich",
+  "runs": [
+    {
+      "run_id": "baseline_norwich-run-000",
+      "total": 60,
+      "valid": 44,
+      "invalid": 16,
+      "valid_pct": 73.33333333333333,
+      "missing_categories": {
+        "time": 3,
+        "place": 7,
+        "person": 6
+      }
+    },
+    {
+      "run_id": "baseline_norwich-run-001",
+      "total": 49,
+      "valid": 39,
+      "invalid": 10,
+      "valid_pct": 79.59183673469387,
+      "missing_categories": {
+        "time": 2,
+        "place": 4,
+        "person": 5
+      }
+    },
+    {
+      "run_id": "baseline_norwich-run-002",
+      "total": 75,
+      "valid": 55,
+      "invalid": 20,
+      "valid_pct": 73.33333333333333,
+      "missing_categories": {
+        "person": 12,
+        "time": 1,
+        "place": 11
+      }
+    },
+    {
+      "run_id": "baseline_norwich-run-003",
+      "total": 48,
+      "valid": 30,
+      "invalid": 18,
+      "valid_pct": 62.5,
+      "missing_categories": {
+        "time": 2,
+        "person": 17,
+        "place": 5
+      }
+    },
+    {
+      "run_id": "baseline_norwich-run-004",
+      "total": 68,
+      "valid": 46,
+      "invalid": 22,
+      "valid_pct": 67.64705882352942,
+      "missing_categories": {
+        "time": 4,
+        "place": 13,
+        "person": 6
+      }
+    }
+  ],
+  "cost": 0.16518000000000002,
+  "input_tokens": 57200,
+  "output_tokens": 71150
+}

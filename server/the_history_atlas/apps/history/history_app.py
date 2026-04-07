@@ -165,36 +165,46 @@ class HistoryApp:
     def fuzzy_search_stories(self, search_string: str) -> list[dict[str, str]]:
         """
         Search for stories that match the given search string.
-        Returns a list of dictionaries containing story IDs and names.
+        Returns a list of dicts containing story IDs and names.
+        Text-reader stories are returned first and preferred over wikidata stories
+        when both match equivalently.
         """
-        # Get matching IDs from fuzzy search
+        # Text-reader stories (stories table) — preferred
+        text_reader_results = self._repository.search_stories_by_name(search_string)
+
+        # Wikidata stories (names/tags tables)
         matches = self._repository.get_name_by_fuzzy_search(search_string)
-        if not matches:
-            return []
+        wikidata_results: list[dict] = []
+        if matches:
+            all_ids: set = set()
+            for match in matches:
+                all_ids.update(match.ids)
+            with self._repository.Session() as session:
+                story_names = self._repository.get_story_names(tuple(all_ids), session)
+            wikidata_results = [
+                {
+                    "id": str(story_id),
+                    "name": story_info["name"],
+                    "description": story_info["description"],
+                    "earliestYear": story_info["earliest_year"],
+                    "latestYear": story_info["latest_year"],
+                }
+                for story_id, story_info in story_names.items()
+            ]
 
-        # Extract all unique IDs from the matches
-        all_ids = set()
-        for match in matches:
-            all_ids.update(match.ids)
-
-        # Convert set to tuple for SQL query
-        story_ids = tuple(all_ids)
-
-        # Get story names for the matching IDs
-        with self._repository.Session() as session:
-            story_names = self._repository.get_story_names(story_ids, session)
-
-        # Format results as list of dicts
-        return [
-            {
-                "id": str(story_id),
-                "name": story_info["name"],
-                "description": story_info["description"],
-                "earliestYear": story_info["earliest_year"],
-                "latestYear": story_info["latest_year"],
-            }
-            for story_id, story_info in story_names.items()
-        ]
+        # Merge: text-reader first, then wikidata — deduplicate by normalised name
+        seen_names: set[str] = set()
+        merged: list[dict] = []
+        for result in text_reader_results:
+            key = result["name"].lower().strip()
+            seen_names.add(key)
+            merged.append(result)
+        for result in wikidata_results:
+            key = result["name"].lower().strip()
+            if key not in seen_names:
+                seen_names.add(key)
+                merged.append(result)
+        return merged
 
     def create_wikidata_event(
         self,
@@ -270,6 +280,22 @@ class HistoryApp:
             session.commit()
 
         return summary_id
+
+    def _resolve_tag_types(self, tag_ids: list[UUID], session: Session) -> set[str]:
+        """Look up the set of tag types present among the given tag IDs."""
+        from sqlalchemy import text
+
+        if not tag_ids:
+            return set()
+        stmt = text(
+            """
+            SELECT DISTINCT t.type
+            FROM tags t
+            WHERE t.id = ANY(:tag_ids)
+        """
+        )
+        rows = session.execute(stmt, {"tag_ids": tag_ids}).fetchall()
+        return {row[0] for row in rows}
 
     def _resolve_time_data(self, tag_ids: list[UUID], session: Session) -> dict:
         """Look up time data from tag IDs for denormalized summary fields."""
@@ -502,12 +528,39 @@ class HistoryApp:
         self, event_id: UUID, story_id: UUID, direction: Literal["next", "prev"] | None
     ) -> Story:
         with self._repository.Session() as session:
-            story_pointers = self.get_story_pointers(
-                event_id=event_id,
-                story_id=story_id,
-                direction=direction,
-                session=session,
-            )
+            if self._repository.is_text_reader_story(story_id, session):
+                if direction is None:
+                    prev_pointers = self._repository.get_text_reader_story_pointers(
+                        story_id=story_id,
+                        summary_id=event_id,
+                        direction="prev",
+                        session=session,
+                    )
+                    next_pointers = self._repository.get_text_reader_story_pointers(
+                        story_id=story_id,
+                        summary_id=event_id,
+                        direction="next",
+                        session=session,
+                    )
+                    story_pointers = (
+                        prev_pointers
+                        + [StoryPointer(story_id=story_id, event_id=event_id)]
+                        + next_pointers
+                    )
+                else:
+                    story_pointers = self._repository.get_text_reader_story_pointers(
+                        story_id=story_id,
+                        summary_id=event_id,
+                        direction=direction,
+                        session=session,
+                    )
+            else:
+                story_pointers = self.get_story_pointers(
+                    event_id=event_id,
+                    story_id=story_id,
+                    direction=direction,
+                    session=session,
+                )
             events = self._repository.get_events(
                 event_ids=tuple([story.event_id for story in story_pointers]),
                 session=session,
@@ -679,6 +732,302 @@ class HistoryApp:
             if results or current_precision <= self.MIN_NEARBY_PRECISION:
                 return results
             current_precision -= 1
+
+    # --- Text Reader methods ---
+
+    def create_person_without_wikidata(
+        self, name: str, description: str | None = None
+    ) -> dict:
+        """Create a person tag without wikidata_id."""
+        id = uuid4()
+        with self._repository.Session() as session:
+            self._repository.create_person(
+                id=id, session=session, wikidata_id=None, wikidata_url=None
+            )
+            self._repository.add_name_to_tag(name=name, tag_id=id, session=session)
+            self._repository.add_story_names(
+                tag_id=id,
+                session=session,
+                story_names=[
+                    StoryName(
+                        lang="en",
+                        name=f"The Life of {name}",
+                        description=description,
+                    )
+                ],
+            )
+            session.commit()
+        return {"id": id, "name": name, "description": description}
+
+    def create_place_without_wikidata(
+        self,
+        name: str,
+        latitude: float,
+        longitude: float,
+        geonames_id: int | None = None,
+        description: str | None = None,
+    ) -> dict:
+        """Create a place tag without wikidata_id."""
+        id = uuid4()
+        with self._repository.Session() as session:
+            self._repository.create_place(
+                id=id,
+                session=session,
+                wikidata_id=None,
+                wikidata_url=None,
+                latitude=latitude,
+                longitude=longitude,
+            )
+            self._repository.add_name_to_tag(name=name, tag_id=id, session=session)
+            self._repository.add_story_names(
+                tag_id=id,
+                session=session,
+                story_names=[
+                    StoryName(
+                        lang="en",
+                        name=f"The History of {name}",
+                        description=description,
+                    )
+                ],
+            )
+            session.commit()
+        return {
+            "id": id,
+            "name": name,
+            "latitude": latitude,
+            "longitude": longitude,
+            "geonames_id": geonames_id,
+            "description": description,
+        }
+
+    def create_time_without_wikidata(
+        self,
+        name: str,
+        date: str,
+        calendar_model: str,
+        precision: int,
+        description: str | None = None,
+    ) -> dict:
+        """Get or create a time tag without wikidata_id."""
+        with self._repository.Session() as session:
+            existing_id = self._repository.time_exists(
+                datetime=date,
+                calendar_model=calendar_model,
+                precision=precision,
+                session=session,
+            )
+            if existing_id:
+                return {
+                    "id": existing_id,
+                    "name": name,
+                    "date": date,
+                    "calendar_model": calendar_model,
+                    "precision": precision,
+                    "description": description,
+                }
+            id = uuid4()
+            self._repository.create_time(
+                id=id,
+                session=session,
+                datetime=date,
+                calendar_model=calendar_model,
+                precision=precision,
+                wikidata_id=None,
+                wikidata_url=None,
+            )
+            self._repository.add_name_to_tag(name=name, tag_id=id, session=session)
+            self._repository.add_story_names(
+                tag_id=id,
+                session=session,
+                story_names=[
+                    StoryName(
+                        lang="en",
+                        name=f"Events of {name}",
+                        description=description,
+                    )
+                ],
+            )
+            session.commit()
+        return {
+            "id": id,
+            "name": name,
+            "date": date,
+            "calendar_model": calendar_model,
+            "precision": precision,
+            "description": description,
+        }
+
+    def create_text_reader_source(
+        self,
+        title: str,
+        author: str,
+        publisher: str,
+        pub_date: str | None,
+        pdf_page_offset: int = 0,
+    ) -> dict:
+        """Create a source for a text reader import."""
+        source = self._repository.get_source_by_title(title=title)
+        if source:
+            return {
+                "id": UUID(source.id),
+                "title": source.title,
+                "author": source.author,
+                "publisher": source.publisher,
+                "pub_date": source.pub_date,
+                "pdf_page_offset": getattr(source, "pdf_page_offset", 0),
+            }
+        id = uuid4()
+        self._repository.create_source_with_session(
+            id=id,
+            title=title,
+            author=author,
+            publisher=publisher,
+            pub_date=pub_date,
+            pdf_page_offset=pdf_page_offset,
+        )
+        return {
+            "id": id,
+            "title": title,
+            "author": author,
+            "publisher": publisher,
+            "pub_date": pub_date,
+            "pdf_page_offset": pdf_page_offset,
+        }
+
+    def create_text_reader_event(
+        self,
+        text: str,
+        tags: list[TagInstance],
+        citation_text: str,
+        citation_page_num: int | None,
+        citation_access_date: str | None,
+        source_id: UUID,
+        story_id: UUID,
+        canonical_summary_id: UUID | None = None,
+    ) -> UUID:
+        """Create an event from the text reader pipeline."""
+        summary_id = uuid4()
+
+        with self._repository.Session() as session:
+            tag_ids = [tag.id for tag in tags]
+
+            # Validate that all three entity types are present
+            tag_types = self._resolve_tag_types(tag_ids, session)
+            missing_types = {"PERSON", "PLACE", "TIME"} - tag_types
+            if missing_types:
+                from the_history_atlas.apps.history.errors import MissingTagTypesError
+
+                raise MissingTagTypesError(missing_types)
+
+            time_data = self._resolve_time_data(tag_ids, session)
+            place_data = self._resolve_place_data(tag_ids, session)
+
+            try:
+                self._repository.create_summary(
+                    id=summary_id,
+                    text=text,
+                    datetime=time_data.get("datetime"),
+                    calendar_model=time_data.get("calendar_model"),
+                    precision=time_data.get("precision"),
+                    latitude=place_data.get("latitude"),
+                    longitude=place_data.get("longitude"),
+                    canonical_summary_id=canonical_summary_id,
+                    session=session,
+                )
+            except IntegrityError:
+                raise DuplicateEventError
+
+            citation_id = uuid4()
+            self._repository.create_citation_complete(
+                id=citation_id,
+                session=session,
+                citation_text=citation_text,
+                source_id=source_id,
+                summary_id=summary_id,
+                page_num=citation_page_num,
+                access_date=citation_access_date,
+            )
+
+            tag_instances = [
+                TagInstanceInput(
+                    start_char=tag.start_char,
+                    stop_char=tag.stop_char,
+                    summary_id=summary_id,
+                    tag_id=tag.id,
+                )
+                for tag in tags
+            ]
+            self._repository.bulk_create_tag_instances(
+                tag_instances=tag_instances,
+                after=[],
+                session=session,
+            )
+            session.commit()
+
+        # Add to text-reader story
+        position = self._repository.get_next_story_position(story_id=story_id)
+        self._repository.add_summary_to_story(
+            story_id=story_id, summary_id=summary_id, position=position
+        )
+
+        return summary_id
+
+    def search_people_by_name(self, name: str) -> list[dict]:
+        """Search for people tags by name."""
+        return self._repository.search_tags_by_name_and_type(
+            name=name, tag_type="PERSON"
+        )
+
+    def search_places(
+        self,
+        name: str = "",
+        latitude: float | None = None,
+        longitude: float | None = None,
+        radius: float = 1.0,
+    ) -> list[dict]:
+        """Search for places by name and/or coordinates."""
+        return self._repository.search_places_by_name_and_coordinates(
+            name=name, latitude=latitude, longitude=longitude, radius=radius
+        )
+
+    def find_matching_summary(
+        self,
+        person_ids: list[UUID],
+        place_id: UUID,
+        datetime_val: str,
+        calendar_model: str,
+        precision: int,
+    ) -> dict | None:
+        """Find an existing summary matching the given tags."""
+        return self._repository.find_matching_summary(
+            person_ids=person_ids,
+            place_id=place_id,
+            datetime_val=datetime_val,
+            calendar_model=calendar_model,
+            precision=precision,
+        )
+
+    def create_text_reader_story(
+        self,
+        name: str,
+        description: str | None = None,
+        source_id: UUID | None = None,
+    ) -> dict:
+        """Create a text-reader story."""
+        id = uuid4()
+        self._repository.create_text_reader_story(
+            id=id, name=name, description=description, source_id=source_id
+        )
+        return {
+            "id": id,
+            "name": name,
+            "description": description,
+            "source_id": source_id,
+        }
+
+    def get_story_by_source_id(self, source_id: UUID) -> dict | None:
+        """Get a text-reader story by source_id."""
+        return self._repository.get_story_by_source_id(source_id=source_id)
 
     def check_time_exists(
         self, datetime: str, calendar_model: str, precision: int

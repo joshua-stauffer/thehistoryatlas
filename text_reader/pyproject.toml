@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "text-reader"
+version = "0.1.0"
+description = "CLI tool for extracting historical events from PDFs using Claude"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40.0",
+    "requests>=2.31.0",
+    "pydantic>=2.0",
+    "PyMuPDF>=1.24.0",
+]

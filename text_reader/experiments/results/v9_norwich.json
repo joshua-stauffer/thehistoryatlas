@@ -1,0 +1,66 @@
+{
+  "label": "v9_norwich",
+  "runs": [
+    {
+      "run_id": "v9_norwich-run-000",
+      "total": 68,
+      "valid": 47,
+      "invalid": 21,
+      "valid_pct": 69.11764705882352,
+      "missing_categories": {
+        "time": 5,
+        "place": 5,
+        "person": 13
+      }
+    },
+    {
+      "run_id": "v9_norwich-run-001",
+      "total": 74,
+      "valid": 62,
+      "invalid": 12,
+      "valid_pct": 83.78378378378379,
+      "missing_categories": {
+        "time": 6,
+        "place": 6
+      }
+    },
+    {
+      "run_id": "v9_norwich-run-002",
+      "total": 57,
+      "valid": 53,
+      "invalid": 4,
+      "valid_pct": 92.98245614035088,
+      "missing_categories": {
+        "time": 3,
+        "place": 1
+      }
+    },
+    {
+      "run_id": "v9_norwich-run-003",
+      "total": 54,
+      "valid": 46,
+      "invalid": 8,
+      "valid_pct": 85.18518518518519,
+      "missing_categories": {
+        "time": 4,
+        "person": 1,
+        "place": 3
+      }
+    },
+    {
+      "run_id": "v9_norwich-run-004",
+      "total": 80,
+      "valid": 60,
+      "invalid": 20,
+      "valid_pct": 75.0,
+      "missing_categories": {
+        "time": 5,
+        "place": 10,
+        "person": 5
+      }
+    }
+  ],
+  "cost": 0.181838,
+  "input_tokens": 59850,
+  "output_tokens": 78949
+}

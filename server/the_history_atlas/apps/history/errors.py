@@ -52,3 +52,9 @@ class MissingResourceError(Exception):
 
 class TagExistsError(DatabaseError):
     ...
+
+
+class MissingTagTypesError(EventHandlerError):
+    def __init__(self, missing_types: set[str]):
+        self.missing_types = missing_types
+        self.msg = f"Missing required tag types: {', '.join(sorted(missing_types))}"

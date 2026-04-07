@@ -1,0 +1,1142 @@
+{
+  "label": "v4_haiku_sample",
+  "runs": [
+    {
+      "run_id": "v4_haiku_sample-run-000",
+      "total": 43,
+      "valid": 39,
+      "invalid": 4,
+      "valid_pct": 90.69767441860465,
+      "missing_categories": {
+        "time": 3,
+        "place": 1
+      },
+      "events": [
+        {
+          "summary": "Felix Mendelssohn's Trumpet Overture was performed at the Philharmonic in London on June 10, 1833.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "June 10, 1833",
+            "date": "+1833-06-10T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "His Trumpet Overture was played at the Philharmonic on June 10, 1833.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn played the organ at St. Paul's in London on June 23, 1833, performing an Introduction and fugue extempore, Attwood's Coronation Anthem, and three pieces of Bach.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "June 23, 1833",
+            "date": "+1833-06-23T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "He played the organ at St. Paul's (June 23), Klingemann and other friends at the bellows, and the church empty Introduction and fugue, extempore ; Attwood's Coronation Anthem, four hands, with Attwood ; and three pieces of Bach's.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn and his father Abraham departed London for Berlin on August 4, 1833, beginning Mendelssohn's new career at D\u00fcsseldorf.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Berlin",
+            "qualified_name": "Berlin, Germany",
+            "latitude": 52.52,
+            "longitude": 13.405,
+            "description": "Capital of Prussia"
+          },
+          "time": {
+            "name": "August 4, 1833",
+            "date": "+1833-08-04T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On August 4 the two left for Berlin, Abraham having announced that he was bringing home 'a young painter named Alphonse Lovie,' who, of course, was no other than Felix himself.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn arrived at his new post as Music-director in D\u00fcsseldorf by September 27, 1833.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and music director"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "September 27, 1833",
+            "date": "+1833-09-27T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "They reached Berlin in due course, and by Sept. 27, 1833, Felix was at his new post.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn completed the overture to 'Melusina' in D\u00fcsseldorf on November 14, 1833.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "November 14, 1833",
+            "date": "+1833-11-14T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "The overture to 'Melusina' was finished Nov. 14, 1833, and tried",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn relinquished his salary as theater director in D\u00fcsseldorf in March 1834, becoming Honorary Intendant instead.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and music director"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "March 1834",
+            "date": "+1834-03-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "He therefore, after a few months' trial, in March 1834, relinquished his salary as far as the theatre was concerned, and held himself free, as a sort of 'Honorary Intendant.'",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn finished the Rondo Brillant for piano and orchestra in E flat (op. 29) in D\u00fcsseldorf on January 29, 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "January 29, 1834",
+            "date": "+1834-01-29T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "the Rondo Brillant for piano and orchestra in E flat (op. 29) on Jan. 29, 1834",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn composed 'Infelice' for soprano and orchestra in D\u00fcsseldorf, dated April 3, 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "April 3, 1834",
+            "date": "+1834-04-03T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "'Infelice,' for soprano and orchestra, for the Philharmonic Society (in its first shape), is dated April 3",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn composed the Capriccio for pianoforte in A minor (op. 33, No. 1) in D\u00fcsseldorf on April 9, 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "April 9, 1834",
+            "date": "+1834-04-09T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "the fine Capriccio for piano-forte in A minor (op. 33, No. 1), April 9, 1834.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn began composing the oratorio 'St. Paul' in D\u00fcsseldorf in March 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "March 1834",
+            "date": "+1834-03-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "He began upon the music in March 1834, not anticipating that it would occupy him long",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn attended the Lower Rhine Festival at Aix-la-Chapelle on May 18-20, 1834, where he conducted and met Hiller and Chopin.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Aix-la-Chapelle",
+            "qualified_name": "Aachen, Germany",
+            "latitude": 50.7766,
+            "longitude": 6.083,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "May 18, 1834",
+            "date": "+1834-05-18T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "May 18-20 was the Lower Khine Festival at Aix-la-Chapelle, conducted by Ferdinand Ries; there he met Hiller, and also Chopin, whose acquaintance he had already made in Paris, and who returned with him to D\u00fcsseldorf.",
+          "confidence": 0.75,
+          "valid": false,
+          "missing": [
+            "May 18, 1834"
+          ]
+        },
+        {
+          "summary": "Felix Mendelssohn was made a member of the Berlin Academy of the Fine Arts in the spring of 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Berlin",
+            "qualified_name": "Berlin, Germany",
+            "latitude": 52.52,
+            "longitude": 13.405,
+            "description": "Capital of Prussia"
+          },
+          "time": {
+            "name": "spring 1834",
+            "date": "+1834-03-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "During the spring of 1834 he was made a member of the Berlin Academy of the Fine Arts.",
+          "confidence": 0.75,
+          "valid": false,
+          "missing": [
+            "spring 1834"
+          ]
+        },
+        {
+          "summary": "Felix Mendelssohn returned to D\u00fcsseldorf for the first concert of the season on October 23, 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "October 23, 1834",
+            "date": "+1834-10-23T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "September 1834 he spent in Berlin, and was back at Diisseldorf for the first concert on Oct. 23",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "The new theater in D\u00fcsseldorf opened on November 1, 1834.",
+          "people": [],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "November 1, 1834",
+            "date": "+1834-11-01T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "The new theatre opened on Nov. 1.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn threw up his connection with the theater in D\u00fcsseldorf the day after its opening in November 1834.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "November 1834",
+            "date": "+1834-11-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "at last, the day after the opening of the theatre, he suddenly 'made a salto mortale,' and threw up all connection with it, not without considerable irritability and inconsistency.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn, having taken up the post of Conductor of the Gewandhaus Concerts in Leipzig, began the subscription concerts on October 4, 1835.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and conductor"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "October 4, 1835",
+            "date": "+1835-10-04T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "With the opening of 1835 he received an invitation from Leipzig through Schleinitz, which resulted in his taking the post of Conductor of the Gewandhaus Concerts there.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn conducted the Lower Rhine Festival at Cologne on June 7-9, 1835, performing works by Handel, Beethoven, and Cherubini.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and conductor"
+            }
+          ],
+          "place": {
+            "name": "Cologne",
+            "qualified_name": "Cologne, Germany",
+            "latitude": 50.9365,
+            "longitude": 6.9582,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "June 7, 1835",
+            "date": "+1835-06-07T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "He conducted the Lower Rhine Festival of 1835 at Cologne (June 7-9). The principal works were Handel's 'Solomon'\u2014for which he had written an organ part in Italy; Beethoven's Symphony No. 8, and Overture op. 124, a 'religious march' and hymn of Cherubini's, and the Morning Hymn of his favourite J. F. Reichardt.",
+          "confidence": 0.8,
+          "valid": false,
+          "missing": [
+            "June 7, 1835"
+          ]
+        },
+        {
+          "summary": "Felix Mendelssohn played Bach's concerto in D minor for three pianofortes with Clara Wieck and Rakemann at the Gewandhaus Concert in Leipzig on November 9, 1835.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "November 9, 1835",
+            "date": "+1835-11-09T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "He had played in Bach's concerto in D minor for three piano-fortes with Clara Wieok and Rakemann at the Gewandhaus Concert on Nov. 9, 1835.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Abraham Mendelssohn, father of Felix Mendelssohn, died at Berlin at half-past 10 A.M. on November 19, 1835.",
+          "people": [
+            {
+              "name": "Abraham Mendelssohn",
+              "description": "Father of Felix Mendelssohn"
+            }
+          ],
+          "place": {
+            "name": "Berlin",
+            "qualified_name": "Berlin, Germany",
+            "latitude": 52.52,
+            "longitude": 13.405,
+            "description": "Capital of Prussia"
+          },
+          "time": {
+            "name": "November 19, 1835",
+            "date": "+1835-11-19T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "At half-past 10 A.M. on Nov. 19, 1835, Abraham Mendelssohn was dead.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn conducted a performance of Beethoven's Ninth Symphony at the Gewandhaus in Leipzig on February 11, 1836.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and conductor"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "February 11, 1836",
+            "date": "+1836-02-11T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "One of the chief events in this series of concerts was a performance of the Ninth Symphony of Beethoven, Feb. 11, 1836.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn conducted Mozart's D minor Concerto as written at the Gewandhaus in Leipzig on January 29, 1836, playing cadenzas that electrified his audience.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and conductor"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "January 29, 1836",
+            "date": "+1836-01-29T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Mendelssohn's performance of Mozart's D minor Concerto 'as written' (for it seems to have been always hitherto played after some adaptation), on Jan. 29, with cadenzas which electrified his audience.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "The University of Leipzig conferred the degree of Doctor of Philosophy on Felix Mendelssohn in March 1836.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "March 1836",
+            "date": "+1836-03-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "The University of Leipzig showed its appreciation of his presence by conferring on him the degree of Doctor of Philosophy in March.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn's oratorio 'St. Paul' premiered at the Lower Rhine Festival in D\u00fcsseldorf on May 22, 1836, creating a deep sensation.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "May 22, 1836",
+            "date": "+1836-05-22T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Meantime Schelble's illness had cancelled the arrangement for producing 'St. Paul' at Frankfort, and it had been secured for the Lower Rhine Festival at Diisseldorf (May 22-24, 1836)... 'St. Paul' was executed with the greatest enthusiasm, and produced a deep sensation. It was performed on the 22nd",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn took the direction of the C\u00e4cilien-Verein at Frankfort in 1836, spending six weeks practicing the choir.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and conductor"
+            }
+          ],
+          "place": {
+            "name": "Frankfort",
+            "qualified_name": "Frankfurt, Germany",
+            "latitude": 50.1109,
+            "longitude": 8.6821,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "1836",
+            "date": "+1836-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "Schelble's illnesa induced Mendelssohn to take the direction of the famous Caeilien-Verein at Frankfort. Leipzig had no claims on him after the concerts were over, and he was thus able to spend six weeks at Frankfort practising the choir in Bach's 'Gottes Zeit,' Handel's 'Samson,' and other works",
+          "confidence": 0.8,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn's betrothal to C\u00e9cile Charlotte Sophie Jeanrenaud took place at Kronberg near Frankfort on September 9, 1836.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Kronberg",
+            "qualified_name": "Kronberg, Germany",
+            "latitude": 50.1714,
+            "longitude": 8.5106,
+            "description": "Town near Frankfurt, Germany"
+          },
+          "time": {
+            "name": "September 9, 1836",
+            "date": "+1836-09-09T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Very shortly after his return, on Sept. 9, the betrothal took place, at Kronberg, near Frankfort",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn performed 'St. Paul' for the first time in England at Liverpool on October 7, 1836, under the direction of Sir George Smart.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Liverpool",
+            "qualified_name": "Liverpool, England",
+            "latitude": 53.4084,
+            "longitude": -2.9916,
+            "description": "City in northwestern England"
+          },
+          "time": {
+            "name": "October 7, 1836",
+            "date": "+1836-10-07T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Five days later (Oct. 7), in the distant city of Liverpool, 'St. Paul' was performed for the first time in England, under the direction of Sir George Smart.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn performed 'Israel in Egypt' with a new organ part at the Gewandhaus in Leipzig on November 7, 1836.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "November 7, 1836",
+            "date": "+1836-11-07T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "In addition to the subscription series and to the regular chamber concerts, there were performances of 'Israel in Egypt,' with a new organ part by him, on Nov. 7",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn's wedding to C\u00e9cile Charlotte Sophie Jeanrenaud took place at the Walloon French Reformed Church in Frankfort on March 28, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Frankfort",
+            "qualified_name": "Frankfurt, Germany",
+            "latitude": 50.1109,
+            "longitude": 8.6821,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "March 28, 1837",
+            "date": "+1837-03-28T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "The wedding took place on March 28, 1837, at the Walloon French Reformed Church, Frankfort.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn performed 'St. Paul' at the Gewandhaus in Leipzig on March 16, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "March 16, 1837",
+            "date": "+1837-03-16T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "'St. Paul,' on March 16, 1837.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn departed D\u00fcsseldorf for Rotterdam on August 24, 1837, to conduct 'St. Paul' and perform at the Birmingham Festival.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "D\u00fcsseldorf",
+            "qualified_name": "D\u00fcsseldorf, Germany",
+            "latitude": 51.4256,
+            "longitude": 6.7623,
+            "description": "City in western Germany"
+          },
+          "time": {
+            "name": "August 24, 1837",
+            "date": "+1837-08-24T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Accordingly on August 24, he left Diisseldorf for Rotterdam, crossed to Margate in the Attwood, the same boat which had taken him over in 1829, and on the 27th is in London, on his fifth visit, at Klingemann's house",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn arrived in London on August 27, 1837, at Klingemann's house.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "August 27, 1837",
+            "date": "+1837-08-27T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "and on the 27th is in London, on his fifth visit, at Klingemann's house, as cross as a man can well be.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn played the organ at St. Paul's in London on Sunday afternoon, September 10, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "September 10, 1837",
+            "date": "+1837-09-10T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Before leaving London for Birmingham, he played the organ at St. Paul's\u2014on Sunday afternoon, Sept. 10",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn played the organ at Christ Church, Newgate Street in London on Tuesday morning, September 12, 1837, performing six extempore fantasias and Bach fugues.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "September 12, 1837",
+            "date": "+1837-09-12T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "and at Christ Church, Newgate Street, on Tuesday morning, the 12th. At Christ Church he was evidently in a good vein. He played 'six extempore fantasias,' one on a fugue subject given by old Wesley at the moment",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Samuel Wesley, the elderly organist and composer, died on October 11, 1837, a month after his final public appearance with Felix Mendelssohn.",
+          "people": [
+            {
+              "name": "Samuel Wesley",
+              "description": "English organist and composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "October 11, 1837",
+            "date": "+1837-10-11T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "Samuel Wesley\u2014our own ancient hero, though seventy-one years old was present and played. It was literally his Nunc dimittis: he died on Oct. 11, 1837, a month from that date.",
+          "confidence": 0.9,
+          "valid": false,
+          "missing": [
+            "London"
+          ]
+        },
+        {
+          "summary": "Felix Mendelssohn attended a performance of his oratorio 'St. Paul' by the Sacred Harmonic Society at Exeter Hall in London on the evening of September 12, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital of England"
+          },
+          "time": {
+            "name": "September 12, 1837",
+            "date": "+1837-09-12T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On the evening of the Tuesday, Sept. 12, he attended a performance of his oratorio 'St. Paul' by the Sacred Harmonic Society at Exeter Hall.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn extemporised on the organ at the Birmingham Festival in Birmingham on the evening of Tuesday, September 19, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Birmingham",
+            "qualified_name": "Birmingham, England",
+            "latitude": 52.5086,
+            "longitude": -1.8755,
+            "description": "City in central England"
+          },
+          "time": {
+            "name": "September 19, 1837",
+            "date": "+1837-09-19T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "At the evening concert of that day he extemporised on the organ, taking the subjects of his fugue from 'Your harps and cymbals sound'('Solomon'), and the first movement of Mozart's Symphony in D",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn conducted 'St. Paul' at the Birmingham Festival on Wednesday, September 20, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Birmingham",
+            "qualified_name": "Birmingham, England",
+            "latitude": 52.5086,
+            "longitude": -1.8755,
+            "description": "City in central England"
+          },
+          "time": {
+            "name": "September 20, 1837",
+            "date": "+1837-09-20T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On Wednesday he conducted 'St. Paul,'",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn played his new pianoforte concerto in D minor at the Birmingham Festival on Thursday evening, September 21, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Birmingham",
+            "qualified_name": "Birmingham, England",
+            "latitude": 52.5086,
+            "longitude": -1.8755,
+            "description": "City in central England"
+          },
+          "time": {
+            "name": "September 21, 1837",
+            "date": "+1837-09-21T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On Thursday evening played his new pianoforte concerto in D minor",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn played Bach's Prelude and Fugue 'St. Anne's' on the organ at the Birmingham Festival on Friday morning, September 22, 1837.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Birmingham",
+            "qualified_name": "Birmingham, England",
+            "latitude": 52.5086,
+            "longitude": -1.8755,
+            "description": "City in central England"
+          },
+          "time": {
+            "name": "September 22, 1837",
+            "date": "+1837-09-22T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "on Friday morning, the 22nd, Bach's Prelude and Fugue ('St. Anne's') on the organ.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn arrived back in Leipzig at 2 p.m. on Sunday, October 1, 1837, in time for the first concert of the season.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "October 1, 1837",
+            "date": "+1837-10-01T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "He then went straight through, arrived in Frankfort on the 27th, and was at Leipzig at 2 p.m. of the day of the first concert, Sunday, Oct. 1.",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn wrote to the Gesellschaft der Musikfreunde of Vienna on October 12, 1837, to thank them for his diploma of membership.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer"
+            }
+          ],
+          "place": {
+            "name": "Vienna",
+            "qualified_name": "Vienna, Austria",
+            "latitude": 48.2082,
+            "longitude": 16.3738,
+            "description": "Capital of Austria"
+          },
+          "time": {
+            "name": "October 12, 1837",
+            "date": "+1837-10-12T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On Oct. 12, 1837, he writes to thank the Gesellschaft der Musikfreunde of Vienna for its diploma of membership.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Clara Novello, the English singer, performed for the first time in Germany at the Gewandhaus in Leipzig on November 2, 1837, under Felix Mendelssohn's direction.",
+          "people": [
+            {
+              "name": "Clara Novello",
+              "description": "English singer"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "November 2, 1837",
+            "date": "+1837-11-02T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "The principal feature of the series 1837-38 was the appearance of Clara Novello for the first time in Germany\u2014a fruit of his English experiences. She sang first at the concert of Nov. 2, 1837",
+          "confidence": 0.9,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Felix Mendelssohn organized four historical concerts at the Gewandhaus in Leipzig in February 1838, featuring works by Bach, Handel, Gluck, Haydn, Mozart, Beethoven, and Weber.",
+          "people": [
+            {
+              "name": "Felix Mendelssohn",
+              "description": "German composer and conductor"
+            }
+          ],
+          "place": {
+            "name": "Leipzig",
+            "qualified_name": "Leipzig, Germany",
+            "latitude": 51.3397,
+            "longitude": 12.3731,
+            "description": "City in Germany"
+          },
+          "time": {
+            "name": "February 1838",
+            "date": "+1838-02-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "In Feb. and March 1838, there were four historical concerts (1. Bach, Handel, Gluck, Viotti; 2. Haydn, Cimarosa, Naumann, Righini; 3. Mozart, Salieri, M\u00e9ul, Romberg; 4. Vogler, Beethoven, Weber), which excited great interest.",
+          "confidence": 0.85,
+          "valid": true,
+          "missing": []
+        }
+      ]
+    }
+  ],
+  "cost": 0.0290856,
+  "input_tokens": 12449,
+  "output_tokens": 12053
+}

@@ -1,0 +1,64 @@
+{
+  "label": "v8_sonnet_norwich",
+  "runs": [
+    {
+      "run_id": "v8_sonnet_norwich-run-000",
+      "total": 55,
+      "valid": 51,
+      "invalid": 4,
+      "valid_pct": 92.72727272727272,
+      "missing_categories": {
+        "time": 1,
+        "place": 3
+      }
+    },
+    {
+      "run_id": "v8_sonnet_norwich-run-001",
+      "total": 58,
+      "valid": 52,
+      "invalid": 6,
+      "valid_pct": 89.65517241379311,
+      "missing_categories": {
+        "place": 5,
+        "time": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_norwich-run-002",
+      "total": 57,
+      "valid": 52,
+      "invalid": 5,
+      "valid_pct": 91.22807017543859,
+      "missing_categories": {
+        "place": 4,
+        "time": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_norwich-run-003",
+      "total": 51,
+      "valid": 45,
+      "invalid": 6,
+      "valid_pct": 88.23529411764706,
+      "missing_categories": {
+        "place": 4,
+        "time": 2
+      }
+    },
+    {
+      "run_id": "v8_sonnet_norwich-run-004",
+      "total": 40,
+      "valid": 32,
+      "invalid": 8,
+      "valid_pct": 80.0,
+      "missing_categories": {
+        "time": 2,
+        "place": 5,
+        "person": 1
+      }
+    }
+  ],
+  "cost": 0.136594,
+  "input_tokens": 47555,
+  "output_tokens": 58786
+}

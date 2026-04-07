@@ -1,0 +1,58 @@
+{
+  "label": "v3_narrative",
+  "runs": [
+    {
+      "run_id": "v3_narrative-run-000",
+      "total": 41,
+      "valid": 41,
+      "invalid": 0,
+      "valid_pct": 100.0,
+      "missing_categories": {}
+    },
+    {
+      "run_id": "v3_narrative-run-001",
+      "total": 53,
+      "valid": 47,
+      "invalid": 6,
+      "valid_pct": 88.67924528301887,
+      "missing_categories": {
+        "time": 2,
+        "place": 4
+      }
+    },
+    {
+      "run_id": "v3_narrative-run-002",
+      "total": 42,
+      "valid": 40,
+      "invalid": 2,
+      "valid_pct": 95.23809523809523,
+      "missing_categories": {
+        "place": 1,
+        "time": 1
+      }
+    },
+    {
+      "run_id": "v3_narrative-run-003",
+      "total": 47,
+      "valid": 46,
+      "invalid": 1,
+      "valid_pct": 97.87234042553192,
+      "missing_categories": {
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v3_narrative-run-004",
+      "total": 44,
+      "valid": 43,
+      "invalid": 1,
+      "valid_pct": 97.72727272727273,
+      "missing_categories": {
+        "place": 1
+      }
+    }
+  ],
+  "cost": 0.144196,
+  "input_tokens": 62125,
+  "output_tokens": 59673
+}

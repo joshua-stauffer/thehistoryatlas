@@ -1,0 +1,33 @@
+name: "Test Text Reader"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'text_reader/**'
+
+jobs:
+  Test-Text-Reader:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./text_reader
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pytest
+
+      - name: Run tests
+        run: pytest -vvv
