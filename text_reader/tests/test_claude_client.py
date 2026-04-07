@@ -194,7 +194,9 @@ class TestExtractEvents:
         result = client.extract_events("text", "Source", "Author")
 
         assert len(result) == 1
-        assert result[0].summary == "George Frideric Handel performed in London in 1711."
+        assert (
+            result[0].summary == "George Frideric Handel performed in London in 1711."
+        )
         assert mock_client.messages.stream.call_count == 2
 
     @patch("text_reader.claude_client.anthropic.Anthropic")
@@ -443,7 +445,13 @@ class TestValidateEvent:
         mock_anthropic_cls.return_value = MagicMock()
         client = ClaudeClient(api_key="fake-key")
         event_data = _make_valid_event_json()
-        from text_reader.types import ExtractedEvent, ExtractedPerson, ExtractedPlace, ExtractedTime
+        from text_reader.types import (
+            ExtractedEvent,
+            ExtractedPerson,
+            ExtractedPlace,
+            ExtractedTime,
+        )
+
         event = ExtractedEvent(
             summary=event_data["summary"],
             excerpt=event_data["excerpt"],
@@ -458,13 +466,26 @@ class TestValidateEvent:
         """For a publication event the editor/author name must appear in the summary."""
         mock_anthropic_cls.return_value = MagicMock()
         client = ClaudeClient(api_key="fake-key")
-        from text_reader.types import ExtractedEvent, ExtractedPerson, ExtractedPlace, ExtractedTime
+        from text_reader.types import (
+            ExtractedEvent,
+            ExtractedPerson,
+            ExtractedPlace,
+            ExtractedTime,
+        )
+
         event = ExtractedEvent(
             summary="Waldo Selden Pratt edited Grove's Dictionary American Supplement in New York in November 1920.",
             excerpt="PRINTED IN THE UNITED STATES OF AMERICA. Published November, 1920.",
-            people=[ExtractedPerson(name="Waldo Selden Pratt", description="American musicologist and editor")],
+            people=[
+                ExtractedPerson(
+                    name="Waldo Selden Pratt",
+                    description="American musicologist and editor",
+                )
+            ],
             place=ExtractedPlace(name="New York", latitude=40.71, longitude=-74.01),
-            time=ExtractedTime(name="November 1920", date="+1920-11-00T00:00:00Z", precision=10),
+            time=ExtractedTime(
+                name="November 1920", date="+1920-11-00T00:00:00Z", precision=10
+            ),
         )
         assert client._validate_event(event) == []
 
@@ -473,13 +494,21 @@ class TestValidateEvent:
         """Summary that omits the person name is invalid."""
         mock_anthropic_cls.return_value = MagicMock()
         client = ClaudeClient(api_key="fake-key")
-        from text_reader.types import ExtractedEvent, ExtractedPerson, ExtractedPlace, ExtractedTime
+        from text_reader.types import (
+            ExtractedEvent,
+            ExtractedPerson,
+            ExtractedPlace,
+            ExtractedTime,
+        )
+
         event = ExtractedEvent(
             summary="Grove's Dictionary was published in New York in November 1920.",
             excerpt="Published November, 1920.",
             people=[ExtractedPerson(name="Waldo Selden Pratt", description="Editor")],
             place=ExtractedPlace(name="New York", latitude=40.71, longitude=-74.01),
-            time=ExtractedTime(name="November 1920", date="+1920-11-00T00:00:00Z", precision=10),
+            time=ExtractedTime(
+                name="November 1920", date="+1920-11-00T00:00:00Z", precision=10
+            ),
         )
         missing = client._validate_event(event)
         assert "Waldo Selden Pratt" in missing

@@ -11,7 +11,9 @@ class ExtractedPerson(BaseModel):
 
 class ExtractedPlace(BaseModel):
     name: str  # natural form used verbatim in the summary (e.g. "New York")
-    qualified_name: str | None = None  # full form for disambiguation (e.g. "New York, New York")
+    qualified_name: str | None = (
+        None  # full form for disambiguation (e.g. "New York, New York")
+    )
     latitude: float | None = None
     longitude: float | None = None
     description: str | None = None

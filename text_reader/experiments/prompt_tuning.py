@@ -24,7 +24,12 @@ log = logging.getLogger(__name__)
 # Add parent dir to path so we can import text_reader
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from text_reader.claude_client import EXTRACTION_SYSTEM_PROMPT
-from text_reader.types import ExtractedEvent, ExtractedPerson, ExtractedPlace, ExtractedTime
+from text_reader.types import (
+    ExtractedEvent,
+    ExtractedPerson,
+    ExtractedPlace,
+    ExtractedTime,
+)
 
 
 # ---- Configuration ----
@@ -297,7 +302,9 @@ def run_experiment(
 
 def main():
     parser = argparse.ArgumentParser(description="Prompt tuning experiment")
-    parser.add_argument("--runs", type=int, default=5, help="Number of runs per prompt variant")
+    parser.add_argument(
+        "--runs", type=int, default=5, help="Number of runs per prompt variant"
+    )
     parser.add_argument(
         "--prompt-file",
         type=str,
@@ -338,7 +345,7 @@ def main():
             for line in env_path.read_text().splitlines():
                 line = line.strip()
                 if line.startswith("export "):
-                    line = line[len("export "):]
+                    line = line[len("export ") :]
                 if line.startswith("CLAUDE_API_KEY="):
                     api_key = line.split("=", 1)[1].strip()
                     break
@@ -356,7 +363,9 @@ def main():
 
     # Extract text
     chunk_text = extract_text(PDF_PATH, args.start_page, args.end_page)
-    log.info(f"Extracted {len(chunk_text)} chars from pages {args.start_page}-{args.end_page}")
+    log.info(
+        f"Extracted {len(chunk_text)} chars from pages {args.start_page}-{args.end_page}"
+    )
 
     # Run experiment
     result = run_experiment(

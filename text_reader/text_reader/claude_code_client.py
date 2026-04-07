@@ -2,7 +2,10 @@
 
 import json
 import logging
+import re
 import subprocess
+import time
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from text_reader.base_client import (
@@ -16,60 +19,174 @@ from text_reader.types import ExtractedEvent
 
 log = logging.getLogger(__name__)
 
+_QUOTA_KEYWORDS = re.compile(
+    r"rate.?limit|quota|usage.?limit|exceeded|overloaded|too many requests|429",
+    re.IGNORECASE,
+)
+
+
+def _parse_reset_time(error_msg: str) -> datetime | None:
+    """Try to extract a quota-reset timestamp from an error message.
+
+    Handles:
+      - ISO 8601:  2026-04-08T03:00:00Z  /  2026-04-08T03:00:00+00:00
+      - RFC 3339 without T:  2026-04-08 03:00:00
+      - Relative:  "in 30 minutes", "in 2 hours"
+      - Clock:     "at 3:00 AM", "at 15:00"
+    """
+    # ISO / RFC 3339 timestamp
+    m = re.search(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[Z+\-][\d:]*)?", error_msg)
+    if m:
+        raw = m.group().replace("Z", "+00:00")
+        try:
+            return datetime.fromisoformat(raw)
+        except ValueError:
+            pass
+
+    # Relative: "in N minutes/hours"
+    m = re.search(r"in\s+(\d+)\s*(minute|min|hour|hr)s?", error_msg, re.IGNORECASE)
+    if m:
+        amount = int(m.group(1))
+        unit = m.group(2).lower()
+        delta = (
+            timedelta(hours=amount)
+            if unit.startswith("h")
+            else timedelta(minutes=amount)
+        )
+        return datetime.now(timezone.utc) + delta
+
+    # Clock time: "at HH:MM AM/PM" or "at HH:MM"
+    m = re.search(r"at\s+(\d{1,2}):(\d{2})\s*(AM|PM)?", error_msg, re.IGNORECASE)
+    if m:
+        hour, minute = int(m.group(1)), int(m.group(2))
+        ampm = (m.group(3) or "").upper()
+        if ampm == "PM" and hour != 12:
+            hour += 12
+        elif ampm == "AM" and hour == 12:
+            hour = 0
+        target = datetime.now().replace(
+            hour=hour, minute=minute, second=0, microsecond=0
+        )
+        if target <= datetime.now():
+            target += timedelta(days=1)
+        return target
+
+    return None
+
 
 class ClaudeCodeClient(BaseLLMClient):
     """LLM client that invokes the `claude` CLI for each request."""
 
-    def __init__(self, model: str = "sonnet"):
-        self._model = MODEL_MAP.get(model, model)
-        self._total_cost = 0.0
-        log.info(f"Using Claude Code CLI with model: {self._model}")
+    _MAX_RETRIES = 30
+    _POLL_INTERVAL = 900  # 15 minutes
 
-    def _call_claude(self, system_prompt: str, user_message: str) -> str:
+    def __init__(self, model: str = "sonnet", secondary_model: str = "sonnet"):
+        self._model = MODEL_MAP.get(model, model)
+        self._secondary_model = MODEL_MAP.get(secondary_model, secondary_model)
+        self._total_cost = 0.0
+        log.info(
+            f"Using Claude Code CLI with model: {self._model} "
+            f"(secondary: {self._secondary_model})"
+        )
+
+    def _call_claude(
+        self, system_prompt: str, user_message: str, model: str | None = None
+    ) -> str:
         """Invoke ``claude -p`` and return the response text.
 
         Uses ``--output-format json`` so we can extract both the result text
-        and the cost reported by Claude Code.
+        and the cost reported by Claude Code.  If a quota / rate-limit error
+        is detected the method sleeps until the reset time (or uses
+        exponential back-off) and retries automatically.
         """
         cmd = [
             "claude",
             "-p",
+            "--tools",
+            "",
             "--model",
-            self._model,
+            model or self._model,
             "--output-format",
             "json",
-            "-s",
+            "--system-prompt",
             system_prompt,
         ]
-        log.debug(f"Running: {' '.join(cmd[:6])}... (input {len(user_message)} chars)")
 
-        result = subprocess.run(
-            cmd,
-            input=user_message,
-            capture_output=True,
-            text=True,
-            timeout=600,
-        )
-
-        if result.returncode != 0:
-            log.error(
-                f"Claude Code exited with code {result.returncode}: "
-                f"{result.stderr[:500]}"
-            )
-            raise RuntimeError(
-                f"Claude Code exited with code {result.returncode}: "
-                f"{result.stderr[:200]}"
+        for attempt in range(1, self._MAX_RETRIES + 1):
+            log.debug(
+                f"Running: {' '.join(cmd[:8])}... "
+                f"(input {len(user_message)} chars, attempt {attempt})"
             )
 
-        try:
-            data = json.loads(result.stdout)
-        except json.JSONDecodeError:
-            # Fall back to treating stdout as plain text (e.g. older CLI version)
-            log.debug("Could not parse JSON output; using raw stdout")
+            result = subprocess.run(
+                cmd,
+                input=user_message,
+                capture_output=True,
+                text=True,
+                timeout=1200,
+            )
+
+            # Try to parse JSON regardless of exit code — quota errors
+            # come back as exit 1 with valid JSON on stdout.
+            data = None
+            try:
+                data = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                pass
+
+            # Check for quota / rate-limit errors
+            if data and data.get("is_error"):
+                error_msg = data.get("result", "")
+                if _QUOTA_KEYWORDS.search(error_msg):
+                    wait = self._quota_wait(error_msg, attempt)
+                    log.warning(
+                        f"Quota/rate-limit hit (attempt {attempt}/{self._MAX_RETRIES}): "
+                        f"{error_msg[:200]}"
+                    )
+                    print(
+                        f"\nQuota/rate-limit hit. "
+                        f"Waiting {wait // 60:.0f}m {wait % 60:.0f}s before retry. "
+                        f"(Ctrl+C to quit — progress is saved.)"
+                    )
+                    time.sleep(wait)
+                    continue
+                # Non-quota error with is_error — raise
+                raise RuntimeError(f"Claude Code error: {error_msg[:200]}")
+
+            # Non-JSON or non-quota failure
+            if result.returncode != 0:
+                error_detail = result.stderr.strip() or result.stdout.strip()
+                raise RuntimeError(
+                    f"Claude Code exited with code {result.returncode}: "
+                    f"{error_detail[:200]}"
+                )
+
+            # Success
+            if data:
+                self._total_cost += data.get("cost_usd", 0) or data.get(
+                    "total_cost_usd", 0
+                )
+                return data.get("result", result.stdout).strip()
             return result.stdout.strip()
 
-        self._total_cost += data.get("cost_usd", 0.0)
-        return data.get("result", result.stdout).strip()
+        raise RuntimeError(
+            f"Claude Code: max retries ({self._MAX_RETRIES}) exceeded due to quota limits"
+        )
+
+    @staticmethod
+    def _quota_wait(error_msg: str, attempt: int) -> float:
+        """Return seconds to sleep before retrying a quota error."""
+        reset = _parse_reset_time(error_msg)
+        if reset is not None:
+            now = datetime.now(timezone.utc)
+            # Make reset offset-aware if it isn't already
+            if reset.tzinfo is None:
+                reset = reset.replace(tzinfo=timezone.utc)
+            wait = (reset - now).total_seconds() + 60  # 1-minute buffer
+            if wait > 0:
+                return wait
+        # Fallback: fixed polling interval
+        return ClaudeCodeClient._POLL_INTERVAL
 
     # -------------------------------------------------------------------------
     # Extraction
@@ -126,7 +243,9 @@ class ClaudeCodeClient(BaseLLMClient):
         )
 
         try:
-            content = self._call_claude(FIX_SUMMARIES_SYSTEM_PROMPT, user_message)
+            content = self._call_claude(
+                FIX_SUMMARIES_SYSTEM_PROMPT, user_message, model=self._secondary_model
+            )
         except RuntimeError as e:
             log.error(f"Claude Code error during summary fix: {e}")
             return [[] for _ in invalid]
@@ -153,7 +272,9 @@ class ClaudeCodeClient(BaseLLMClient):
         )
 
         try:
-            content = self._call_claude(ENTITY_MATCH_SYSTEM_PROMPT, user_message)
+            content = self._call_claude(
+                ENTITY_MATCH_SYSTEM_PROMPT, user_message, model=self._secondary_model
+            )
         except RuntimeError as e:
             log.error(f"Claude Code error during entity matching: {e}")
             return None

@@ -58,6 +58,8 @@ def run_pipeline(
     claude_client: BaseLLMClient,
     geonames_client: GeoNamesClient,
     pdf_page_offset: int = 0,
+    state_file: str | None = None,
+    _resume_totals: tuple[int, int, int] = (0, 0, 0),
 ):
     """Main extraction pipeline."""
     # Step 1: Create or get source
@@ -91,6 +93,13 @@ def run_pipeline(
     chunks = chunk_pages(pages)
     print(f"  {len(pages)} pages -> {len(chunks)} chunks")
 
+    # Create state file for resume support
+    if state_file is None:
+        log_dir = Path(__file__).parent.parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        slug = "".join(c if c.isalnum() else "_" for c in title.lower()).strip("_")[:40]
+        state_file = str(log_dir / f"{slug}_state.json")
+
     # Step 4: Initialize resolver
     resolver = EntityResolver(
         rest_client=rest_client,
@@ -99,9 +108,7 @@ def run_pipeline(
     )
 
     # Step 5: Process chunks
-    total_extracted = 0
-    total_published = 0
-    total_skipped = 0
+    total_extracted, total_published, total_skipped = _resume_totals
 
     for chunk_idx, chunk in enumerate(chunks):
         print(
@@ -147,6 +154,18 @@ def run_pipeline(
                 )
                 if choice == "q":
                     print("\nQuitting.")
+                    _save_progress(
+                        state_file,
+                        file_path=file_path,
+                        title=title,
+                        author=author,
+                        publisher_name=publisher_name,
+                        pub_date=pub_date,
+                        pdf_page_offset=pdf_page_offset,
+                        end_page=end_page,
+                        next_start_page=chunk.start_page,
+                        totals=(total_extracted, total_published, total_skipped),
+                    )
                     _print_summary(
                         total_extracted,
                         total_published,
@@ -175,8 +194,99 @@ def run_pipeline(
                 log.error(f"Failed to publish: {e}")
                 total_skipped += 1
 
+        # Save progress after each completed chunk
+        next_start = chunk.end_page + 1 if chunk_idx < len(chunks) - 1 else None
+        _save_progress(
+            state_file,
+            file_path=file_path,
+            title=title,
+            author=author,
+            publisher_name=publisher_name,
+            pub_date=pub_date,
+            pdf_page_offset=pdf_page_offset,
+            end_page=end_page,
+            next_start_page=next_start,
+            totals=(total_extracted, total_published, total_skipped),
+        )
+
     _print_summary(
         total_extracted, total_published, total_skipped, claude_client, len(pages)
+    )
+
+
+def _save_progress(
+    state_file: str,
+    file_path: str,
+    title: str,
+    author: str,
+    publisher_name: str,
+    pub_date: str | None,
+    pdf_page_offset: int,
+    end_page: int | None,
+    next_start_page: int | None,
+    totals: tuple[int, int, int],
+) -> None:
+    """Save pipeline progress so the run can be resumed."""
+    state = {
+        "file_path": file_path,
+        "title": title,
+        "author": author,
+        "publisher_name": publisher_name,
+        "pub_date": pub_date,
+        "pdf_page_offset": pdf_page_offset,
+        "end_page": end_page,
+        "next_start_page": next_start_page,
+        "total_extracted": totals[0],
+        "total_published": totals[1],
+        "total_skipped": totals[2],
+    }
+    with open(state_file, "w") as f:
+        json.dump(state, f, indent=2)
+    log.debug(f"Progress saved: {state_file}")
+
+
+def run_resume_sync_pipeline(
+    state_file: str,
+    skip_review: bool,
+    model: str,
+    rest_client: RestClient,
+    claude_client: BaseLLMClient,
+    geonames_client: GeoNamesClient,
+):
+    """Resume a sync pipeline from a saved state file."""
+    with open(state_file) as f:
+        state = json.load(f)
+
+    next_start = state.get("next_start_page")
+    if next_start is None:
+        print("This run already completed — nothing to resume.")
+        return
+
+    prev = (
+        state["total_extracted"],
+        state["total_published"],
+        state["total_skipped"],
+    )
+    print(
+        f"Resuming from page {next_start} (prior: {prev[0]} extracted, {prev[1]} published, {prev[2]} skipped)"
+    )
+
+    run_pipeline(
+        file_path=state["file_path"],
+        title=state["title"],
+        author=state["author"],
+        publisher_name=state.get("publisher_name", "Unknown"),
+        pub_date=state.get("pub_date"),
+        model=model,
+        start_page=next_start,
+        end_page=state.get("end_page"),
+        skip_review=skip_review,
+        rest_client=rest_client,
+        claude_client=claude_client,
+        geonames_client=geonames_client,
+        pdf_page_offset=state.get("pdf_page_offset", 0),
+        state_file=state_file,
+        _resume_totals=prev,
     )
 
 

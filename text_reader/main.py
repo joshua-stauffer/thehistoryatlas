@@ -11,7 +11,12 @@ from pathlib import Path
 from text_reader.claude_client import ClaudeClient
 from text_reader.claude_code_client import ClaudeCodeClient
 from text_reader.config import Config
-from text_reader.extractor import run_batch_pipeline, run_pipeline, run_resume_pipeline
+from text_reader.extractor import (
+    run_batch_pipeline,
+    run_pipeline,
+    run_resume_pipeline,
+    run_resume_sync_pipeline,
+)
 from text_reader.geonames import GeoNamesClient
 from text_reader.rest_client import RestClient
 
@@ -28,14 +33,20 @@ def main():
     parser.add_argument(
         "--title", default=None, help="Book title (required unless --resume-batch)"
     )
-    parser.add_argument("--author", required=True, help="Book author")
+    parser.add_argument("--author", default=None, help="Book author")
     parser.add_argument("--publisher", default="Unknown", help="Publisher name")
     parser.add_argument("--pub-date", default=None, help="Publication date")
     parser.add_argument(
         "--model",
         default="sonnet",
         choices=["haiku", "sonnet", "opus"],
-        help="Claude model to use (default: sonnet)",
+        help="Claude model for extraction (default: sonnet)",
+    )
+    parser.add_argument(
+        "--secondary-model",
+        default="sonnet",
+        choices=["haiku", "sonnet", "opus"],
+        help="Claude model for fix/entity-match tasks (default: sonnet)",
     )
     parser.add_argument(
         "--start-page", type=int, default=1, help="Start page (default: 1)"
@@ -70,6 +81,12 @@ def main():
         help="Use the Anthropic Message Batches API (50%% discount, no interactive review)",
     )
     parser.add_argument(
+        "--resume",
+        metavar="STATE_FILE",
+        default=None,
+        help="Resume a sync run from a saved state file (created automatically during extraction)",
+    )
+    parser.add_argument(
         "--resume-batch",
         metavar="STATE_FILE",
         default=None,
@@ -89,7 +106,12 @@ def main():
     log_level = logging.DEBUG if args.verbose else logging.INFO
     log_format = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
-    slug = re.sub(r"[^\w]+", "_", args.title.lower()).strip("_")
+    # Validation for resume modes (before logging setup that needs title)
+    is_resume = args.resume or args.resume_batch
+    if not is_resume and not args.author:
+        parser.error("--author is required unless --resume or --resume-batch is used")
+
+    slug = re.sub(r"[^\w]+", "_", (args.title or "resume").lower()).strip("_")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = Path(__file__).parent / "logs"
     log_dir.mkdir(exist_ok=True)
@@ -128,25 +150,44 @@ def main():
     # Initialize clients
     rest_client = RestClient(base_url=server_url, api_key=config.tha_api_key)
     if args.client == "code":
-        claude_client = ClaudeCodeClient(model=args.model)
+        claude_client = ClaudeCodeClient(
+            model=args.model, secondary_model=args.secondary_model
+        )
     else:
-        claude_client = ClaudeClient(api_key=config.claude_api_key, model=args.model)
+        claude_client = ClaudeClient(
+            api_key=config.claude_api_key,
+            model=args.model,
+            secondary_model=args.secondary_model,
+        )
     geonames_client = GeoNamesClient(username=config.geonames_username)
 
     print(f"Text Reader CLI")
     print(f"  Server: {server_url}")
     print(f"  Client: {args.client}")
-    print(f"  Model:  {args.model}")
+    print(f"  Model:  {args.model} (secondary: {args.secondary_model})")
     print(f"  File:   {args.file}")
     if geonames_client.available:
         print(f"  GeoNames: enabled")
     print()
 
     # Run pipeline
-    if args.resume_batch:
-        pass  # file/title not needed for resume
+    if is_resume:
+        pass  # file/title/author not needed for resume
     elif not args.file or not args.title:
-        parser.error("--file and --title are required unless --resume-batch is used")
+        parser.error(
+            "--file and --title are required unless --resume or --resume-batch is used"
+        )
+
+    if args.resume:
+        run_resume_sync_pipeline(
+            state_file=args.resume,
+            skip_review=args.skip_review,
+            model=args.model,
+            rest_client=rest_client,
+            claude_client=claude_client,
+            geonames_client=geonames_client,
+        )
+        return
 
     if args.resume_batch:
         run_resume_pipeline(

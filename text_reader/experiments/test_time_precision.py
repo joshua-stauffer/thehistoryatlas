@@ -53,7 +53,9 @@ def run_extraction(text: str, api_key: str) -> list[dict]:
     return json.loads(content)
 
 
-def find_event(events: list[dict], summary_contains: str, also_contains: str | None) -> dict | None:
+def find_event(
+    events: list[dict], summary_contains: str, also_contains: str | None
+) -> dict | None:
     """Return the first event whose summary contains both match strings."""
     for e in events:
         s = e.get("summary", "").lower()
@@ -90,8 +92,20 @@ def run_checks(events: list[dict], cases: list[dict]) -> tuple[int, int]:
             ok = actual == expected
 
             status = "PASS " if ok else "FAIL "
-            precision_label = {7: "century", 8: "decade", 9: "year", 10: "month", 11: "day"}.get(actual, str(actual))
-            expected_label = {7: "century", 8: "decade", 9: "year", 10: "month", 11: "day"}.get(expected, str(expected))
+            precision_label = {
+                7: "century",
+                8: "decade",
+                9: "year",
+                10: "month",
+                11: "day",
+            }.get(actual, str(actual))
+            expected_label = {
+                7: "century",
+                8: "decade",
+                9: "year",
+                10: "month",
+                11: "day",
+            }.get(expected, str(expected))
 
             detail = f"precision={actual} ({precision_label})"
             if not ok:
@@ -118,14 +132,18 @@ def main():
         print(f"ERROR: {CASES_FILE} not found")
         sys.exit(1)
     if not PDF_FILE.exists():
-        print(f"ERROR: {PDF_FILE} not found — run sources/make_time_precision_test.py first")
+        print(
+            f"ERROR: {PDF_FILE} not found — run sources/make_time_precision_test.py first"
+        )
         sys.exit(1)
 
     data = json.loads(CASES_FILE.read_text())
     cases = data["cases"]
     total_checks = sum(len(c["checks"]) for c in cases)
 
-    print(f"Cases file: {CASES_FILE.name} ({len(cases)} entries, {total_checks} checks)")
+    print(
+        f"Cases file: {CASES_FILE.name} ({len(cases)} entries, {total_checks} checks)"
+    )
     print(f"PDF file:   {PDF_FILE.name}")
 
     text = extract_pdf_text(PDF_FILE)
@@ -141,7 +159,9 @@ def main():
     for e in events:
         t = e.get("time", {})
         p = t.get("precision")
-        label = {7: "century", 8: "decade", 9: "year", 10: "month", 11: "day"}.get(p, str(p))
+        label = {7: "century", 8: "decade", 9: "year", 10: "month", 11: "day"}.get(
+            p, str(p)
+        )
         print(
             f"  [{p:2d} {label:7s}] {t.get('name')!r:28s} {t.get('date')}"
             f"  | {e.get('summary', '')[:55]}"

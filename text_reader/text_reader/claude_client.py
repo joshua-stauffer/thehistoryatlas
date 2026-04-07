@@ -28,10 +28,15 @@ log = logging.getLogger(__name__)
 
 
 class ClaudeClient(BaseLLMClient):
-    def __init__(self, api_key: str, model: str = "sonnet"):
+    def __init__(
+        self, api_key: str, model: str = "sonnet", secondary_model: str = "sonnet"
+    ):
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = MODEL_MAP.get(model, model)
-        log.info(f"Using Claude model: {self._model}")
+        self._secondary_model = MODEL_MAP.get(secondary_model, secondary_model)
+        log.info(
+            f"Using Claude model: {self._model} (secondary: {self._secondary_model})"
+        )
         # Token usage accumulators (batch vs standard rate separate)
         self._batch_input_tokens = 0
         self._batch_output_tokens = 0
@@ -270,7 +275,7 @@ class ClaudeClient(BaseLLMClient):
                 {
                     "custom_id": f"fix-{batch_start:05d}",
                     "params": {
-                        "model": self._model,
+                        "model": self._secondary_model,
                         "max_tokens": 16384,
                         "system": FIX_SUMMARIES_SYSTEM_PROMPT,
                         "messages": [{"role": "user", "content": user_message}],
@@ -337,7 +342,7 @@ class ClaudeClient(BaseLLMClient):
 
         try:
             with self._client.messages.stream(
-                model=self._model,
+                model=self._secondary_model,
                 max_tokens=16384,
                 system=FIX_SUMMARIES_SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_message}],
@@ -383,7 +388,7 @@ class ClaudeClient(BaseLLMClient):
                 {
                     "custom_id": req["key"],
                     "params": {
-                        "model": self._model,
+                        "model": self._secondary_model,
                         "max_tokens": 256,
                         "system": ENTITY_MATCH_SYSTEM_PROMPT,
                         "messages": [{"role": "user", "content": user_message}],
@@ -451,7 +456,7 @@ class ClaudeClient(BaseLLMClient):
 
         try:
             response = self._client.messages.create(
-                model=self._model,
+                model=self._secondary_model,
                 max_tokens=256,
                 system=ENTITY_MATCH_SYSTEM_PROMPT,
                 messages=[
