@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from text_reader.claude_client import ClaudeClient
+from text_reader.claude_code_client import ClaudeCodeClient
 from text_reader.config import Config
 from text_reader.extractor import run_batch_pipeline, run_pipeline, run_resume_pipeline
 from text_reader.geonames import GeoNamesClient
@@ -20,20 +21,16 @@ def main():
         description="Extract historical events from PDFs using Claude"
     )
     parser.add_argument(
-        "--file", default=None, help="Path to the PDF file (required unless --resume-batch)"
+        "--file",
+        default=None,
+        help="Path to the PDF file (required unless --resume-batch)",
     )
     parser.add_argument(
         "--title", default=None, help="Book title (required unless --resume-batch)"
     )
-    parser.add_argument(
-        "--author", required=True, help="Book author"
-    )
-    parser.add_argument(
-        "--publisher", default="Unknown", help="Publisher name"
-    )
-    parser.add_argument(
-        "--pub-date", default=None, help="Publication date"
-    )
+    parser.add_argument("--author", required=True, help="Book author")
+    parser.add_argument("--publisher", default="Unknown", help="Publisher name")
+    parser.add_argument("--pub-date", default=None, help="Publication date")
     parser.add_argument(
         "--model",
         default="sonnet",
@@ -79,8 +76,12 @@ def main():
         help="Resume a batch run from a saved state file (created automatically on batch submission)",
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Verbose logging"
+        "--client",
+        default="api",
+        choices=["api", "code"],
+        help="LLM backend: 'api' for Anthropic API, 'code' for Claude Code CLI (default: api)",
     )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 
     args = parser.parse_args()
 
@@ -104,6 +105,10 @@ def main():
     )
     logging.getLogger(__name__).info(f"Logging to {log_path}")
 
+    if args.batch and args.client == "code":
+        print("Error: --batch is not supported with --client code", file=sys.stderr)
+        sys.exit(1)
+
     # Load config
     try:
         config = Config()
@@ -111,19 +116,26 @@ def main():
         print(f"Configuration error: {e}", file=sys.stderr)
         sys.exit(1)
 
+    if args.client == "api" and not config.claude_api_key:
+        print(
+            "Error: CLAUDE_API_KEY environment variable is required for --client api",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     server_url = args.server_url or config.server_url
 
     # Initialize clients
-    rest_client = RestClient(
-        base_url=server_url, api_key=config.tha_api_key
-    )
-    claude_client = ClaudeClient(
-        api_key=config.claude_api_key, model=args.model
-    )
+    rest_client = RestClient(base_url=server_url, api_key=config.tha_api_key)
+    if args.client == "code":
+        claude_client = ClaudeCodeClient(model=args.model)
+    else:
+        claude_client = ClaudeClient(api_key=config.claude_api_key, model=args.model)
     geonames_client = GeoNamesClient(username=config.geonames_username)
 
     print(f"Text Reader CLI")
     print(f"  Server: {server_url}")
+    print(f"  Client: {args.client}")
     print(f"  Model:  {args.model}")
     print(f"  File:   {args.file}")
     if geonames_client.available:

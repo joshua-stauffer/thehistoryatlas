@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from uuid import UUID
 
-from text_reader.claude_client import ClaudeClient
+from text_reader.base_client import BaseLLMClient
 from text_reader.entity_resolver import EntityResolver
 from text_reader.geonames import GeoNamesClient
 from text_reader.pdf_reader import Chunk, chunk_pages, extract_pages
@@ -33,7 +33,9 @@ def review_event(event: ResolvedEvent, index: int) -> str:
         print(f"\nExcerpt: {event.excerpt[:300]}")
 
     if event.is_duplicate:
-        print("  >> DUPLICATE (same entities already exist — will publish as secondary)")
+        print(
+            "  >> DUPLICATE (same entities already exist — will publish as secondary)"
+        )
 
     while True:
         choice = input("\n[A]pprove / [S]kip / [Q]uit: ").strip().lower()
@@ -53,7 +55,7 @@ def run_pipeline(
     end_page: int | None,
     skip_review: bool,
     rest_client: RestClient,
-    claude_client: ClaudeClient,
+    claude_client: BaseLLMClient,
     geonames_client: GeoNamesClient,
     pdf_page_offset: int = 0,
 ):
@@ -145,7 +147,13 @@ def run_pipeline(
                 )
                 if choice == "q":
                     print("\nQuitting.")
-                    _print_summary(total_extracted, total_published, total_skipped, claude_client, len(pages))
+                    _print_summary(
+                        total_extracted,
+                        total_published,
+                        total_skipped,
+                        claude_client,
+                        len(pages),
+                    )
                     return
                 elif choice == "s":
                     total_skipped += 1
@@ -167,7 +175,9 @@ def run_pipeline(
                 log.error(f"Failed to publish: {e}")
                 total_skipped += 1
 
-    _print_summary(total_extracted, total_published, total_skipped, claude_client, len(pages))
+    _print_summary(
+        total_extracted, total_published, total_skipped, claude_client, len(pages)
+    )
 
 
 def run_batch_pipeline(
@@ -180,7 +190,7 @@ def run_batch_pipeline(
     start_page: int,
     end_page: int | None,
     rest_client: RestClient,
-    claude_client: ClaudeClient,
+    claude_client: BaseLLMClient,
     geonames_client: GeoNamesClient,
     pdf_page_offset: int = 0,
 ):
@@ -241,8 +251,7 @@ def run_batch_pipeline(
     )
 
     chunk_map = {
-        f"chunk-{i:04d}-p{c.start_page}-{c.end_page}": c
-        for i, c in enumerate(chunks)
+        f"chunk-{i:04d}-p{c.start_page}-{c.end_page}": c for i, c in enumerate(chunks)
     }
 
     # Fix invalid events via a second batch
@@ -322,13 +331,15 @@ def run_batch_pipeline(
             log.error(f"Failed to publish: {e}")
             total_skipped += 1
 
-    _print_summary(total_extracted, total_published, total_skipped, claude_client, len(pages))
+    _print_summary(
+        total_extracted, total_published, total_skipped, claude_client, len(pages)
+    )
 
 
 def run_resume_pipeline(
     state_file: str,
     rest_client: RestClient,
-    claude_client: ClaudeClient,
+    claude_client: BaseLLMClient,
     geonames_client: GeoNamesClient,
 ):
     """Resume a batch pipeline from a saved state file.
@@ -431,10 +442,41 @@ def run_resume_pipeline(
 
 _ABBREVS = frozenset(
     [
-        "mr", "mrs", "ms", "dr", "prof", "rev", "lt", "col", "gen", "capt",
-        "sgt", "st", "ave", "blvd", "vol", "no", "op", "pp", "p", "vs",
-        "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
-        "etc", "i.e", "e.g", "viz",
+        "mr",
+        "mrs",
+        "ms",
+        "dr",
+        "prof",
+        "rev",
+        "lt",
+        "col",
+        "gen",
+        "capt",
+        "sgt",
+        "st",
+        "ave",
+        "blvd",
+        "vol",
+        "no",
+        "op",
+        "pp",
+        "p",
+        "vs",
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
+        "etc",
+        "i.e",
+        "e.g",
+        "viz",
     ]
 )
 
@@ -586,7 +628,10 @@ def _map_position(original: str, normalized: str, norm_pos: int) -> int:
 
 
 def _print_summary(
-    extracted: int, published: int, skipped: int, claude_client: ClaudeClient,
+    extracted: int,
+    published: int,
+    skipped: int,
+    claude_client: BaseLLMClient,
     pages: int = 0,
 ):
     cost = claude_client.total_cost()
