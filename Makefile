@@ -107,6 +107,40 @@ resume: ## Usage: make resume STATE=logs/state_file.json
 		--secondary-model $(SEC_MODEL) \
 		--resume "$(STATE)"
 
+# ---- Auth ------------------------------------------------------------------
+
+SERVER_URL ?= https://api.historyatlas.org
+
+.PHONY: token
+token: ## Get an API token
+token: ## Usage: make token USER=admin PASS=secret [SERVER_URL=https://...]
+	@if [ -z "$(USER)" ] || [ -z "$(PASS)" ]; then \
+		echo "Usage: make token USER=admin PASS=secret [SERVER_URL=$(SERVER_URL)]"; \
+		exit 1; \
+	fi
+	@curl -s -X POST "$(SERVER_URL)/token" \
+		-H "Content-Type: application/x-www-form-urlencoded" \
+		-d "username=$(USER)&password=$(PASS)" | python3 -c \
+		"import sys,json; d=json.load(sys.stdin); print(d.get('access_token') or d)"
+
+KEY_NAME ?= text-reader
+
+.PHONY: api-key
+api-key: ## Create an API key (requires TOKEN from 'make token')
+api-key: ## Usage: make api-key TOKEN=... [KEY_NAME=text-reader] [SERVER_URL=https://...]
+	@if [ -z "$(TOKEN)" ]; then \
+		echo "Usage: make api-key TOKEN=<jwt-from-make-token> [KEY_NAME=$(KEY_NAME)] [SERVER_URL=$(SERVER_URL)]"; \
+		echo ""; \
+		echo "Step 1: make token USER=admin PASS=secret"; \
+		echo "Step 2: make api-key TOKEN=<output-from-step-1>"; \
+		exit 1; \
+	fi
+	@curl -s -X POST "$(SERVER_URL)/api-keys" \
+		-H "Authorization: Bearer $(TOKEN)" \
+		-H "Content-Type: application/json" \
+		-d '{"name":"$(KEY_NAME)"}' | python3 -c \
+		"import sys,json; d=json.load(sys.stdin); k=d.get('raw_key'); print(f'THA_API_KEY={k}' if k else d)"
+
 # ---- Help ------------------------------------------------------------------
 
 .PHONY: help
