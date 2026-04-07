@@ -76,4 +76,4 @@ describe("renderDateTime", () => {
       expect(renderDateTime(date)).toBe("700s B.C.E.");
     });
   });
-}); 
+});

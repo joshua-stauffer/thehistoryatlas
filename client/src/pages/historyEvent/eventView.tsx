@@ -116,7 +116,9 @@ const buildTaggedText = (
           <BiTimeFive />
         );
       const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
-      const tagText = Array.from(event.text).slice(tag.startChar, tag.stopChar).join("");
+      const tagText = Array.from(event.text)
+        .slice(tag.startChar, tag.stopChar)
+        .join("");
       return (
         <Link
           key={`${tag.id}-${index}`}

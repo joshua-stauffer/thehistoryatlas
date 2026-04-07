@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from "../config";
 
 export interface NearbyEvent {
   eventId: string;
@@ -49,7 +49,7 @@ export const fetchNearbyEvents = async (
     { signal },
   );
   if (!response.ok) {
-    throw new Error('Failed to fetch nearby events');
+    throw new Error("Failed to fetch nearby events");
   }
   return response.json();
 };

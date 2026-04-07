@@ -305,7 +305,10 @@ describe("HistoryEventView Integration Tests", () => {
     const firstTag = bachIsBorn.tags[0];
     const expectedPath = `/stories/${firstTag.defaultStoryId}/events/${bachIsBorn.id}`;
     // The button text is the slice of event.text, not the tag name
-    const tagText = bachIsBorn.text.slice(firstTag.startChar, firstTag.stopChar);
+    const tagText = bachIsBorn.text.slice(
+      firstTag.startChar,
+      firstTag.stopChar,
+    );
 
     await act(async () => {
       const tagButton = screen.getByRole("button", { name: tagText });

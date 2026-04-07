@@ -65,15 +65,15 @@ export const renderDateTime = (date: CalendarDate) => {
   const year = parseInt(yearStr) * (isBCE ? -1 : 1);
   const month = parseInt(monthStr) - 1;
   const day = parseInt(dayStr);
-  
+
   if (year === 0) {
     const dateObject = new Date(1970, month, day);
     return renderWithYear(dateObject, 0, date.precision);
   }
-  
+
   // Create date in UTC to avoid timezone issues
   const dateObject = new Date(Date.UTC(Math.abs(year), month, day));
-  
+
   return renderWithYear(dateObject, year, date.precision);
 };
 
@@ -117,7 +117,11 @@ export const renderDecade = (date: Date, isBCE: boolean) => {
   }
 };
 
-export const renderYear = (date: Date, isBCE: boolean, originalYear: number) => {
+export const renderYear = (
+  date: Date,
+  isBCE: boolean,
+  originalYear: number,
+) => {
   const year = Math.abs(originalYear);
   if (!isBCE) {
     return `${year}`;
@@ -126,7 +130,11 @@ export const renderYear = (date: Date, isBCE: boolean, originalYear: number) => 
   }
 };
 
-export const renderMonth = (date: Date, isBCE: boolean, originalYear: number) => {
+export const renderMonth = (
+  date: Date,
+  isBCE: boolean,
+  originalYear: number,
+) => {
   const month = monthNameByNumber.get(date.getUTCMonth());
   return `${month} of ${originalYear}`;
 };
