@@ -4,6 +4,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { GenericError } from "./pages/errorPages";
 
 import { theme } from "./baseStyle";
+import { AuthProvider } from "./auth/authContext";
 import { HistoryEventView } from "./pages/historyEvent/historyEventView";
 import { FeedView } from "./pages/feed/feedView";
 
@@ -52,7 +53,9 @@ function App() {
   ]);
   return (
     <ThemeProvider theme={theme}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

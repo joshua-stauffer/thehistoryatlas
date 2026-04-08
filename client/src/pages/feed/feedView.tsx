@@ -10,6 +10,8 @@ import { FeedPageData } from "./feedLoader";
 import { FeedEvent, fetchFeed } from "../../api/feed";
 import { ThemeFilter } from "./themeFilter";
 import { FeedCard } from "./feedCard";
+import { FeedHeader } from "./feedHeader";
+import { AuthDialog } from "./authDialog";
 
 export const FeedView: React.FC = () => {
   const { feed: initialFeed, categories } =
@@ -24,6 +26,8 @@ export const FeedView: React.FC = () => {
   );
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [mapMode, setMapMode] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Reload feed when theme filters change
@@ -76,6 +80,7 @@ export const FeedView: React.FC = () => {
   }, [cursor, loadingMore, selectedThemes]);
 
   useEffect(() => {
+    if (mapMode) return; // don't infinite-scroll in map mode
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
@@ -88,7 +93,7 @@ export const FeedView: React.FC = () => {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loadMore, mapMode]);
 
   const handleToggleTheme = (slug: string) => {
     setSelectedThemes((prev) => {
@@ -104,11 +109,13 @@ export const FeedView: React.FC = () => {
 
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
-      <Container maxWidth="sm" sx={{ pt: { xs: 2, sm: 3 }, pb: 4 }}>
-        <Typography variant="h1" sx={{ fontSize: { xs: "1.75rem", sm: "2.5rem" } }}>
-          The History Atlas
-        </Typography>
+      <FeedHeader
+        mapMode={mapMode}
+        onToggleMapMode={() => setMapMode(!mapMode)}
+        onLoginClick={() => setAuthOpen(true)}
+      />
 
+      <Container maxWidth="sm" sx={{ pt: 1, pb: 4 }}>
         <ThemeFilter
           categories={categories}
           selectedSlugs={selectedThemes}
@@ -126,6 +133,18 @@ export const FeedView: React.FC = () => {
           >
             No events found. Try adjusting your filters.
           </Typography>
+        ) : mapMode ? (
+          <Box sx={{ mt: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{ textAlign: "center", color: "text.secondary", py: 4 }}
+            >
+              Map view coming soon. Showing {events.length} events.
+            </Typography>
+            {events.map((event) => (
+              <FeedCard key={event.summaryId} event={event} />
+            ))}
+          </Box>
         ) : (
           <>
             {events.map((event) => (
@@ -151,6 +170,8 @@ export const FeedView: React.FC = () => {
           </>
         )}
       </Container>
+
+      <AuthDialog open={authOpen} onClose={() => setAuthOpen(false)} />
     </Box>
   );
 };
