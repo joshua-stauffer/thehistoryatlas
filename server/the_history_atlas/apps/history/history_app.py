@@ -1096,3 +1096,50 @@ class HistoryApp:
 
     def record_view(self, user_id: str, summary_id: UUID) -> None:
         self._repository.record_view(user_id=user_id, summary_id=summary_id)
+
+    def get_feed(
+        self,
+        limit: int = 20,
+        theme_slugs: list[str] | None = None,
+        after_cursor: str | None = None,
+        user_id: str | None = None,
+    ) -> dict:
+        """Return a paginated feed with tags and themes."""
+        rows = self._repository.get_feed(
+            limit=limit,
+            theme_slugs=theme_slugs,
+            after_cursor=after_cursor,
+            user_id=user_id,
+        )
+        if not rows:
+            return {"events": [], "next_cursor": None}
+
+        summary_ids = [r["summary_id"] for r in rows]
+        tags_map = self._repository.get_feed_tags(summary_ids)
+        themes_map = self._repository.get_feed_themes(summary_ids)
+
+        events = []
+        for r in rows:
+            sid = r["summary_id"]
+            events.append(
+                {
+                    "summary_id": sid,
+                    "summary_text": r["summary_text"],
+                    "tags": tags_map.get(sid, []),
+                    "themes": themes_map.get(sid, []),
+                    "latitude": r["latitude"],
+                    "longitude": r["longitude"],
+                    "datetime": r["datetime"],
+                    "precision": r["precision"],
+                    "is_favorited": r["is_favorited"],
+                }
+            )
+
+        # Build cursor from last row
+        last = rows[-1]
+        next_cursor = (
+            f"{last['interleave_rank']}:{last['summary_id']}"
+            if len(rows) == limit
+            else None
+        )
+        return {"events": events, "next_cursor": next_cursor}

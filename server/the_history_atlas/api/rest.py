@@ -34,6 +34,7 @@ from the_history_atlas.api.handlers.text_reader import (
     create_text_reader_story_handler,
     get_story_by_source_handler,
 )
+from the_history_atlas.api.handlers.feed import get_feed_handler
 from the_history_atlas.api.handlers.engagement import (
     signup_handler,
     add_favorite_handler,
@@ -89,6 +90,7 @@ from the_history_atlas.api.types.text_reader import (
     PlaceSearchResult,
     SummaryMatchResult,
 )
+from the_history_atlas.api.types.feed import FeedResponse
 from the_history_atlas.api.types.engagement import (
     SignupRequest,
     SignupResponse,
@@ -274,6 +276,28 @@ def register_rest_endpoints(
     @fastapi_app.get("/themes", response_model=ThemesResponse)
     def get_themes(apps: Apps) -> ThemesResponse:
         return get_themes_handler(apps=apps)
+
+    @fastapi_app.get("/feed", response_model=FeedResponse)
+    def get_feed(
+        apps: Apps,
+        themes: Annotated[list[str] | None, Query()] = None,
+        afterCursor: Annotated[str | None, Query()] = None,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+        token: Annotated[Optional[str], Depends(oauth2_scheme)] = None,
+    ) -> FeedResponse:
+        user_id = None
+        if token:
+            try:
+                user_id = apps.accounts_app.get_user_id_from_token(token)
+            except Exception:
+                pass  # anonymous access is fine
+        return get_feed_handler(
+            apps=apps,
+            themes=themes,
+            after_cursor=afterCursor,
+            limit=limit,
+            user_id=user_id,
+        )
 
     @fastapi_app.get("/history", response_model=Story)
     def get_history(

@@ -2339,3 +2339,164 @@ class Repository:
                 },
             )
             session.commit()
+
+    # -----------------------------------------------------------------------
+    # Feed
+    # -----------------------------------------------------------------------
+
+    def get_feed(
+        self,
+        limit: int = 20,
+        theme_slugs: list[str] | None = None,
+        after_cursor: str | None = None,
+        user_id: str | None = None,
+    ) -> list[dict]:
+        """Return a paginated, theme-diverse feed of events.
+
+        Interleaves events across primary themes using ROW_NUMBER
+        partitioned by theme, so the feed doesn't cluster one theme.
+        """
+        params: dict = {"limit": limit}
+        theme_filter = ""
+        cursor_filter = ""
+        fav_join = ""
+        fav_select = "false as is_favorited"
+
+        if theme_slugs:
+            theme_filter = (
+                "join summary_themes st_filter "
+                "  on st_filter.summary_id = s.id and st_filter.is_primary = true "
+                "join themes t_filter "
+                "  on t_filter.id = st_filter.theme_id and t_filter.slug = any(:theme_slugs) "
+            )
+            params["theme_slugs"] = theme_slugs
+
+        if after_cursor:
+            # cursor format: "row_num:summary_id"
+            parts = after_cursor.split(":", 1)
+            if len(parts) == 2:
+                cursor_filter = (
+                    "where (interleave_rank > :cursor_rank "
+                    "   or (interleave_rank = :cursor_rank and s_id > :cursor_id))"
+                )
+                params["cursor_rank"] = int(parts[0])
+                params["cursor_id"] = parts[1]
+
+        if user_id:
+            fav_join = (
+                "left join user_favorites uf "
+                "  on uf.summary_id = ranked.s_id and uf.user_id = :user_id "
+            )
+            fav_select = "uf.user_id is not null as is_favorited"
+            params["user_id"] = user_id
+
+        query = f"""
+            with ranked as (
+                select
+                    s.id as s_id,
+                    s.text as s_text,
+                    s.latitude,
+                    s.longitude,
+                    s.datetime,
+                    s.precision,
+                    coalesce(pt.slug, 'untagged') as primary_theme_slug,
+                    row_number() over (
+                        partition by coalesce(pt.slug, 'untagged')
+                        order by s.id
+                    ) as theme_rank
+                from summaries s
+                left join summary_themes st_primary
+                    on st_primary.summary_id = s.id and st_primary.is_primary = true
+                left join themes pt on pt.id = st_primary.theme_id
+                {theme_filter}
+            ),
+            interleaved as (
+                select *,
+                    row_number() over (
+                        order by theme_rank, primary_theme_slug, s_id
+                    ) as interleave_rank
+                from ranked
+            )
+            select
+                interleaved.s_id,
+                interleaved.s_text,
+                interleaved.latitude,
+                interleaved.longitude,
+                interleaved.datetime,
+                interleaved.precision,
+                interleaved.interleave_rank,
+                {fav_select}
+            from interleaved
+            {fav_join}
+            {cursor_filter}
+            order by interleaved.interleave_rank, interleaved.s_id
+            limit :limit
+        """
+
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(text(query), params).all()
+
+        results = []
+        for row in rows:
+            results.append(
+                {
+                    "summary_id": row.s_id,
+                    "summary_text": row.s_text,
+                    "latitude": row.latitude,
+                    "longitude": row.longitude,
+                    "datetime": row.datetime,
+                    "precision": row.precision,
+                    "interleave_rank": row.interleave_rank,
+                    "is_favorited": row.is_favorited,
+                }
+            )
+        return results
+
+    def get_feed_tags(self, summary_ids: list[UUID]) -> dict[UUID, list[dict]]:
+        """Batch-fetch tags for a list of summary IDs."""
+        if not summary_ids:
+            return {}
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select ti.summary_id, t.id as tag_id, t.type, t.name
+                    from tag_instances ti
+                    join tags t on t.id = ti.tag_id
+                    where ti.summary_id = any(:ids)
+                    """
+                ),
+                {"ids": summary_ids},
+            ).all()
+        result: dict[UUID, list[dict]] = {sid: [] for sid in summary_ids}
+        for row in rows:
+            result[row.summary_id].append(
+                {"id": row.tag_id, "type": row.type, "name": row.name}
+            )
+        return result
+
+    def get_feed_themes(
+        self, summary_ids: list[UUID]
+    ) -> dict[UUID, list[dict]]:
+        """Batch-fetch themes for a list of summary IDs."""
+        if not summary_ids:
+            return {}
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select st.summary_id, t.slug, t.name
+                    from summary_themes st
+                    join themes t on t.id = st.theme_id
+                    where st.summary_id = any(:ids)
+                    order by st.is_primary desc
+                    """
+                ),
+                {"ids": summary_ids},
+            ).all()
+        result: dict[UUID, list[dict]] = {sid: [] for sid in summary_ids}
+        for row in rows:
+            result[row.summary_id].append(
+                {"slug": row.slug, "name": row.name}
+            )
+        return result
