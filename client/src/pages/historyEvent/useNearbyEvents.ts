@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { NearbyEvent, fetchNearbyEvents } from '../../api/nearbyEvents';
-import { HistoryEvent } from '../../graphql/events';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { NearbyEvent, fetchNearbyEvents } from "../../api/nearbyEvents";
+import { HistoryEvent } from "../../graphql/events";
 
 export interface MapBounds {
   minLat: number;
@@ -80,8 +80,8 @@ export const useNearbyEvents = (currentEvent: HistoryEvent | undefined) => {
             setNearbyEvents(response.events);
           }
         } catch (error) {
-          if (error instanceof Error && error.name !== 'AbortError') {
-            console.error('Failed to fetch nearby events:', error);
+          if (error instanceof Error && error.name !== "AbortError") {
+            console.error("Failed to fetch nearby events:", error);
           }
         } finally {
           if (!controller.signal.aborted) {

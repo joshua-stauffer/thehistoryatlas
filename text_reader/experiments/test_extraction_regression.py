@@ -38,7 +38,9 @@ import anthropic
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from text_reader.claude_client import EXTRACTION_SYSTEM_PROMPT
 
-CASES_FILE = Path(__file__).parent.parent / "sources" / "extraction_regression_cases.json"
+CASES_FILE = (
+    Path(__file__).parent.parent / "sources" / "extraction_regression_cases.json"
+)
 
 PRECISION_LABELS = {7: "century", 8: "decade", 9: "year", 10: "month", 11: "day"}
 
@@ -140,7 +142,10 @@ def run_check(check: dict, events: list[dict]) -> tuple[bool, str]:
         )
         ok = match is not None
         if ok:
-            return True, f"found person {match['name']!r} (full_name={match.get('full_name')!r})"
+            return (
+                True,
+                f"found person {match['name']!r} (full_name={match.get('full_name')!r})",
+            )
         else:
             names_found = [p.get("name", "") for p in people]
             return False, f"no person containing {expected_frag!r}; got {names_found}"
@@ -215,7 +220,9 @@ def main() -> None:
 
     total_checks = sum(len(c["checks"]) for c in cases)
     print(f"Prompt:       {prompt_label}")
-    print(f"Cases file:   {CASES_FILE.name} ({len(cases)} cases, {total_checks} checks)")
+    print(
+        f"Cases file:   {CASES_FILE.name} ({len(cases)} cases, {total_checks} checks)"
+    )
     print()
 
     passed_total = failed_total = 0

@@ -4,8 +4,6 @@ import os
 class Config:
     def __init__(self):
         self.claude_api_key = os.environ.get("CLAUDE_API_KEY")
-        if not self.claude_api_key:
-            raise ValueError("CLAUDE_API_KEY environment variable is required")
 
         self.tha_api_key = os.environ.get("THA_API_KEY")
         if not self.tha_api_key:

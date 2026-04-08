@@ -17,7 +17,7 @@ import {
   List,
   ListItem,
   ListItemText,
-  ClickAwayListener
+  ClickAwayListener,
 } from "@mui/material";
 import { EventView } from "./eventView";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -30,13 +30,15 @@ import { StorySearchResult } from "../../api/stories";
 import { debouncedSearchStories } from "../../api/stories";
 import { useNearbyEvents } from "./useNearbyEvents";
 
-const buildSearchResultSubtitle = (result: StorySearchResult): string | undefined => {
+const buildSearchResultSubtitle = (
+  result: StorySearchResult,
+): string | undefined => {
   const parts: string[] = [];
   if (result.description) parts.push(result.description);
   if (result.earliestYear != null || result.latestYear != null) {
-    parts.push(`${result.earliestYear ?? '?'} – ${result.latestYear ?? '?'}`);
+    parts.push(`${result.earliestYear ?? "?"} – ${result.latestYear ?? "?"}`);
   }
-  return parts.length > 0 ? parts.join(' · ') : undefined;
+  return parts.length > 0 ? parts.join(" · ") : undefined;
 };
 
 export const HistoryEventView = () => {
@@ -60,7 +62,8 @@ export const HistoryEventView = () => {
 
   const currentEvent = historyEvents[currentEventIndex];
 
-  const { nearbyEvents, isLoading, loadNearbyEvents } = useNearbyEvents(currentEvent);
+  const { nearbyEvents, isLoading, loadNearbyEvents } =
+    useNearbyEvents(currentEvent);
 
   const handleBoundsChange = useCallback(
     (bounds: MapBounds) => {
@@ -107,7 +110,7 @@ export const HistoryEventView = () => {
   const handleSearchButtonClick = () => {
     handleSearch(searchValue);
   };
-  
+
   const handleResultClick = (result: StorySearchResult) => {
     navigate(`/stories/${result.id}`);
     setDropdownOpen(false);
@@ -148,7 +151,7 @@ export const HistoryEventView = () => {
             }}
           >
             <ClickAwayListener onClickAway={() => setDropdownOpen(false)}>
-              <Box sx={{ position: 'relative', width: '100%' }}>
+              <Box sx={{ position: "relative", width: "100%" }}>
                 <TextField
                   fullWidth
                   inputRef={searchInputRef}
@@ -162,7 +165,7 @@ export const HistoryEventView = () => {
                     }
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       handleSearch(searchValue);
                     }
@@ -170,14 +173,18 @@ export const HistoryEventView = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        {loading ? <CircularProgress size={20} /> : <SearchIcon />}
+                        {loading ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <SearchIcon />
+                        )}
                       </InputAdornment>
                     ),
                     endAdornment: (
-                      <Button 
+                      <Button
                         onClick={handleSearchButtonClick}
                         disabled={loading || !searchValue}
-                        sx={{ minWidth: '64px', ml: 1 }}
+                        sx={{ minWidth: "64px", ml: 1 }}
                         variant="contained"
                         color="primary"
                       >
@@ -186,16 +193,16 @@ export const HistoryEventView = () => {
                     ),
                   }}
                 />
-                
+
                 {dropdownOpen && (
-                  <Paper 
-                    elevation={3} 
-                    sx={{ 
-                      position: 'absolute', 
-                      width: '100%', 
+                  <Paper
+                    elevation={3}
+                    sx={{
+                      position: "absolute",
+                      width: "100%",
                       zIndex: 9999,
-                      maxHeight: '300px',
-                      overflow: 'auto'
+                      maxHeight: "300px",
+                      overflow: "auto",
                     }}
                   >
                     <List>
@@ -214,16 +221,16 @@ export const HistoryEventView = () => {
                           </ListItem>
                         ))
                       ) : (
-                        <ListItem sx={{ pointerEvents: 'none' }}>
-                          <ListItemText 
-                            primary="No results found." 
-                            primaryTypographyProps={{ 
-                              sx: { 
-                                fontStyle: 'italic', 
-                                color: 'text.disabled',
-                                fontFamily: sansSerifFont 
-                              } 
-                            }} 
+                        <ListItem sx={{ pointerEvents: "none" }}>
+                          <ListItemText
+                            primary="No results found."
+                            primaryTypographyProps={{
+                              sx: {
+                                fontStyle: "italic",
+                                color: "text.disabled",
+                                fontFamily: sansSerifFont,
+                              },
+                            }}
                           />
                         </ListItem>
                       )}
@@ -232,7 +239,7 @@ export const HistoryEventView = () => {
                 )}
               </Box>
             </ClickAwayListener>
-            
+
             <Typography
               variant={"h1"}
               sx={{

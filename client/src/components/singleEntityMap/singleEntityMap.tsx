@@ -1,7 +1,14 @@
 import { Skeleton } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import PlaceIcon from "@mui/icons-material/Place";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import { mapTiles } from "../map/mapTiles";
 import L from "leaflet";
 import React, { useCallback, useEffect, useRef } from "react";
@@ -51,7 +58,7 @@ export interface SingleEntityMapProps {
 
 const primaryEventIcon = L.divIcon({
   className: "primary-event-flag",
-  html: '<div></div>',
+  html: "<div></div>",
   iconSize: [14, 14],
   iconAnchor: [7, 7],
   popupAnchor: [0, -10],
@@ -59,14 +66,23 @@ const primaryEventIcon = L.divIcon({
 
 const nearbyEventIcon = L.divIcon({
   className: "nearby-event-flag",
-  html: '<div></div>',
+  html: "<div></div>",
   iconSize: [10, 10],
   iconAnchor: [5, 5],
   popupAnchor: [0, -8],
 });
 
 export const SingleEntityMap = (props: SingleEntityMapProps) => {
-  const { size, latitude, longitude, coords, title, zoom, nearbyEvents, onBoundsChange } = props;
+  const {
+    size,
+    latitude,
+    longitude,
+    coords,
+    title,
+    zoom,
+    nearbyEvents,
+    onBoundsChange,
+  } = props;
   let lat: number, long: number;
   let markers;
   if (!latitude || !longitude) {
@@ -74,7 +90,11 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
       return <Skeleton></Skeleton>;
     }
     markers = coords.map(({ latitude, longitude }, i) => (
-      <Marker key={`main-${i}`} position={[latitude, longitude]} icon={primaryEventIcon}>
+      <Marker
+        key={`main-${i}`}
+        position={[latitude, longitude]}
+        icon={primaryEventIcon}
+      >
         <Popup>{title}</Popup>
       </Marker>
     ));
@@ -102,10 +122,17 @@ export const SingleEntityMap = (props: SingleEntityMapProps) => {
         attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community"
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
       />
-      <MapInsides latitude={lat} longitude={long} onBoundsChange={onBoundsChange} />
+      <MapInsides
+        latitude={lat}
+        longitude={long}
+        onBoundsChange={onBoundsChange}
+      />
       {markers}
       {nearbyEvents?.map((event) => (
-        <NearbyEventMarker key={`${event.eventId}-${event.storyId}`} event={event} />
+        <NearbyEventMarker
+          key={`${event.eventId}-${event.storyId}`}
+          event={event}
+        />
       ))}
     </MapContainer>
   );
@@ -121,7 +148,9 @@ const MapInsides = (props: MapProps) => {
   // if new data is provided, update the map
   const { latitude, longitude, onBoundsChange } = props;
   const map = useMap();
-  const prevCoords = useRef<{ latitude: number; longitude: number } | null>(null);
+  const prevCoords = useRef<{ latitude: number; longitude: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (
@@ -185,9 +214,13 @@ const NearbyEventMarker = ({ event }: { event: NearbyEvent }) => {
       position={[event.latitude, event.longitude]}
       icon={nearbyEventIcon}
       eventHandlers={{
-        mouseover: () => { cancelClose(); markerRef.current?.openPopup(); },
+        mouseover: () => {
+          cancelClose();
+          markerRef.current?.openPopup();
+        },
         mouseout: scheduleClose,
-        click: () => navigate(`/stories/${event.storyId}/events/${event.eventId}`),
+        click: () =>
+          navigate(`/stories/${event.storyId}/events/${event.eventId}`),
       }}
     >
       <Popup>
@@ -205,12 +238,23 @@ interface NearbyEventPopupProps {
 
 const NearbyEventPopup = ({ event }: NearbyEventPopupProps) => (
   <div style={{ minWidth: 160, maxWidth: 260 }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+    <div
+      style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}
+    >
       <PersonIcon style={{ fontSize: 14, color: "#555" }} />
-      <span style={{ fontWeight: "bold", fontSize: "0.9em" }}>{event.personName}</span>
+      <span style={{ fontWeight: "bold", fontSize: "0.9em" }}>
+        {event.personName}
+      </span>
     </div>
     {event.personDescription && (
-      <div style={{ fontSize: "0.82em", color: "#555", marginBottom: 6, marginLeft: 18 }}>
+      <div
+        style={{
+          fontSize: "0.82em",
+          color: "#555",
+          marginBottom: 6,
+          marginLeft: 18,
+        }}
+      >
         {event.personDescription}
       </div>
     )}
@@ -219,9 +263,13 @@ const NearbyEventPopup = ({ event }: NearbyEventPopupProps) => (
         {event.summaryText}
       </div>
     )}
-    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+    <div
+      style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}
+    >
       <PlaceIcon style={{ fontSize: 14, color: "#555" }} />
-      <span style={{ fontSize: "0.85em", color: "#555" }}>{event.placeName}</span>
+      <span style={{ fontSize: "0.85em", color: "#555" }}>
+        {event.placeName}
+      </span>
     </div>
     <Link
       to={`/stories/${event.storyId}/events/${event.eventId}`}
