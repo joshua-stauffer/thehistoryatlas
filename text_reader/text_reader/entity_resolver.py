@@ -237,6 +237,7 @@ class EntityResolver:
             people=people,
             place=place,
             time=time,
+            themes=event.themes,
             page_num=event.page_num,
             confidence=event.confidence,
             is_duplicate=is_duplicate,

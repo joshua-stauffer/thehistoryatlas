@@ -904,6 +904,7 @@ class HistoryApp:
         source_id: UUID,
         story_id: UUID,
         canonical_summary_id: UUID | None = None,
+        theme_slugs: list[str] | None = None,
     ) -> UUID:
         """Create an event from the text reader pipeline."""
         summary_id = uuid4()
@@ -970,7 +971,32 @@ class HistoryApp:
             story_id=story_id, summary_id=summary_id, position=position
         )
 
+        # Tag with themes if provided
+        if theme_slugs:
+            self._apply_theme_slugs(summary_id, theme_slugs)
+
         return summary_id
+
+    def _apply_theme_slugs(
+        self, summary_id: UUID, theme_slugs: list[str]
+    ) -> None:
+        """Look up theme IDs by slug and create summary_themes associations."""
+        for i, slug in enumerate(theme_slugs[:3]):
+            theme = self._repository.get_theme_by_slug(slug)
+            if theme is None:
+                log.warning(f"Unknown theme slug '{slug}' for summary {summary_id}")
+                continue
+            try:
+                self._repository.add_summary_theme(
+                    summary_id=summary_id,
+                    theme_id=theme.id,
+                    is_primary=(i == 0),
+                )
+            except Exception:
+                log.warning(
+                    f"Failed to add theme '{slug}' to summary {summary_id} "
+                    f"(may already exist)"
+                )
 
     def search_people_by_name(self, name: str) -> list[dict]:
         """Search for people tags by name."""

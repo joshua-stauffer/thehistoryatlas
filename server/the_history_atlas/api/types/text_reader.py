@@ -101,6 +101,7 @@ class TextReaderEventInput(BaseModel):
     source_id: UUID
     story_id: UUID
     canonical_summary_id: UUID | None = None
+    theme_slugs: list[str] = []
 
 
 class TextReaderEventOutput(BaseModel):

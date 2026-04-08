@@ -94,6 +94,14 @@ For each distinct historical event described in the text, extract:
 
 6. **Confidence**: A score from 0.0 to 1.0 indicating how confident you are in the extraction accuracy.
 
+7. **Themes**: Classify each event into 1-3 thematic tags from this fixed list (use exact slugs):
+   music, visual-arts, literature, theater-and-film, architecture, fashion-and-design,
+   astronomy-and-space, natural-science, medicine, invention-and-engineering, mathematics, exploration-and-navigation,
+   war-and-conflict, diplomacy, governance, revolution, royalty-and-dynasty, espionage-and-intelligence,
+   religion, education, philosophy-and-ideas, social-movement, economics-and-trade, crime-and-justice,
+   food-and-cuisine, sports-and-athletics, love-and-relationships, migration, customs-and-traditions.
+   The first tag is the primary (most relevant) theme. Tags can cross categories. Only use tags that clearly apply — fewer is better.
+
 Valid event types include (but are not limited to):
 - Births, deaths, and relocations
 - Career appointments, performances, teaching positions
@@ -140,6 +148,7 @@ Return a JSON array of events. Example:
     ],
     "place": {"name": "Milan", "qualified_name": "Milan, Italy", "latitude": 45.4642, "longitude": 9.1900, "description": "City in northern Italy"},
     "time": {"name": "Dec. 26, 1831", "date": "+1831-12-26T00:00:00Z", "precision": 11},
+    "themes": ["music", "theater-and-film"],
     "confidence": 0.95
   }
 ]
@@ -306,6 +315,7 @@ class BaseLLMClient:
                     people=[ExtractedPerson(**p) for p in raw.get("people", [])],
                     place=ExtractedPlace(**place_data),
                     time=ExtractedTime(**time_data),
+                    themes=raw.get("themes", []),
                     confidence=raw.get("confidence", 0.5),
                 )
                 events.append(event)
@@ -396,6 +406,7 @@ class BaseLLMClient:
                             ],
                             place=ExtractedPlace(**raw["place"]),
                             time=ExtractedTime(**raw["time"]),
+                            themes=raw.get("themes", original.themes),
                             confidence=raw.get("confidence", original.confidence),
                             page_num=original.page_num,
                         )
