@@ -106,8 +106,20 @@ global.fetch = jest.fn();
 
 const mockSearchResults = {
   results: [
-    { id: "1", name: "The Life of Bach", description: "Composer", earliestYear: 1685, latestYear: 1750 },
-    { id: "2", name: "Classical Music History", description: null, earliestYear: null, latestYear: null },
+    {
+      id: "1",
+      name: "The Life of Bach",
+      description: "Composer",
+      earliestYear: 1685,
+      latestYear: 1750,
+    },
+    {
+      id: "2",
+      name: "Classical Music History",
+      description: null,
+      earliestYear: null,
+      latestYear: null,
+    },
     { id: "3", name: "German Composers" },
   ],
 };
@@ -232,7 +244,15 @@ describe("Story Search Integration Tests", () => {
   it("displays search results when search button is clicked", async () => {
     // Mock the debounced search response
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "1", name: "The Life of Bach", description: "Composer", earliestYear: 1685, latestYear: 1750 }] as StorySearchResult[],
+      results: [
+        {
+          id: "1",
+          name: "The Life of Bach",
+          description: "Composer",
+          earliestYear: 1685,
+          latestYear: 1750,
+        },
+      ] as StorySearchResult[],
     } as StorySearchResponse);
 
     const router = createRouter();
@@ -243,7 +263,7 @@ describe("Story Search Integration Tests", () => {
     fireEvent.change(searchInput, { target: { value: "Bach" } });
 
     // Click the search button
-    const searchButton = screen.getByRole('button', { name: 'Search' });
+    const searchButton = screen.getByRole("button", { name: "Search" });
     fireEvent.click(searchButton);
 
     // Wait for the primary name to appear
@@ -261,7 +281,15 @@ describe("Story Search Integration Tests", () => {
   it("navigates to the correct story when selecting a search result", async () => {
     // Mock the debounced search response with a name distinct from the mock event title
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "42", name: "Mozart Piano Sonatas", description: "Composer", earliestYear: 1756, latestYear: 1791 }] as StorySearchResult[],
+      results: [
+        {
+          id: "42",
+          name: "Mozart Piano Sonatas",
+          description: "Composer",
+          earliestYear: 1756,
+          latestYear: 1791,
+        },
+      ] as StorySearchResult[],
     } as StorySearchResponse);
 
     const router = createRouter();
@@ -273,11 +301,15 @@ describe("Story Search Integration Tests", () => {
     fireEvent.change(searchInput, { target: { value: "Mozart" } });
 
     // Click the search button
-    const searchButton = screen.getByRole('button', { name: 'Search' });
+    const searchButton = screen.getByRole("button", { name: "Search" });
     fireEvent.click(searchButton);
 
     // Wait for the primary text to appear in the dropdown
-    const primaryText = await screen.findByText("Mozart Piano Sonatas", {}, { timeout: 3000 });
+    const primaryText = await screen.findByText(
+      "Mozart Piano Sonatas",
+      {},
+      { timeout: 3000 },
+    );
     expect(primaryText).toBeInTheDocument();
 
     // Find the enclosing list item (has role="button" in MUI ListItem)
@@ -295,22 +327,22 @@ describe("Story Search Integration Tests", () => {
 
     // Wait for the search input to appear first
     const searchInput = await screen.findByLabelText("Search for a story");
-    
+
     // Find the search button (with a wait)
-    const searchButton = await screen.findByRole('button', { name: 'Search' });
-    
+    const searchButton = await screen.findByRole("button", { name: "Search" });
+
     // Check that button is initially disabled (empty input)
     expect(searchButton).toBeDisabled();
-    
+
     // Type in the search box
     fireEvent.change(searchInput, { target: { value: "Bach" } });
-    
+
     // Check that button is enabled
     expect(searchButton).not.toBeDisabled();
-    
+
     // Clear the input
     fireEvent.change(searchInput, { target: { value: "" } });
-    
+
     // Button should be disabled again
     expect(searchButton).toBeDisabled();
   });
@@ -318,32 +350,40 @@ describe("Story Search Integration Tests", () => {
   it("disables search button during search and shows loading indicator", async () => {
     // Mock a delayed search response
     mockDebouncedSearchStories.mockImplementationOnce(() => {
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         setTimeout(() => {
           resolve({
-            results: [{ id: "1", name: "The Life of Bach", description: "Composer", earliestYear: 1685, latestYear: 1750 }] as StorySearchResult[],
+            results: [
+              {
+                id: "1",
+                name: "The Life of Bach",
+                description: "Composer",
+                earliestYear: 1685,
+                latestYear: 1750,
+              },
+            ] as StorySearchResult[],
           } as StorySearchResponse);
         }, 500);
       });
     });
-    
+
     const router = createRouter();
     render(<RouterProvider router={router} />);
 
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Bach" } });
-    
+
     // Click the search button
-    const searchButton = screen.getByRole('button', { name: 'Search' });
+    const searchButton = screen.getByRole("button", { name: "Search" });
     fireEvent.click(searchButton);
-    
+
     // Button should be disabled while searching
     expect(searchButton).toBeDisabled();
-    
+
     // CircularProgress should be visible
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+
     // Wait for search to complete
     await waitFor(
       () => {
@@ -355,7 +395,14 @@ describe("Story Search Integration Tests", () => {
 
   it("shows only year range when description is absent", async () => {
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "1", name: "Beethoven Symphonies", earliestYear: 1770, latestYear: 1827 }] as StorySearchResult[],
+      results: [
+        {
+          id: "1",
+          name: "Beethoven Symphonies",
+          earliestYear: 1770,
+          latestYear: 1827,
+        },
+      ] as StorySearchResult[],
     } as StorySearchResponse);
 
     const router = createRouter();
@@ -363,7 +410,7 @@ describe("Story Search Integration Tests", () => {
 
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Beethoven" } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
     await waitFor(() => {
       expect(screen.getByText("Beethoven Symphonies")).toBeInTheDocument();
@@ -373,7 +420,13 @@ describe("Story Search Integration Tests", () => {
 
   it("shows only description when year range is absent", async () => {
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "1", name: "Beethoven Symphonies", description: "German Classical composer" }] as StorySearchResult[],
+      results: [
+        {
+          id: "1",
+          name: "Beethoven Symphonies",
+          description: "German Classical composer",
+        },
+      ] as StorySearchResult[],
     } as StorySearchResponse);
 
     const router = createRouter();
@@ -381,7 +434,7 @@ describe("Story Search Integration Tests", () => {
 
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Beethoven" } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
     await waitFor(() => {
       expect(screen.getByText("Beethoven Symphonies")).toBeInTheDocument();
@@ -391,7 +444,9 @@ describe("Story Search Integration Tests", () => {
 
   it("shows no subtitle when description and year range are both absent", async () => {
     mockDebouncedSearchStories.mockResolvedValueOnce({
-      results: [{ id: "1", name: "Beethoven Symphonies" }] as StorySearchResult[],
+      results: [
+        { id: "1", name: "Beethoven Symphonies" },
+      ] as StorySearchResult[],
     } as StorySearchResponse);
 
     const router = createRouter();
@@ -399,7 +454,7 @@ describe("Story Search Integration Tests", () => {
 
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Beethoven" } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
     await waitFor(() => {
       expect(screen.getByText("Beethoven Symphonies")).toBeInTheDocument();
@@ -420,9 +475,9 @@ describe("Story Search Integration Tests", () => {
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Nonexistent" } });
-    
+
     // Click the search button
-    const searchButton = screen.getByRole('button', { name: 'Search' });
+    const searchButton = screen.getByRole("button", { name: "Search" });
     fireEvent.click(searchButton);
 
     // Wait for the loading state to finish and verify the "No results found" message
@@ -448,9 +503,9 @@ describe("Story Search Integration Tests", () => {
     // Type in the search box
     const searchInput = await screen.findByLabelText("Search for a story");
     fireEvent.change(searchInput, { target: { value: "Bach" } });
-    
+
     // Click the search button
-    const searchButton = screen.getByRole('button', { name: 'Search' });
+    const searchButton = screen.getByRole("button", { name: "Search" });
     fireEvent.click(searchButton);
 
     // Wait for error to be logged

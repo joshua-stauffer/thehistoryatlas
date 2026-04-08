@@ -100,6 +100,8 @@ class PersonParticipatedIn(EventFactory):
 
     def _create_events(self) -> list[WikiEvent]:
         events = []
+        if "en" not in self._entity.labels:
+            raise UnprocessableEventError("No English label found for entity")
         person_name = self._entity.labels["en"].value
 
         if PARTICIPANT_IN not in self._entity.claims:

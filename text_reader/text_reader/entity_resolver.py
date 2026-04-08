@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 
-from text_reader.claude_client import ClaudeClient
+from text_reader.base_client import BaseLLMClient
 from text_reader.geonames import GeoNamesClient
 from text_reader.rest_client import RestClient
 from text_reader.types import (
@@ -19,7 +19,7 @@ class EntityResolver:
     def __init__(
         self,
         rest_client: RestClient,
-        claude_client: ClaudeClient,
+        claude_client: BaseLLMClient,
         geonames_client: GeoNamesClient,
     ):
         self._rest = rest_client
@@ -40,7 +40,7 @@ class EntityResolver:
         """
         # Step 1: Collect unique entities with event context
         person_info: dict[str, dict] = {}  # cache_key -> info dict
-        place_info: dict[str, dict] = {}   # cache_key -> info dict
+        place_info: dict[str, dict] = {}  # cache_key -> info dict
 
         for event in events:
             event_context = self._build_event_context(event)
@@ -76,21 +76,24 @@ class EntityResolver:
                 continue
             candidates = self._rest.search_people(name=info["name"])
             if candidates:
-                entity_requests.append({
-                    "key": f"entity-{len(entity_requests):05d}",
-                    "entity_type": "PERSON",
-                    "cache_key": key,
-                    "entity_name": info["name"],
-                    "context": info["context"],
-                    "candidates": candidates,
-                    "info": info,
-                })
+                entity_requests.append(
+                    {
+                        "key": f"entity-{len(entity_requests):05d}",
+                        "entity_type": "PERSON",
+                        "cache_key": key,
+                        "entity_name": info["name"],
+                        "context": info["context"],
+                        "candidates": candidates,
+                        "info": info,
+                    }
+                )
             else:
                 created = self._rest.create_person(
                     name=info["name"], description=info["description"]
                 )
                 self._person_cache[key] = ResolvedPerson(
-                    id=UUID(created["id"]), name=info["name"],
+                    id=UUID(created["id"]),
+                    name=info["name"],
                     summary_name=info["name"],
                 )
 
@@ -104,22 +107,24 @@ class EntityResolver:
                 longitude=place.longitude,
             )
             if candidates:
-                entity_requests.append({
-                    "key": f"entity-{len(entity_requests):05d}",
-                    "entity_type": "PLACE",
-                    "cache_key": key,
-                    "entity_name": info["search_name"],
-                    "context": info["context"],
-                    "candidates": candidates,
-                    "info": info,
-                })
-            else:
-                self._place_cache[key] = self._create_place(
-                    place, info["search_name"]
+                entity_requests.append(
+                    {
+                        "key": f"entity-{len(entity_requests):05d}",
+                        "entity_type": "PLACE",
+                        "cache_key": key,
+                        "entity_name": info["search_name"],
+                        "context": info["context"],
+                        "candidates": candidates,
+                        "info": info,
+                    }
                 )
+            else:
+                self._place_cache[key] = self._create_place(place, info["search_name"])
 
         if not entity_requests:
-            log.info("No entity matching needed — all entities resolved from cache or created")
+            log.info(
+                "No entity matching needed — all entities resolved from cache or created"
+            )
             return
 
         # Step 3: Submit a single batch for all entity-matching decisions
@@ -136,12 +141,16 @@ class EntityResolver:
                 info = req["info"]
                 if match_id:
                     matched = next(
-                        (c for c in req["candidates"] if UUID(c["id"]) == match_id), None
+                        (c for c in req["candidates"] if UUID(c["id"]) == match_id),
+                        None,
                     )
                     if matched:
-                        log.info(f"Matched person {info['name']!r} → {matched['name']!r} ({match_id})")
+                        log.info(
+                            f"Matched person {info['name']!r} → {matched['name']!r} ({match_id})"
+                        )
                         self._person_cache[key] = ResolvedPerson(
-                            id=match_id, name=matched["name"],
+                            id=match_id,
+                            name=matched["name"],
                             summary_name=info["name"],
                         )
                         continue
@@ -151,7 +160,8 @@ class EntityResolver:
                     name=info["name"], description=info["description"]
                 )
                 self._person_cache[key] = ResolvedPerson(
-                    id=UUID(created["id"]), name=info["name"],
+                    id=UUID(created["id"]),
+                    name=info["name"],
                     summary_name=info["name"],
                 )
 
@@ -159,10 +169,13 @@ class EntityResolver:
                 place = req["info"]["place"]
                 if match_id:
                     matched = next(
-                        (c for c in req["candidates"] if UUID(c["id"]) == match_id), None
+                        (c for c in req["candidates"] if UUID(c["id"]) == match_id),
+                        None,
                     )
                     if matched:
-                        log.info(f"Matched place {req['entity_name']!r} → {matched['name']!r} ({match_id})")
+                        log.info(
+                            f"Matched place {req['entity_name']!r} → {matched['name']!r} ({match_id})"
+                        )
                         self._place_cache[key] = ResolvedPlace(
                             id=match_id,
                             name=matched["name"],
@@ -273,7 +286,8 @@ class EntityResolver:
                 )
                 if matched:
                     result = ResolvedPerson(
-                        id=match_id, name=matched["name"],
+                        id=match_id,
+                        name=matched["name"],
                         summary_name=name,
                     )
                     self._person_cache[cache_key] = result
@@ -282,7 +296,9 @@ class EntityResolver:
 
         created = self._rest.create_person(name=canonical, description=description)
         result = ResolvedPerson(
-            id=UUID(created["id"]), name=canonical, summary_name=name,
+            id=UUID(created["id"]),
+            name=canonical,
+            summary_name=name,
         )
         self._person_cache[cache_key] = result
         self._person_cache[summary_key] = result

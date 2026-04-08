@@ -20,6 +20,12 @@ class Summary(Base):
     latitude = Column(FLOAT, nullable=True)
     longitude = Column(FLOAT, nullable=True)
 
+    # When set, this summary covers the same event as the referenced canonical summary.
+    # NULL = canonical (first-seen); non-NULL = duplicate, points to the canonical.
+    canonical_summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=True
+    )
+
     # specific instances of tags anchored in the summary text
     tags = relationship("TagInstance", back_populates="summary")
 
@@ -74,6 +80,9 @@ class Source(Base):
     publisher = Column(VARCHAR, nullable=False)
     pub_date = Column(VARCHAR, nullable=True)
     kwargs = Column(JSONB, nullable=False, default={})
+    # Offset from PDF page number to printed book page number.
+    # book_page = citations.page_num - pdf_page_offset
+    pdf_page_offset = Column(INTEGER, nullable=False, default=0, server_default="0")
 
 
 class TagInstance(Base):
@@ -255,6 +264,7 @@ class StorySummary(Base):
         UniqueConstraint("story_id", "summary_id", name="uq_story_summary"),
         UniqueConstraint("story_id", "position", name="uq_story_position"),
     )
+
 
 
 class Theme(Base):

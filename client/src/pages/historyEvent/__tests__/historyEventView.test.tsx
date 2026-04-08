@@ -153,10 +153,10 @@ describe("HistoryEventView Integration Tests", () => {
       ).toBeInTheDocument();
     });
 
-    // Find the event text by its content
+    // Find the event text by its content (uses event.text which has "J.S." not "J. S.")
     const eventContainer = screen.getByRole("paragraph");
     expect(eventContainer.textContent).toContain(
-      "J. S. Bach was born in Eisenach on March 21st, 1685",
+      "J.S. Bach was born in Eisenach on March 21st, 1685",
     );
 
     expect(
@@ -232,7 +232,7 @@ describe("HistoryEventView Integration Tests", () => {
     await waitFor(() => {
       const eventContainer = screen.getByRole("paragraph");
       expect(eventContainer.textContent).toContain(
-        "J. S. Bach was born in Eisenach on March 21st, 1685",
+        "J.S. Bach was born in Eisenach on March 21st, 1685",
       );
     });
   });
@@ -304,9 +304,14 @@ describe("HistoryEventView Integration Tests", () => {
     // Find and click a tag button
     const firstTag = bachIsBorn.tags[0];
     const expectedPath = `/stories/${firstTag.defaultStoryId}/events/${bachIsBorn.id}`;
+    // The button text is the slice of event.text, not the tag name
+    const tagText = bachIsBorn.text.slice(
+      firstTag.startChar,
+      firstTag.stopChar,
+    );
 
     await act(async () => {
-      const tagButton = screen.getByRole("button", { name: firstTag.name });
+      const tagButton = screen.getByRole("button", { name: tagText });
       fireEvent.click(tagButton);
       await new Promise((resolve) => setTimeout(resolve, 0));
     });

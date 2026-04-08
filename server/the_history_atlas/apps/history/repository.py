@@ -895,6 +895,7 @@ class Repository:
         precision: int | None = None,
         latitude: float | None = None,
         longitude: float | None = None,
+        canonical_summary_id: UUID | None = None,
         session: Session | None = None,
     ) -> None:
         """Creates a new summary"""
@@ -907,6 +908,7 @@ class Repository:
             precision=precision,
             latitude=latitude,
             longitude=longitude,
+            canonical_summary_id=canonical_summary_id,
         )
         if session:
             session.add(summary)
@@ -1493,6 +1495,15 @@ class Repository:
             tag_id: UUID of the tag to update story orders for
             session: SQLAlchemy session to use
         """
+        # Serialize concurrent callers for the same tag_id. Without this,
+        # multiple background tasks publishing events that share a tag (e.g.
+        # the same place or person) can deadlock on tag_instances UPDATE.
+        # pg_advisory_xact_lock is released automatically at transaction end.
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(abs(hashtext(:tag_id_str)))"),
+            {"tag_id_str": str(tag_id)},
+        )
+
         tag_instances = session.execute(
             text(
                 """
@@ -1868,7 +1879,7 @@ class Repository:
                           AND (similarity(names.name, :search_term) > 0.3
                                OR names.name ILIKE :like_pattern)
                         ORDER BY sim DESC
-                        LIMIT 20
+                        LIMIT 50
                         """
                     ),
                     {
@@ -2108,6 +2119,7 @@ class Repository:
         author: str,
         publisher: str,
         pub_date: str | None,
+        pdf_page_offset: int = 0,
     ) -> None:
         """Create a source and return immediately (no citation linking)."""
         with Session(self._engine, future=True) as session:
@@ -2118,6 +2130,7 @@ class Repository:
                 publisher=publisher,
                 pub_date=pub_date,
                 kwargs={},
+                pdf_page_offset=pdf_page_offset,
             )
             session.add(source)
             session.commit()

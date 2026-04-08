@@ -40,7 +40,9 @@ class Chunk:
     def page_for_excerpt(self, excerpt: str) -> int:
         """Find the page number for an excerpt string within this chunk.
         Falls back to start_page if the excerpt is not found."""
-        idx = self.text.find(excerpt[:80])  # match on first 80 chars to handle truncation
+        idx = self.text.find(
+            excerpt[:80]
+        )  # match on first 80 chars to handle truncation
         if idx != -1:
             return self.page_for_char(idx)
         return self.start_page

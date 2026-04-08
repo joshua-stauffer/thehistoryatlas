@@ -28,8 +28,14 @@ def make_resolved_event(
     return ResolvedEvent(
         summary=summary,
         excerpt=excerpt,
-        people=[ResolvedPerson(id=uuid4(), name=person_name)],
-        place=ResolvedPlace(id=uuid4(), name=place_name, latitude=51.3, longitude=12.4, summary_name=place_name),
+        people=[ResolvedPerson(id=uuid4(), name=person_name, summary_name=person_name)],
+        place=ResolvedPlace(
+            id=uuid4(),
+            name=place_name,
+            latitude=51.3,
+            longitude=12.4,
+            summary_name=place_name,
+        ),
         time=ResolvedTime(
             id=uuid4(),
             name=time_name,
