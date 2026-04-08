@@ -1,0 +1,1380 @@
+{
+  "label": "v8_sonnet_norwich_sample",
+  "runs": [
+    {
+      "run_id": "v8_sonnet_norwich_sample-run-000",
+      "total": 51,
+      "valid": 45,
+      "invalid": 6,
+      "valid_pct": 88.23529411764706,
+      "missing_categories": {
+        "person": 1,
+        "place": 4,
+        "time": 1
+      },
+      "events": [
+        {
+          "summary": "Ludwig Nohl was born at Iserlohn in Westphalia on Dec. 5, 1831, the son of a legal functionary who intended his son to follow the same profession, though Nohl showed a taste for music from childhood.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Iserlohn",
+            "qualified_name": "Iserlohn, Westphalia, Germany",
+            "latitude": 51.3748,
+            "longitude": 7.6953,
+            "description": "Town in Westphalia, Germany"
+          },
+          "time": {
+            "name": "Dec. 5, 1831",
+            "date": "+1831-12-05T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "NOHL, Carl Friedrich Ludwig, a well-known writer on music and musical subjects, was born at Iserlohn in Westphalia, on Dec. 5, 1831.",
+          "confidence": 0.99,
+          "valid": false,
+          "missing": [
+            "Carl Friedrich Ludwig Nohl"
+          ]
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl entered the University of Bonn in 1850, having been educated at the Gymnasium of Duisburg, as part of his father's plan for him to pursue a legal career.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Bonn",
+            "qualified_name": "Bonn, Germany",
+            "latitude": 50.7374,
+            "longitude": 7.0982,
+            "description": "University city in Germany"
+          },
+          "time": {
+            "name": "1850",
+            "date": "+1850-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "He was educated at the Gymnasium of Duisburg, and in 1850 entered the University of Bonn.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl entered the Prussian Civil Service as Referendarius in Berlin in 1853, having continued the study of jurisprudence there while also receiving musical instruction from Professor Dehn.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Berlin",
+            "qualified_name": "Berlin, Germany",
+            "latitude": 52.52,
+            "longitude": 13.405,
+            "description": "Capital city of Prussia and Germany"
+          },
+          "time": {
+            "name": "1853",
+            "date": "+1853-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1853 Nohl entered the Prussian Civil Service as Referendarius, but in 1856 his health broke down, and he had to undertake a journey to France and Italy.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl's health broke down in Berlin in 1856, forcing him to undertake a recuperative journey to France and Italy.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Berlin",
+            "qualified_name": "Berlin, Germany",
+            "latitude": 52.52,
+            "longitude": 13.405,
+            "description": "Capital city of Prussia and Germany"
+          },
+          "time": {
+            "name": "1856",
+            "date": "+1856-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "but in 1856 his health broke down, and he had to undertake a journey to France and Italy.",
+          "confidence": 0.97,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl returned to Berlin in 1857 and continued his musical studies under Professor Kiel after his health had necessitated a journey to France and Italy.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Berlin",
+            "qualified_name": "Berlin, Germany",
+            "latitude": 52.52,
+            "longitude": 13.405,
+            "description": "Capital city of Prussia and Germany"
+          },
+          "time": {
+            "name": "1857",
+            "date": "+1857-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "He returned to Berlin in 1857, and continued his musical studies under Professor Kiel.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl finally abandoned the legal profession and settled at Heidelberg in 1858, marking a decisive turn toward his career as a music scholar.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Heidelberg",
+            "qualified_name": "Heidelberg, Germany",
+            "latitude": 49.3988,
+            "longitude": 8.6724,
+            "description": "University city in Baden, Germany"
+          },
+          "time": {
+            "name": "1858",
+            "date": "+1858-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1858 he finally abandoned the legal profession, and settled at Heidelberg, the University of which place conferred upon him the degree of Doctor of Philosophy (1860).",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "The University of Heidelberg conferred upon Carl Friedrich Ludwig Nohl the degree of Doctor of Philosophy in 1860, recognizing his scholarly pursuits after he had settled there and abandoned the legal profession.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Heidelberg",
+            "qualified_name": "Heidelberg, Germany",
+            "latitude": 49.3988,
+            "longitude": 8.6724,
+            "description": "University city in Baden, Germany"
+          },
+          "time": {
+            "name": "1860",
+            "date": "+1860-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "the University of which place conferred upon him the degree of Doctor of Philosophy (1860).",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl went to Munich in 1861, where King Ludwig II would later appoint him an Honorary Professor in the University.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Munich",
+            "qualified_name": "Munich, Germany",
+            "latitude": 48.1351,
+            "longitude": 11.582,
+            "description": "Capital city of Bavaria, Germany"
+          },
+          "time": {
+            "name": "1861",
+            "date": "+1861-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In the following year he went to Munich, where in 1865 King Ludwig II. appointed him an Honorary Professor in the University.",
+          "confidence": 0.97,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "King Ludwig II appointed Carl Friedrich Ludwig Nohl an Honorary Professor in the University of Munich in 1865, a royal recognition of his growing reputation as a music scholar.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            },
+            {
+              "name": "King Ludwig II",
+              "description": "King of Bavaria"
+            }
+          ],
+          "place": {
+            "name": "Munich",
+            "qualified_name": "Munich, Germany",
+            "latitude": 48.1351,
+            "longitude": 11.582,
+            "description": "Capital city of Bavaria, Germany"
+          },
+          "time": {
+            "name": "1865",
+            "date": "+1865-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "where in 1865 King Ludwig II. appointed him an Honorary Professor in the University.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl returned to Heidelberg in 1872, where he resided as teacher of musical history and aesthetics until his death.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Heidelberg",
+            "qualified_name": "Heidelberg, Germany",
+            "latitude": 49.3988,
+            "longitude": 8.6724,
+            "description": "University city in Baden, Germany"
+          },
+          "time": {
+            "name": "1872",
+            "date": "+1872-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1872 he returned to Heidelberg, where he resided as teacher of musical history and festhetics until his death, Dec. 16, 1885.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Carl Friedrich Ludwig Nohl died at Heidelberg on Dec. 16, 1885, having spent his final years as a teacher of musical history and aesthetics and leaving behind many valuable works on Mozart and Beethoven.",
+          "people": [
+            {
+              "name": "Carl Friedrich Ludwig Nohl",
+              "description": "German writer on music and musical subjects"
+            }
+          ],
+          "place": {
+            "name": "Heidelberg",
+            "qualified_name": "Heidelberg, Germany",
+            "latitude": 49.3988,
+            "longitude": 8.6724,
+            "description": "University city in Baden, Germany"
+          },
+          "time": {
+            "name": "Dec. 16, 1885",
+            "date": "+1885-12-16T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "where he resided as teacher of musical history and festhetics until his death, Dec. 16, 1885.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Domenico da Nola was born at Nola in the kingdom of Naples in the first quarter of the 16th century, later becoming Maestro di Cappella of the Church of the Annunziata, Naples.",
+          "people": [
+            {
+              "name": "Domenico da Nola",
+              "description": "Italian composer, Maestro di Cappella"
+            }
+          ],
+          "place": {
+            "name": "Nola",
+            "qualified_name": "Nola, Kingdom of Naples, Italy",
+            "latitude": 40.9268,
+            "longitude": 14.5286,
+            "description": "Town in the Kingdom of Naples, Italy"
+          },
+          "time": {
+            "name": "first quarter of the 16th century",
+            "date": "+1500-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "NOLA, Domenico da, whose proper name seems to have been Don Joan Domenico del Giovane, was born at Nola in the kingdom of Naples in the first quarter of the 16th century.",
+          "confidence": 0.75,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "La Nonne Sanglante, an opera in five acts with words by Scribe and Delavigne and music by Gounod, was produced at the Paris Grand Op\u00e9ra on Oct. 18, 1854.",
+          "people": [
+            {
+              "name": "Gounod",
+              "description": "French composer"
+            },
+            {
+              "name": "Scribe",
+              "description": "French librettist"
+            },
+            {
+              "name": "Delavigne",
+              "description": "French librettist"
+            }
+          ],
+          "place": {
+            "name": "Paris",
+            "qualified_name": "Paris, France",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "description": "Capital city of France"
+          },
+          "time": {
+            "name": "Oct. 18, 1854",
+            "date": "+1854-10-18T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "NONNE SANGLANTE, LA. Opera in five acts ; words by Scribe and Delavigne, from Lewis's 'Monk' ; music by Gounod. Produced at the Paris Grand Op\u00e9ra, Oct. 18, 1854.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Anthony van Noordt published a Tabulatur-Boeck for the organ in Amsterdam in 1659, while serving as organist of the Nieuwe Kerk, containing French Psalm tunes with variations and six Fantasias in fugue-form.",
+          "people": [
+            {
+              "name": "Anthony van Noordt",
+              "description": "Dutch organist and composer"
+            }
+          ],
+          "place": {
+            "name": "Amsterdam",
+            "qualified_name": "Amsterdam, Netherlands",
+            "latitude": 52.3676,
+            "longitude": 4.9041,
+            "description": "Major city in the Netherlands"
+          },
+          "time": {
+            "name": "1659",
+            "date": "+1659-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "NOORDTor NOORTH, Anthony van, is only known as being in 1659 organist of the Nieuwe Kerk at Amsterdam. In that year there was published of him a Tabulatur-Boeck for the organ containing a number of the French Psalm tunes varied according to the verses, and six Fantasias in Fugue-form.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Daniel Norcome was born at Windsor in 1576, the son of a lay-clerk of St. George's Chapel, Windsor, and was himself a lay-clerk there before his religious conversion led to his departure.",
+          "people": [
+            {
+              "name": "Daniel Norcome",
+              "description": "English lay-clerk and musician"
+            }
+          ],
+          "place": {
+            "name": "Windsor",
+            "qualified_name": "Windsor, England",
+            "latitude": 51.4839,
+            "longitude": -0.6044,
+            "description": "Town in Berkshire, England, home of St. George's Chapel"
+          },
+          "time": {
+            "name": "1576",
+            "date": "+1576-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "NORCOME, Daniel, son of a lay-clerk of St. George's Chapel, Windsor, and himself a lay-clerk, was born there in 1576.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Daniel Norcome, having embraced Roman Catholicism and been deprived of his lay clerkship, went to Brussels where he became one of the instrumentalists in the Viceregal Chapel, with his name appearing in a chapel list in 1641.",
+          "people": [
+            {
+              "name": "Daniel Norcome",
+              "description": "English lay-clerk and musician"
+            }
+          ],
+          "place": {
+            "name": "Brussels",
+            "qualified_name": "Brussels, Belgium",
+            "latitude": 50.8503,
+            "longitude": 4.3517,
+            "description": "Capital city of the Spanish Netherlands"
+          },
+          "time": {
+            "name": "1641",
+            "date": "+1641-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "Having embraced the tenets of the Romish Church, he was deprived of his lay clerkship and went to Brussels, where he became one of the instrumentalists in the Viceregal Chapel. His name occurs in a list of the members of the chapel in 1641.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Daniel Norcome contributed the madrigal 'With angel's face and brightness' to 'The Triumphs of Oriana' in 1601, a landmark collection of English madrigals.",
+          "people": [
+            {
+              "name": "Daniel Norcome",
+              "description": "English lay-clerk and musician"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital city of England"
+          },
+          "time": {
+            "name": "1601",
+            "date": "+1601-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "He contributed a madrigal, 'With angel's face and brightness,' to 'The Triumphs of Oriana,' 1601.",
+          "confidence": 0.9,
+          "valid": false,
+          "missing": [
+            "London"
+          ]
+        },
+        {
+          "summary": "Lillian Nordica was born on May 12, 1859, at Farmington, Maine, U.S.A., at the start of what would become a celebrated international operatic career.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Farmington, Maine",
+            "qualified_name": "Farmington, Maine, U.S.A.",
+            "latitude": 44.67,
+            "longitude": -70.1506,
+            "description": "Town in Maine, United States"
+          },
+          "time": {
+            "name": "May 12, 1859",
+            "date": "+1859-05-12T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "NORDICA, Lilian, or Lillian, n\u00e9e Norton, was born May 12, 1859, at Farmington, Maine, U.S.A.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica was taught singing by John O'Neill at the New England Conservatory in Boston as part of her early musical training before embarking on a concert career.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            },
+            {
+              "name": "John O'Neill",
+              "description": "Singing teacher at New England Conservatory"
+            }
+          ],
+          "place": {
+            "name": "Boston",
+            "qualified_name": "Boston, Massachusetts",
+            "latitude": 42.3601,
+            "longitude": -71.0589,
+            "description": "City in Massachusetts, home of the New England Conservatory"
+          },
+          "time": {
+            "name": "1859",
+            "date": "+1859-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "She was taught singing by John O'Neill, New England Conservatory, Boston.",
+          "confidence": 0.6,
+          "valid": false,
+          "missing": [
+            "1859"
+          ]
+        },
+        {
+          "summary": "Lillian Nordica came to England and sang at the Crystal Palace on May 21, 1878, performing with Gilmore's American band early in her international career.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Crystal Palace",
+            "qualified_name": "Crystal Palace, London, England",
+            "latitude": 51.4215,
+            "longitude": -0.0756,
+            "description": "Concert venue in South London, England"
+          },
+          "time": {
+            "name": "May 21, 1878",
+            "date": "+1878-05-21T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On May 21 and 22, 1878, she came to England and sang at the Crystal Palace with Gilmore's American band.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica made a successful d\u00e9but under the name of Nordica at Brescia as Violetta in 'Traviata' on April 30, 1879, after studying singing at Milan with Sangiovanni.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Brescia",
+            "qualified_name": "Brescia, Italy",
+            "latitude": 45.5416,
+            "longitude": 10.2118,
+            "description": "City in Lombardy, Italy"
+          },
+          "time": {
+            "name": "April 30, 1879",
+            "date": "+1879-04-30T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "and on April 30, 1879, made a successful d\u00e9but, under the name of Nordica, at Brescia as Violetta in 'Traviata.'",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica was engaged in 1881 at St. Petersburg, where she sang as Philine and Amalia in 'Un Ballo' among other roles.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "St. Petersburg",
+            "qualified_name": "St. Petersburg, Russia",
+            "latitude": 59.9311,
+            "longitude": 30.3609,
+            "description": "Imperial capital city of Russia"
+          },
+          "time": {
+            "name": "1881",
+            "date": "+1881-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "she was engaged in 1881 at St. Petersburg, and sang as Philine, Amalia in 'Un Ballo,' etc.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica made her d\u00e9but in 'Faust' on July 21, 1882, having studied the leading soprano parts under Gounod and Thomas.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Paris",
+            "qualified_name": "Paris, France",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "description": "Capital city of France"
+          },
+          "time": {
+            "name": "July 21, 1882",
+            "date": "+1882-07-21T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On July 21, 1882, she made her d\u00e9but in 'Faust' and sang on Dec. 15 in 'Hamlet,' having studied the leading soprano parts under Gounod and Thomas.",
+          "confidence": 0.9,
+          "valid": false,
+          "missing": [
+            "Paris"
+          ]
+        },
+        {
+          "summary": "Lillian Nordica sang in 'Hamlet' on Dec. 15, 1882, having studied leading soprano parts under Gounod and Thomas.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Paris",
+            "qualified_name": "Paris, France",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "description": "Capital city of France"
+          },
+          "time": {
+            "name": "Dec. 15, 1882",
+            "date": "+1882-12-15T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "she made her d\u00e9but in 'Faust' and sang on Dec. 15 in 'Hamlet,' having studied the leading soprano parts under Gounod and Thomas.",
+          "confidence": 0.88,
+          "valid": false,
+          "missing": [
+            "Paris"
+          ]
+        },
+        {
+          "summary": "Lillian Nordica reappeared on the stage at Boston in 1885 after retiring into private life following the balloon-accident death of her first husband, going on to make a long tour with Mapleson.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Boston",
+            "qualified_name": "Boston, Massachusetts",
+            "latitude": 42.3601,
+            "longitude": -71.0589,
+            "description": "City in Massachusetts, United States"
+          },
+          "time": {
+            "name": "1885",
+            "date": "+1885-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1885 she reappeared on the stage at Boston, made a long tour with Mapleson in America and the English provinces",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica made her d\u00e9but at Covent Garden as Violetta on March 12, 1887, under Mapleson, and later appeared as Gilda and Margaret with instant success on account of the purity of her style.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Covent Garden",
+            "qualified_name": "Covent Garden, London, England",
+            "latitude": 51.513,
+            "longitude": -0.1228,
+            "description": "Royal Opera House in London, England"
+          },
+          "time": {
+            "name": "March 12, 1887",
+            "date": "+1887-03-12T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "under him on March 12, 1887, she made her d\u00e9but at Covent Garden as Violetta\u2014appearing later as Gilda and Margaret with instant success, on account of the purity of her style and the richness and roundness of her upper register.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica sang at the Philharmonic in London on March 24, 1887, building on her successful Covent Garden d\u00e9but earlier that month.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital city of England"
+          },
+          "time": {
+            "name": "March 24, 1887",
+            "date": "+1887-03-24T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On March 24 she sang at the Philharmonic.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica created the part of Zelioa in Stanford's 'Veiled Prophet' at Covent Garden on July 26, 1893, a world premiere that added to her distinguished repertory.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Covent Garden",
+            "qualified_name": "Covent Garden, London, England",
+            "latitude": 51.513,
+            "longitude": -0.1228,
+            "description": "Royal Opera House in London, England"
+          },
+          "time": {
+            "name": "July 26, 1893",
+            "date": "+1893-07-26T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On July 26, 1893, she created the part of Zelioa in Stanford's 'Veiled Prophet.'",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Lillian Nordica sang Elsa in 'Lohengrin' at Bayreuth in 1894, marking her entry into Wagnerian roles which she would expand at Covent Garden.",
+          "people": [
+            {
+              "name": "Lillian Nordica",
+              "description": "American operatic soprano"
+            }
+          ],
+          "place": {
+            "name": "Bayreuth",
+            "qualified_name": "Bayreuth, Germany",
+            "latitude": 49.9456,
+            "longitude": 11.5714,
+            "description": "City in Bavaria, Germany, home of the Wagner Festival"
+          },
+          "time": {
+            "name": "1894",
+            "date": "+1894-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1894 she sang Elsa in 'Lohengrin' at Bayreuth.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Nordica, a romantic opera in three acts with words and music by F. Corder, was produced by the Carl Rosa Company at Liverpool on Jan. 26, 1887.",
+          "people": [
+            {
+              "name": "F. Corder",
+              "description": "English composer and librettist"
+            }
+          ],
+          "place": {
+            "name": "Liverpool",
+            "qualified_name": "Liverpool, England",
+            "latitude": 53.4084,
+            "longitude": -2.9916,
+            "description": "City in Lancashire, England"
+          },
+          "time": {
+            "name": "Jan. 26, 1887",
+            "date": "+1887-01-26T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "NORDISA. Romantic opera in three acts, words and music by F. Corder. Produced by the Carl Rosa Company at Liverpool on Jan. 26, and at Drury Lane, May 4, 1887.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "F. Corder's opera Nordisa was produced by the Carl Rosa Company at Drury Lane in London on May 4, 1887, following its Liverpool premiere earlier that year.",
+          "people": [
+            {
+              "name": "F. Corder",
+              "description": "English composer and librettist"
+            }
+          ],
+          "place": {
+            "name": "Drury Lane",
+            "qualified_name": "Drury Lane, London, England",
+            "latitude": 51.5126,
+            "longitude": -0.1201,
+            "description": "Theatre in London, England"
+          },
+          "time": {
+            "name": "May 4, 1887",
+            "date": "+1887-05-04T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "NORDISA. Romantic opera in three acts, words and music by F. Corder. Produced by the Carl Rosa Company at Liverpool on Jan. 26, and at Drury Lane, May 4, 1887.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Richard Nordraak was born at Christiania on June 12, 1842, and would go on to exert an important influence on Grieg's career through their shared work in Norwegian national music.",
+          "people": [
+            {
+              "name": "Richard Nordraak",
+              "description": "Norwegian composer"
+            }
+          ],
+          "place": {
+            "name": "Christiania",
+            "qualified_name": "Christiania (Oslo), Norway",
+            "latitude": 59.9139,
+            "longitude": 10.7522,
+            "description": "Capital city of Norway (now Oslo)"
+          },
+          "time": {
+            "name": "June 12, 1842",
+            "date": "+1842-06-12T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "He was born at Christiania, June 12, 1842, and was a pupil of Kiel and Kullak",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Richard Nordraak died on March 20, 1866, depriving his friend Grieg and his country of an enthusiastic supporter of Norwegian national music, having written incidental music to Bj\u00f8rnson's plays and collected folk-songs.",
+          "people": [
+            {
+              "name": "Richard Nordraak",
+              "description": "Norwegian composer"
+            }
+          ],
+          "place": {
+            "name": "Christiania",
+            "qualified_name": "Christiania (Oslo), Norway",
+            "latitude": 59.9139,
+            "longitude": 10.7522,
+            "description": "Capital city of Norway (now Oslo)"
+          },
+          "time": {
+            "name": "March 20, 1866",
+            "date": "+1866-03-20T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "his early death on March 20, 1866, deprived his friend and his country of an enthusiastic supporter.",
+          "confidence": 0.85,
+          "valid": false,
+          "missing": [
+            "Christiania"
+          ]
+        },
+        {
+          "summary": "Bellini's opera Norma, with words by Romani, was produced at Milan on Dec. 26, 1831, with Donzelli, Pasta, and Grisi in the cast.",
+          "people": [
+            {
+              "name": "Bellini",
+              "description": "Italian opera composer"
+            }
+          ],
+          "place": {
+            "name": "Milan",
+            "qualified_name": "Milan, Italy",
+            "latitude": 45.4654,
+            "longitude": 9.1859,
+            "description": "City in Lombardy, Italy"
+          },
+          "time": {
+            "name": "Dec. 26, 1831",
+            "date": "+1831-12-26T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "NORMA. Opera in two acts ; words by Romani, music by Bellini. Produced at Milan, Dec. 26, 1831 (Donzelli, Pasta, Grisi).",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Bellini's opera Norma was produced at the Th\u00e9\u00e2tre des Italiens in Paris on Dec. 8, 1835, bringing the celebrated work to French audiences.",
+          "people": [
+            {
+              "name": "Bellini",
+              "description": "Italian opera composer"
+            }
+          ],
+          "place": {
+            "name": "Paris",
+            "qualified_name": "Paris, France",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "description": "Capital city of France"
+          },
+          "time": {
+            "name": "Dec. 8, 1835",
+            "date": "+1835-12-08T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "In Paris, Italiens, Dec. 8, 1835.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Bellini's opera Norma was performed in Italian at the King's Theatre in London on June 20, 1833, marking its London premiere.",
+          "people": [
+            {
+              "name": "Bellini",
+              "description": "Italian opera composer"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital city of England"
+          },
+          "time": {
+            "name": "June 20, 1833",
+            "date": "+1833-06-20T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "In London, in Italian, King's Theatre, June 20, 1833",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Bellini's opera Norma was performed in English at Drury Lane in London on June 24, 1837, making the work accessible to English-speaking audiences.",
+          "people": [
+            {
+              "name": "Bellini",
+              "description": "Italian opera composer"
+            }
+          ],
+          "place": {
+            "name": "Drury Lane",
+            "qualified_name": "Drury Lane, London, England",
+            "latitude": 51.5126,
+            "longitude": -0.1201,
+            "description": "Theatre in London, England"
+          },
+          "time": {
+            "name": "June 24, 1837",
+            "date": "+1837-06-24T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "in English (Planch\u00e9), Drury Lane, June 24, 1837.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Barak Norman, one of the best of the old English school of viol-makers and possibly the first to manufacture violoncellos in England, was active as a viol and violoncello maker in London from 1688.",
+          "people": [
+            {
+              "name": "Barak Norman",
+              "description": "English viol and violoncello maker"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital city of England"
+          },
+          "time": {
+            "name": "1688",
+            "date": "+1688-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "NORMAN, Barak, viol and violoncello maker, 1688-1740, London. One of the best of the old English school of viol-makers, and one of the first\u2014if not the first\u2014to manufacture violoncellos in England.",
+          "confidence": 0.95,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Barak Norman went into partnership with Nathaniel Cross in London in 1715, carrying on a joint business at the sign of the Bass Viol in St. Paul's Churchyard.",
+          "people": [
+            {
+              "name": "Barak Norman",
+              "description": "English viol and violoncello maker"
+            },
+            {
+              "name": "Nathaniel Cross",
+              "description": "English instrument maker"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital city of England, location of St. Paul's Churchyard"
+          },
+          "time": {
+            "name": "1715",
+            "date": "+1715-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1715 Barak Norman went into partnership with Nathaniel Cross and carried on a joint business with him at the sign of the Bass Viol in St. Paul's Churchyard.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris was born at Mere near Salisbury in August 1741, later becoming a chorister of Salisbury Cathedral under Dr. Stephens.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Mere near Salisbury",
+            "qualified_name": "Mere, Wiltshire, England",
+            "latitude": 51.09,
+            "longitude": -2.267,
+            "description": "Town near Salisbury in Wiltshire, England"
+          },
+          "time": {
+            "name": "August 1741",
+            "date": "+1741-08-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "NORRIS, Thomas, Mus.B., born at Mere near Salisbury, in August 1741 (baptized on the 15th), was a chorister of Salisbury Cathedral under Dr. Stephens.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris appeared as one of the principal soprani at the Worcester Festival in 1761, early in his career as a celebrated vocal performer.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Worcester",
+            "qualified_name": "Worcester, England",
+            "latitude": 52.1936,
+            "longitude": -2.221,
+            "description": "Cathedral city in Worcestershire, England"
+          },
+          "time": {
+            "name": "1761",
+            "date": "+1761-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "He appeared as one of the principal soprani at the Worcester Festival, 1761, and Hereford Festival, 1762",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris appeared as one of the principal soprani at the Hereford Festival in 1762, continuing his early career as a celebrated vocal performer.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Hereford",
+            "qualified_name": "Hereford, England",
+            "latitude": 52.0565,
+            "longitude": -2.716,
+            "description": "Cathedral city in Herefordshire, England"
+          },
+          "time": {
+            "name": "1762",
+            "date": "+1762-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "He appeared as one of the principal soprani at the Worcester Festival, 1761, and Hereford Festival, 1762, and in the latter year at Drury Lane in 'The Spring,' a pasticcio.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris appeared at Drury Lane in London in 1762 in 'The Spring,' a pasticcio, marking one of his early appearances on the London stage.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Drury Lane",
+            "qualified_name": "Drury Lane, London, England",
+            "latitude": 51.5126,
+            "longitude": -0.1201,
+            "description": "Theatre in London, England"
+          },
+          "time": {
+            "name": "1762",
+            "date": "+1762-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "and in the latter year at Drury Lane in 'The Spring,' a pasticcio.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris was appointed organist of Christ Church Cathedral in Oxford in 1765, marking the beginning of a long association with the university city.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Oxford",
+            "qualified_name": "Oxford, England",
+            "latitude": 51.752,
+            "longitude": -1.2577,
+            "description": "University city in Oxfordshire, England"
+          },
+          "time": {
+            "name": "1765",
+            "date": "+1765-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1765 he was appointed organist of Christ Church Cathedral, Oxford",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris graduated at Oxford as Mus.B. in November 1765, with his exercise consisting of two anthems performed in the Music School on Nov. 12.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Oxford",
+            "qualified_name": "Oxford, England",
+            "latitude": 51.752,
+            "longitude": -1.2577,
+            "description": "University city in Oxfordshire, England"
+          },
+          "time": {
+            "name": "November 1765",
+            "date": "+1765-11-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 10
+          },
+          "excerpt": "in November of the same year graduated at Oxford as Mus.B., his exercise (two anthems, 'The Lord is king' and 'I will alway give thanks') being performed in the Music School, Nov. 12",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris was chosen organist of St. John's College in Oxford on Dec. 15, 1765, adding to his appointment as organist of Christ Church Cathedral earlier that year.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Oxford",
+            "qualified_name": "Oxford, England",
+            "latitude": 51.752,
+            "longitude": -1.2577,
+            "description": "University city in Oxfordshire, England"
+          },
+          "time": {
+            "name": "Dec. 15, 1765",
+            "date": "+1765-12-15T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "and on Dec. 15 was chosen organist of St. John's College.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris appeared at the Gloucester Festival in 1766 as a tenor singer, transitioning from soprano roles and beginning a long association with the Three Choirs Meetings that lasted until 1788.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Gloucester",
+            "qualified_name": "Gloucester, England",
+            "latitude": 51.8643,
+            "longitude": -2.2445,
+            "description": "Cathedral city in Gloucestershire, England"
+          },
+          "time": {
+            "name": "1766",
+            "date": "+1766-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1766 he appeared at the Gloucester Festival as a tenor singer, and continued to sing at the Meetings of the Three Choirs until 1788.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris was admitted a lay clerk of Magdalen College in Oxford on Nov. 5, 1771, adding to his existing roles as organist at Christ Church Cathedral and St. John's College.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Oxford",
+            "qualified_name": "Oxford, England",
+            "latitude": 51.752,
+            "longitude": -1.2577,
+            "description": "University city in Oxfordshire, England"
+          },
+          "time": {
+            "name": "Nov. 5, 1771",
+            "date": "+1771-11-05T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "On Nov. 5, 1771, he was admitted a lay clerk of Magdalen College, Oxford.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris sang at the Commemoration of Handel in London in 1784, where his delivery of final recitatives in 'Israel in Egypt' and of 'Thy rebuke' and 'Behold and see' in 'Messiah' was greatly admired.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "London",
+            "qualified_name": "London, England",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "description": "Capital city of England"
+          },
+          "time": {
+            "name": "1784",
+            "date": "+1784-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "He sang at the Commemoration of Handel in 1784 (where his delivery of the final recitatives in 'Israel in Egypt,' and of 'Thy rebuke,' and 'Behold and see,' in 'Messiah,' was greatly admired)",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris was engaged at the Birmingham Festival in 1790, but the effort proved fatal, and he expired ten days later at Himley Hall near Stourbridge on Sept. 3, 1790.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Birmingham",
+            "qualified_name": "Birmingham, England",
+            "latitude": 52.4862,
+            "longitude": -1.8904,
+            "description": "City in the West Midlands, England"
+          },
+          "time": {
+            "name": "1790",
+            "date": "+1790-00-00T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 9
+          },
+          "excerpt": "In 1790 he was engaged at the Birmingham Festival. But the effort proved fatal; ten days afterwards (Sept. 3, 1790), he expired at Himley Hall, near Stourbridge, the seat of Lord Dudley and Ward.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        },
+        {
+          "summary": "Thomas Norris died at Himley Hall near Stourbridge on Sept. 3, 1790, ten days after performing at the Birmingham Festival, his health fatally overtaxed by the effort.",
+          "people": [
+            {
+              "name": "Thomas Norris",
+              "description": "English singer and organist"
+            }
+          ],
+          "place": {
+            "name": "Himley Hall",
+            "qualified_name": "Himley Hall, near Stourbridge, England",
+            "latitude": 52.517,
+            "longitude": -2.166,
+            "description": "Country seat of Lord Dudley and Ward near Stourbridge, England"
+          },
+          "time": {
+            "name": "Sept. 3, 1790",
+            "date": "+1790-09-03T00:00:00Z",
+            "calendar_model": "http://www.wikidata.org/entity/Q1985727",
+            "precision": 11
+          },
+          "excerpt": "But the effort proved fatal; ten days afterwards (Sept. 3, 1790), he expired at Himley Hall, near Stourbridge, the seat of Lord Dudley and Ward.",
+          "confidence": 0.99,
+          "valid": true,
+          "missing": []
+        }
+      ]
+    }
+  ],
+  "cost": 0.0271304,
+  "input_tokens": 9511,
+  "output_tokens": 11663
+}

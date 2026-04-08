@@ -1,0 +1,59 @@
+{
+  "label": "v2_all_fixes",
+  "runs": [
+    {
+      "run_id": "v2_all_fixes-run-000",
+      "total": 50,
+      "valid": 49,
+      "invalid": 1,
+      "valid_pct": 98.0,
+      "missing_categories": {
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v2_all_fixes-run-001",
+      "total": 50,
+      "valid": 49,
+      "invalid": 1,
+      "valid_pct": 98.0,
+      "missing_categories": {
+        "time": 1
+      }
+    },
+    {
+      "run_id": "v2_all_fixes-run-002",
+      "total": 40,
+      "valid": 36,
+      "invalid": 4,
+      "valid_pct": 90.0,
+      "missing_categories": {
+        "time": 4
+      }
+    },
+    {
+      "run_id": "v2_all_fixes-run-003",
+      "total": 45,
+      "valid": 41,
+      "invalid": 4,
+      "valid_pct": 91.11111111111111,
+      "missing_categories": {
+        "time": 2,
+        "place": 2
+      }
+    },
+    {
+      "run_id": "v2_all_fixes-run-004",
+      "total": 45,
+      "valid": 44,
+      "invalid": 1,
+      "valid_pct": 97.77777777777777,
+      "missing_categories": {
+        "time": 1
+      }
+    }
+  ],
+  "cost": 0.135878,
+  "input_tokens": 64075,
+  "output_tokens": 55124
+}

@@ -1,0 +1,50 @@
+{
+  "label": "v9_dallam",
+  "runs": [
+    {
+      "run_id": "v9_dallam-run-000",
+      "total": 4,
+      "valid": 4,
+      "invalid": 0,
+      "valid_pct": 100.0,
+      "missing_categories": {}
+    },
+    {
+      "run_id": "v9_dallam-run-001",
+      "total": 4,
+      "valid": 4,
+      "invalid": 0,
+      "valid_pct": 100.0,
+      "missing_categories": {}
+    },
+    {
+      "run_id": "v9_dallam-run-002",
+      "total": 4,
+      "valid": 4,
+      "invalid": 0,
+      "valid_pct": 100.0,
+      "missing_categories": {}
+    },
+    {
+      "run_id": "v9_dallam-run-003",
+      "total": 5,
+      "valid": 1,
+      "invalid": 4,
+      "valid_pct": 20.0,
+      "missing_categories": {
+        "person": 4
+      }
+    },
+    {
+      "run_id": "v9_dallam-run-004",
+      "total": 4,
+      "valid": 4,
+      "invalid": 0,
+      "valid_pct": 100.0,
+      "missing_categories": {}
+    }
+  ],
+  "cost": 0.022142000000000002,
+  "input_tokens": 26100,
+  "output_tokens": 5851
+}

@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 from the_history_atlas.apps.accounts.schema import User
-from the_history_atlas.apps.accounts.database import PROTECTED_FIELDS
+from the_history_atlas.apps.accounts.repository import PROTECTED_FIELDS
 from the_history_atlas.apps.accounts.errors import UnauthorizedUserError
 from the_history_atlas.apps.accounts.encryption import fernet
 

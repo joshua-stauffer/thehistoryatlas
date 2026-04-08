@@ -1,0 +1,27 @@
+name: "Test Wiki Link"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Test-Wiki:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Setup Test Environment
+        env:
+          POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+          THA_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
+        run: |
+          docker compose -f wiki_link/test_wiki_link.yaml up db provisioner -d
+      - name: Test Wiki Service
+        env:
+          TEST_DB_URI: ${{ secrets.TEST_USER_DB_URI }}
+        run: docker compose -f wiki_link/test_wiki_link.yaml up wiki --exit-code-from wiki

@@ -2,22 +2,54 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import Hidden from "@mui/material/Hidden";
 import { SingleEntityMap } from "../../components/singleEntityMap";
-import React from "react";
+import { MapBounds } from "../../components/singleEntityMap/singleEntityMap";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { HistoryEventData } from "./historyEventLoader";
-import { InputAdornment, TextField, Typography } from "@mui/material";
+import {
+  InputAdornment,
+  TextField,
+  Typography,
+  Button,
+  CircularProgress,
+  LinearProgress,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ClickAwayListener,
+} from "@mui/material";
 import { EventView } from "./eventView";
 import Autocomplete from "@mui/material/Autocomplete";
 import { sansSerifFont } from "../../baseStyle";
 import SearchIcon from "@mui/icons-material/Search";
-import Divider from "@mui/material/Divider";
 import { EventPointer } from "../../graphql/events";
 import EmblaCarousel from "./carousel";
 import { useCarouselState } from "./useCarouselState";
+import { StorySearchResult } from "../../api/stories";
+import { debouncedSearchStories } from "../../api/stories";
+import { useNearbyEvents } from "./useNearbyEvents";
+
+const buildSearchResultSubtitle = (
+  result: StorySearchResult,
+): string | undefined => {
+  const parts: string[] = [];
+  if (result.description) parts.push(result.description);
+  if (result.earliestYear != null || result.latestYear != null) {
+    parts.push(`${result.earliestYear ?? "?"} – ${result.latestYear ?? "?"}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+};
 
 export const HistoryEventView = () => {
   const { events, index, loadNext, loadPrev } =
     useLoaderData() as HistoryEventData;
+  const [searchResults, setSearchResults] = useState<StorySearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const {
     historyEvents,
@@ -29,6 +61,16 @@ export const HistoryEventView = () => {
   const navigate = useNavigate();
 
   const currentEvent = historyEvents[currentEventIndex];
+
+  const { nearbyEvents, isLoading, loadNearbyEvents } =
+    useNearbyEvents(currentEvent);
+
+  const handleBoundsChange = useCallback(
+    (bounds: MapBounds) => {
+      loadNearbyEvents(bounds);
+    },
+    [loadNearbyEvents],
+  );
 
   if (!currentEvent) {
     // Show a fallback UI or spinner during state transitions
@@ -44,43 +86,160 @@ export const HistoryEventView = () => {
     longitude: location.longitude,
   }));
 
-  return (
-    <Box sx={{ height: "92vh", maxHeight: "1000px" }}>
-      <Grid container spacing={5} direction={"row"} justifyItems={"center"}>
-        {/* Event Feed */}
+  const handleSearch = async (value: string) => {
+    if (!value) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+    setLoading(true);
+    setHasSearched(true);
+    try {
+      const response = await debouncedSearchStories(value);
+      setSearchResults(response?.results || []);
+      setDropdownOpen(true);
+    } catch (error) {
+      console.error("Failed to search stories:", error);
+      setSearchResults([]);
+      setDropdownOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        <Grid item sm={12} md={6}>
+  const handleSearchButtonClick = () => {
+    handleSearch(searchValue);
+  };
+
+  const handleResultClick = (result: StorySearchResult) => {
+    navigate(`/stories/${result.id}`);
+    setDropdownOpen(false);
+  };
+
+  return (
+    <Box
+      sx={{
+        height: { xs: "auto", sm: "92vh" },
+        maxHeight: { xs: "none", sm: "1000px" },
+        overflow: "auto",
+        width: "100%",
+      }}
+    >
+      <Grid
+        container
+        spacing={{ xs: 2, sm: 3, md: 5 }}
+        direction={"row"}
+        justifyItems={"center"}
+        sx={{
+          margin: 0,
+          width: "100%",
+          padding: { xs: "0px", sm: "8px" },
+        }}
+      >
+        <Grid item xs={12} sm={12} md={6} sx={{ width: "100%" }}>
           {/* left box desktop, top box mobile */}
           <Box
             sx={{
-              marginTop: "auto",
-              marginBottom: "auto",
-              paddingTop: "1vh",
-              minHeight: "92vh",
-              maxHeight: "1200px",
-              padding: "20px",
+              marginTop: { xs: "1vh", sm: "auto" },
+              marginBottom: { xs: "1vh", sm: "auto" },
+              paddingTop: { xs: "2vh", sm: "1vh" },
+              minHeight: { xs: "auto", sm: "92vh" },
+              maxHeight: { xs: "none", sm: "1200px" },
+              padding: { xs: "8px", sm: "20px" },
+              overflow: "auto",
+              width: "100%",
             }}
           >
-            <Autocomplete
-              sx={{ fontFamily: sansSerifFont }}
-              id="story-search"
-              freeSolo
-              options={currentEvent.tags.map((tag) => tag.name)}
-              renderInput={(params) => (
+            <ClickAwayListener onClickAway={() => setDropdownOpen(false)}>
+              <Box sx={{ position: "relative", width: "100%" }}>
                 <TextField
-                  {...params}
+                  fullWidth
+                  inputRef={searchInputRef}
                   label="Search for a story"
-                  variant={"outlined"}
+                  variant="outlined"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onFocus={() => {
+                    if (hasSearched) {
+                      setDropdownOpen(true);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSearch(searchValue);
+                    }
+                  }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon />
+                        {loading ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <SearchIcon />
+                        )}
                       </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <Button
+                        onClick={handleSearchButtonClick}
+                        disabled={loading || !searchValue}
+                        sx={{ minWidth: "64px", ml: 1 }}
+                        variant="contained"
+                        color="primary"
+                      >
+                        Search
+                      </Button>
                     ),
                   }}
                 />
-              )}
-            />
+
+                {dropdownOpen && (
+                  <Paper
+                    elevation={3}
+                    sx={{
+                      position: "absolute",
+                      width: "100%",
+                      zIndex: 9999,
+                      maxHeight: "300px",
+                      overflow: "auto",
+                    }}
+                  >
+                    <List>
+                      {searchResults.length > 0 ? (
+                        searchResults.map((result) => (
+                          <ListItem
+                            key={result.id}
+                            button
+                            onClick={() => handleResultClick(result)}
+                            sx={{ fontFamily: sansSerifFont }}
+                          >
+                            <ListItemText
+                              primary={result.name}
+                              secondary={buildSearchResultSubtitle(result)}
+                            />
+                          </ListItem>
+                        ))
+                      ) : (
+                        <ListItem sx={{ pointerEvents: "none" }}>
+                          <ListItemText
+                            primary="No results found."
+                            primaryTypographyProps={{
+                              sx: {
+                                fontStyle: "italic",
+                                color: "text.disabled",
+                                fontFamily: sansSerifFont,
+                              },
+                            }}
+                          />
+                        </ListItem>
+                      )}
+                    </List>
+                  </Paper>
+                )}
+              </Box>
+            </ClickAwayListener>
+
             <Typography
               variant={"h1"}
               sx={{
@@ -91,12 +250,23 @@ export const HistoryEventView = () => {
             >
               {currentEvent.storyTitle}
             </Typography>
-            <Divider
-              sx={{
-                marginTop: "10px",
-                marginBottom: "10px",
-              }}
-            />
+            {currentEvent.description && (
+              <Typography
+                variant={"subtitle1"}
+                sx={{
+                  textAlign: "center",
+                  marginBottom: "3vh",
+                  maxWidth: "800px",
+                  margin: "0 auto 3vh",
+                  color: "#4A5568",
+                  fontStyle: "italic",
+                  lineHeight: 1.6,
+                  padding: "0 20px",
+                }}
+              >
+                {currentEvent.description}
+              </Typography>
+            )}
             <EmblaCarousel
               slides={historyEvents.map((event) => (
                 <EventView event={event} />
@@ -109,13 +279,17 @@ export const HistoryEventView = () => {
 
             <Hidden mdUp>
               {/* Inline map for mobile */}
-              <SingleEntityMap
-                coords={coords}
-                mapTyle={"natGeoWorld"}
-                size={"SM"}
-                title={currentEvent.map.locations[0].name}
-                zoom={6}
-              />
+              <Box sx={{ position: "relative" }}>
+                {isLoading && <MapLoadingBar />}
+                <SingleEntityMap
+                  coords={coords}
+                  size={"SM"}
+                  title={currentEvent.map.locations[0].name}
+                  zoom={6}
+                  nearbyEvents={nearbyEvents}
+                  onBoundsChange={handleBoundsChange}
+                />
+              </Box>
             </Hidden>
           </Box>
         </Grid>
@@ -124,19 +298,48 @@ export const HistoryEventView = () => {
           {/* right box desktop, bottom box mobile */}
           <Hidden smDown>
             {/* Standalone map for desktop */}
-            <SingleEntityMap
-              coords={coords}
-              mapTyle={"natGeoWorld"}
-              size={"MD"}
-              title={currentEvent.map.locations[0].name}
-              zoom={7}
-            />
+            <Box sx={{ position: "relative", height: "100%" }}>
+              {isLoading && <MapLoadingBar />}
+              <SingleEntityMap
+                coords={coords}
+                size={"MD"}
+                title={currentEvent.map.locations[0].name}
+                zoom={7}
+                nearbyEvents={nearbyEvents}
+                onBoundsChange={handleBoundsChange}
+              />
+            </Box>
           </Hidden>
         </Grid>
       </Grid>
     </Box>
   );
 };
+
+const MapLoadingBar = () => (
+  <LinearProgress
+    sx={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: "3px",
+      zIndex: 1000,
+      backgroundColor: "transparent",
+      "& .MuiLinearProgress-bar": {
+        backgroundColor: "rgba(52, 73, 94, 0.9)",
+        boxShadow:
+          "0 0 8px 3px rgba(52, 73, 94, 0.5), 0 0 18px 6px rgba(52, 73, 94, 0.2)",
+      },
+      "& .MuiLinearProgress-bar1Indeterminate": {
+        backgroundColor: "rgba(52, 73, 94, 0.9)",
+      },
+      "& .MuiLinearProgress-bar2Indeterminate": {
+        backgroundColor: "rgba(52, 73, 94, 0.7)",
+      },
+    }}
+  />
+);
 
 const buildUrlFor = (pointer: EventPointer) => {
   return `/stories/${pointer.storyId}/events/${pointer.id}`;

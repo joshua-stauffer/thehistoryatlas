@@ -54,7 +54,7 @@ export const bachIsBorn: HistoryEvent = {
   text: "J.S. Bach was born in Eisenach on March 21st, 1685.",
   lang: "en",
   date: {
-    time: "1685-03-21 00:00:00",
+    datetime: "1685-03-21 00:00:00",
     calendar: "http://www.wikidata.org/entity/Q1985727",
     precision: 11,
   },
@@ -125,7 +125,7 @@ export const bachArrivesInLuneburg: HistoryEvent = {
   text: "In March of 1700, J. S. Bach and Georg Erdmann arrived in Lüneburg to study at St. Michael's School.",
   lang: "en",
   date: {
-    time: "1700-03-01 00:00:00",
+    datetime: "1700-03-01 00:00:00",
     calendar: "http://www.wikidata.org/entity/Q1985727",
     precision: 10,
   },
@@ -196,7 +196,7 @@ export const bachDedicatesMass: HistoryEvent = {
   text: "On July 27th, 1733 J. S. Bach dedicated his Missa in B minor to the electoral court in Dresden",
   lang: "en",
   date: {
-    time: "1733-07-27 00:00:00",
+    datetime: "1733-07-27 00:00:00",
     calendar: "http://www.wikidata.org/entity/Q1985727",
     precision: 11,
   },

@@ -1,0 +1,62 @@
+{
+  "label": "v8_sonnet_mendelssohn",
+  "runs": [
+    {
+      "run_id": "v8_sonnet_mendelssohn-run-000",
+      "total": 43,
+      "valid": 40,
+      "invalid": 3,
+      "valid_pct": 93.02325581395348,
+      "missing_categories": {
+        "person": 1,
+        "time": 1,
+        "place": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_mendelssohn-run-001",
+      "total": 50,
+      "valid": 49,
+      "invalid": 1,
+      "valid_pct": 98.0,
+      "missing_categories": {
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_mendelssohn-run-002",
+      "total": 47,
+      "valid": 46,
+      "invalid": 1,
+      "valid_pct": 97.87234042553192,
+      "missing_categories": {
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_mendelssohn-run-003",
+      "total": 46,
+      "valid": 45,
+      "invalid": 1,
+      "valid_pct": 97.82608695652173,
+      "missing_categories": {
+        "person": 1
+      }
+    },
+    {
+      "run_id": "v8_sonnet_mendelssohn-run-004",
+      "total": 45,
+      "valid": 42,
+      "invalid": 3,
+      "valid_pct": 93.33333333333333,
+      "missing_categories": {
+        "person": 1,
+        "time": 1,
+        "place": 1
+      }
+    }
+  ],
+  "cost": 0.13563,
+  "input_tokens": 51790,
+  "output_tokens": 57457
+}

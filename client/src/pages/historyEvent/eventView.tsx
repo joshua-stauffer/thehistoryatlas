@@ -19,6 +19,7 @@ const cardSpacingInternal = "5px";
 
 const citationSX = {
   fontSize: "12px",
+  marginLeft: "20px",
 };
 
 export const EventView = ({ event }: EventViewProps) => {
@@ -29,55 +30,79 @@ export const EventView = ({ event }: EventViewProps) => {
         variant={"body1"}
         textAlign="left"
         mt={"20px"}
+        component="p"
+        role="paragraph"
         sx={{
           marginTop: cardSpacingInternal,
           marginBottom: cardSpacingInternal,
+          width: "calc(100% - 48px)",
+          margin: "0 24px",
+          overflowWrap: "break-word",
+          wordWrap: "break-word",
+          hyphens: "auto",
+          position: "relative",
+          left: 0,
+          maxWidth: "100%",
+          boxSizing: "border-box",
+          padding: "24px 32px",
+          fontSize: "1.25rem",
+          lineHeight: 1.8,
+          color: "#2C3E50",
+          letterSpacing: "0.01em",
+          backgroundColor: "#FAFBFC",
+          borderRadius: "8px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          border: "1px solid rgba(0,0,0,0.05)",
         }}
       >
         {buildTaggedText(event)}
       </Typography>
 
       <Typography variant={"body1"} mt={"20px"} sx={citationSX}>
-        "{event.source.text}"
+        Source: {event.source.title}
       </Typography>
       <Typography variant={"body1"} sx={citationSX}>
-        -- {event.source.title} ({event.source.author})
+        Accessed on:{" "}
+        {new Date(event.source.pubDate).toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
       </Typography>
-      <Divider
-        sx={{
-          marginTop: "20px",
-          marginBottom: "20px",
-        }}
-      />
-      <Typography variant={"body2"} fontSize={"18px"}>
-        Other stories with this event
+      <Typography variant={"body1"} sx={citationSX}>
+        Authors: {event.source.author}
       </Typography>
+
+      {/*<Typography variant={"body2"} fontSize={"18px"} marginLeft={"20px"}>*/}
+      {/*  Other stories with this event*/}
+      {/*</Typography>*/}
       {event.stories.map((story) => (
-        <>
+        <div key={story.id}>
           <Link to={`/stories/${story.id}/events/${event.id}`}>
             <Button sx={{ textTransform: "none" }}>{story.name}</Button>
           </Link>
           <br />
-        </>
+        </div>
       ))}
     </>
   );
 };
 
 const buildTaggedText = (
-  event: HistoryEvent
+  event: HistoryEvent,
 ): (string | JSX.Element | null)[] => {
   let tagIndices: Array<number> = [];
   for (const tag of event.tags) {
     const indices = Array.from(
       { length: tag.stopChar - tag.startChar },
-      (_, i) => tag.startChar + i
+      (_, i) => tag.startChar + i,
     );
     tagIndices = [...tagIndices, ...indices];
   }
   const tagIndicesSet = new Set(tagIndices);
   const startCharMap: Map<number, Tag> = new Map(
-    event.tags.map((tag) => [tag.startChar, tag])
+    event.tags.map((tag) => [tag.startChar, tag]),
   );
   return Array.from(event.text).map((char, index) => {
     const tag = startCharMap.get(index);
@@ -91,9 +116,16 @@ const buildTaggedText = (
           <BiTimeFive />
         );
       const storyUrl = `/stories/${tag.defaultStoryId}/events/${event.id}`;
+      const tagText = Array.from(event.text)
+        .slice(tag.startChar, tag.stopChar)
+        .join("");
       return (
-        <Link to={storyUrl}>
-          <TextButton text={tag.name} icon={icon} />
+        <Link
+          key={`${tag.id}-${index}`}
+          to={storyUrl}
+          style={{ textDecoration: "none" }}
+        >
+          <TextButton text={tagText} />
         </Link>
       );
     } else if (tagIndicesSet.has(index)) {

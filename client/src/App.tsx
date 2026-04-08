@@ -3,24 +3,37 @@ import { ThemeProvider } from "@mui/material/styles";
 
 import { GenericError } from "./pages/errorPages";
 
-import { useTokenManager } from "./hooks/token";
-
 import { theme } from "./baseStyle";
 import { HistoryEventView } from "./pages/historyEvent/historyEventView";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import {
-  LandingPage,
-  landingPageLoader,
-} from "./pages/historyEvent/landingPage";
 import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <LandingPage />,
-      loader: landingPageLoader,
+      element: <HistoryEventView />,
+      loader: historyEventLoader,
+      errorElement: (
+        <GenericError
+          header={"Uh oh..."}
+          text={"Something went wrong"}
+          details={"Check the URL and try again"}
+        />
+      ),
+    },
+    {
+      path: "/stories/:storyId",
+      element: <HistoryEventView />,
+      loader: historyEventLoader,
+      errorElement: (
+        <GenericError
+          header={"Uh oh..."}
+          text={"Something went wrong"}
+          details={"Check the URL and try again"}
+        />
+      ),
     },
     {
       path: "/stories/:storyId/events/:eventId",

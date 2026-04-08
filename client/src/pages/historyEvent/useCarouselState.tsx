@@ -3,7 +3,7 @@ import { HistoryEvent } from "../../graphql/events";
 
 export const useCarouselState = (
   initialEvents: HistoryEvent[],
-  initialIndex: number
+  initialIndex: number,
 ) => {
   const [historyEvents, setHistoryEvents] = useState(initialEvents);
   const [currentEventIndex, setCurrentEventIndex] = useState(initialIndex);
@@ -19,7 +19,7 @@ export const useCarouselState = (
   const loadMoreEvents = useCallback(
     async (
       direction: "left" | "right",
-      loadFn: (eventId: string) => Promise<HistoryEvent[]>
+      loadFn: (eventId: string) => Promise<HistoryEvent[]>,
     ) => {
       if (isLoadingRef.current) return; // Prevent re-entry if already loading
       isLoadingRef.current = true;
@@ -38,7 +38,7 @@ export const useCarouselState = (
 
       isLoadingRef.current = false;
     },
-    [currentEventIndex, historyEvents]
+    [currentEventIndex, historyEvents],
   );
 
   return {

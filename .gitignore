@@ -1,20 +1,18 @@
-node_modules/
-mongodata/
+
 __pycache__
 env
 test_env
 venv
-.env
+.env.prod
+.env.local
 *.js.map
 *.egg-info
-bits-and-pieces/
 .pytest_cache
 server/the_history_atlas/apps/nlp/models
 .DS_STORE
 .DS_Store
 *.DS_Store
 test_build_constraints.txt
-geo/data/
 
 # react gitignore
 # dependencies
@@ -24,9 +22,15 @@ client/.pnp
 
 # testing
 client/coverage
+wikidata/data
+wikidata/tests/data/
 
 # production
 client/build
+wiki_link/log/
+server/logs/
+.build_data_env
+logs/
 
 # misc
 .DS_Store
@@ -39,8 +43,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# builder
-/legacy/builder/data/fake
 server/the_history_atlas/apps/nlp_service/models/
 
 # IDE configs
@@ -48,8 +50,14 @@ server/the_history_atlas/apps/nlp_service/models/
 .idea/
 geo/app/data/
 secrets.yaml
+.cursor/
 
 # vim
 *.swp
 *.swo
 .legacy_env
+.test_env
+.env.text_reader
+
+text_reader/sources
+text_reader/logs/
