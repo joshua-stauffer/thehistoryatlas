@@ -34,6 +34,7 @@ from the_history_atlas.api.handlers.text_reader import (
     create_text_reader_story_handler,
     get_story_by_source_handler,
 )
+from the_history_atlas.api.handlers.themes import get_themes_handler
 from the_history_atlas.api.handlers.users import login_handler
 from the_history_atlas.api.types.api_keys import (
     CreateApiKeyRequest,
@@ -81,6 +82,7 @@ from the_history_atlas.api.types.text_reader import (
     PlaceSearchResult,
     SummaryMatchResult,
 )
+from the_history_atlas.api.types.themes import ThemesResponse
 from the_history_atlas.api.types.user import LoginResponse
 from the_history_atlas.apps.accounts.errors import (
     DeactivatedUserError,
@@ -255,6 +257,10 @@ def register_rest_endpoints(
     JWTAuthenticatedUser = Annotated[GetUserResponsePayload, Depends(jwt_auth_required)]
 
     # API Endpoints
+    @fastapi_app.get("/themes", response_model=ThemesResponse)
+    def get_themes(apps: Apps) -> ThemesResponse:
+        return get_themes_handler(apps=apps)
+
     @fastapi_app.get("/history", response_model=Story)
     def get_history(
         apps: Apps,

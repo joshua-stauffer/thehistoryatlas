@@ -1050,3 +1050,7 @@ class HistoryApp:
                 precision=precision,
                 session=session,
             )
+
+    def get_themes(self):
+        """Return the full theme taxonomy (categories with children)."""
+        return self._repository.get_themes()
