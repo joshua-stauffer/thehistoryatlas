@@ -34,6 +34,13 @@ from the_history_atlas.api.handlers.text_reader import (
     create_text_reader_story_handler,
     get_story_by_source_handler,
 )
+from the_history_atlas.api.handlers.engagement import (
+    signup_handler,
+    add_favorite_handler,
+    remove_favorite_handler,
+    list_favorites_handler,
+    record_view_handler,
+)
 from the_history_atlas.api.handlers.themes import get_themes_handler
 from the_history_atlas.api.handlers.users import login_handler
 from the_history_atlas.api.types.api_keys import (
@@ -81,6 +88,13 @@ from the_history_atlas.api.types.text_reader import (
     PeopleSearchResult,
     PlaceSearchResult,
     SummaryMatchResult,
+)
+from the_history_atlas.api.types.engagement import (
+    SignupRequest,
+    SignupResponse,
+    FavoriteResponse,
+    FavoriteListResponse,
+    ViewEventRequest,
 )
 from the_history_atlas.api.types.themes import ThemesResponse
 from the_history_atlas.api.types.user import LoginResponse
@@ -345,6 +359,69 @@ def register_rest_endpoints(
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()], apps: Apps
     ) -> LoginResponse:
         return login_handler(form_data=form_data, apps=apps)
+
+    # --- Engagement ---
+
+    @fastapi_app.post("/auth/signup", response_model=SignupResponse)
+    def signup(request: SignupRequest, apps: Apps) -> SignupResponse:
+        return signup_handler(request=request, apps=apps)
+
+    @fastapi_app.post(
+        "/events/{summary_id}/favorite", response_model=FavoriteResponse
+    )
+    def add_favorite(
+        summary_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> FavoriteResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return add_favorite_handler(
+            summary_id=summary_id, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.delete(
+        "/events/{summary_id}/favorite", response_model=FavoriteResponse
+    )
+    def remove_favorite(
+        summary_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> FavoriteResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return remove_favorite_handler(
+            summary_id=summary_id, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.get("/user/favorites", response_model=FavoriteListResponse)
+    def get_favorites(
+        apps: Apps, user: JWTAuthenticatedUser
+    ) -> FavoriteListResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return list_favorites_handler(user_id=user_id, apps=apps)
+
+    @fastapi_app.post("/events/{summary_id}/view", status_code=204)
+    def record_view(
+        summary_id: UUID,
+        apps: Apps,
+        token: Annotated[Optional[str], Depends(oauth2_scheme)] = None,
+        x_anonymous_id: Annotated[str | None, Header()] = None,
+    ) -> None:
+        viewer_id = None
+        if token:
+            try:
+                user = apps.accounts_app.get_user(
+                    data=GetUserPayload(token=token)
+                )
+                viewer_id = user.user_details.id
+            except (MissingUserError, DeactivatedUserError, InvalidTokenError):
+                pass
+        if not viewer_id and x_anonymous_id:
+            viewer_id = f"anon:{x_anonymous_id}"
+        if not viewer_id:
+            return  # no tracking without any identifier
+        record_view_handler(
+            summary_id=summary_id, user_id=viewer_id, apps=apps
+        )
 
     @fastapi_app.post("/times/exist", response_model=TimeExistsResponse)
     def check_time_exists(

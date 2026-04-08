@@ -1080,3 +1080,19 @@ class HistoryApp:
     def get_themes(self):
         """Return the full theme taxonomy (categories with children)."""
         return self._repository.get_themes()
+
+    # -------------------------------------------------------------------
+    # User engagement
+    # -------------------------------------------------------------------
+
+    def add_favorite(self, user_id: str, summary_id: UUID) -> None:
+        self._repository.add_favorite(user_id=user_id, summary_id=summary_id)
+
+    def remove_favorite(self, user_id: str, summary_id: UUID) -> None:
+        self._repository.remove_favorite(user_id=user_id, summary_id=summary_id)
+
+    def get_favorites(self, user_id: str) -> list[dict]:
+        return self._repository.get_favorites(user_id=user_id)
+
+    def record_view(self, user_id: str, summary_id: UUID) -> None:
+        self._repository.record_view(user_id=user_id, summary_id=summary_id)

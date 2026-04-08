@@ -304,3 +304,51 @@ class SummaryTheme(Base):
         Index("idx_summary_themes_summary_id", summary_id),
         Index("idx_summary_themes_theme_id", theme_id),
     )
+
+
+class UserFavorite(Base):
+    """A user's bookmarked event."""
+
+    __tablename__ = "user_favorites"
+
+    user_id = Column(VARCHAR, ForeignKey("users.id"), primary_key=True)
+    summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), primary_key=True
+    )
+    created_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "summary_id", name="uq_user_favorite"),
+        Index("idx_user_favorites_user_id", user_id),
+    )
+
+
+class UserEvent(Base):
+    """Append-only interaction log."""
+
+    __tablename__ = "user_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(VARCHAR, nullable=False)
+    summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False
+    )
+    event_type = Column(VARCHAR, nullable=False)
+    created_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        Index("idx_user_events_user_created", user_id, created_at),
+    )
+
+
+class UserThemePreference(Base):
+    """Materialized theme preference scores derived from user behavior."""
+
+    __tablename__ = "user_theme_preferences"
+
+    user_id = Column(VARCHAR, primary_key=True)
+    theme_id = Column(
+        UUID(as_uuid=True), ForeignKey("themes.id"), primary_key=True
+    )
+    score = Column(FLOAT, nullable=False, default=0.0)
+    updated_at = Column(TIMESTAMP, nullable=False)

@@ -71,6 +71,24 @@ class AccountsApp:
             token = None
         return LoginResponse(success=success, token=token)
 
+    def signup(
+        self,
+        username: str,
+        password: str,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
+    ) -> str:
+        """Self-service account creation. Returns a JWT token."""
+        token = self._repository.signup(
+            username=username,
+            password=password,
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+        )
+        return token
+
     def add_user(self, data: AddUserPayload) -> AddUserResponsePayload:
         """Add a user. Requires admin credentials"""
         token, user_details = self._repository.add_user(

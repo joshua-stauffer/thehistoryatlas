@@ -2262,3 +2262,80 @@ class Repository:
             is_primary=is_primary,
             confidence=confidence,
         )
+
+    # -----------------------------------------------------------------------
+    # User engagement: favorites, views
+    # -----------------------------------------------------------------------
+
+    def add_favorite(self, user_id: str, summary_id: UUID) -> None:
+        """Add a favorite. Idempotent — does nothing if already favorited."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_favorites (user_id, summary_id, created_at)
+                    values (:user_id, :summary_id, now())
+                    on conflict (user_id, summary_id) do nothing
+                    """
+                ),
+                {"user_id": user_id, "summary_id": summary_id},
+            )
+            session.commit()
+
+    def remove_favorite(self, user_id: str, summary_id: UUID) -> None:
+        """Remove a favorite. Idempotent — does nothing if not favorited."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    delete from user_favorites
+                    where user_id = :user_id and summary_id = :summary_id
+                    """
+                ),
+                {"user_id": user_id, "summary_id": summary_id},
+            )
+            session.commit()
+
+    def get_favorites(self, user_id: str) -> list[dict]:
+        """Return all favorites for a user, with summary text."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select uf.summary_id, s.text as summary_text,
+                           uf.created_at::text as created_at
+                    from user_favorites uf
+                    join summaries s on s.id = uf.summary_id
+                    where uf.user_id = :user_id
+                    order by uf.created_at desc
+                    """
+                ),
+                {"user_id": user_id},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ]
+
+    def record_view(self, user_id: str, summary_id: UUID) -> None:
+        """Record that a user viewed an event."""
+        view_id = uuid4()
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_events (id, user_id, summary_id, event_type, created_at)
+                    values (:id, :user_id, :summary_id, 'view', now())
+                    """
+                ),
+                {
+                    "id": view_id,
+                    "user_id": user_id,
+                    "summary_id": summary_id,
+                },
+            )
+            session.commit()
