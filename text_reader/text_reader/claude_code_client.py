@@ -6,6 +6,7 @@ import re
 import subprocess
 import time
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from uuid import UUID
 
 from text_reader.base_client import (
@@ -20,7 +21,7 @@ from text_reader.types import ExtractedEvent
 log = logging.getLogger(__name__)
 
 _QUOTA_KEYWORDS = re.compile(
-    r"rate.?limit|quota|usage.?limit|exceeded|overloaded|too many requests|429",
+    r"rate.?limit|quota|usage.?limit|hit.*limit|exceeded|overloaded|too many requests|429",
     re.IGNORECASE,
 )
 
@@ -68,6 +69,31 @@ def _parse_reset_time(error_msg: str) -> datetime | None:
             hour=hour, minute=minute, second=0, microsecond=0
         )
         if target <= datetime.now():
+            target += timedelta(days=1)
+        return target
+
+    # Bare hour: "resets 2am", "resets 2am (Europe/Zurich)", "resets 3 PM"
+    m = re.search(
+        r"resets?\s+(\d{1,2})\s*(am|pm)(?:\s*\(([^)]+)\))?",
+        error_msg,
+        re.IGNORECASE,
+    )
+    if m:
+        hour = int(m.group(1))
+        ampm = m.group(2).upper()
+        tz_name = m.group(3)
+        if ampm == "PM" and hour != 12:
+            hour += 12
+        elif ampm == "AM" and hour == 12:
+            hour = 0
+        # Use the timezone from the error message if available
+        try:
+            tz = ZoneInfo(tz_name) if tz_name else None
+        except KeyError:
+            tz = None
+        now = datetime.now(tz) if tz else datetime.now()
+        target = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if target <= now:
             target += timedelta(days=1)
         return target
 
@@ -123,7 +149,6 @@ class ClaudeCodeClient(BaseLLMClient):
                 input=user_message,
                 capture_output=True,
                 text=True,
-                timeout=1200,
             )
 
             # Try to parse JSON regardless of exit code — quota errors
