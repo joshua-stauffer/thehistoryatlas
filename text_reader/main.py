@@ -127,8 +127,11 @@ def main():
     )
     logging.getLogger(__name__).info(f"Logging to {log_path}")
 
-    if args.batch and args.client == "code":
-        print("Error: --batch is not supported with --client code", file=sys.stderr)
+    if (args.batch or args.resume_batch) and args.client == "code":
+        print(
+            "Error: --batch/--resume-batch is not supported with --client code",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     # Load config
