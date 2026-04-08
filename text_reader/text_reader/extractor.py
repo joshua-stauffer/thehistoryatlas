@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import sys
 from pathlib import Path
 from uuid import UUID
@@ -7,7 +8,7 @@ from uuid import UUID
 from text_reader.base_client import BaseLLMClient
 from text_reader.entity_resolver import EntityResolver
 from text_reader.geonames import GeoNamesClient
-from text_reader.pdf_reader import Chunk, chunk_pages, extract_pages
+from text_reader.pdf_reader import CLEANUP_CHUNK_SIZE, Chunk, chunk_pages, extract_pages
 from text_reader.publisher import Publisher
 from text_reader.rest_client import RestClient
 from text_reader.types import ResolvedEvent
@@ -109,6 +110,7 @@ def run_pipeline(
 
     # Step 5: Process chunks
     total_extracted, total_published, total_skipped = _resume_totals
+    failed_chunks: list[tuple[int, int]] = []
 
     for chunk_idx, chunk in enumerate(chunks):
         print(
@@ -125,6 +127,9 @@ def run_pipeline(
             start_page=chunk.start_page,
             end_page=chunk.end_page,
         )
+        if events is None:
+            failed_chunks.append((chunk.start_page, chunk.end_page))
+            events = []
         total_extracted += len(events)
         print(f"  Extracted {len(events)} events")
 
@@ -208,6 +213,30 @@ def run_pipeline(
             next_start_page=next_start,
             totals=(total_extracted, total_published, total_skipped),
         )
+
+    # Step 6: Automatic cleanup of failed chunks
+    if failed_chunks:
+        print(
+            f"\n{'='*60}\n"
+            f"Cleanup: re-processing {len(failed_chunks)} failed chunk(s) "
+            f"at reduced size\n"
+            f"{'='*60}"
+        )
+        cleanup_extracted, cleanup_published, cleanup_skipped = _run_cleanup(
+            failed_ranges=failed_chunks,
+            file_path=file_path,
+            title=title,
+            author=author,
+            claude_client=claude_client,
+            resolver=resolver,
+            publisher=publisher,
+            source_id=source_id,
+            story_id=story_id,
+            skip_review=skip_review,
+        )
+        total_extracted += cleanup_extracted
+        total_published += cleanup_published
+        total_skipped += cleanup_skipped
 
     _print_summary(
         total_extracted, total_published, total_skipped, claude_client, len(pages)
@@ -764,3 +793,215 @@ def _print_summary(
         + (f", cost/event: ${cost_per_event:.4f}" if published else "")
         + (f", cost/page: ${cost_per_page:.4f}" if pages else "")
     )
+
+
+# ---------------------------------------------------------------------------
+# Cleanup — retry failed chunks with smaller chunk sizes
+# ---------------------------------------------------------------------------
+
+_FAILED_CHUNK_RE = re.compile(r"ERROR.*\[pages (\d+)-(\d+)\]")
+
+
+def _merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Merge overlapping or adjacent page ranges."""
+    if not ranges:
+        return []
+    sorted_ranges = sorted(ranges)
+    merged = [sorted_ranges[0]]
+    for start, end in sorted_ranges[1:]:
+        prev_start, prev_end = merged[-1]
+        if start <= prev_end + 1:
+            merged[-1] = (prev_start, max(prev_end, end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def parse_failed_chunks_from_log(log_path: str) -> list[tuple[int, int]]:
+    """Parse a log file and return deduplicated, merged (start_page, end_page) ranges
+    for all chunks that failed extraction."""
+    ranges: set[tuple[int, int]] = set()
+    with open(log_path) as f:
+        for line in f:
+            m = _FAILED_CHUNK_RE.search(line)
+            if m:
+                ranges.add((int(m.group(1)), int(m.group(2))))
+    return _merge_ranges(list(ranges))
+
+
+def _run_cleanup(
+    failed_ranges: list[tuple[int, int]],
+    file_path: str,
+    title: str,
+    author: str,
+    claude_client: BaseLLMClient,
+    resolver: EntityResolver,
+    publisher: Publisher,
+    source_id: UUID,
+    story_id: UUID,
+    skip_review: bool,
+    cleanup_chunk_size: int = CLEANUP_CHUNK_SIZE,
+) -> tuple[int, int, int]:
+    """Re-process failed page ranges with smaller chunk sizes.
+
+    Returns (extracted, published, skipped) counts.
+    """
+    merged = _merge_ranges(failed_ranges)
+    total_extracted = 0
+    total_published = 0
+    total_skipped = 0
+
+    for range_idx, (start_page, end_page) in enumerate(merged):
+        log.info(
+            f"[cleanup] Range {range_idx + 1}/{len(merged)}: "
+            f"pages {start_page}-{end_page}"
+        )
+        pages = extract_pages(
+            file_path=file_path,
+            start_page=start_page,
+            end_page=end_page,
+        )
+        if not pages:
+            log.info(f"[cleanup] No text in pages {start_page}-{end_page}, skipping")
+            continue
+
+        chunks = chunk_pages(pages, target_size=cleanup_chunk_size)
+        print(
+            f"\n  [cleanup] pages {start_page}-{end_page}: "
+            f"{len(pages)} pages -> {len(chunks)} chunks "
+            f"(target {cleanup_chunk_size} chars)"
+        )
+
+        for chunk_idx, chunk in enumerate(chunks):
+            print(
+                f"\n  [cleanup] Chunk {chunk_idx + 1}/{len(chunks)} "
+                f"(pages {chunk.start_page}-{chunk.end_page}, "
+                f"{len(chunk.text)} chars)"
+            )
+
+            events = claude_client.extract_events(
+                chunk_text=chunk.text,
+                source_title=title,
+                source_author=author,
+                start_page=chunk.start_page,
+                end_page=chunk.end_page,
+            )
+            if events is None:
+                log.warning(
+                    f"[cleanup] Chunk pages {chunk.start_page}-{chunk.end_page} "
+                    f"still failed — run --cleanup on this log to retry"
+                )
+                events = []
+
+            total_extracted += len(events)
+            print(f"    Extracted {len(events)} events")
+
+            for event in events:
+                if event.page_num is None:
+                    if event.excerpt:
+                        event.page_num = chunk.page_for_excerpt(event.excerpt)
+                    else:
+                        event.page_num = chunk.start_page
+                if event.excerpt:
+                    event.excerpt = _expand_excerpt(event.excerpt, chunk.text)
+
+                try:
+                    resolved = resolver.resolve_event(event)
+                except Exception as e:
+                    log.error(f"[cleanup] Failed to resolve event: {e}")
+                    total_skipped += 1
+                    continue
+
+                if not skip_review:
+                    choice = review_event(resolved, total_extracted)
+                    if choice == "q":
+                        print("\nQuitting cleanup.")
+                        return total_extracted, total_published, total_skipped
+                    elif choice == "s":
+                        total_skipped += 1
+                        continue
+
+                try:
+                    summary_id = publisher.publish_event(
+                        event=resolved,
+                        source_id=source_id,
+                        story_id=story_id,
+                    )
+                    if summary_id:
+                        total_published += 1
+                        print(f"    Published: {event.summary[:60]}...")
+                    else:
+                        total_skipped += 1
+                except Exception as e:
+                    log.error(f"[cleanup] Failed to publish: {e}")
+                    total_skipped += 1
+
+    log.info(
+        f"[cleanup] Complete — extracted: {total_extracted}, "
+        f"published: {total_published}, skipped: {total_skipped}"
+    )
+    return total_extracted, total_published, total_skipped
+
+
+def run_cleanup_pipeline(
+    log_file: str,
+    file_path: str,
+    title: str,
+    author: str,
+    publisher_name: str,
+    pub_date: str | None,
+    model: str,
+    skip_review: bool,
+    rest_client: RestClient,
+    claude_client: BaseLLMClient,
+    geonames_client: GeoNamesClient,
+    pdf_page_offset: int = 0,
+    cleanup_chunk_size: int = CLEANUP_CHUNK_SIZE,
+):
+    """Manual cleanup pipeline — parse a log file for failed chunks and re-run them."""
+    failed_ranges = parse_failed_chunks_from_log(log_file)
+    if not failed_ranges:
+        print("No failed chunks found in log file.")
+        return
+
+    print(f"Found {len(failed_ranges)} failed page range(s) in {log_file}:")
+    for start, end in failed_ranges:
+        print(f"  pages {start}-{end}")
+    print()
+
+    # Set up source and story (reuses existing if already created)
+    source = rest_client.create_source(
+        title=title,
+        author=author,
+        publisher=publisher_name,
+        pub_date=pub_date,
+        pdf_page_offset=pdf_page_offset,
+    )
+    source_id = UUID(source["id"])
+    print(f"  Source ID: {source_id}")
+
+    pub = Publisher(rest_client=rest_client)
+    story_id = pub.ensure_story(source_id=source_id, source_title=title)
+    print(f"  Story ID: {story_id}")
+
+    resolver = EntityResolver(
+        rest_client=rest_client,
+        claude_client=claude_client,
+        geonames_client=geonames_client,
+    )
+
+    extracted, published, skipped = _run_cleanup(
+        failed_ranges=failed_ranges,
+        file_path=file_path,
+        title=title,
+        author=author,
+        claude_client=claude_client,
+        resolver=resolver,
+        publisher=pub,
+        source_id=source_id,
+        story_id=story_id,
+        skip_review=skip_review,
+        cleanup_chunk_size=cleanup_chunk_size,
+    )
+
+    _print_summary(extracted, published, skipped, claude_client)

@@ -76,8 +76,12 @@ class ClaudeClient(BaseLLMClient):
         start_page: int | None = None,
         end_page: int | None = None,
         _depth: int = 0,
-    ) -> list[ExtractedEvent]:
-        """Extract historical events from a text chunk (synchronous, non-batch)."""
+    ) -> list[ExtractedEvent] | None:
+        """Extract historical events from a text chunk (synchronous, non-batch).
+
+        Returns None if extraction failed (parse error, API error) vs
+        an empty list if extraction succeeded but found no events.
+        """
         page_ctx = (
             f"pages {start_page}-{end_page}"
             if start_page is not None and end_page is not None
@@ -105,7 +109,7 @@ class ClaudeClient(BaseLLMClient):
                 response = stream.get_final_message()
         except anthropic.APIError as e:
             log.error(f"Claude API error during extraction [{page_ctx}]: {e}")
-            return []
+            return None
 
         self._track_usage(response.usage, batch=False)
 
@@ -121,14 +125,15 @@ class ClaudeClient(BaseLLMClient):
                     split_at = chunk_text.rfind("\n", 0, mid)
                 if split_at == -1:
                     split_at = mid
-                return self.extract_events(
+                first_half = self.extract_events(
                     chunk_text[:split_at],
                     source_title,
                     source_author,
                     start_page,
                     end_page,
                     _depth + 1,
-                ) + self.extract_events(
+                )
+                second_half = self.extract_events(
                     chunk_text[split_at:],
                     source_title,
                     source_author,
@@ -136,6 +141,8 @@ class ClaudeClient(BaseLLMClient):
                     end_page,
                     _depth + 1,
                 )
+                # Treat None (failed half) as empty — error is already logged
+                return (first_half or []) + (second_half or [])
             log.warning(
                 f"Response still truncated at depth 2 [{page_ctx}]; "
                 f"parsing partial response — to retry, rerun with "

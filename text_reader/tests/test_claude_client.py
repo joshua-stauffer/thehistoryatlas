@@ -119,7 +119,7 @@ class TestExtractEvents:
         client = ClaudeClient(api_key="fake-key")
         result = client.extract_events("text", "Source", "Author")
 
-        assert result == []
+        assert result is None
 
     @patch("text_reader.claude_client.anthropic.Anthropic")
     def test_returns_empty_on_api_error(self, mock_anthropic_cls):
@@ -136,7 +136,7 @@ class TestExtractEvents:
         client = ClaudeClient(api_key="fake-key")
         result = client.extract_events("text", "Source", "Author")
 
-        assert result == []
+        assert result is None
 
     @patch("text_reader.claude_client.anthropic.Anthropic")
     def test_skips_malformed_events(self, mock_anthropic_cls):
@@ -387,7 +387,7 @@ class TestExtractEvents:
             "text", "Source", "Author", start_page=5, end_page=7, _depth=2
         )
 
-        assert result == []
+        assert result is None
         assert mock_client.messages.stream.call_count == 1
 
 

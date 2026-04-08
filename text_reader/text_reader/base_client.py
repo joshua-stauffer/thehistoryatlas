@@ -198,7 +198,7 @@ class BaseLLMClient:
         start_page: int | None = None,
         end_page: int | None = None,
         _depth: int = 0,
-    ) -> list[ExtractedEvent]:
+    ) -> list[ExtractedEvent] | None:
         raise NotImplementedError
 
     def _fix_summaries_batch(
@@ -259,7 +259,7 @@ class BaseLLMClient:
         start_page: int | None,
         end_page: int | None,
         fix_inline: bool = True,
-    ) -> tuple[list[ExtractedEvent], list[tuple[ExtractedEvent, list[str]]]]:
+    ) -> tuple[list[ExtractedEvent] | None, list[tuple[ExtractedEvent, list[str]]]]:
         """Parse a raw JSON response into validated ExtractedEvents."""
         page_ctx = (
             f"pages {start_page}-{end_page}"
@@ -283,7 +283,7 @@ class BaseLLMClient:
                 f"— to retry: --start-page {start_page} --end-page {end_page}; "
                 f"response prefix: {content[:200]}"
             )
-            return [], []
+            return None, []
 
         events = []
         for raw in raw_events:

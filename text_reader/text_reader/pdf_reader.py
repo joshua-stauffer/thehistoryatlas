@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 log = logging.getLogger(__name__)
 
 TARGET_CHUNK_SIZE = 20_000  # ~5K tokens — keeps output well within max_tokens for multi-sentence summaries
+CLEANUP_CHUNK_SIZE = 10_000  # smaller chunks for retrying failed extractions
 
 
 class PageText:

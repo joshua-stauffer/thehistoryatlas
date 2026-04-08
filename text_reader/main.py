@@ -13,6 +13,7 @@ from text_reader.claude_code_client import ClaudeCodeClient
 from text_reader.config import Config
 from text_reader.extractor import (
     run_batch_pipeline,
+    run_cleanup_pipeline,
     run_pipeline,
     run_resume_pipeline,
     run_resume_sync_pipeline,
@@ -98,6 +99,18 @@ def main():
         choices=["api", "code"],
         help="LLM backend: 'api' for Anthropic API, 'code' for Claude Code CLI (default: api)",
     )
+    parser.add_argument(
+        "--cleanup",
+        metavar="LOG_FILE",
+        default=None,
+        help="Re-run failed chunks from a previous log file (requires --file, --title, --author)",
+    )
+    parser.add_argument(
+        "--cleanup-chunk-size",
+        type=int,
+        default=10_000,
+        help="Target chunk size (chars) for cleanup retries (default: 10000)",
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 
     args = parser.parse_args()
@@ -108,8 +121,10 @@ def main():
 
     # Validation for resume modes (before logging setup that needs title)
     is_resume = args.resume or args.resume_batch
-    if not is_resume and not args.author:
-        parser.error("--author is required unless --resume or --resume-batch is used")
+    if not is_resume and not args.cleanup and not args.author:
+        parser.error(
+            "--author is required unless --resume, --resume-batch, or --cleanup is used"
+        )
 
     slug = re.sub(r"[^\w]+", "_", (args.title or "resume").lower()).strip("_")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -174,6 +189,26 @@ def main():
     print()
 
     # Run pipeline
+    if args.cleanup:
+        if not args.file or not args.title or not args.author:
+            parser.error("--cleanup requires --file, --title, and --author")
+        run_cleanup_pipeline(
+            log_file=args.cleanup,
+            file_path=args.file,
+            title=args.title,
+            author=args.author,
+            publisher_name=args.publisher,
+            pub_date=args.pub_date,
+            model=args.model,
+            skip_review=args.skip_review,
+            rest_client=rest_client,
+            claude_client=claude_client,
+            geonames_client=geonames_client,
+            pdf_page_offset=args.pdf_offset,
+            cleanup_chunk_size=args.cleanup_chunk_size,
+        )
+        return
+
     if is_resume:
         pass  # file/title/author not needed for resume
     elif not args.file or not args.title:

@@ -225,8 +225,12 @@ class ClaudeCodeClient(BaseLLMClient):
         start_page: int | None = None,
         end_page: int | None = None,
         _depth: int = 0,
-    ) -> list[ExtractedEvent]:
-        """Extract historical events from a text chunk via Claude Code CLI."""
+    ) -> list[ExtractedEvent] | None:
+        """Extract historical events from a text chunk via Claude Code CLI.
+
+        Returns None if extraction failed (parse error, runtime error) vs
+        an empty list if extraction succeeded but found no events.
+        """
         page_ctx = (
             f"pages {start_page}-{end_page}"
             if start_page is not None and end_page is not None
@@ -242,7 +246,7 @@ class ClaudeCodeClient(BaseLLMClient):
             content = self._call_claude(EXTRACTION_SYSTEM_PROMPT, user_message)
         except RuntimeError as e:
             log.error(f"Claude Code error during extraction [{page_ctx}]: {e}")
-            return []
+            return None
 
         valid, _ = self._parse_and_validate_events(content, start_page, end_page)
         return valid
