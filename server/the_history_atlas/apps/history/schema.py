@@ -255,3 +255,42 @@ class StorySummary(Base):
         UniqueConstraint("story_id", "summary_id", name="uq_story_summary"),
         UniqueConstraint("story_id", "position", name="uq_story_position"),
     )
+
+
+class Theme(Base):
+    """A hierarchical category for classifying historical events."""
+
+    __tablename__ = "themes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    name = Column(VARCHAR, nullable=False, unique=True)
+    slug = Column(VARCHAR, nullable=False, unique=True)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("themes.id"), nullable=True)
+    display_order = Column(INTEGER, nullable=False)
+
+    parent = relationship("Theme", remote_side="Theme.id", back_populates="children")
+    children = relationship("Theme", back_populates="parent")
+    summary_themes = relationship("SummaryTheme", back_populates="theme")
+
+    __table_args__ = (Index("idx_themes_parent_id", parent_id),)
+
+
+class SummaryTheme(Base):
+    """Associates a theme with a summary, with optional confidence score."""
+
+    __tablename__ = "summary_themes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False)
+    theme_id = Column(UUID(as_uuid=True), ForeignKey("themes.id"), nullable=False)
+    is_primary = Column(Boolean, nullable=False, default=False)
+    confidence = Column(FLOAT, nullable=True)
+
+    summary = relationship("Summary")
+    theme = relationship("Theme", back_populates="summary_themes")
+
+    __table_args__ = (
+        UniqueConstraint("summary_id", "theme_id", name="uq_summary_theme"),
+        Index("idx_summary_themes_summary_id", summary_id),
+        Index("idx_summary_themes_theme_id", theme_id),
+    )

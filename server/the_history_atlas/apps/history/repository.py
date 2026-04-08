@@ -62,6 +62,11 @@ from the_history_atlas.apps.history.schema import (
     Summary,
     Source,
 )
+from the_history_atlas.apps.domain.models.history.tables.theme import (
+    ThemeModel,
+    ThemeWithChildrenModel,
+    SummaryThemeModel,
+)
 from the_history_atlas.apps.history.trie import Trie
 
 log = logging.getLogger(__name__)
@@ -2117,3 +2122,130 @@ class Repository:
             session.add(source)
             session.commit()
             self._add_to_source_trie(source)
+
+    # ------------------------------------------------------------------
+    # Themes
+    # ------------------------------------------------------------------
+
+    def get_themes(self) -> list[ThemeWithChildrenModel]:
+        """Return all themes, assembled into a parent→children hierarchy."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select id, name, slug, parent_id, display_order
+                    from themes
+                    order by display_order
+                    """
+                )
+            ).fetchall()
+
+        by_id: dict = {}
+        children_by_parent: dict = {}
+        for row in rows:
+            by_id[str(row.id)] = row
+            if row.parent_id is not None:
+                children_by_parent.setdefault(str(row.parent_id), []).append(row)
+
+        return [
+            ThemeWithChildrenModel(
+                id=row.id,
+                name=row.name,
+                slug=row.slug,
+                parent_id=row.parent_id,
+                display_order=row.display_order,
+                children=[
+                    ThemeModel(
+                        id=child.id,
+                        name=child.name,
+                        slug=child.slug,
+                        parent_id=child.parent_id,
+                        display_order=child.display_order,
+                    )
+                    for child in children_by_parent.get(str(row.id), [])
+                ],
+            )
+            for row in rows
+            if row.parent_id is None
+        ]
+
+    def get_theme_by_slug(self, slug: str) -> ThemeModel | None:
+        """Return a single theme by slug, or None if not found."""
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select id, name, slug, parent_id, display_order
+                    from themes
+                    where slug = :slug
+                    """
+                ),
+                {"slug": slug},
+            ).one_or_none()
+        if row is None:
+            return None
+        return ThemeModel(
+            id=row.id,
+            name=row.name,
+            slug=row.slug,
+            parent_id=row.parent_id,
+            display_order=row.display_order,
+        )
+
+    def get_themes_for_summary(self, summary_id: UUID) -> list[SummaryThemeModel]:
+        """Return all theme associations for a given summary."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select id, summary_id, theme_id, is_primary, confidence
+                    from summary_themes
+                    where summary_id = :summary_id
+                    """
+                ),
+                {"summary_id": summary_id},
+            ).fetchall()
+        return [
+            SummaryThemeModel(
+                id=row.id,
+                summary_id=row.summary_id,
+                theme_id=row.theme_id,
+                is_primary=row.is_primary,
+                confidence=row.confidence,
+            )
+            for row in rows
+        ]
+
+    def add_summary_theme(
+        self,
+        summary_id: UUID,
+        theme_id: UUID,
+        is_primary: bool,
+        confidence: float | None = None,
+    ) -> SummaryThemeModel:
+        """Associate a theme with a summary. Raises if the pair already exists."""
+        association_id = uuid4()
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into summary_themes (id, summary_id, theme_id, is_primary, confidence)
+                    values (:id, :summary_id, :theme_id, :is_primary, :confidence)
+                    """
+                ),
+                {
+                    "id": association_id,
+                    "summary_id": summary_id,
+                    "theme_id": theme_id,
+                    "is_primary": is_primary,
+                    "confidence": confidence,
+                },
+            )
+            session.commit()
+        return SummaryThemeModel(
+            id=association_id,
+            summary_id=summary_id,
+            theme_id=theme_id,
+            is_primary=is_primary,
+            confidence=confidence,
+        )
