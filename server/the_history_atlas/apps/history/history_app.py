@@ -1187,3 +1187,20 @@ class HistoryApp:
 
     def get_collection_items(self, collection_id: UUID) -> list[dict]:
         return self._repository.get_collection_items(collection_id=collection_id)
+
+    # -------------------------------------------------------------------
+    # Recommendations
+    # -------------------------------------------------------------------
+
+    def compute_preferences(self, user_id: str) -> None:
+        self._repository.compute_user_theme_preferences(user_id=user_id)
+
+    def get_related_events(self, summary_id: UUID, limit: int = 10) -> list[dict]:
+        return self._repository.get_related_by_tags(
+            summary_id=summary_id, limit=limit
+        )
+
+    def find_similar_events(self, summary_id: UUID, limit: int = 10) -> list[dict]:
+        return self._repository.find_similar_by_embedding(
+            summary_id=summary_id, limit=limit
+        )

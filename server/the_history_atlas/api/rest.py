@@ -99,6 +99,10 @@ from the_history_atlas.api.types.text_reader import (
     PlaceSearchResult,
     SummaryMatchResult,
 )
+from the_history_atlas.api.types.recommendations import (
+    RelatedEventsResponse,
+    RelatedEvent,
+)
 from the_history_atlas.api.types.collections import (
     CreateCollectionRequest,
     UpdateCollectionRequest,
@@ -315,6 +319,52 @@ def register_rest_endpoints(
             after_cursor=afterCursor,
             limit=limit,
             user_id=user_id,
+        )
+
+    @fastapi_app.get(
+        "/events/{summary_id}/related",
+        response_model=RelatedEventsResponse,
+    )
+    def get_related_events(
+        summary_id: UUID,
+        apps: Apps,
+        limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    ) -> RelatedEventsResponse:
+        results = apps.history_app.get_related_events(
+            summary_id=summary_id, limit=limit
+        )
+        return RelatedEventsResponse(
+            events=[
+                RelatedEvent(
+                    summaryId=r["summary_id"],
+                    summaryText=r["summary_text"],
+                    sharedTags=r["shared_tags"],
+                )
+                for r in results
+            ]
+        )
+
+    @fastapi_app.get(
+        "/events/{summary_id}/similar",
+        response_model=RelatedEventsResponse,
+    )
+    def get_similar_events(
+        summary_id: UUID,
+        apps: Apps,
+        limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    ) -> RelatedEventsResponse:
+        results = apps.history_app.find_similar_events(
+            summary_id=summary_id, limit=limit
+        )
+        return RelatedEventsResponse(
+            events=[
+                RelatedEvent(
+                    summaryId=r["summary_id"],
+                    summaryText=r["summary_text"],
+                    similarity=r["similarity"],
+                )
+                for r in results
+            ]
         )
 
     @fastapi_app.get("/history", response_model=Story)

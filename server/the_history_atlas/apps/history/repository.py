@@ -2683,3 +2683,121 @@ class Repository:
             }
             for row in rows
         ]
+
+    # -----------------------------------------------------------------------
+    # Recommendations: preferences, entity graph, embeddings
+    # -----------------------------------------------------------------------
+
+    def compute_user_theme_preferences(self, user_id: str) -> None:
+        """Recompute theme preference scores from engagement signals.
+
+        Weights: favorite = 5, view = 1. Upserts into user_theme_preferences.
+        """
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_theme_preferences (user_id, theme_id, score, updated_at)
+                    select
+                        :user_id,
+                        st.theme_id,
+                        sum(
+                            case
+                                when uf.summary_id is not null then 5
+                                else 0
+                            end
+                            +
+                            case
+                                when ue.summary_id is not null then 1
+                                else 0
+                            end
+                        ) as score,
+                        now()
+                    from summary_themes st
+                    left join user_favorites uf
+                        on uf.summary_id = st.summary_id and uf.user_id = :user_id
+                    left join user_events ue
+                        on ue.summary_id = st.summary_id
+                        and ue.user_id = :user_id
+                        and ue.event_type = 'view'
+                    where uf.summary_id is not null or ue.summary_id is not null
+                    group by st.theme_id
+                    on conflict (user_id, theme_id)
+                    do update set score = excluded.score, updated_at = now()
+                    """
+                ),
+                {"user_id": user_id},
+            )
+            session.commit()
+
+    def get_related_by_tags(
+        self, summary_id: UUID, limit: int = 10
+    ) -> list[dict]:
+        """Find events sharing tags (people, places) with the given event."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select distinct s.id as summary_id, s.text as summary_text,
+                           count(shared.tag_id) as shared_tags
+                    from tag_instances ti
+                    join tag_instances shared
+                        on shared.tag_id = ti.tag_id
+                        and shared.summary_id != ti.summary_id
+                    join summaries s on s.id = shared.summary_id
+                    where ti.summary_id = :sid
+                    group by s.id, s.text
+                    order by shared_tags desc
+                    limit :limit
+                    """
+                ),
+                {"sid": summary_id, "limit": limit},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "shared_tags": row.shared_tags,
+            }
+            for row in rows
+        ]
+
+    def find_similar_by_embedding(
+        self, summary_id: UUID, limit: int = 10
+    ) -> list[dict]:
+        """Find semantically similar events using cosine distance on embeddings."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select s2.id as summary_id, s2.text as summary_text,
+                           1 - (s1.embedding <=> s2.embedding) as similarity
+                    from summaries s1
+                    join summaries s2
+                        on s2.id != s1.id and s2.embedding is not null
+                    where s1.id = :sid and s1.embedding is not null
+                    order by s1.embedding <=> s2.embedding
+                    limit :limit
+                    """
+                ),
+                {"sid": summary_id, "limit": limit},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "similarity": row.similarity,
+            }
+            for row in rows
+        ]
+
+    def set_embedding(self, summary_id: UUID, embedding: list[float]) -> None:
+        """Store an embedding vector for a summary."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    "update summaries set embedding = :emb where id = :sid"
+                ),
+                {"sid": summary_id, "emb": str(embedding)},
+            )
+            session.commit()
