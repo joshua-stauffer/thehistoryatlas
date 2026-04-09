@@ -156,6 +156,7 @@ class RestClient:
         source_id: str,
         story_id: str,
         canonical_summary_id: str | None = None,
+        theme_slugs: list[str] | None = None,
     ) -> dict:
         body: dict = {
             "summary": summary,
@@ -166,6 +167,8 @@ class RestClient:
         }
         if canonical_summary_id is not None:
             body["canonical_summary_id"] = canonical_summary_id
+        if theme_slugs:
+            body["theme_slugs"] = theme_slugs
         return self._post_json("/text-reader/events", body)
 
     # --- Summary Match ---

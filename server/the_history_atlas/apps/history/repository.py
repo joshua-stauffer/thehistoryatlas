@@ -62,6 +62,11 @@ from the_history_atlas.apps.history.schema import (
     Summary,
     Source,
 )
+from the_history_atlas.apps.domain.models.history.tables.theme import (
+    ThemeModel,
+    ThemeWithChildrenModel,
+    SummaryThemeModel,
+)
 from the_history_atlas.apps.history.trie import Trie
 
 log = logging.getLogger(__name__)
@@ -2130,3 +2135,669 @@ class Repository:
             session.add(source)
             session.commit()
             self._add_to_source_trie(source)
+
+    # ------------------------------------------------------------------
+    # Themes
+    # ------------------------------------------------------------------
+
+    def get_themes(self) -> list[ThemeWithChildrenModel]:
+        """Return all themes, assembled into a parent→children hierarchy."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select id, name, slug, parent_id, display_order
+                    from themes
+                    order by display_order
+                    """
+                )
+            ).fetchall()
+
+        by_id: dict = {}
+        children_by_parent: dict = {}
+        for row in rows:
+            by_id[str(row.id)] = row
+            if row.parent_id is not None:
+                children_by_parent.setdefault(str(row.parent_id), []).append(row)
+
+        return [
+            ThemeWithChildrenModel(
+                id=row.id,
+                name=row.name,
+                slug=row.slug,
+                parent_id=row.parent_id,
+                display_order=row.display_order,
+                children=[
+                    ThemeModel(
+                        id=child.id,
+                        name=child.name,
+                        slug=child.slug,
+                        parent_id=child.parent_id,
+                        display_order=child.display_order,
+                    )
+                    for child in children_by_parent.get(str(row.id), [])
+                ],
+            )
+            for row in rows
+            if row.parent_id is None
+        ]
+
+    def get_theme_by_slug(self, slug: str) -> ThemeModel | None:
+        """Return a single theme by slug, or None if not found."""
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select id, name, slug, parent_id, display_order
+                    from themes
+                    where slug = :slug
+                    """
+                ),
+                {"slug": slug},
+            ).one_or_none()
+        if row is None:
+            return None
+        return ThemeModel(
+            id=row.id,
+            name=row.name,
+            slug=row.slug,
+            parent_id=row.parent_id,
+            display_order=row.display_order,
+        )
+
+    def get_themes_for_summary(self, summary_id: UUID) -> list[SummaryThemeModel]:
+        """Return all theme associations for a given summary."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select id, summary_id, theme_id, is_primary, confidence
+                    from summary_themes
+                    where summary_id = :summary_id
+                    """
+                ),
+                {"summary_id": summary_id},
+            ).fetchall()
+        return [
+            SummaryThemeModel(
+                id=row.id,
+                summary_id=row.summary_id,
+                theme_id=row.theme_id,
+                is_primary=row.is_primary,
+                confidence=row.confidence,
+            )
+            for row in rows
+        ]
+
+    def add_summary_theme(
+        self,
+        summary_id: UUID,
+        theme_id: UUID,
+        is_primary: bool,
+        confidence: float | None = None,
+    ) -> SummaryThemeModel:
+        """Associate a theme with a summary. Raises if the pair already exists."""
+        association_id = uuid4()
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into summary_themes (id, summary_id, theme_id, is_primary, confidence)
+                    values (:id, :summary_id, :theme_id, :is_primary, :confidence)
+                    """
+                ),
+                {
+                    "id": association_id,
+                    "summary_id": summary_id,
+                    "theme_id": theme_id,
+                    "is_primary": is_primary,
+                    "confidence": confidence,
+                },
+            )
+            session.commit()
+        return SummaryThemeModel(
+            id=association_id,
+            summary_id=summary_id,
+            theme_id=theme_id,
+            is_primary=is_primary,
+            confidence=confidence,
+        )
+
+    # -----------------------------------------------------------------------
+    # User engagement: favorites, views
+    # -----------------------------------------------------------------------
+
+    def add_favorite(self, user_id: str, summary_id: UUID) -> None:
+        """Add a favorite. Idempotent — does nothing if already favorited."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_favorites (user_id, summary_id, created_at)
+                    values (:user_id, :summary_id, now())
+                    on conflict (user_id, summary_id) do nothing
+                    """
+                ),
+                {"user_id": user_id, "summary_id": summary_id},
+            )
+            session.commit()
+
+    def remove_favorite(self, user_id: str, summary_id: UUID) -> None:
+        """Remove a favorite. Idempotent — does nothing if not favorited."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    delete from user_favorites
+                    where user_id = :user_id and summary_id = :summary_id
+                    """
+                ),
+                {"user_id": user_id, "summary_id": summary_id},
+            )
+            session.commit()
+
+    def get_favorites(self, user_id: str) -> list[dict]:
+        """Return all favorites for a user, with summary text."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select uf.summary_id, s.text as summary_text,
+                           uf.created_at::text as created_at
+                    from user_favorites uf
+                    join summaries s on s.id = uf.summary_id
+                    where uf.user_id = :user_id
+                    order by uf.created_at desc
+                    """
+                ),
+                {"user_id": user_id},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ]
+
+    def record_view(self, user_id: str, summary_id: UUID) -> None:
+        """Record that a user viewed an event."""
+        view_id = uuid4()
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_events (id, user_id, summary_id, event_type, created_at)
+                    values (:id, :user_id, :summary_id, 'view', now())
+                    """
+                ),
+                {
+                    "id": view_id,
+                    "user_id": user_id,
+                    "summary_id": summary_id,
+                },
+            )
+            session.commit()
+
+    # -----------------------------------------------------------------------
+    # Feed
+    # -----------------------------------------------------------------------
+
+    def get_feed(
+        self,
+        limit: int = 20,
+        theme_slugs: list[str] | None = None,
+        after_cursor: str | None = None,
+        user_id: str | None = None,
+    ) -> list[dict]:
+        """Return a paginated, theme-diverse feed of events.
+
+        Interleaves events across primary themes using ROW_NUMBER
+        partitioned by theme, so the feed doesn't cluster one theme.
+        """
+        params: dict = {"limit": limit}
+        theme_filter = ""
+        cursor_filter = ""
+        fav_join = ""
+        fav_select = "false as is_favorited"
+
+        if theme_slugs:
+            theme_filter = (
+                "join summary_themes st_filter "
+                "  on st_filter.summary_id = s.id and st_filter.is_primary = true "
+                "join themes t_filter "
+                "  on t_filter.id = st_filter.theme_id and t_filter.slug = any(:theme_slugs) "
+            )
+            params["theme_slugs"] = theme_slugs
+
+        if after_cursor:
+            # cursor format: "row_num:summary_id"
+            parts = after_cursor.split(":", 1)
+            if len(parts) == 2:
+                cursor_filter = (
+                    "where (interleave_rank > :cursor_rank "
+                    "   or (interleave_rank = :cursor_rank and s_id > :cursor_id))"
+                )
+                params["cursor_rank"] = int(parts[0])
+                params["cursor_id"] = parts[1]
+
+        if user_id:
+            fav_join = (
+                "left join user_favorites uf "
+                "  on uf.summary_id = ranked.s_id and uf.user_id = :user_id "
+            )
+            fav_select = "uf.user_id is not null as is_favorited"
+            params["user_id"] = user_id
+
+        query = f"""
+            with ranked as (
+                select
+                    s.id as s_id,
+                    s.text as s_text,
+                    s.latitude,
+                    s.longitude,
+                    s.datetime,
+                    s.precision,
+                    coalesce(pt.slug, 'untagged') as primary_theme_slug,
+                    row_number() over (
+                        partition by coalesce(pt.slug, 'untagged')
+                        order by s.id
+                    ) as theme_rank
+                from summaries s
+                left join summary_themes st_primary
+                    on st_primary.summary_id = s.id and st_primary.is_primary = true
+                left join themes pt on pt.id = st_primary.theme_id
+                {theme_filter}
+            ),
+            interleaved as (
+                select *,
+                    row_number() over (
+                        order by theme_rank, primary_theme_slug, s_id
+                    ) as interleave_rank
+                from ranked
+            )
+            select
+                interleaved.s_id,
+                interleaved.s_text,
+                interleaved.latitude,
+                interleaved.longitude,
+                interleaved.datetime,
+                interleaved.precision,
+                interleaved.interleave_rank,
+                {fav_select}
+            from interleaved
+            {fav_join}
+            {cursor_filter}
+            order by interleaved.interleave_rank, interleaved.s_id
+            limit :limit
+        """
+
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(text(query), params).all()
+
+        results = []
+        for row in rows:
+            results.append(
+                {
+                    "summary_id": row.s_id,
+                    "summary_text": row.s_text,
+                    "latitude": row.latitude,
+                    "longitude": row.longitude,
+                    "datetime": row.datetime,
+                    "precision": row.precision,
+                    "interleave_rank": row.interleave_rank,
+                    "is_favorited": row.is_favorited,
+                }
+            )
+        return results
+
+    def get_feed_tags(self, summary_ids: list[UUID]) -> dict[UUID, list[dict]]:
+        """Batch-fetch tags for a list of summary IDs."""
+        if not summary_ids:
+            return {}
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select ti.summary_id, t.id as tag_id, t.type, t.name
+                    from tag_instances ti
+                    join tags t on t.id = ti.tag_id
+                    where ti.summary_id = any(:ids)
+                    """
+                ),
+                {"ids": summary_ids},
+            ).all()
+        result: dict[UUID, list[dict]] = {sid: [] for sid in summary_ids}
+        for row in rows:
+            result[row.summary_id].append(
+                {"id": row.tag_id, "type": row.type, "name": row.name}
+            )
+        return result
+
+    def get_feed_themes(
+        self, summary_ids: list[UUID]
+    ) -> dict[UUID, list[dict]]:
+        """Batch-fetch themes for a list of summary IDs."""
+        if not summary_ids:
+            return {}
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select st.summary_id, t.slug, t.name
+                    from summary_themes st
+                    join themes t on t.id = st.theme_id
+                    where st.summary_id = any(:ids)
+                    order by st.is_primary desc
+                    """
+                ),
+                {"ids": summary_ids},
+            ).all()
+        result: dict[UUID, list[dict]] = {sid: [] for sid in summary_ids}
+        for row in rows:
+            result[row.summary_id].append(
+                {"slug": row.slug, "name": row.name}
+            )
+        return result
+
+    # -----------------------------------------------------------------------
+    # User collections
+    # -----------------------------------------------------------------------
+
+    def create_collection(
+        self, id: UUID, user_id: str, name: str, description: str | None = None
+    ) -> dict:
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_collections
+                        (id, user_id, name, description, visibility, created_at, updated_at)
+                    values (:id, :user_id, :name, :description, 'private', now(), now())
+                    """
+                ),
+                {"id": id, "user_id": user_id, "name": name, "description": description},
+            )
+            session.commit()
+        return {"id": id, "name": name, "description": description, "visibility": "private"}
+
+    def get_collections_for_user(self, user_id: str) -> list[dict]:
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select c.id, c.name, c.description, c.visibility,
+                           c.created_at::text, c.updated_at::text,
+                           count(ci.id) as item_count
+                    from user_collections c
+                    left join user_collection_items ci on ci.collection_id = c.id
+                    where c.user_id = :user_id
+                    group by c.id
+                    order by c.updated_at desc
+                    """
+                ),
+                {"user_id": user_id},
+            ).all()
+        return [
+            {
+                "id": row.id,
+                "name": row.name,
+                "description": row.description,
+                "visibility": row.visibility,
+                "created_at": row.created_at,
+                "updated_at": row.updated_at,
+                "item_count": row.item_count,
+            }
+            for row in rows
+        ]
+
+    def get_collection(self, collection_id: UUID) -> dict | None:
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select id, user_id, name, description, visibility,
+                           created_at::text, updated_at::text
+                    from user_collections
+                    where id = :id
+                    """
+                ),
+                {"id": collection_id},
+            ).one_or_none()
+        if row is None:
+            return None
+        return {
+            "id": row.id,
+            "user_id": row.user_id,
+            "name": row.name,
+            "description": row.description,
+            "visibility": row.visibility,
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+        }
+
+    def update_collection(
+        self, collection_id: UUID, name: str | None = None,
+        description: str | None = None, visibility: str | None = None,
+    ) -> None:
+        sets = []
+        params: dict = {"id": collection_id}
+        if name is not None:
+            sets.append("name = :name")
+            params["name"] = name
+        if description is not None:
+            sets.append("description = :description")
+            params["description"] = description
+        if visibility is not None:
+            sets.append("visibility = :visibility")
+            params["visibility"] = visibility
+        if not sets:
+            return
+        sets.append("updated_at = now()")
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(f"update user_collections set {', '.join(sets)} where id = :id"),
+                params,
+            )
+            session.commit()
+
+    def delete_collection(self, collection_id: UUID) -> None:
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text("delete from user_collections where id = :id"),
+                {"id": collection_id},
+            )
+            session.commit()
+
+    def add_collection_item(
+        self, id: UUID, collection_id: UUID, summary_id: UUID
+    ) -> int:
+        """Add an event to a collection. Returns the assigned position."""
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select coalesce(max(position), 0) + 1 as next_pos
+                    from user_collection_items
+                    where collection_id = :cid
+                    """
+                ),
+                {"cid": collection_id},
+            ).one()
+            position = row.next_pos
+            session.execute(
+                text(
+                    """
+                    insert into user_collection_items
+                        (id, collection_id, summary_id, position, added_at)
+                    values (:id, :cid, :sid, :pos, now())
+                    on conflict (collection_id, summary_id) do nothing
+                    """
+                ),
+                {"id": id, "cid": collection_id, "sid": summary_id, "pos": position},
+            )
+            session.execute(
+                text("update user_collections set updated_at = now() where id = :cid"),
+                {"cid": collection_id},
+            )
+            session.commit()
+        return position
+
+    def remove_collection_item(
+        self, collection_id: UUID, summary_id: UUID
+    ) -> None:
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    delete from user_collection_items
+                    where collection_id = :cid and summary_id = :sid
+                    """
+                ),
+                {"cid": collection_id, "sid": summary_id},
+            )
+            session.commit()
+
+    def get_collection_items(self, collection_id: UUID) -> list[dict]:
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select ci.summary_id, s.text as summary_text,
+                           ci.position, ci.added_at::text
+                    from user_collection_items ci
+                    join summaries s on s.id = ci.summary_id
+                    where ci.collection_id = :cid
+                    order by ci.position
+                    """
+                ),
+                {"cid": collection_id},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "position": row.position,
+                "added_at": row.added_at,
+            }
+            for row in rows
+        ]
+
+    # -----------------------------------------------------------------------
+    # Recommendations: preferences, entity graph, embeddings
+    # -----------------------------------------------------------------------
+
+    def compute_user_theme_preferences(self, user_id: str) -> None:
+        """Recompute theme preference scores from engagement signals.
+
+        Weights: favorite = 5, view = 1. Upserts into user_theme_preferences.
+        """
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_theme_preferences (user_id, theme_id, score, updated_at)
+                    select
+                        :user_id,
+                        st.theme_id,
+                        sum(
+                            case
+                                when uf.summary_id is not null then 5
+                                else 0
+                            end
+                            +
+                            case
+                                when ue.summary_id is not null then 1
+                                else 0
+                            end
+                        ) as score,
+                        now()
+                    from summary_themes st
+                    left join user_favorites uf
+                        on uf.summary_id = st.summary_id and uf.user_id = :user_id
+                    left join user_events ue
+                        on ue.summary_id = st.summary_id
+                        and ue.user_id = :user_id
+                        and ue.event_type = 'view'
+                    where uf.summary_id is not null or ue.summary_id is not null
+                    group by st.theme_id
+                    on conflict (user_id, theme_id)
+                    do update set score = excluded.score, updated_at = now()
+                    """
+                ),
+                {"user_id": user_id},
+            )
+            session.commit()
+
+    def get_related_by_tags(
+        self, summary_id: UUID, limit: int = 10
+    ) -> list[dict]:
+        """Find events sharing tags (people, places) with the given event."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select distinct s.id as summary_id, s.text as summary_text,
+                           count(shared.tag_id) as shared_tags
+                    from tag_instances ti
+                    join tag_instances shared
+                        on shared.tag_id = ti.tag_id
+                        and shared.summary_id != ti.summary_id
+                    join summaries s on s.id = shared.summary_id
+                    where ti.summary_id = :sid
+                    group by s.id, s.text
+                    order by shared_tags desc
+                    limit :limit
+                    """
+                ),
+                {"sid": summary_id, "limit": limit},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "shared_tags": row.shared_tags,
+            }
+            for row in rows
+        ]
+
+    def find_similar_by_embedding(
+        self, summary_id: UUID, limit: int = 10
+    ) -> list[dict]:
+        """Find semantically similar events using cosine distance on embeddings."""
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select s2.id as summary_id, s2.text as summary_text,
+                           1 - (s1.embedding <=> s2.embedding) as similarity
+                    from summaries s1
+                    join summaries s2
+                        on s2.id != s1.id and s2.embedding is not null
+                    where s1.id = :sid and s1.embedding is not null
+                    order by s1.embedding <=> s2.embedding
+                    limit :limit
+                    """
+                ),
+                {"sid": summary_id, "limit": limit},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "similarity": row.similarity,
+            }
+            for row in rows
+        ]
+
+    def set_embedding(self, summary_id: UUID, embedding: list[float]) -> None:
+        """Store an embedding vector for a summary."""
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    "update summaries set embedding = :emb where id = :sid"
+                ),
+                {"sid": summary_id, "emb": str(embedding)},
+            )
+            session.commit()

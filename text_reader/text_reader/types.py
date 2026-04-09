@@ -32,6 +32,7 @@ class ExtractedEvent(BaseModel):
     people: list[ExtractedPerson]
     place: ExtractedPlace
     time: ExtractedTime
+    themes: list[str] = []
     page_num: int | None = None
     confidence: float = 0.0
 
@@ -64,6 +65,7 @@ class ResolvedEvent(BaseModel):
     people: list[ResolvedPerson]
     place: ResolvedPlace
     time: ResolvedTime
+    themes: list[str] = []
     page_num: int | None = None
     confidence: float = 0.0
     is_duplicate: bool = False

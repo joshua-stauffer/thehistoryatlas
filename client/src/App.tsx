@@ -4,22 +4,25 @@ import { ThemeProvider } from "@mui/material/styles";
 import { GenericError } from "./pages/errorPages";
 
 import { theme } from "./baseStyle";
+import { AuthProvider } from "./auth/authContext";
 import { HistoryEventView } from "./pages/historyEvent/historyEventView";
+import { FeedView } from "./pages/feed/feedView";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { historyEventLoader } from "./pages/historyEvent/historyEventLoader";
+import { feedLoader } from "./pages/feed/feedLoader";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <HistoryEventView />,
-      loader: historyEventLoader,
+      element: <FeedView />,
+      loader: feedLoader,
       errorElement: (
         <GenericError
           header={"Uh oh..."}
           text={"Something went wrong"}
-          details={"Check the URL and try again"}
+          details={"Please try again"}
         />
       ),
     },
@@ -50,7 +53,9 @@ function App() {
   ]);
   return (
     <ThemeProvider theme={theme}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

@@ -264,3 +264,133 @@ class StorySummary(Base):
         UniqueConstraint("story_id", "summary_id", name="uq_story_summary"),
         UniqueConstraint("story_id", "position", name="uq_story_position"),
     )
+
+
+
+class Theme(Base):
+    """A hierarchical category for classifying historical events."""
+
+    __tablename__ = "themes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    name = Column(VARCHAR, nullable=False, unique=True)
+    slug = Column(VARCHAR, nullable=False, unique=True)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("themes.id"), nullable=True)
+    display_order = Column(INTEGER, nullable=False)
+
+    parent = relationship("Theme", remote_side="Theme.id", back_populates="children")
+    children = relationship("Theme", back_populates="parent")
+    summary_themes = relationship("SummaryTheme", back_populates="theme")
+
+    __table_args__ = (Index("idx_themes_parent_id", parent_id),)
+
+
+class SummaryTheme(Base):
+    """Associates a theme with a summary, with optional confidence score."""
+
+    __tablename__ = "summary_themes"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    summary_id = Column(UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False)
+    theme_id = Column(UUID(as_uuid=True), ForeignKey("themes.id"), nullable=False)
+    is_primary = Column(Boolean, nullable=False, default=False)
+    confidence = Column(FLOAT, nullable=True)
+
+    summary = relationship("Summary")
+    theme = relationship("Theme", back_populates="summary_themes")
+
+    __table_args__ = (
+        UniqueConstraint("summary_id", "theme_id", name="uq_summary_theme"),
+        Index("idx_summary_themes_summary_id", summary_id),
+        Index("idx_summary_themes_theme_id", theme_id),
+    )
+
+
+class UserFavorite(Base):
+    """A user's bookmarked event."""
+
+    __tablename__ = "user_favorites"
+
+    user_id = Column(VARCHAR, ForeignKey("users.id"), primary_key=True)
+    summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), primary_key=True
+    )
+    created_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "summary_id", name="uq_user_favorite"),
+        Index("idx_user_favorites_user_id", user_id),
+    )
+
+
+class UserEvent(Base):
+    """Append-only interaction log."""
+
+    __tablename__ = "user_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(VARCHAR, nullable=False)
+    summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False
+    )
+    event_type = Column(VARCHAR, nullable=False)
+    created_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        Index("idx_user_events_user_created", user_id, created_at),
+    )
+
+
+class UserThemePreference(Base):
+    """Materialized theme preference scores derived from user behavior."""
+
+    __tablename__ = "user_theme_preferences"
+
+    user_id = Column(VARCHAR, primary_key=True)
+    theme_id = Column(
+        UUID(as_uuid=True), ForeignKey("themes.id"), primary_key=True
+    )
+    score = Column(FLOAT, nullable=False, default=0.0)
+    updated_at = Column(TIMESTAMP, nullable=False)
+
+
+class UserCollection(Base):
+    """A user-curated collection of events."""
+
+    __tablename__ = "user_collections"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(VARCHAR, ForeignKey("users.id"), nullable=False)
+    name = Column(VARCHAR, nullable=False)
+    description = Column(VARCHAR, nullable=True)
+    visibility = Column(VARCHAR, nullable=False, default="private")
+    created_at = Column(TIMESTAMP, nullable=False)
+    updated_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        Index("idx_user_collections_user_id", user_id),
+    )
+
+
+class UserCollectionItem(Base):
+    """An event within a user collection."""
+
+    __tablename__ = "user_collection_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    collection_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_collections.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False
+    )
+    position = Column(INTEGER, nullable=False)
+    added_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("collection_id", "summary_id", name="uq_collection_item"),
+        UniqueConstraint("collection_id", "position", name="uq_collection_position"),
+        Index("idx_collection_items_collection_id", collection_id),
+    )

@@ -34,6 +34,24 @@ from the_history_atlas.api.handlers.text_reader import (
     create_text_reader_story_handler,
     get_story_by_source_handler,
 )
+from the_history_atlas.api.handlers.collections import (
+    create_collection_handler,
+    list_collections_handler,
+    get_collection_handler,
+    update_collection_handler,
+    delete_collection_handler,
+    add_item_handler,
+    remove_item_handler,
+)
+from the_history_atlas.api.handlers.feed import get_feed_handler
+from the_history_atlas.api.handlers.engagement import (
+    signup_handler,
+    add_favorite_handler,
+    remove_favorite_handler,
+    list_favorites_handler,
+    record_view_handler,
+)
+from the_history_atlas.api.handlers.themes import get_themes_handler
 from the_history_atlas.api.handlers.users import login_handler
 from the_history_atlas.api.types.api_keys import (
     CreateApiKeyRequest,
@@ -81,6 +99,28 @@ from the_history_atlas.api.types.text_reader import (
     PlaceSearchResult,
     SummaryMatchResult,
 )
+from the_history_atlas.api.types.recommendations import (
+    RelatedEventsResponse,
+    RelatedEvent,
+)
+from the_history_atlas.api.types.collections import (
+    CreateCollectionRequest,
+    UpdateCollectionRequest,
+    CollectionResponse,
+    CollectionListResponse,
+    CollectionDetailResponse,
+    CollectionItemResponse,
+    AddItemRequest,
+)
+from the_history_atlas.api.types.feed import FeedResponse
+from the_history_atlas.api.types.engagement import (
+    SignupRequest,
+    SignupResponse,
+    FavoriteResponse,
+    FavoriteListResponse,
+    ViewEventRequest,
+)
+from the_history_atlas.api.types.themes import ThemesResponse
 from the_history_atlas.api.types.user import LoginResponse
 from the_history_atlas.apps.accounts.errors import (
     DeactivatedUserError,
@@ -255,6 +295,78 @@ def register_rest_endpoints(
     JWTAuthenticatedUser = Annotated[GetUserResponsePayload, Depends(jwt_auth_required)]
 
     # API Endpoints
+    @fastapi_app.get("/themes", response_model=ThemesResponse)
+    def get_themes(apps: Apps) -> ThemesResponse:
+        return get_themes_handler(apps=apps)
+
+    @fastapi_app.get("/feed", response_model=FeedResponse)
+    def get_feed(
+        apps: Apps,
+        themes: Annotated[list[str] | None, Query()] = None,
+        afterCursor: Annotated[str | None, Query()] = None,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+        token: Annotated[Optional[str], Depends(oauth2_scheme)] = None,
+    ) -> FeedResponse:
+        user_id = None
+        if token:
+            try:
+                user_id = apps.accounts_app.get_user_id_from_token(token)
+            except Exception:
+                pass  # anonymous access is fine
+        return get_feed_handler(
+            apps=apps,
+            themes=themes,
+            after_cursor=afterCursor,
+            limit=limit,
+            user_id=user_id,
+        )
+
+    @fastapi_app.get(
+        "/events/{summary_id}/related",
+        response_model=RelatedEventsResponse,
+    )
+    def get_related_events(
+        summary_id: UUID,
+        apps: Apps,
+        limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    ) -> RelatedEventsResponse:
+        results = apps.history_app.get_related_events(
+            summary_id=summary_id, limit=limit
+        )
+        return RelatedEventsResponse(
+            events=[
+                RelatedEvent(
+                    summaryId=r["summary_id"],
+                    summaryText=r["summary_text"],
+                    sharedTags=r["shared_tags"],
+                )
+                for r in results
+            ]
+        )
+
+    @fastapi_app.get(
+        "/events/{summary_id}/similar",
+        response_model=RelatedEventsResponse,
+    )
+    def get_similar_events(
+        summary_id: UUID,
+        apps: Apps,
+        limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    ) -> RelatedEventsResponse:
+        results = apps.history_app.find_similar_events(
+            summary_id=summary_id, limit=limit
+        )
+        return RelatedEventsResponse(
+            events=[
+                RelatedEvent(
+                    summaryId=r["summary_id"],
+                    summaryText=r["summary_text"],
+                    similarity=r["similarity"],
+                )
+                for r in results
+            ]
+        )
+
     @fastapi_app.get("/history", response_model=Story)
     def get_history(
         apps: Apps,
@@ -339,6 +451,174 @@ def register_rest_endpoints(
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()], apps: Apps
     ) -> LoginResponse:
         return login_handler(form_data=form_data, apps=apps)
+
+    # --- Engagement ---
+
+    @fastapi_app.post("/auth/signup", response_model=SignupResponse)
+    def signup(request: SignupRequest, apps: Apps) -> SignupResponse:
+        return signup_handler(request=request, apps=apps)
+
+    @fastapi_app.post(
+        "/events/{summary_id}/favorite", response_model=FavoriteResponse
+    )
+    def add_favorite(
+        summary_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> FavoriteResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return add_favorite_handler(
+            summary_id=summary_id, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.delete(
+        "/events/{summary_id}/favorite", response_model=FavoriteResponse
+    )
+    def remove_favorite(
+        summary_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> FavoriteResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return remove_favorite_handler(
+            summary_id=summary_id, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.get("/user/favorites", response_model=FavoriteListResponse)
+    def get_favorites(
+        apps: Apps, user: JWTAuthenticatedUser
+    ) -> FavoriteListResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return list_favorites_handler(user_id=user_id, apps=apps)
+
+    @fastapi_app.post("/events/{summary_id}/view", status_code=204)
+    def record_view(
+        summary_id: UUID,
+        apps: Apps,
+        token: Annotated[Optional[str], Depends(oauth2_scheme)] = None,
+        x_anonymous_id: Annotated[str | None, Header()] = None,
+    ) -> None:
+        viewer_id = None
+        if token:
+            try:
+                user = apps.accounts_app.get_user(
+                    data=GetUserPayload(token=token)
+                )
+                viewer_id = user.user_details.id
+            except (MissingUserError, DeactivatedUserError, InvalidTokenError):
+                pass
+        if not viewer_id and x_anonymous_id:
+            viewer_id = f"anon:{x_anonymous_id}"
+        if not viewer_id:
+            return  # no tracking without any identifier
+        record_view_handler(
+            summary_id=summary_id, user_id=viewer_id, apps=apps
+        )
+
+    # --- Collections ---
+
+    @fastapi_app.post("/collections", response_model=CollectionResponse)
+    def create_collection(
+        request: CreateCollectionRequest,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> CollectionResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return create_collection_handler(
+            request=request, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.get("/collections", response_model=CollectionListResponse)
+    def list_collections(
+        apps: Apps, user: JWTAuthenticatedUser
+    ) -> CollectionListResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return list_collections_handler(user_id=user_id, apps=apps)
+
+    @fastapi_app.get(
+        "/collections/{collection_id}",
+        response_model=CollectionDetailResponse,
+    )
+    def get_collection(
+        collection_id: UUID,
+        apps: Apps,
+        token: Annotated[Optional[str], Depends(oauth2_scheme)] = None,
+    ) -> CollectionDetailResponse:
+        user_id = None
+        if token:
+            try:
+                user_id = apps.accounts_app.get_user_id_from_token(token)
+            except Exception:
+                pass
+        return get_collection_handler(
+            collection_id=collection_id, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.patch(
+        "/collections/{collection_id}", status_code=204
+    )
+    def update_collection(
+        collection_id: UUID,
+        request: UpdateCollectionRequest,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> None:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        update_collection_handler(
+            collection_id=collection_id,
+            request=request,
+            user_id=user_id,
+            apps=apps,
+        )
+
+    @fastapi_app.delete(
+        "/collections/{collection_id}", status_code=204
+    )
+    def delete_collection(
+        collection_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> None:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        delete_collection_handler(
+            collection_id=collection_id, user_id=user_id, apps=apps
+        )
+
+    @fastapi_app.post(
+        "/collections/{collection_id}/items",
+        response_model=CollectionItemResponse,
+    )
+    def add_collection_item(
+        collection_id: UUID,
+        request: AddItemRequest,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> CollectionItemResponse:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        return add_item_handler(
+            collection_id=collection_id,
+            request=request,
+            user_id=user_id,
+            apps=apps,
+        )
+
+    @fastapi_app.delete(
+        "/collections/{collection_id}/items/{summary_id}",
+        status_code=204,
+    )
+    def remove_collection_item(
+        collection_id: UUID,
+        summary_id: UUID,
+        apps: Apps,
+        user: JWTAuthenticatedUser,
+    ) -> None:
+        user_id = apps.accounts_app.get_user_id_from_token(user.token)
+        remove_item_handler(
+            collection_id=collection_id,
+            summary_id=summary_id,
+            user_id=user_id,
+            apps=apps,
+        )
 
     @fastapi_app.post("/times/exist", response_model=TimeExistsResponse)
     def check_time_exists(

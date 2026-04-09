@@ -11,3 +11,8 @@ from the_history_atlas.apps.domain.models.history.tables.tag_name_assoc import (
     TagNameAssocModel,
 )
 from the_history_atlas.apps.domain.models.history.tables.name import NameModel
+from the_history_atlas.apps.domain.models.history.tables.theme import (
+    ThemeModel,
+    ThemeWithChildrenModel,
+    SummaryThemeModel,
+)

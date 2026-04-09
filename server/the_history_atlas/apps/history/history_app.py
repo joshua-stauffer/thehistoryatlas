@@ -904,6 +904,7 @@ class HistoryApp:
         source_id: UUID,
         story_id: UUID,
         canonical_summary_id: UUID | None = None,
+        theme_slugs: list[str] | None = None,
     ) -> UUID:
         """Create an event from the text reader pipeline."""
         summary_id = uuid4()
@@ -970,7 +971,32 @@ class HistoryApp:
             story_id=story_id, summary_id=summary_id, position=position
         )
 
+        # Tag with themes if provided
+        if theme_slugs:
+            self._apply_theme_slugs(summary_id, theme_slugs)
+
         return summary_id
+
+    def _apply_theme_slugs(
+        self, summary_id: UUID, theme_slugs: list[str]
+    ) -> None:
+        """Look up theme IDs by slug and create summary_themes associations."""
+        for i, slug in enumerate(theme_slugs[:3]):
+            theme = self._repository.get_theme_by_slug(slug)
+            if theme is None:
+                log.warning(f"Unknown theme slug '{slug}' for summary {summary_id}")
+                continue
+            try:
+                self._repository.add_summary_theme(
+                    summary_id=summary_id,
+                    theme_id=theme.id,
+                    is_primary=(i == 0),
+                )
+            except Exception:
+                log.warning(
+                    f"Failed to add theme '{slug}' to summary {summary_id} "
+                    f"(may already exist)"
+                )
 
     def search_people_by_name(self, name: str) -> list[dict]:
         """Search for people tags by name."""
@@ -1050,3 +1076,131 @@ class HistoryApp:
                 precision=precision,
                 session=session,
             )
+
+    def get_themes(self):
+        """Return the full theme taxonomy (categories with children)."""
+        return self._repository.get_themes()
+
+    # -------------------------------------------------------------------
+    # User engagement
+    # -------------------------------------------------------------------
+
+    def add_favorite(self, user_id: str, summary_id: UUID) -> None:
+        self._repository.add_favorite(user_id=user_id, summary_id=summary_id)
+
+    def remove_favorite(self, user_id: str, summary_id: UUID) -> None:
+        self._repository.remove_favorite(user_id=user_id, summary_id=summary_id)
+
+    def get_favorites(self, user_id: str) -> list[dict]:
+        return self._repository.get_favorites(user_id=user_id)
+
+    def record_view(self, user_id: str, summary_id: UUID) -> None:
+        self._repository.record_view(user_id=user_id, summary_id=summary_id)
+
+    def get_feed(
+        self,
+        limit: int = 20,
+        theme_slugs: list[str] | None = None,
+        after_cursor: str | None = None,
+        user_id: str | None = None,
+    ) -> dict:
+        """Return a paginated feed with tags and themes."""
+        rows = self._repository.get_feed(
+            limit=limit,
+            theme_slugs=theme_slugs,
+            after_cursor=after_cursor,
+            user_id=user_id,
+        )
+        if not rows:
+            return {"events": [], "next_cursor": None}
+
+        summary_ids = [r["summary_id"] for r in rows]
+        tags_map = self._repository.get_feed_tags(summary_ids)
+        themes_map = self._repository.get_feed_themes(summary_ids)
+
+        events = []
+        for r in rows:
+            sid = r["summary_id"]
+            events.append(
+                {
+                    "summary_id": sid,
+                    "summary_text": r["summary_text"],
+                    "tags": tags_map.get(sid, []),
+                    "themes": themes_map.get(sid, []),
+                    "latitude": r["latitude"],
+                    "longitude": r["longitude"],
+                    "datetime": r["datetime"],
+                    "precision": r["precision"],
+                    "is_favorited": r["is_favorited"],
+                }
+            )
+
+        # Build cursor from last row
+        last = rows[-1]
+        next_cursor = (
+            f"{last['interleave_rank']}:{last['summary_id']}"
+            if len(rows) == limit
+            else None
+        )
+        return {"events": events, "next_cursor": next_cursor}
+
+    # -------------------------------------------------------------------
+    # User collections
+    # -------------------------------------------------------------------
+
+    def create_collection(
+        self, user_id: str, name: str, description: str | None = None
+    ) -> dict:
+        collection_id = uuid4()
+        return self._repository.create_collection(
+            id=collection_id, user_id=user_id, name=name, description=description
+        )
+
+    def get_collections(self, user_id: str) -> list[dict]:
+        return self._repository.get_collections_for_user(user_id=user_id)
+
+    def get_collection(self, collection_id: UUID) -> dict | None:
+        return self._repository.get_collection(collection_id=collection_id)
+
+    def update_collection(
+        self, collection_id: UUID, **kwargs
+    ) -> None:
+        self._repository.update_collection(collection_id=collection_id, **kwargs)
+
+    def delete_collection(self, collection_id: UUID) -> None:
+        self._repository.delete_collection(collection_id=collection_id)
+
+    def add_collection_item(
+        self, collection_id: UUID, summary_id: UUID
+    ) -> int:
+        item_id = uuid4()
+        return self._repository.add_collection_item(
+            id=item_id, collection_id=collection_id, summary_id=summary_id
+        )
+
+    def remove_collection_item(
+        self, collection_id: UUID, summary_id: UUID
+    ) -> None:
+        self._repository.remove_collection_item(
+            collection_id=collection_id, summary_id=summary_id
+        )
+
+    def get_collection_items(self, collection_id: UUID) -> list[dict]:
+        return self._repository.get_collection_items(collection_id=collection_id)
+
+    # -------------------------------------------------------------------
+    # Recommendations
+    # -------------------------------------------------------------------
+
+    def compute_preferences(self, user_id: str) -> None:
+        self._repository.compute_user_theme_preferences(user_id=user_id)
+
+    def get_related_events(self, summary_id: UUID, limit: int = 10) -> list[dict]:
+        return self._repository.get_related_by_tags(
+            summary_id=summary_id, limit=limit
+        )
+
+    def find_similar_events(self, summary_id: UUID, limit: int = 10) -> list[dict]:
+        return self._repository.find_similar_by_embedding(
+            summary_id=summary_id, limit=limit
+        )

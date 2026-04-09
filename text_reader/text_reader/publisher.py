@@ -59,6 +59,7 @@ class Publisher:
                 source_id=str(source_id),
                 story_id=str(story_id),
                 canonical_summary_id=canonical_id,
+                theme_slugs=event.themes,
             )
             return UUID(result["id"])
         except Exception as e:

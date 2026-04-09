@@ -154,6 +154,7 @@ def create_text_reader_event_handler(
             source_id=event.source_id,
             story_id=event.story_id,
             canonical_summary_id=event.canonical_summary_id,
+            theme_slugs=event.theme_slugs,
         )
     except MissingTagTypesError as e:
         raise HTTPException(status_code=422, detail=e.msg)

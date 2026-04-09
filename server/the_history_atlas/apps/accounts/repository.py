@@ -66,6 +66,34 @@ class Repository:
             session.add(user)
             session.commit()
 
+    def signup(
+        self,
+        username: str,
+        password: str,
+        email: str | None = None,
+        first_name: str | None = None,
+        last_name: str | None = None,
+    ) -> Token:
+        """Self-service account creation. Returns a JWT token for the new user."""
+        if not self.check_if_username_is_unique(username):
+            raise DuplicateUsernameError
+        user_id = str(uuid4())
+        with Session(self._engine, future=True) as session:
+            user = User(
+                id=user_id,
+                username=username,
+                password=encrypt(password).decode(),
+                email=email or "",
+                f_name=first_name or "",
+                l_name=last_name or "",
+                type="contrib",
+                confirmed=True,
+                deactivated=False,
+            )
+            session.add(user)
+            session.commit()
+        return get_token(user_id)
+
     def add_user(self, token: Token, user_details: Dict) -> Tuple[str, UserDetailsDict]:
         """Adds a user to the database"""
 
