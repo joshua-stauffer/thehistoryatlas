@@ -352,3 +352,45 @@ class UserThemePreference(Base):
     )
     score = Column(FLOAT, nullable=False, default=0.0)
     updated_at = Column(TIMESTAMP, nullable=False)
+
+
+class UserCollection(Base):
+    """A user-curated collection of events."""
+
+    __tablename__ = "user_collections"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(VARCHAR, ForeignKey("users.id"), nullable=False)
+    name = Column(VARCHAR, nullable=False)
+    description = Column(VARCHAR, nullable=True)
+    visibility = Column(VARCHAR, nullable=False, default="private")
+    created_at = Column(TIMESTAMP, nullable=False)
+    updated_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        Index("idx_user_collections_user_id", user_id),
+    )
+
+
+class UserCollectionItem(Base):
+    """An event within a user collection."""
+
+    __tablename__ = "user_collection_items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    collection_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_collections.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    summary_id = Column(
+        UUID(as_uuid=True), ForeignKey("summaries.id"), nullable=False
+    )
+    position = Column(INTEGER, nullable=False)
+    added_at = Column(TIMESTAMP, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("collection_id", "summary_id", name="uq_collection_item"),
+        UniqueConstraint("collection_id", "position", name="uq_collection_position"),
+        Index("idx_collection_items_collection_id", collection_id),
+    )

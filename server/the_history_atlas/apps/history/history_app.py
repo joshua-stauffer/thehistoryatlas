@@ -1143,3 +1143,47 @@ class HistoryApp:
             else None
         )
         return {"events": events, "next_cursor": next_cursor}
+
+    # -------------------------------------------------------------------
+    # User collections
+    # -------------------------------------------------------------------
+
+    def create_collection(
+        self, user_id: str, name: str, description: str | None = None
+    ) -> dict:
+        collection_id = uuid4()
+        return self._repository.create_collection(
+            id=collection_id, user_id=user_id, name=name, description=description
+        )
+
+    def get_collections(self, user_id: str) -> list[dict]:
+        return self._repository.get_collections_for_user(user_id=user_id)
+
+    def get_collection(self, collection_id: UUID) -> dict | None:
+        return self._repository.get_collection(collection_id=collection_id)
+
+    def update_collection(
+        self, collection_id: UUID, **kwargs
+    ) -> None:
+        self._repository.update_collection(collection_id=collection_id, **kwargs)
+
+    def delete_collection(self, collection_id: UUID) -> None:
+        self._repository.delete_collection(collection_id=collection_id)
+
+    def add_collection_item(
+        self, collection_id: UUID, summary_id: UUID
+    ) -> int:
+        item_id = uuid4()
+        return self._repository.add_collection_item(
+            id=item_id, collection_id=collection_id, summary_id=summary_id
+        )
+
+    def remove_collection_item(
+        self, collection_id: UUID, summary_id: UUID
+    ) -> None:
+        self._repository.remove_collection_item(
+            collection_id=collection_id, summary_id=summary_id
+        )
+
+    def get_collection_items(self, collection_id: UUID) -> list[dict]:
+        return self._repository.get_collection_items(collection_id=collection_id)

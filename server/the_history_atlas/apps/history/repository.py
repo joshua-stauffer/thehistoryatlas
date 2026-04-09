@@ -2500,3 +2500,186 @@ class Repository:
                 {"slug": row.slug, "name": row.name}
             )
         return result
+
+    # -----------------------------------------------------------------------
+    # User collections
+    # -----------------------------------------------------------------------
+
+    def create_collection(
+        self, id: UUID, user_id: str, name: str, description: str | None = None
+    ) -> dict:
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    insert into user_collections
+                        (id, user_id, name, description, visibility, created_at, updated_at)
+                    values (:id, :user_id, :name, :description, 'private', now(), now())
+                    """
+                ),
+                {"id": id, "user_id": user_id, "name": name, "description": description},
+            )
+            session.commit()
+        return {"id": id, "name": name, "description": description, "visibility": "private"}
+
+    def get_collections_for_user(self, user_id: str) -> list[dict]:
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select c.id, c.name, c.description, c.visibility,
+                           c.created_at::text, c.updated_at::text,
+                           count(ci.id) as item_count
+                    from user_collections c
+                    left join user_collection_items ci on ci.collection_id = c.id
+                    where c.user_id = :user_id
+                    group by c.id
+                    order by c.updated_at desc
+                    """
+                ),
+                {"user_id": user_id},
+            ).all()
+        return [
+            {
+                "id": row.id,
+                "name": row.name,
+                "description": row.description,
+                "visibility": row.visibility,
+                "created_at": row.created_at,
+                "updated_at": row.updated_at,
+                "item_count": row.item_count,
+            }
+            for row in rows
+        ]
+
+    def get_collection(self, collection_id: UUID) -> dict | None:
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select id, user_id, name, description, visibility,
+                           created_at::text, updated_at::text
+                    from user_collections
+                    where id = :id
+                    """
+                ),
+                {"id": collection_id},
+            ).one_or_none()
+        if row is None:
+            return None
+        return {
+            "id": row.id,
+            "user_id": row.user_id,
+            "name": row.name,
+            "description": row.description,
+            "visibility": row.visibility,
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+        }
+
+    def update_collection(
+        self, collection_id: UUID, name: str | None = None,
+        description: str | None = None, visibility: str | None = None,
+    ) -> None:
+        sets = []
+        params: dict = {"id": collection_id}
+        if name is not None:
+            sets.append("name = :name")
+            params["name"] = name
+        if description is not None:
+            sets.append("description = :description")
+            params["description"] = description
+        if visibility is not None:
+            sets.append("visibility = :visibility")
+            params["visibility"] = visibility
+        if not sets:
+            return
+        sets.append("updated_at = now()")
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(f"update user_collections set {', '.join(sets)} where id = :id"),
+                params,
+            )
+            session.commit()
+
+    def delete_collection(self, collection_id: UUID) -> None:
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text("delete from user_collections where id = :id"),
+                {"id": collection_id},
+            )
+            session.commit()
+
+    def add_collection_item(
+        self, id: UUID, collection_id: UUID, summary_id: UUID
+    ) -> int:
+        """Add an event to a collection. Returns the assigned position."""
+        with Session(self._engine, future=True) as session:
+            row = session.execute(
+                text(
+                    """
+                    select coalesce(max(position), 0) + 1 as next_pos
+                    from user_collection_items
+                    where collection_id = :cid
+                    """
+                ),
+                {"cid": collection_id},
+            ).one()
+            position = row.next_pos
+            session.execute(
+                text(
+                    """
+                    insert into user_collection_items
+                        (id, collection_id, summary_id, position, added_at)
+                    values (:id, :cid, :sid, :pos, now())
+                    on conflict (collection_id, summary_id) do nothing
+                    """
+                ),
+                {"id": id, "cid": collection_id, "sid": summary_id, "pos": position},
+            )
+            session.execute(
+                text("update user_collections set updated_at = now() where id = :cid"),
+                {"cid": collection_id},
+            )
+            session.commit()
+        return position
+
+    def remove_collection_item(
+        self, collection_id: UUID, summary_id: UUID
+    ) -> None:
+        with Session(self._engine, future=True) as session:
+            session.execute(
+                text(
+                    """
+                    delete from user_collection_items
+                    where collection_id = :cid and summary_id = :sid
+                    """
+                ),
+                {"cid": collection_id, "sid": summary_id},
+            )
+            session.commit()
+
+    def get_collection_items(self, collection_id: UUID) -> list[dict]:
+        with Session(self._engine, future=True) as session:
+            rows = session.execute(
+                text(
+                    """
+                    select ci.summary_id, s.text as summary_text,
+                           ci.position, ci.added_at::text
+                    from user_collection_items ci
+                    join summaries s on s.id = ci.summary_id
+                    where ci.collection_id = :cid
+                    order by ci.position
+                    """
+                ),
+                {"cid": collection_id},
+            ).all()
+        return [
+            {
+                "summary_id": row.summary_id,
+                "summary_text": row.summary_text,
+                "position": row.position,
+                "added_at": row.added_at,
+            }
+            for row in rows
+        ]
