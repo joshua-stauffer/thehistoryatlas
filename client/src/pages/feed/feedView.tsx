@@ -11,6 +11,7 @@ import { FeedEvent, fetchFeed } from "../../api/feed";
 import { ThemeFilter } from "./themeFilter";
 import { FeedCard } from "./feedCard";
 import { FeedHeader } from "./feedHeader";
+import { FeedMapView } from "./feedMapView";
 import { AuthDialog } from "./authDialog";
 
 export const FeedView: React.FC = () => {
@@ -135,15 +136,7 @@ export const FeedView: React.FC = () => {
           </Typography>
         ) : mapMode ? (
           <Box sx={{ mt: 2 }}>
-            <Typography
-              variant="body2"
-              sx={{ textAlign: "center", color: "text.secondary", py: 4 }}
-            >
-              Map view coming soon. Showing {events.length} events.
-            </Typography>
-            {events.map((event) => (
-              <FeedCard key={event.summaryId} event={event} />
-            ))}
+            <FeedMapView events={events} />
           </Box>
         ) : (
           <>
